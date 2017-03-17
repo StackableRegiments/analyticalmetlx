@@ -254,13 +254,13 @@ var Grades = (function(){
                                                 alert(sprintf("Error: %s \r\n %s",textStatus,error));
                                             });
                                         });
-																				aNodes.find(".disassociateGrade").unbind("click").on("click",function(){
-																					delete newGrade.foreignRelationship;
-																					newGrade.timestamp = 0;
-																					sendStanza(newGrade);
-																					jAlert.closeAlert();
-																					renderGradeEditAlert();
-																				});
+                                        aNodes.find(".disassociateGrade").unbind("click").on("click",function(){
+                                            delete newGrade.foreignRelationship;
+                                            newGrade.timestamp = 0;
+                                            sendStanza(newGrade);
+                                            jAlert.closeAlert();
+                                            renderEditGradeAlert();
+                                        });
                                         aNodes.find(".refreshAssociation").show();
                                     } else {
                                         aNodes.find(".refreshAssociation").hide();
