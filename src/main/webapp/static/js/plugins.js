@@ -324,7 +324,7 @@ var Plugins = (function(){
                                                         _.forEach(groups,function(g){
                                                             ContentFilter.setFilter(g.id,false);
                                                         });
-                                                        Progress.deisolated.call();
+                                                        Progress.call("deisolated");
                                                         blit();
                                                         var sendSubs = function(listOfGroups,afterFunc){
                                                             var group = listOfGroups[0];
@@ -528,7 +528,7 @@ var Plugins = (function(){
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
                                                 ContentFilter.setAudience(group.id);
-                                                Progress.isolated.call([group.id]);
+                                                Progress.call("isolated",[group.id]);
                                                 Modes.select.activate();
                                                 blit();
                                                 $("#masterFooter").scrollLeft(xOffset);
