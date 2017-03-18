@@ -73,18 +73,21 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   val lineHeight = 150
 
-  def findFreeSpace(width:Double,direction:ScanDirection,claims:List[ClaimedArea]):Point = direction match {
-    case Above => claims.sortBy(_.top).head match {
-      case p => Point(p.left,p.top - lineHeight,0)
-    }
-    case Below => claims.sortBy(_.bottom).last match {
-      case p => Point(p.left,p.top + lineHeight,0)
-    }
-    case Leftwards => claims.sortBy(_.left).head match {
-      case p => Point(p.left - width,p.top,0)
-    }
-    case Rightwards => claims.sortBy(c => c.right + c.width).last match {
-      case p => Point(p.left + p.width,p.top,0)
+  def findFreeSpace(width:Double,direction:ScanDirection,claims:List[ClaimedArea]):ClaimedArea = {
+    println(direction)
+    direction match {
+      case Above => claims.sortBy(_.top).head match {
+        case p => ClaimedArea(p.left,p.top - lineHeight,p.left + width,p.top,0)
+      }
+      case Below => claims.sortBy(_.bottom).last match {
+        case p => ClaimedArea(p.left,p.top + lineHeight,p.left + width,p.top + lineHeight * 2,0)
+      }
+      case Leftwards => claims.sortBy(c => c.left).head match {
+        case p => ClaimedArea(p.left - width,p.top,p.left,p.top + lineHeight,0)
+      }
+      case Rightwards => claims.sortBy(c => c.right + c.width).last match {
+        case p => ClaimedArea(p.right,p.top,p.right + width,p.top + lineHeight,0)
+      }
     }
   }
 
@@ -96,18 +99,14 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
         case u@SimulatedUser(name,claim,focus,intention,Watching(ticks),history) => rand.nextInt(2) match {
           case 1 if furtherClaimsAllowed => {
             val width = (rand.nextInt(name.length / 2) - name.length / 2) * Alphabet.averageWidth
-            val focus = findFreeSpace(width, rand.nextInt(6) match {
+            val claim = findFreeSpace(width, rand.nextInt(6) match {
               case 1 => Above
               case 2 | 3 => Rightwards
               case 4 | 5 => Below
               case _ => Leftwards
             },users.map(_.claim))
-            val claim = ClaimedArea(
-              focus.x,focus.y,
-              focus.x + width,focus.y + lineHeight,
-              width)
             furtherClaimsAllowed = false
-            u.copy(activity=Scribbling(name.toLowerCase.toList), focus=focus, claim=claim)
+            u.copy(activity=Scribbling(name.toLowerCase.toList), focus=Point(claim.top,claim.left,0), claim=claim)
           }
           case _ => u.copy(activity = Watching(ticks + 1))
         }
