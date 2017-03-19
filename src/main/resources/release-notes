@@ -1,3 +1,6 @@
+1.10.2
+METL-559: Isolation change does not refresh canvas.
+
 1.10.1
 METL-577: Story: Create analyst portal (at /statistics).
 METL-581: Story: Disassociate grade from remote.
