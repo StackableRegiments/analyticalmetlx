@@ -22,7 +22,7 @@ object Reputation extends Logger{
   def addStanding(who:String,what:GainAction.Value):Unit = Stopwatch.time("Reputation:addStanding(%s,%s)".format(who,what),{
     val score = Informal.value(what)
     if (score > 0){
-      val currentStanding = standingMap.getOrElseUpdate(who, Informal.standing(who))
+      val currentStanding = standingMap.getOrElse(who, Informal.standing(who))
       val newScore = currentStanding + score
       standingMap.put(who, newScore)
       ReputationServer ! Standing(who,newScore,0)
