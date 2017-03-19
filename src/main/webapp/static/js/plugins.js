@@ -211,8 +211,8 @@ var Plugins = (function(){
 
 					var vidyoClient = undefined; // this should have been constructed already by the onload behaviour
 					var vidyoToken = undefined; // this should have already been set.
-					var vidyoHost = undefined; // this should be... um?  I don't know.
-					var vidyoDisplayName = undefined;
+					var vidyoHost = undefined; // this should be... um?  I don't know.  I'm still trying to work out where I get that set from.
+					var vidyoDisplayName = "UserSettings" in window ? UserSettings.getUsername() : "unknown";
 
 					var sessions = {};
 
@@ -653,7 +653,7 @@ var Plugins = (function(){
 						document.getElementsByTagName('head')[0].appendChild(script);
 					}
 					
-					function loadHelperOptions() {
+					function loadVidyoLibrary() {
 						var userAgent = navigator.userAgent || navigator.vendor || window.opera;
 
 						// Opera 8.0+
@@ -679,13 +679,13 @@ var Plugins = (function(){
 						// Check if Android
 						var isAndroid = userAgent.indexOf("android") > -1;
 
+						var protocolHandlerLink = 'vidyoconnector://' + window.location.search;
 						if (!isMac && !isWin && !isLinux) {
 							if (isChrome && isAndroid) {
 								/* Supports WebRTC */
 								loadVidyoClientLibrary(true, false);
 							} else {
-								var protocolHandlerLink = 'vidyoconnector://' + window.location.search;
-								$("#helperOtherAppLoader").attr('src', protocolHandlerLink);
+								$("#helperAppLoader").attr('src', protocolHandlerLink);
 								loadVidyoClientLibrary(false, false);
 							} 
 						} else {
@@ -696,7 +696,6 @@ var Plugins = (function(){
 								/* Supports Plugins */
 								loadVidyoClientLibrary(false, true);
 							} else {
-								var protocolHandlerLink = 'vidyoconnector://' + window.location.search;
 								$("#helperAppLoader").attr('src', protocolHandlerLink);
 								loadVidyoClientLibrary(false, false);
 							}
@@ -705,7 +704,8 @@ var Plugins = (function(){
 					// Runs when the page loads
 					$(function() {
 						$("body").append($("<div/>",{id:videoDivId}));
-						loadVideoLibrary();
+						Vidyo.receiveVidyoHostname("prod.vidyo.io");
+						loadVidyoLibrary();
 					});
 					window.Vidyo = {
 						receiveVidyoEnabled:function(ie){
@@ -714,7 +714,12 @@ var Plugins = (function(){
 						receiveVidyoSessionToken:function(st){
 							vidyoToken = st;
 						},
-						startConference:startConferenceFunc
+						receiveVidyoHostname:function(vh){
+							vidyoHost = vh;
+						},
+						startConference:function(roomName){
+							startConferenceFunc(roomName); // this is going to be the primary entry point, I think.
+						}
 					};
 					window.receiveVidyoEnabled = function(isEnabled){
 						console.log("vidyoEnabled:",isEnabled);
