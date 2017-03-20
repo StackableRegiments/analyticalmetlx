@@ -1,22 +1,19 @@
 package com.metl.model
 
-import com.metl.utils.{Stopwatch,SynchronizedWriteMap}
+import com.metl.utils.{Stopwatch}
 import com.metl.comet.ReputationServer
-import scala.collection.mutable.{HashMap, SynchronizedMap}
+
 import net.liftweb.common.Logger
+
+import scala.collection.JavaConversions
 
 case class Standing(who:String,formative:Int,summative:Int)
 object Reputation extends Logger{
-  private val standingMap = new SynchronizedWriteMap[String,Int]{
-    override def default(who:String):Int = {
-      syncWrite(()=>{
-        val newStanding = Informal.standing(who)
-        this += (who -> newStanding)
-        newStanding
-      })
-    }
-  }
-  def allStandings:List[Standing] = Stopwatch.time("Reputation:allStandings",standingMap.map(st => Standing(st._1,st._2,0)).filter(a => a.isInstanceOf[Standing]).map(a => a.asInstanceOf[Standing]).toList)
+  private val standingMap = JavaConversions.mapAsScalaConcurrentMap(new java.util.concurrent.ConcurrentHashMap[String,Int])
+
+  def allStandings:List[Standing] =
+    Stopwatch.time("Reputation:allStandings", standingMap.toList.map(e => {Standing(e._1, e._2, 0)}))
+
   def populateStandingMap:Unit = Stopwatch.time("Reputation:populateStandingMap",{
     Informal.findAll.foreach(i => addStanding(i.protagonist.get,i.action.get))
     debug("populated standingMap: %s".format(standingMap))
@@ -25,9 +22,9 @@ object Reputation extends Logger{
   def addStanding(who:String,what:GainAction.Value):Unit = Stopwatch.time("Reputation:addStanding(%s,%s)".format(who,what),{
     val score = Informal.value(what)
     if (score > 0){
-      val currentStanding = standingMap(who)
+      val currentStanding = standingMap.getOrElse(who, Informal.standing(who))
       val newScore = currentStanding + score
-      standingMap(who) = newScore
+      standingMap.put(who, newScore)
       ReputationServer ! Standing(who,newScore,0)
     }
   })
