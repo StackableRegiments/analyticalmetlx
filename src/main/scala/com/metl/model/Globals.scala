@@ -194,7 +194,7 @@ object Globals extends PropertyReader with Logger {
   def getGradebookProvider(providerId:String):Option[ExternalGradebook] = gradebookProviders.find(_.id == providerId)
   def getGradebookProviders:List[ExternalGradebook] = gradebookProviders
 
-  def getGroupsProvider(providerName:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerName)
+  def getGroupsProvider(providerStoreId:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerStoreId)
   def getGroupsProviders:List[GroupsProvider] = groupsProviders
 
   object casState {
@@ -210,6 +210,9 @@ object Globals extends PropertyReader with Logger {
     private object actuallyIsImpersonator extends SessionVar[Boolean](false)
     def isSuperUser:Boolean = {
       is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
+    }
+    def isAnalyst:Boolean = {
+      is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "analyst")
     }
     def isImpersonator:Boolean = actuallyIsImpersonator.is
     def authenticatedUsername:String = actualUsername.is
@@ -260,6 +263,7 @@ object Globals extends PropertyReader with Logger {
   // special roles
   def isSuperUser:Boolean = casState.isSuperUser
   def isImpersonator:Boolean = casState.isImpersonator
+  def isAnalyst:Boolean = casState.isAnalyst
   def assumeContainerSession:LiftAuthStateData = casState.assumeContainerSession
   def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = casState.impersonate(newUsername,personalAttributes)
 

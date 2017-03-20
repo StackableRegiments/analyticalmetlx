@@ -1,92 +1,59 @@
-# Metl
+# MeTL
 
 ## Description
 
-This project provides the primary metl server.  It provides the server-rendered low-interaction metlviewer product, the high interaction comet-enabled javascript product (available at /board), and endpoints for the native windows client to connect.  This is developed in scala, and deploys as a WAR directly into a java web container.  We've been using Jetty. 
+This project provides the primary MeTL server, the high interaction comet-enabled javascript product (available at `/board`).  This is developed in Scala, and deploys as a WAR directly into a Java web container.  We've been using Jetty. 
 
-## Development
+## Run
 
-We use SBT to compile and publish this app.  To run a localserver of this app, use:
+We use SBT to compile and publish this app.  
 
-```
-sbt
-> container:restart
-```
+To run a local server for this app, use:
 
-When running the application, there're a few configuration settings you'll need to set.  These are set by the files outside the WAR, and examples of the files are available in the config directory.  The location of the files need to be specified to the WAR with a java system property (```-Dmetlx.configurationFile="/etc/metl/"```).  Logging uses logback, and that can be overridden to use a config file from outside the WAR with a java system property (```-Dlogback.configurationFile="config/logback.xml"```).
+    sbt
+    > container:restart
 
-An example config file which uses a local database and no authentication might look like:
+## Configure
 
-```
-<serverConfiguration>
-  <liftConfiguration>
-    <cometRequestTimeout>25</cometRequestTimeout>
-    <maxMimeSize>1048576000</maxMimeSize>
-    <maxMimeFileSize>524288000</maxMimeFileSize>
-    <bufferUploadsOnDisk>true</bufferUploadsOnDisk>
-    <maxConcurrentRequestsPerSession>100</maxConcurrentRequestsPerSession>
-    <allowParallelSnippets>true</allowParallelSnippets>
-  </liftConfiguration>
-  <defaultServerConfiguration>sqlAdaptor</defaultServerConfiguration>
-	<serverConfigurations>
-    <server>
-      <type>sql</type>
-			<name>sqlAdaptor</name>
-			<driver>org.h2.Driver</driver>
-			<url>jdbc:h2:./testdb.h2;AUTO_SERVER=TRUE;MVCC=TRUE</url>
-    </server>
-    <server>
-      <type>transientLoopback</type>
-    </server>
-    <server>
-      <type>frontend</type>
-    </server>
-	</serverConfigurations>
-	<caches>
-		<roomLifetime miliseconds="3600000"/>
-		<resourceCache heapSize="100" heapUnits="MEGABYTES" evictionPolicy="LeastRecentlyUsed" />
-	</caches>
-	<importerPerformance parallelism="8"/>
-	<clientConfig>
-		<xmppDomain>local.temp</xmppDomain>
-		<imageUrl><![CDATA[https://avatars3.githubusercontent.com/u/14121932?v=3&s=460]]></imageUrl>
-	</clientConfig>
-	<securityProvider>
-		<stableKeyProvider/> 
-	</securityProvider>
-	<authenticationConfiguration>
-	  <requestUriStartWith value="/comet_request"/>
-	  <requestUriStartWith value="/ajax_request"/>
-	  <requestUriStartWith value="/favicon.ico"/>
-	  <requestUriStartWith value="/serverStatus"/>
-	  <requestUriStartWith value="/static"/>
-	  <requestUriStartWith value="/classpath"/>
-	</authenticationConfiguration>
-	<authentication>
-		<mock/>
-  </authentication>
-  <groupsProvider>
-		<selfGroups/>
-		<flatFileGroups format="globalOverrides" location="config/globalOverrides.txt" refreshPeriod="5 minutes"/>
-		<flatFileGroups format="specificOverrides" location="config/specificOverrides.txt" refreshPeriod="5 minutes"/>
-		<flatFileGroups format="xmlSpecificOverrides" location="config/specificOverrides.xml" refreshPeriod="5 minutes"/>
-	</groupsProvider>
-	<cloudConverterApiKey>anExampleApiKey</cloudConverterApiKey>
-	<textAnalysisApiKey>anExampleApiKey</textAnalysisApiKey>
-	<themeAnalysisApiKey>anExampleApiKey</themeAnalysisApiKey>
-</serverConfiguration>
-```
+When running the application, there're a few configuration settings you'll need to set.  These are set by the files outside the WAR, and examples of the files are available in the config directory (eg `configuration.sample.xml`).  
 
-- Provide cloudConverterApiKey to enable upstream foreign document import into images, if required.
-- Provide textAnalysisApiKey to enable upstream text analysis, if required.
-- Provide themeAnalysisApiKey to enable upstream theme analysis, if required.
+The following Java system properties can be provided at the command line (see `sbt.bat` and `sbt.sh`):
+
+### SBT
+
+Set the location of SBT files and directories.
+
+- `sbt.boot.directory="%IVY_HOME%\.sbt-boot"`
+- `sbt.global.home="%IVY_HOME%\.sbt"`
+- `sbt.home="%IVY_HOME%\.sbt"`
+- `sbt.ivy.home="%IVY_HOME%\.ivy2\"`
+- `sbt.global.staging="%IVY_HOME%\.sbt-staging"`
+
+### MeTL
+
+- `metlx.configurationFile="./config/configuration.local.xml"` sets the location of the MeTL config file.
+
+See [README-config.md](README-config.md) for more detail.
+
+### Logback 
+
+MeTL uses Logback, which can be overridden to use a config file from outside the WAR.
+
+- `logback.configurationFile="config/logback.xml"` sets the location of the Logback config file.
+
+See [Logback](https://logback.qos.ch/manual/index.html) for more detail.
+
+### Developer Options
+
+- `run.mode="development"` instructs Lift to disable most caching (see [Simply Lift](https://simply.liftweb.net/index-3.1.html#toc-Subsection-3.1.2)).
+- `metl.stopwatch.enabled="true"` enables duration logging of various actions. 
+- `metl.stopwatch.minimumLog="1000"` requires that an action take longer than 1s before it is logged.
+- `stackable.spending=enabled` enables use of third-party services defined in [README-config.md](README-config.md).  
 
 ## Deployment
 
-This project publishes to a WAR file.  Use sbt's deploy goal to create the warfile.
+This project publishes to a WAR file.  Use sbt's deploy goal to create the warfile:
 
-```
-sbt deploy
-```
+    sbt deploy
 
-and then copy the warfile from ```/target/scala-2.10/``` to the container of your choice.
+and then copy it from `/target/scala-2.10/` to the container of your choice.

@@ -1,21 +1,21 @@
 package com.metl.view
 
+import java.io.StringWriter
+
 import com.metl.data._
 import com.metl.utils._
 import com.metl.renderer.SlideRenderer
-import javax.xml.bind.DatatypeConverter;
-import net.liftweb.json._
 
+import net.liftweb.json._
 import net.liftweb.util._
 import net.liftweb.common._
 import net.liftweb.http._
 import net.liftweb.http.rest._
-import net.liftweb.http.provider._
 import Helpers._
 import com.metl.model._
-import Http._
+import com.metl.view.ReportHelper._
+
 import scala.xml.XML
-import org.apache.commons.io._
 
 trait Stemmer {
   def stem(in:String):Tuple2[String,String] = {
@@ -185,6 +185,18 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
         val history = config.getMockHistory
         val image = slideRenderer.render(history,new com.metl.renderer.RenderDescription(Math.min(width.toInt,640),Math.min(height.toInt,480)),"presentationSpace")
         InMemoryResponse(image,List("Content-Type" -> "image/jpeg"),Nil,200)
+      }
+    })
+    case Req("testFetchGlobalRoom" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testFetchGlobalRoom", {
+      val room = MeTLXConfiguration.getRoom("global",ServerConfiguration.default.name,GlobalRoom(ServerConfiguration.default.name))
+      Full(PlainTextResponse(room.roomMetaData.getJid, List.empty[Tuple2[String,String]], 200))
+    })
+    case Req("testCountConversations" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testCountConversations", {
+      for {
+        query <- S.param("query")
+      } yield {
+        val server = ServerConfiguration.default
+        PlainTextResponse(server.searchForConversation(query).length.toString)
       }
     })
   }
@@ -399,7 +411,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }
       }
   }
-    case Req("getExternalGradeValues" :: externalGradebookId :: orgUnit :: gradeId :: Nil,_,_) => { 
+    case Req("getExternalGradeValues" :: externalGradebookId :: orgUnit :: gradeId :: Nil,_,_) => {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
@@ -482,7 +494,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       ()=> Stopwatch.time("MeTLStatefulRestHelper.proxyDataUri", StatelessHtml.proxyDataUri(slide,source))
     case Req(List("proxy",slide,source),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.proxy", StatelessHtml.proxy(slide,source))
-    case r@Req(List("proxyImageUrl",slide),_,_) => 
+    case r@Req(List("proxyImageUrl",slide),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.proxyImageUrl", StatelessHtml.proxyImageUrl(new String(base64Decode(slide)),r.param("source").getOrElse("")))
     case Req(List("quizProxy",conversation,identity),_,_) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.quizProxy", StatelessHtml.quizProxy(conversation,identity))
@@ -580,6 +592,14 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         PlainTextResponse("loggedUserAgent")
       })
     }
+    case Req("studentActivity" :: Nil,_,_) if Globals.isAnalyst => () => Stopwatch.time("MeTLRestHelper.studentActivity", {
+      for{
+        courseId <- S.param("courseId")
+      } yield {
+        //        val courseId = "6678"
+        PlainTextResponse(ReportHelper.studentActivity(courseId))
+      }
+    })
   }
 }
 object WebMeTLStatefulRestHelper extends RestHelper with Logger{

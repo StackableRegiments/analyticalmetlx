@@ -33,8 +33,8 @@ class Statistics extends Logger {
   }
 
   def runQuery(name: String, sql: String, params: List[Any]): List[String] = {
-    val results = DB.runQuery(sql, params)
     // results: (List[String] headers, List[List[String]] data)
+    val results = DB.runQuery(sql, params)
     List(name, results._2.head.head)
   }
 
@@ -47,7 +47,7 @@ class Statistics extends Logger {
     val informalStanzas = runQuery("Informal (ink, text, image) stanzas created",
       "select sum(" +
         "( select count(id) from h2ink where timestamp_c > ? ) + " +
-        "( select count(id) from h2text where timestamp_c > ? ) + " +
+        "( select count(id) from h2multiwordtext where timestamp_c > ? ) + " +
         "( select count(id) from h2image where timestamp_c > ? ) " +
         ");",
       List(toUnixTimestamp(startDate),
@@ -74,7 +74,7 @@ class Statistics extends Logger {
         "select count(a) from ( " +
           "select distinct author as a from h2ink where timestamp_c > ? " +
           "union " +
-          "select distinct author as a from h2text where timestamp_c > ? " +
+          "select distinct author as a from h2multiwordtext where timestamp_c > ? " +
           "union " +
           "select distinct author as a from h2image where timestamp_c > ? " +
           "union " +
@@ -88,7 +88,7 @@ class Statistics extends Logger {
         "select count(a) from (" +
           "select distinct author as a from h2ink where timestamp_c > ? " +
           "union " +
-          "select distinct author as a from h2text where timestamp_c > ? " +
+          "select distinct author as a from h2multiwordtext where timestamp_c > ? " +
           "union " +
           "select distinct author as a from h2image where timestamp_c > ? " +
           ") as bob;",
