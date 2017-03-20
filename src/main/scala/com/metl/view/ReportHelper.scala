@@ -76,8 +76,8 @@ object ReportHelper {
     if (conversations.nonEmpty) {
       val conversation = conversations.head
       nonAttendingRows = getAllD2LUserIds(conversation.foreignRelationship).map(m => {
-        List("", "", "", "", "", "", "", getMemberOrgDefinedId(m), "")
-      }).filter(l => l(7).nonEmpty).filter(l => !csvRows.exists(c => l(7).equals(c(7)))).sortWith((left, right) => left(7).compareTo(right(7)) < 0) ::: nonAttendingRows
+        List("", getMemberDetail(m, "UserName"), "", "", "", "", "", getMemberDetail(m, "OrgDefinedId"), "")
+      }).filter(l => l(7).nonEmpty).filter(l => !csvRows.exists(c => l(1).equals(c(1)))).sortWith((left, right) => left(1).toLowerCase.compareTo(right(1).toLowerCase) < 0) ::: nonAttendingRows
     }
 
     val stringWriter = new StringWriter()
@@ -153,13 +153,21 @@ object ReportHelper {
   protected def findUserIdInMembers(members: List[Member], metlUser: String): String = {
     members.find(m => m.name.toLowerCase.equals(metlUser.toLowerCase)) match {
       case Some(m) =>
-        getMemberOrgDefinedId(m)
+        getMemberDetail(m, "OrgDefinedId")
       case None => ""
     }
   }
 
-  protected def getMemberOrgDefinedId(m: Member): String = {
-    m.details.find(d => d.key.equals("OrgDefinedId")) match {
+  protected def findNameInMembers(members: List[Member], metlUser: String): String = {
+    members.find(m => m.name.toLowerCase.equals(metlUser.toLowerCase)) match {
+      case Some(m) =>
+        getMemberDetail(m, "Name")
+      case None => ""
+    }
+  }
+
+  protected def getMemberDetail(m: Member, k: String): String = {
+    m.details.find(d => d.key.equals(k)) match {
       case Some(d) => d.value
       case _ => ""
     }
