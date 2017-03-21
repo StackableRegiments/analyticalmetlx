@@ -225,7 +225,6 @@ var Plugins = (function(){
 					var vidyoClient = undefined; // this should have been constructed already by the onload behaviour
 					var vidyoToken = undefined; // this should have already been set.
 					var vidyoHost = undefined; // this should be... prod.vidyo.io?  I don't know.  I'm still trying to work out where I get that set from.
-					var vidyoDisplayName = "UserSettings" in window ? UserSettings.getUsername() : "unknown";
 
 					var vidyoConnected = false;
 
@@ -509,6 +508,7 @@ var Plugins = (function(){
 					// and network or server-initiated disconnects.
 					var connectToConference = function(vidyoConnector) {
 							// Clear messages
+							var vidyoDisplayName = "UserSettings" in window ? UserSettings.getUsername() : "unknown";
 							console.log("connectToConference:",vidyoConnector,vidyoHost,vidyoToken,vidyoDisplayName,vidyoResourceId);
 							vidyoConnector.Connect({
 									// Take input from options form
