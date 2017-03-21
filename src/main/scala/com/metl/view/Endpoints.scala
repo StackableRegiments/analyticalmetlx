@@ -596,7 +596,12 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       for{
         courseId <- S.param("courseId")
       } yield {
-        PlainTextResponse(ReportHelper.studentActivity(courseId))
+        PlainTextResponse(ReportHelper.studentActivity(courseId),
+          List(("Content-Type", "text/csv"),
+            ("Content-Disposition", "attachment; filename=studentActivity-" + courseId + ".csv"),
+            ("Pragma", "no-cache"),
+            ("Expires", "0")),
+          200)
       }
     })
   }
