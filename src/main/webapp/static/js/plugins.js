@@ -210,20 +210,21 @@ var Plugins = (function(){
 					var videoRendererId = sprintf("vidyoRenderer_%s",_.uniqueId()); // Div ID where the composited video will be rendered, see VidyoConnectorSample.html
 					var videoRenderer = $("<video />",{id:videoRendererId});
 
-					var cameraMuteButton = $("<button />",{});
-					var microphoneMuteButton = $("<button />",{});
+					var cameraMuteButton = $("<button />",{text:"camera mute"});
+					var microphoneMuteButton = $("<button />",{text:"microphone mute"});
 
 					vidyoContainer.append(cameraSelector).append(microphoneSelector).append(speakerSelector).append(cameraMuteButton).append(microphoneMuteButton).append(videoRenderer);
 
 
 					var maximumRemoteParticipants = 16; // Maximum number of participants
 					var compositeViewStyle = "VIDYO_CONNECTORVIEWSTYLE_Default"; // Visual style of the composited renderer
-					var vidyoLogFileFilter = "warning all@VidyoConnector info@VidyoClient";
+					//var vidyoLogFileFilter = "warning all@VidyoConnector info@VidyoClient";
+					var vidyoLogFileFilter = "warning";
 					var vidyoUserData = ""
 
 					var vidyoClient = undefined; // this should have been constructed already by the onload behaviour
 					var vidyoToken = undefined; // this should have already been set.
-					var vidyoHost = undefined; // this should be... um?  I don't know.  I'm still trying to work out where I get that set from.
+					var vidyoHost = undefined; // this should be... prod.vidyo.io?  I don't know.  I'm still trying to work out where I get that set from.
 					var vidyoDisplayName = "UserSettings" in window ? UserSettings.getUsername() : "unknown";
 
 					var vidyoConnected = false;
@@ -234,9 +235,6 @@ var Plugins = (function(){
 
 					function startConferenceFunc(resourceId){
 						if (isEnabled && vidyoToken !== undefined){
-							//vidyoHost = host;
-							//vidyoToken = token;
-							//vidyoDisplayName = displayName;
 							vidyoResourceId = resourceId;
 							return StartVidyoConnector(vidyoClient);
 						}
