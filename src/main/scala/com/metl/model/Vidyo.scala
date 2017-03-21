@@ -24,16 +24,17 @@ class VidyoProvider(applicationId:String,developerKey:String){
 }
 
 class VidyoTokenProvider(applicationId:String,developerKey:String){
+  protected val encoding:String = "UTF-8"
   protected val provisionToken:String = "provision"
   protected val epochSeconds:Long = 62167219200l //long seconds since 0
-  protected val innerDelimiter:String = new String(Array('\0'))
-  protected val outerDelimiter:String = new String(Array('\0'))
-  def generateToken(username:String,secondsUntilExpiry:Long):Tuple2[String,Long] = {
+  protected val innerDelimiter:String = new String(Array(0.toChar))
+  protected val outerDelimiter:String = new String(Array(0.toChar))
+  def generateToken(username:String,secondsUntilExpiry:Long,vCard:String = ""):Tuple2[String,Long] = {
     val expiresInSeconds:Long = epochSeconds + (System.currentTimeMillis() / 1000) + secondsUntilExpiry
     val jid = "%s@%s".format(username,applicationId)
-    val payload = String.join(innerDelimiter,provisionToken,jid,expiresInSeconds.toString)
+    val payload = String.join(innerDelimiter,provisionToken,jid,expiresInSeconds.toString,vCard)
     val finalString = String.join(outerDelimiter,payload,HmacUtils.hmacSha384Hex(developerKey,payload))
     println("generating token:\r\nusername:%s\r\nsecondsUntilExpiry:%s\r\nexpiresInSeconds:%s\r\njid:%s\r\npayload:%s\r\nfinalString:%s".format(username,secondsUntilExpiry,expiresInSeconds,jid,payload,finalString))
-    (new String(Base64.encodeBase64(finalString.getBytes())),expiresInSeconds * 1000)
+    (new String(Base64.encodeBase64(finalString.getBytes(encoding)),encoding),expiresInSeconds * 1000)
   }
 }
