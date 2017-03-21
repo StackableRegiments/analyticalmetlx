@@ -208,7 +208,7 @@ var Plugins = (function(){
 					var speakerSelector = $("<select />",{});	
 
 					var videoRendererId = sprintf("vidyoRenderer_%s",_.uniqueId()); // Div ID where the composited video will be rendered, see VidyoConnectorSample.html
-					var videoRenderer = $("<video />",{id:videoRendererId});
+					var videoRenderer = $("<div />",{id:videoRendererId});
 
 					var cameraMuteButton = $("<button />",{text:"camera mute"});
 					var microphoneMuteButton = $("<button />",{text:"microphone mute"});
@@ -556,6 +556,7 @@ var Plugins = (function(){
 								// All of the VidyoConnector gui and logic is implemented in VidyoConnector.js
 								vidyoClient = VC;
 								//StartVidyoConnector(VC);
+								getVidyoSession();
 								break;
 							case "RETRYING": // The library operating is temporarily paused
 								vidyoClientReady = false;
@@ -635,7 +636,6 @@ var Plugins = (function(){
 					}
 					// Runs when the page loads
 					$(function() {
-						Vidyo.receiveVidyoHostname("prod.vidyo.io");
 					});
 					loadVidyoLibrary();
 					window.Vidyo = {
@@ -644,12 +644,13 @@ var Plugins = (function(){
 						},
 						receiveVidyoSessionToken:function(st){
 							if ("sessionToken" in st){
+								vidyoHost = "prod.vidyo.io";
 								vidyoToken = st.sessionToken;
-								console.log("setting sessionToken:",st,vidyoToken)
+								console.log("setting sessionToken:",st,vidyoToken);
+								if ("Conversations" in window){
+									startConferenceFunc(Conversations.getCurrentConversationJid()); // this is an auto-start behaviour - let's not keep that in once we're working, but I'm adding it while debugging.
+								}
 							}
-						},
-						receiveVidyoHostname:function(vh){
-							vidyoHost = vh;
 						},
 						startConference:function(roomName){
 							startConferenceFunc(roomName); // this is going to be the primary entry point, I think.
@@ -666,7 +667,7 @@ var Plugins = (function(){
 
 					//injected by lift
 					/*
-					var getVidyoSession = function(roomId){
+					var getVidyoSession = function(){
 						receiveVidyoSessionToken(token);
 					}
 					*/
