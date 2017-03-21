@@ -617,20 +617,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   protected lazy val RECEIVE_VIDYO_SESSION_TOKEN = "receiveVidyoSessionToken"
   protected var tokSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   protected var tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
-  protected val vidyoSessions:scala.collection.mutable.HashMap[String,VidyoSession] = new scala.collection.mutable.HashMap[String,VidyoSession]()
   override lazy val functionDefinitions = List(
-    ClientSideFunction("getVidyoSession",List("roomId"),(args) => {
-      val roomId = getArgAsString(args(0))
-      JArray((for {
-        vp <- Globals.vidyo
-      } yield {
-        val s = vidyoSessions.get(roomId).getOrElse({
-          val newSession = vp.generateSession(username)
-          vidyoSessions.put(roomId,newSession)
-          newSession
-        })
-        Extraction.decompose(s)
-      }).toList)
+    ClientSideFunction("getVidyoSession",List.empty[String],(args) => {
+      Globals.vidyo.map(vp => {
+        Extraction.decompose(vp.generateSession(username))
+      }).getOrElse(JObject(Nil))
     },Full(RECEIVE_VIDYO_SESSION_TOKEN)),
     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
       JArray(for {

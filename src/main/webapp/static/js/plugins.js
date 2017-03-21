@@ -213,6 +213,7 @@ var Plugins = (function(){
 					var cameraMuteButton = $("<button />",{});
 					var microphoneMuteButton = $("<button />",{});
 
+					vidyoContainer.append(cameraSelector).append(microphoneSelector).append(speakerSelector).append(cameraMuteButton).append(microphoneMuteButton).append(videoRenderer);
 
 
 					var maximumRemoteParticipants = 16; // Maximum number of participants
@@ -233,15 +234,15 @@ var Plugins = (function(){
 
 					function startConferenceFunc(resourceId){
 						if (isEnabled && vidyoToken !== undefined){
-							vidyoHost = host;
-							vidyoToken = token;
-							vidyoDisplayName = displayName;
+							//vidyoHost = host;
+							//vidyoToken = token;
+							//vidyoDisplayName = displayName;
 							vidyoResourceId = resourceId;
 							return StartVidyoConnector(vidyoClient);
 						}
 					};	
 					// Run StartVidyoConnector when the VidyoClient is successfully loaded
-					var StartVidyoConnector = function(VC) {
+					var StartVidyoConnector = function() {
 							var vidyoConnector;
 							var cameras = {};
 							var microphones = {};
@@ -250,7 +251,7 @@ var Plugins = (function(){
 							var microphonePrivacy = false;
 							var callState = "IDLE"
 
-							VC.CreateVidyoConnector({
+							vidyoClient.CreateVidyoConnector({
 									viewId: videoRendererId, 
 									viewStyle: compositeViewStyle, 
 									remoteParticipants: maximumRemoteParticipants,     
@@ -305,6 +306,7 @@ var Plugins = (function(){
 							});
 
 							function joinLeave() {
+								console.log("joinLeave:",vidyoConnected);
 									// join or leave dependent on the joinLeaveButton, whether it
 									// contains the class callStart of callEnd.
 									if (!vidyoConnected) {
@@ -500,33 +502,36 @@ var Plugins = (function(){
 							});
 					}
 
+					// Connector either fails to connect or a disconnect completed, update UI elements
+					var connectorDisconnected = function(connectionStatus, message) {
+						console.log("vidyo connector disconnected:",connectionStatus,message);
+					}
 					// Attempt to connect to the conference
 					// We will also handle connection failures
 					// and network or server-initiated disconnects.
-					function connectToConference(vidyoConnector) {
+					var connectToConference = function(vidyoConnector) {
 							// Clear messages
 							console.log("connectToConference:",vidyoConnector,vidyoHost,vidyoToken,vidyoDisplayName,vidyoResourceId);
 							vidyoConnector.Connect({
 									// Take input from options form
-									host: vidyoHost,//$("#host").val(),
-									token: vidyoToken,//$("#token").val(),
-									displayName: vidyoDisplayName,//$("#displayName").val(),
-									resourceId: vidyoResourceId,//$("#resourceId").val(),
+									host: vidyoHost,
+									token: vidyoToken,
+									displayName: vidyoDisplayName,
+									resourceId: vidyoResourceId,
 
 									// Define handlers for connection events.
 									onSuccess: function() {
 											// Connected
 											console.log("vidyoConnector.Connect : onSuccess callback received");
-											videoRenderer.addClass("rendererFullScreen").removeClass("rendererWithOptions");
 									},
 									onFailure: function(reason) {
 											// Failed
-											console.error("vidyoConnector.Connect : onFailure callback received");
+											console.error("vidyoConnector.Connect : onFailure callback received",reason);
 											connectorDisconnected("Failed", "");
 									},
 									onDisconnected: function(reason) {
 											// Disconnected
-											console.log("vidyoConnector.Connect : onDisconnected callback received");
+											console.log("vidyoConnector.Connect : onDisconnected callback received",reason);
 											connectorDisconnected("Disconnected", "Call Disconnected: " + reason);
 									}
 							}).then(function(status) {
@@ -542,12 +547,8 @@ var Plugins = (function(){
 							});
 					}
 
-					// Connector either fails to connect or a disconnect completed, update UI elements
-					function connectorDisconnected(connectionStatus, message) {
-						console.log("vidyo connector disconnected:",connectionStatus,message);
-					}
 
-					function onVidyoClientLoaded(status) {
+					window.onVidyoClientLoaded = function(status) {
 						console.log("Status: " + status.state + "Description: " + status.description);
 						switch (status.state) {
 							case "READY":    // The library is operating normally
@@ -637,14 +638,17 @@ var Plugins = (function(){
 					// Runs when the page loads
 					$(function() {
 						Vidyo.receiveVidyoHostname("prod.vidyo.io");
-						loadVidyoLibrary();
 					});
+					loadVidyoLibrary();
 					window.Vidyo = {
 						receiveVidyoEnabled:function(ie){
 							isEnabled = ie;
 						},
 						receiveVidyoSessionToken:function(st){
-							vidyoToken = st;
+							if ("sessionToken" in st){
+								vidyoToken = st.sessionToken;
+								console.log("setting sessionToken:",st,vidyoToken)
+							}
 						},
 						receiveVidyoHostname:function(vh){
 							vidyoHost = vh;
@@ -669,13 +673,15 @@ var Plugins = (function(){
 					}
 					*/
 					return {
-						style:"",
+						style:"#"+videoRendererId+" { width:250px; height:250px; }",
 						load:function(bus,params){
 							//return the html in here.  This fires first, onload
+							console.log("vidyo.load:",vidyoContainer,window.Vidyo,window.receiveVidyoEnabled,window.receiveVidyoSessionToken);
 							return vidyoContainer;
 						},
 						initialize:function(){
 							//any setup in here.  This fires on a context which has already loaded.
+							console.log("vidyo.initialize");
 						}
 					};
 				})(),
