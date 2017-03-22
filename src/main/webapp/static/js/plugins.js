@@ -203,20 +203,12 @@ var Plugins = (function(){
 					var vidyoContainer = $("<div />");
 					var isEnabled = false;
 
-					var cameraSelector = $("<select />",{});
-					var microphoneSelector = $("<select />",{});
-					var speakerSelector = $("<select />",{});	
+					var redrawOptionsDialog = function(){};
 
-					var videoRendererId = sprintf("vidyoRenderer_%s",_.uniqueId()); // Div ID where the composited video will be rendered, see VidyoConnectorSample.html
-					var videoRenderer = $("<div />",{id:videoRendererId});
-
-					var cameraMuteButton = $("<button />",{text:"camera mute"});
-					var microphoneMuteButton = $("<button />",{text:"microphone mute"});
-
-					vidyoContainer.append(cameraSelector).append(microphoneSelector).append(speakerSelector).append(cameraMuteButton).append(microphoneMuteButton).append(videoRenderer);
+					//vidyoContainer.append(cameraSelector).append(microphoneSelector).append(speakerSelector).append(cameraMuteButton).append(microphoneMuteButton);
 
 
-					var maximumRemoteParticipants = 16; // Maximum number of participants
+					var maximumRemoteParticipants = 2; // Maximum number of participants
 					var compositeViewStyle = "VIDYO_CONNECTORVIEWSTYLE_Default"; // Visual style of the composited renderer
 					//var vidyoLogFileFilter = "warning all@VidyoConnector info@VidyoClient";
 					var vidyoLogFileFilter = "warning";
@@ -226,27 +218,336 @@ var Plugins = (function(){
 					var vidyoToken = undefined; // this should have already been set.
 					var vidyoHost = undefined; // this should be... prod.vidyo.io?  I don't know.  I'm still trying to work out where I get that set from.
 
-					var vidyoConnected = false;
 
 					var sessions = {};
 
-					var vidyoResourceId = undefined;
+					var cameras = {};
+					var selectedCamera = undefined;
+					var microphones = {};
+					var selectedMicrophone = undefined;
+					var speakers = {};
+					var selectedSpeaker = undefined;
+					var cameraPrivacy = false;
+					var microphonePrivacy = false;
 
-					function startConferenceFunc(resourceId){
-						if (isEnabled && vidyoToken !== undefined){
-							vidyoResourceId = resourceId;
-							return StartVidyoConnector(vidyoClient);
-						}
-					};	
+					var conferences = {};
+
+					var options = $("<button />",{
+						text:"options"
+					}).on("click",function(){
+
+						var uniqId = sprintf("vidyoOptionsDialog_%s",_.uniqueId());
+						var outerDiv = $("<div/>",{
+								id:uniqId
+						});
+						var optionsAlert = $.jAlert({
+								title:"Change Vidyo options",
+								width:"80%",
+								content:outerDiv[0].outerHTML,
+								onClose:function(){
+									redrawOptionsDialog = function(){};
+								}
+						});
+						var cameraSelector = $("<select />",{});
+						var microphoneSelector = $("<select />",{});
+						var speakerSelector = $("<select />",{});	
+
+						var cameraMuteButton = $("<button />",{text:"camera mute"});
+						var microphoneMuteButton = $("<button />",{text:"microphone mute"});
+						
+						var innerDiv = $("#"+uniqId);
+						innerDiv.append(cameraSelector).append(microphoneSelector).append(speakerSelector).append(cameraMuteButton).append(microphoneMuteButton);
+
+						cameraMuteButton.click(function() {
+								// CameraPrivacy button clicked
+								cameraPrivacy = !cameraPrivacy;
+								_.forEach(conferences,function(conference){
+									conference.muteCamera(cameraPrivacy);
+								});
+								if (cameraPrivacy) {
+										cameraMuteButton.addClass("cameraOff").removeClass("cameraOn");
+								} else {
+										cameraMuteButton.addClass("cameraOn").removeClass("cameraOff");
+								}
+						});
+
+						// Handle the microphone mute button, toggle between mute and unmute audio.
+						microphoneMuteButton.click(function() {
+								// MicrophonePrivacy button clicked
+								microphonePrivacy = !microphonePrivacy;
+								_.forEach(conferences,function(conference){
+									conference.muteMicrophone(microphonePrivacy);
+								});
+								if (microphonePrivacy) {
+										microphoneMuteButton.addClass("microphoneOff").removeClass("microphoneOn");
+								} else {
+										microphoneMuteButton.addClass("microphoneOn").removeClass("microphoneOff");
+								}
+						});
+
+
+						var redrawState = function(){
+							cameraSelector.html(_.map(cameras,function(camera,cameraId){
+								return $("<option />",{value:cameraId,text:camera.name}).prop("selected",cameraId == selectedCamera);
+							}));
+							microphoneSelector.html(_.map(microphones,function(microphone,microphoneId){	
+								return $("<option />",{value:microphoneId,text:microphone.name}).prop("selected",microphoneId == selectedMicrophone);
+							}));
+							speakerSelector.html(_.map(speakers,function(speaker,speakerId){
+								return $("<option />",{value:speakerId,text:speaker.name}).prop("selected",speakerId == selectedSpeaker);
+							}));
+						};
+						redrawState();
+						redrawOptionsDialog = redrawState;
+						cameraSelector.change(function() {
+								// Camera selected form the drop-down menu
+								cameraSelector.find("option:selected").each(function() {
+										camera = cameras[$(this).val()];
+										_.forEach(conferences,function(conference){
+											conference.getVidyoConnector().SelectLocalCamera({
+													localCamera: camera
+											}).then(function() {
+													console.log("SelectCamera Success");
+											}).catch(function() {
+													console.error("SelectCamera Failed");
+											});
+										});
+								});
+						});
+
+						// Hook up microphone selector functions for each of the available microphones
+						microphoneSelector.change(function() {
+								// Microphone selected form the drop-down menu
+								microphoneSelector.find("option:selected").each(function() {
+										microphone = microphones[$(this).val()];
+										_.forEach(conferences,function(conference){
+											conference.getVidyoConnector().SelectLocalMicrophone({
+													localMicrophone: microphone
+											}).then(function() {
+													console.log("SelectMicrophone Success");
+											}).catch(function() {
+													console.error("SelectMicrophone Failed");
+											});
+										});
+								});
+						});
+
+						// Hook up speaker selector functions for each of the available speakers
+						speakerSelector.change(function() {
+								// Speaker selected form the drop-down menu
+								speakerSelector.find("option:selected").each(function() {
+										speaker = speakers[$(this).val()];
+										_.forEach(conferences,function(conference){
+											conference.getVidyoConnector().SelectLocalSpeaker({
+													localSpeaker: speaker
+											}).then(function() {
+													console.log("SelectSpeaker Success");
+											}).catch(function() {
+													console.error("SelectSpeaker Failed");
+											});
+										});
+								});
+						});
+					});
+					vidyoContainer.append(options);
+
 					// Run StartVidyoConnector when the VidyoClient is successfully loaded
-					var StartVidyoConnector = function() {
+					var StartVidyoConnector = function(vidyoResourceId) {
+							var vidyoConnected = false;
+							var videoRendererId = sprintf("vidyoRenderer_%s",_.uniqueId()); // Div ID where the composited video will be rendered, see VidyoConnectorSample.html
+							var videoRenderer = $("<div />",{id:videoRendererId,height:"250px",width:"250px"});
+							vidyoContainer.append(videoRenderer);
+
 							var vidyoConnector;
-							var cameras = {};
-							var microphones = {};
-							var speakers = {};
-							var cameraPrivacy = false;
-							var microphonePrivacy = false;
 							var callState = "IDLE"
+							var joinLeave = function() {
+								console.log("joinLeave:",vidyoConnected);
+									// join or leave dependent on the joinLeaveButton, whether it
+									// contains the class callStart of callEnd.
+								if (!vidyoConnected) {
+									vidyoConnected = true;
+									connectFunc();
+								} else {
+									disconnectFunc();
+								}
+							}
+							var connectFunc = function() {
+									// Clear messages
+									var vidyoDisplayName = "UserSettings" in window ? UserSettings.getUsername() : "unknown";
+									console.log("connectToConference:",vidyoConnector,vidyoHost,vidyoToken,vidyoDisplayName,vidyoResourceId);
+									vidyoConnector.Connect({
+											// Take input from options form
+											host: vidyoHost,
+											token: vidyoToken,
+											displayName: vidyoDisplayName,
+											resourceId: vidyoResourceId,
+
+											// Define handlers for connection events.
+											onSuccess: function() {
+													// Connected
+													console.log("vidyoConnector.Connect : onSuccess callback received");
+											},
+											onFailure: function(reason) {
+													// Failed
+													console.error("vidyoConnector.Connect : onFailure callback received",reason);
+													connectorDisconnected("Failed", "");
+											},
+											onDisconnected: function(reason) {
+													// Disconnected
+													console.log("vidyoConnector.Connect : onDisconnected callback received",reason);
+													connectorDisconnected("Disconnected", "Call Disconnected: " + reason);
+											}
+									}).then(function(status) {
+											if (status) {
+													console.log("Connect Success");
+											} else {
+													console.error("Connect Failed");
+													connectorDisconnected("Failed", "");
+											}
+									}).catch(function() {
+											console.error("Connect Failed");
+											connectorDisconnected("Failed", "");
+									});
+							}
+
+
+							var disconnectFunc = function(){
+								vidyoConnector.Disconnect().then(function() {
+									vidyoConnected = false;
+										console.log("Disconnect Success");
+								}).catch(function() {
+										console.error("Disconnect Failure");
+								});
+							};
+
+							var registerDeviceListeners = function() {
+									// Handle appearance and disappearance of camera devices in the system
+									vidyoConnector.RegisterLocalCameraEventListener({
+											onAdded: function(localCamera) {
+													// New camera is available
+													var safeCameraId = window.btoa(localCamera.id);
+													cameras[safeCameraId] = localCamera;
+													redrawOptionsDialog();
+											},
+											onRemoved: function(localCamera) {
+													// Existing camera became unavailable
+													var safeCameraId = window.btoa(localCamera.id);
+													delete cameras[safeCameraId];
+													redrawOptionsDialog();
+											},
+											onSelected: function(localCamera) {
+													// Camera was selected/unselected by you or automatically
+													if(localCamera) {
+														var safeCameraId = window.btoa(localCamera.id);
+														selectedCamera = safeCameraId;
+													} else {
+														selectedCamera = undefined;
+													}
+													redrawOptionsDialog();
+											},
+											onStateUpdated: function(localCamera, state) {
+													// Camera state was updated
+											}
+									}).then(function() {
+											console.log("RegisterLocalCameraEventListener Success");
+									}).catch(function() {
+											console.error("RegisterLocalCameraEventListener Failed");
+									});
+
+									// Handle appearance and disappearance of microphone devices in the system
+									vidyoConnector.RegisterLocalMicrophoneEventListener({
+											onAdded: function(localMicrophone) {
+													// New microphone is available
+													var safeMicId = window.btoa(localMicrophone.id);
+													microphones[safeMicId] = localMicrophone;
+													redrawOptionsDialog();
+											},
+											onRemoved: function(localMicrophone) {
+													// Existing microphone became unavailable
+													var safeMicId = window.btoa(localMicrophone.id);
+													delete microphones[safeMicId];
+													redrawOptionsDialog();
+											},
+											onSelected: function(localMicrophone) {
+													// Microphone was selected/unselected by you or automatically
+													if (localMicrophone){
+														var safeMicId = window.btoa(localMicrophone.id);
+														selectedMicrophone = safeMicId;
+													} else {
+														selectedMicrophone = undefined;
+													}
+													redrawOptionsDialog();
+											},
+											onStateUpdated: function(localMicrophone, state) {
+													// Microphone state was updated
+											}
+									}).then(function() {
+											console.log("RegisterLocalMicrophoneEventListener Success");
+									}).catch(function() {
+											console.error("RegisterLocalMicrophoneEventListener Failed");
+									});
+
+									// Handle appearance and disappearance of speaker devices in the system
+									vidyoConnector.RegisterLocalSpeakerEventListener({
+											onAdded: function(localSpeaker) {
+													// New speaker is available
+													var safeSpeakerId = window.btoa(localSpeaker.id);
+													speakers[safeSpeakerId] = localSpeaker;
+													redrawOptionsDialog();
+											},
+											onRemoved: function(localSpeaker) {
+													// Existing speaker became unavailable
+													var safeSpeakerId = window.btoa(localSpeaker.id);
+													delete speakers[safeSpeakerId];
+													redrawOptionsDialog();
+											},
+											onSelected: function(localSpeaker) {
+													// Speaker was selected/unselected by you or automatically
+													if(localSpeaker){
+														var safeSpeakerId = window.btoa(localSpeaker.id);
+														selectedSpeaker = safeSpeakerId;
+													} else {
+														selectedSpeaker = undefined;
+													}
+													redrawOptionsDialog();
+											},
+											onStateUpdated: function(localSpeaker, state) {
+													// Speaker state was updated
+											}
+									}).then(function() {
+											console.log("RegisterLocalSpeakerEventListener Success");
+									}).catch(function() {
+											console.error("RegisterLocalSpeakerEventListener Failed");
+									});
+							}
+							
+							var handleParticipantChange = function() {
+									vidyoConnector.RegisterParticipantEventListener({
+											onJoined: function(participant) {
+													getParticipantName(participant, function(name) {
+														console.log("vidyo particpantJoined:",participant,name);
+													});
+											},
+											onLeft: function(participant) {
+													getParticipantName(participant, function(name) {
+														console.log("vidyo particpantLeft:",participant,name);
+													});
+											},
+											onDynamicChanged: function(participants, cameras) {
+													console.log("vidyo onDynamicsChanged:",participants,cameras);
+													// Order of participants changed
+											},
+											onLoudestChanged: function(participant, audioOnly) {
+													getParticipantName(participant, function(name) {
+															console.log("vidyo onLoudestChanged:",participant,audioOnly,name);
+													});
+											}
+									}).then(function() {
+											console.log("RegisterParticipantEventListener Success");
+									}).catch(function() {
+											console.err("RegisterParticipantEventListener Failed");
+									});
+							}
 
 							vidyoClient.CreateVidyoConnector({
 									viewId: videoRendererId, 
@@ -257,15 +558,14 @@ var Plugins = (function(){
 									userData:vidyoUserData
 							}).then(function(vc) {
 									vidyoConnector = vc;
-									registerDeviceListeners(vidyoConnector, cameras, microphones, speakers);
-									handleDeviceChange(vidyoConnector, cameras, microphones, speakers);
-									handleParticipantChange(vidyoConnector);
-
+									registerDeviceListeners();
+									handleParticipantChange();
 									joinLeave();
 							}).catch(function(err) {
 									console.error("CreateVidyoConnector Failed " + err);
 							});
 
+							/*
 							// Handle the camera privacy button, toggle between show and hide.
 							cameraMuteButton.click(function() {
 									// CameraPrivacy button clicked
@@ -301,163 +601,48 @@ var Plugins = (function(){
 											console.error("SetMicrophonePrivacy Failed");
 									});
 							});
-
-							function joinLeave() {
-								console.log("joinLeave:",vidyoConnected);
-									// join or leave dependent on the joinLeaveButton, whether it
-									// contains the class callStart of callEnd.
-									if (!vidyoConnected) {
-											vidyoConnected = true;
-											connectToConference(vidyoConnector);
-									} else {
-											vidyoConnector.Disconnect().then(function() {
-												vidyoConnected = false;
-													console.log("Disconnect Success");
-											}).catch(function() {
-													console.error("Disconnect Failure");
-											});
-									}
-							}
-					}
-
-					function registerDeviceListeners(vidyoConnector, cameras, microphones, speakers) {
-							// Handle appearance and disappearance of camera devices in the system
-							vidyoConnector.RegisterLocalCameraEventListener({
-									onAdded: function(localCamera) {
-											// New camera is available
-											var safeCameraId = window.btoa(localCamera.id);
-											cameraSelector.append($("<option />",{value:safeCameraId,text:localCamera.name}));
-											cameras[safeCameraId] = localCamera;
-									},
-									onRemoved: function(localCamera) {
-											// Existing camera became unavailable
-											var safeCameraId = window.btoa(localCamera.id);
-											cameraSelector.find(sprintf("option[value='%s']",safeCameraId)).remove();
-											delete cameras[window.btoa(localCamera.id)];
-									},
-									onSelected: function(localCamera) {
-											// Camera was selected/unselected by you or automatically
-											var safeCameraId = window.btoa(localCamera.id);
-											if(localCamera) {
-													cameraSelector.find(sprintf("option[value='%s']",safeCameraId)).prop('selected', true);
-											}
-									},
-									onStateUpdated: function(localCamera, state) {
-											// Camera state was updated
-									}
-							}).then(function() {
-									console.log("RegisterLocalCameraEventListener Success");
-							}).catch(function() {
-									console.error("RegisterLocalCameraEventListener Failed");
-							});
-
-							// Handle appearance and disappearance of microphone devices in the system
-							vidyoConnector.RegisterLocalMicrophoneEventListener({
-									onAdded: function(localMicrophone) {
-											// New microphone is available
-											var safeMicId = window.btoa(localMicrophone.id);
-											microphoneSelector.append($("<option />",{value:safeMicId,text:localMicrophone.name}));
-											microphones[safeMicId] = localMicrophone;
-									},
-									onRemoved: function(localMicrophone) {
-											// Existing microphone became unavailable
-											var safeMicId = window.btoa(localMicrophone.id);
-											microphoneSelector.find(sprintf("option[value='%s']",safeMicId)).remove();
-											delete microphones[safeMicId];
-									},
-									onSelected: function(localMicrophone) {
-											// Microphone was selected/unselected by you or automatically
-											var safeMicId = window.btoa(localMicrophone.id);
-											if(localMicrophone)
-													microphoneSelector.find(sprintf("option[value='%s']",safeMicId)).prop('selected', true);
-									},
-									onStateUpdated: function(localMicrophone, state) {
-											// Microphone state was updated
-									}
-							}).then(function() {
-									console.log("RegisterLocalMicrophoneEventListener Success");
-							}).catch(function() {
-									console.error("RegisterLocalMicrophoneEventListener Failed");
-							});
-
-							// Handle appearance and disappearance of speaker devices in the system
-							vidyoConnector.RegisterLocalSpeakerEventListener({
-									onAdded: function(localSpeaker) {
-											// New speaker is available
-											var safeSpeakerId = window.btoa(localSpeaker.id);
-											speakerSelector.append($("<option />",{value:safeSpeakerId,text:localSpeaker.name}));
-											speakers[safeSpeakerId] = localSpeaker;
-									},
-									onRemoved: function(localSpeaker) {
-											// Existing speaker became unavailable
-											var safeSpeakerId = window.btoa(localSpeaker.id);
-											speakerSelector.find(sprintf("option[value='%s']",safeSpeakerId)).remove();
-											delete speakers[safeSpeakerId];
-									},
-									onSelected: function(localSpeaker) {
-											// Speaker was selected/unselected by you or automatically
-											var safeSpeakerId = window.btoa(localSpeaker.id);
-											if(localSpeaker)
-													speakerSelector.find(sprintf("option[value='%s']",safeSpeakerId)).prop('selected', true);
-									},
-									onStateUpdated: function(localSpeaker, state) {
-											// Speaker state was updated
-									}
-							}).then(function() {
-									console.log("RegisterLocalSpeakerEventListener Success");
-							}).catch(function() {
-									console.error("RegisterLocalSpeakerEventListener Failed");
-							});
-					}
-
-					function handleDeviceChange(vidyoConnector, cameras, microphones, speakers) {
-							// Hook up camera selector functions for each of the available cameras
-							cameraSelector.change(function() {
-									// Camera selected form the drop-down menu
-									cameraSelector.find("option:selected").each(function() {
-											camera = cameras[$(this).val()];
-											vidyoConnector.SelectLocalCamera({
-													localCamera: camera
-											}).then(function() {
-													console.log("SelectCamera Success");
-											}).catch(function() {
-													console.error("SelectCamera Failed");
-											});
+							*/
+							return {
+								getVidyoConnector:function(){ 
+									return vidyoConnector;
+								},
+								getConnected:function(){
+									return vidyoConnected;
+								},
+								toggleConnection:function(){
+									return joinLeave();
+								},
+								connect:connectFunc,
+								disconnect:disconnectFunc,
+								muteCamera:function(muted){
+									vidyoConnector.SetCameraPrivacy({
+											privacy: muted
+									}).then(function() {
+											console.log("SetCameraPrivacy Success",muted);
+									}).catch(function() {
+											console.error("SetCameraPrivacy Failed");
 									});
-							});
 
-							// Hook up microphone selector functions for each of the available microphones
-							microphoneSelector.change(function() {
-									// Microphone selected form the drop-down menu
-									microphoneSelector.find("option:selected").each(function() {
-											microphone = microphones[$(this).val()];
-											vidyoConnector.SelectLocalMicrophone({
-													localMicrophone: microphone
-											}).then(function() {
-													console.log("SelectMicrophone Success");
-											}).catch(function() {
-													console.error("SelectMicrophone Failed");
-											});
+								},
+								muteMicrophone:function(muted){
+									vidyoConnector.SetMicrophonePrivacy({
+											privacy: muted
+									}).then(function() {
+											console.log("SetMicrophonePrivacy Success",muted);
+									}).catch(function() {
+											console.error("SetMicrophonePrivacy Failed");
 									});
-							});
 
-							// Hook up speaker selector functions for each of the available speakers
-							speakerSelector.change(function() {
-									// Speaker selected form the drop-down menu
-									speakerSelector.find("option:selected").each(function() {
-											speaker = speakers[$(this).val()];
-											vidyoConnector.SelectLocalSpeaker({
-													localSpeaker: speaker
-											}).then(function() {
-													console.log("SelectSpeaker Success");
-											}).catch(function() {
-													console.error("SelectSpeaker Failed");
-											});
-									});
-							});
+								}
+							};
 					}
-
-					function getParticipantName(participant, cb) {
+					var startConferenceFunc = function(resourceId){
+						if (isEnabled && vidyoToken !== undefined){
+							var vc = StartVidyoConnector(resourceId,vidyoClient);
+							conferences[resourceId] = vc;
+						}
+					};	
+					var getParticipantName = function(participant, cb) {
 						if (!participant) {
 								cb("Undefined");
 						} else if (participant.name) {
@@ -470,35 +655,6 @@ var Plugins = (function(){
 							});
 						}
 					}
-
-					function handleParticipantChange(vidyoConnector) {
-							vidyoConnector.RegisterParticipantEventListener({
-									onJoined: function(participant) {
-											getParticipantName(participant, function(name) {
-												console.log("vidyo particpantJoined:",participant,name);
-											});
-									},
-									onLeft: function(participant) {
-											getParticipantName(participant, function(name) {
-												console.log("vidyo particpantLeft:",participant,name);
-											});
-									},
-									onDynamicChanged: function(participants, cameras) {
-											console.log("vidyo onDynamicsChanged:",participants,cameras);
-											// Order of participants changed
-									},
-									onLoudestChanged: function(participant, audioOnly) {
-											getParticipantName(participant, function(name) {
-													console.log("vidyo onLoudestChanged:",participant,audioOnly,name);
-											});
-									}
-							}).then(function() {
-									console.log("RegisterParticipantEventListener Success");
-							}).catch(function() {
-									console.err("RegisterParticipantEventListener Failed");
-							});
-					}
-
 					// Connector either fails to connect or a disconnect completed, update UI elements
 					var connectorDisconnected = function(connectionStatus, message) {
 						console.log("vidyo connector disconnected:",connectionStatus,message);
@@ -506,44 +662,6 @@ var Plugins = (function(){
 					// Attempt to connect to the conference
 					// We will also handle connection failures
 					// and network or server-initiated disconnects.
-					var connectToConference = function(vidyoConnector) {
-							// Clear messages
-							var vidyoDisplayName = "UserSettings" in window ? UserSettings.getUsername() : "unknown";
-							console.log("connectToConference:",vidyoConnector,vidyoHost,vidyoToken,vidyoDisplayName,vidyoResourceId);
-							vidyoConnector.Connect({
-									// Take input from options form
-									host: vidyoHost,
-									token: vidyoToken,
-									displayName: vidyoDisplayName,
-									resourceId: vidyoResourceId,
-
-									// Define handlers for connection events.
-									onSuccess: function() {
-											// Connected
-											console.log("vidyoConnector.Connect : onSuccess callback received");
-									},
-									onFailure: function(reason) {
-											// Failed
-											console.error("vidyoConnector.Connect : onFailure callback received",reason);
-											connectorDisconnected("Failed", "");
-									},
-									onDisconnected: function(reason) {
-											// Disconnected
-											console.log("vidyoConnector.Connect : onDisconnected callback received",reason);
-											connectorDisconnected("Disconnected", "Call Disconnected: " + reason);
-									}
-							}).then(function(status) {
-									if (status) {
-											console.log("Connect Success");
-									} else {
-											console.error("Connect Failed");
-											connectorDisconnected("Failed", "");
-									}
-							}).catch(function() {
-									console.error("Connect Failed");
-									connectorDisconnected("Failed", "");
-							});
-					}
 
 
 					window.onVidyoClientLoaded = function(status) {
@@ -555,7 +673,6 @@ var Plugins = (function(){
 								// After the VidyoClient is successfully initialized a global VC object will become available 
 								// All of the VidyoConnector gui and logic is implemented in VidyoConnector.js
 								vidyoClient = VC;
-								//StartVidyoConnector(VC);
 								getVidyoSession();
 								break;
 							case "RETRYING": // The library operating is temporarily paused
@@ -654,6 +771,9 @@ var Plugins = (function(){
 						},
 						startConference:function(roomName){
 							startConferenceFunc(roomName); // this is going to be the primary entry point, I think.
+						},
+						getConferences:function(){
+							return conferences;
 						}
 					};
 					window.receiveVidyoEnabled = function(isEnabled){
@@ -672,7 +792,7 @@ var Plugins = (function(){
 					}
 					*/
 					return {
-						style:"#"+videoRendererId+" { width:250px; height:250px; }",
+						style:"",
 						load:function(bus,params){
 							//return the html in here.  This fires first, onload
 							console.log("vidyo.load:",vidyoContainer,window.Vidyo,window.receiveVidyoEnabled,window.receiveVidyoSessionToken);
