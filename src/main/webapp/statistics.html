@@ -38,7 +38,9 @@
             return table;
         };
         var updateActivity = function (a) {
-            $('#studentActivity').html(createTable(a));
+            var div = $("<div/>");
+            div.append($("<a href='/studentActivity?courseId=" + a.courseId + "'>Download as CSV</a>")).append(createTable(a));
+            $('#studentActivity').html(div);
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
             $('#timestampActivity').html('Last run: ' + t + '<br/>Results are cached for 1 minute');
@@ -77,6 +79,7 @@
                         <span class="lift:studentActivity">
                             <label for="course" class="directlyOnBackground">Select Course:</label>
                             <select id="course"></select>
+                            <span id="downloadLink" class="directlyOnBackground"/>
                             <div class="directlyOnBackground">
                                 <span id="studentActivity"/>
                             </div>
