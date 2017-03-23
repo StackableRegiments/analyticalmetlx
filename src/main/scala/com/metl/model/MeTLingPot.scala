@@ -313,7 +313,8 @@ class SmartGroupsProvider(override val storeId:String, override val name:String,
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = groupSet.members
   override def getGroupsFor(orgUnit:OrgUnit,groupSet:GroupSet,members:List[Member] = Nil):List[Group] = groupSet.groups
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet,group:Group):List[Member] = group.members
-  
+
+  override def getAllOrgUnits:List[OrgUnit] = List()
   override def getOrgUnit(name:String):Option[OrgUnit] = None
   override def getPersonalDetailsFor(userData:LiftAuthStateData):List[Detail] = userData.informationGroups.toList
 
