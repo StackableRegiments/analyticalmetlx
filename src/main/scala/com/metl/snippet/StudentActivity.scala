@@ -22,8 +22,7 @@ class StudentActivity extends Logger {
   protected val blankOption: (String, String) = "" -> ""
 
   def getAllOptions: List[(String, String)] = {
-    blankOption ::
-      getCoursesForAllConversations.map(c => (c._2, c._3))
+    blankOption :: getCoursesForAllConversations
   }
 
   def handler(courseId: String): JsCmd = {
@@ -48,21 +47,22 @@ class StudentActivity extends Logger {
     ))
   }
 
-  protected def getCoursesForAllConversations: List[(String, String, String)] = {
+  protected def getCoursesForAllConversations: List[(String, String)] = {
     println("Loading all conversations")
     val start = new Date().getTime
     val allConversations = serverConfig.getAllConversations
 
-    val conversations = allConversations.filter(c => c.foreignRelationship.nonEmpty).sortBy(c => c.lastAccessed).map(c => {
+    var courses = Map[(String, String), String]()
+    allConversations.filter(c => c.foreignRelationship.nonEmpty).sortBy(c => c.lastAccessed).foreach(c => {
       val relationship = c.foreignRelationship.get
-      relationship.displayName match {
-        case Some(s) => Some((relationship.system, relationship.key, s))
-        case None => Some((relationship.system, relationship.key, c.subject))
-        case _ => None
-      }
+      courses = courses + ((relationship.system, relationship.key) -> {
+        relationship.displayName match {
+          case Some(s) => s
+          case None => c.subject
+        }
+      })
     })
-    println("Loaded all " + conversations.length + " conversations from MeTL in " + (new Date().getTime - start) / 1000 + "s")
-
-    conversations.filter(o => o.nonEmpty).map(o => o.get)
+    println("Loaded " + allConversations.length + " conversations (" + courses.size + " courses) from MeTL in " + (new Date().getTime - start) / 1000 + "s")
+    courses.map(c => (c._1._2, c._2 + " (" + c._1._2 + ")")).toList.sortBy(c => c._2.toLowerCase)
   }
 }
