@@ -471,6 +471,9 @@ class D2LInterface(d2lBaseUrl:String,appId:String,appKey:String,userId:String,us
   def getUser(userContext:ID2LUserContext,userId:String):Option[D2LUser] = {
     fetchFromD2L[D2LUser](userContext.createAuthenticatedUri("/d2l/api/lp/%s/users/%s".format(lpApiVersion,userId),"GET"),true)
   }
+  def getAllOrgUnits(userContext:ID2LUserContext):List[D2LOrgUnit] = {
+    getOrgUnits(userContext)
+  }
   def getOrgUnit(userContext:ID2LUserContext,orgUnit:String):Option[D2LOrgUnit] = {
     fetchFromD2L[D2LOrgUnit](userContext.createAuthenticatedUri("/d2l/api/lp/%s/orgstructure/%s".format(lpApiVersion,orgUnit),"GET"),true)
   }
@@ -686,6 +689,12 @@ class D2LGroupsProvider(override val storeId:String,override val name:String, d2
     val groupsComplete = new java.util.Date().getTime
     warn("completed D2L auth %s %s".format(userData.username,groupsComplete - start))
     res
+  }
+  override def getAllOrgUnits:List[OrgUnit] = {
+    val uc = interface.getUserContext
+    interface.getAllOrgUnits(uc).map(en => {
+      OrgUnit(en.Type.Name,en.Name,Nil,Nil,Some(ForeignRelationship(storeId,en.Identifier.toString,en.Code)))
+    })
   }
   override def getOrgUnit(orgUnitId:String):Option[OrgUnit] = {
     val uc = interface.getUserContext

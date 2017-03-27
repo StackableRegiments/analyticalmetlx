@@ -1,30 +1,32 @@
 package com.metl.snippet
 
 import java.io.StringReader
+import java.util.Date
 
 import com.github.tototoshi.csv.CSVReader
-import com.metl.liftAuthenticator.OrgUnit
-import com.metl.model.{D2LGroupsProvider, Globals}
-import com.metl.view.ReportHelper
+import com.metl.data.ServerConfiguration
+import com.metl.view.StudentActivityReportHelper
 import net.liftweb.common.{Empty, Logger}
 import net.liftweb.http.SHtml._
 import net.liftweb.http.js.JE.Call
 import net.liftweb.http.js.JsCmd
+import net.liftweb.http.js.JsCmds.{OnLoad, Script}
 import net.liftweb.json.JsonAST.{JArray, JField, JObject, JString}
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 
 class StudentActivity extends Logger {
 
-  val blankOption: (String, String) = "" -> ""
+  protected lazy val serverConfig: ServerConfiguration = ServerConfiguration.default
 
-  def getOptions: List[(String, String)] = {
-    blankOption ::
-      getCoursesForCurrentUser.getOrElse(List()).map(c => (c.foreignRelationship.get.key.toString, c.name))
+  protected val blankOption: (String, String) = "" -> ""
+
+  def getAllOptions: List[(String, String)] = {
+    blankOption :: getCoursesForAllConversations
   }
 
   def handler(courseId: String): JsCmd = {
-    val stringReader = new StringReader(ReportHelper.studentActivity(courseId))
+    val stringReader = new StringReader(StudentActivityReportHelper.studentActivity(courseId))
     val headers = CSVReader.open(stringReader).allWithOrderedHeaders()
     stringReader.close()
 
@@ -32,27 +34,35 @@ class StudentActivity extends Logger {
   }
 
   def render: CssBindFunc = {
-    "#course" #> ajaxSelect(getOptions, Empty, handler)
+    "#courses" #> ajaxSelect(getAllOptions, Empty, handler) &
+      "#loaderSelectize" #> Script(OnLoad(Call("selectize").cmd))
   }
 
   def createHtmlTable(results: (List[String], List[Map[String, String]])): JObject = {
     JObject(List(
       JField("headers", JArray(results._1.map(h => JString(h)))),
-      JField("data", JArray(results._2.filter(r => r.get("ConversationID").nonEmpty || r.get("D2LStudentID").nonEmpty ).map(r => {
+      JField("data", JArray(results._2.filter(r => r.get("ConversationID").nonEmpty || r.get("D2LStudentID").nonEmpty).map(r => {
         JObject(r.toList.map(kv => JField(kv._1, JString(kv._2))))
       })))
     ))
   }
 
-  /** Retrieve from D2L. */
-  private def getCoursesForCurrentUser: Option[List[OrgUnit]] = {
-    val m = Globals.getGroupsProviders.flatMap {
-      case g: D2LGroupsProvider if g.canQuery && g.canRestrictConversations =>
-        val groups = g.getGroupsFor(Globals.casState.is)
-        println("Loaded " + groups.length + " groups from system " + g.storeId)
-        groups
-      case _ => None
-    }
-    Some(m)
+  protected def getCoursesForAllConversations: List[(String, String)] = {
+    println("Loading all conversations")
+    val start = new Date().getTime
+    val allConversations = serverConfig.getAllConversations
+
+    var courses = Map[(String, String), String]()
+    allConversations.filter(c => c.foreignRelationship.nonEmpty).sortBy(c => c.lastAccessed).foreach(c => {
+      val relationship = c.foreignRelationship.get
+      courses = courses + ((relationship.system, relationship.key) -> {
+        relationship.displayName match {
+          case Some(s) => s
+          case None => c.subject
+        }
+      })
+    })
+    println("Loaded " + allConversations.length + " conversations (" + courses.size + " courses) from MeTL in " + (new Date().getTime - start) / 1000 + "s")
+    courses.map(c => (c._1._2, c._2 + " (" + c._1._2 + ")")).toList.sortBy(c => c._2.toLowerCase)
   }
 }
