@@ -52,11 +52,12 @@ class StudentActivity extends Logger {
     val start = new Date().getTime
     val allConversations = serverConfig.getAllConversations
 
-    var courses = Map[(String, String), String]()
-    allConversations.filter(c => c.foreignRelationship.nonEmpty).sortBy(c => c.lastAccessed).foreach(c => {
+    val tuples = allConversations.filter(c => c.foreignRelationship.nonEmpty).sortBy(c => c.lastAccessed).map(c => {
       val relationship = c.foreignRelationship.get
-      courses = courses + ((relationship.system, relationship.key) -> relationship.displayName.getOrElse(c.subject))
+      ((relationship.system, relationship.key), relationship.displayName.getOrElse(c.subject))
     })
+    val courses: Map[(String, String), String] = Map(tuples: _*)
+
     info("Loaded " + allConversations.length + " conversations (" + courses.size + " courses) from MeTL in " + (new Date().getTime - start) / 1000 + "s")
     courses.map(c => (c._1._2, c._2 + " (" + c._1._2 + ")")).toList.sortBy(c => c._2.toLowerCase)
   }
