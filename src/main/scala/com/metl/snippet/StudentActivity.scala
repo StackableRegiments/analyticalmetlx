@@ -48,7 +48,7 @@ class StudentActivity extends Logger {
   }
 
   protected def getCoursesForAllConversations: List[(String, String)] = {
-    println("Loading all conversations")
+    info("Loading all conversations")
     val start = new Date().getTime
     val allConversations = serverConfig.getAllConversations
 
@@ -62,7 +62,7 @@ class StudentActivity extends Logger {
         }
       })
     })
-    println("Loaded " + allConversations.length + " conversations (" + courses.size + " courses) from MeTL in " + (new Date().getTime - start) / 1000 + "s")
+    info("Loaded " + allConversations.length + " conversations (" + courses.size + " courses) from MeTL in " + (new Date().getTime - start) / 1000 + "s")
     courses.map(c => (c._1._2, c._2 + " (" + c._1._2 + ")")).toList.sortBy(c => c._2.toLowerCase)
   }
 }
