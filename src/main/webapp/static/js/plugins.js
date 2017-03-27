@@ -208,7 +208,7 @@ var Plugins = (function(){
 					//vidyoContainer.append(cameraSelector).append(microphoneSelector).append(speakerSelector).append(cameraMuteButton).append(microphoneMuteButton);
 
 
-					var maximumRemoteParticipants = 2; // Maximum number of participants
+					var maximumRemoteParticipants = 16; // Maximum number of participants
 					var compositeViewStyle = "VIDYO_CONNECTORVIEWSTYLE_Default"; // Visual style of the composited renderer
 					//var vidyoLogFileFilter = "warning all@VidyoConnector info@VidyoClient";
 					var vidyoLogFileFilter = "warning";
