@@ -59,6 +59,9 @@ class StudentActivity extends Logger {
     val courses: Map[(String, String), String] = Map(tuples: _*)
 
     info("Loaded " + allConversations.length + " conversations (" + courses.size + " courses) from MeTL in " + (new Date().getTime - start) / 1000 + "s")
-    courses.map(c => (c._1._2, c._2 + " (" + c._1._2 + ")")).toList.sortBy(c => c._2.toLowerCase)
+    courses.map(c => {
+      val key = c._1._2
+      (key, c._2 + " (" + key + ")")
+    }).toList.sortBy(c => c._2.toLowerCase)
   }
 }
