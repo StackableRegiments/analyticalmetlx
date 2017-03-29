@@ -171,16 +171,16 @@ function richTextEditorToStanza(t){
     var text = t.doc.save();
     if (t.slide == undefined){
         t.slide = Conversations.getCurrentSlideJid();
-    };
+    }
     if (t.author == undefined){
         t.author = UserSettings.getUsername();
-    };
+    }
     if (t.target == undefined){
         t.target = "presentationSpace";
-    };
+    }
     if (t.privacy == undefined){
         t.privacy = Privacy.getCurrentPrivacy();
-    };
+    }
 
     return {
         author:t.author,
@@ -218,7 +218,8 @@ var stanzaHandlers = {
     submission:submissionReceived,
     attendance:attendanceReceived,
     file:fileReceived,
-    theme:themeReceived
+    theme:themeReceived,
+    connect:connectReceived
 };
 function themeReceived(theme){
     boardContent.themes.push(theme);
@@ -402,7 +403,7 @@ function transformReceived(transform){
             if(ink){
                 ink.privacy = p;
             }
-        }
+        };
         $.each(transform.inkIds,function(i,id){
             setPrivacy(boardContent.inks[id]);
             setPrivacy(boardContent.highlighters[id]);
@@ -969,7 +970,7 @@ function imageReceived(image){
                     return true;
                 }
             });
-        }
+        };
         dataImage.src = calculateImageSource(image);
     }
 }

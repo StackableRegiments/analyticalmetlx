@@ -2,8 +2,6 @@ var HealthChecker = (function(){
     var storeLifetime = 5 * 60 * 1000; //1 minute
     var serverStatusInterval = 20000; //every 20 seconds
     var store = {};
-    var queueSizeReached = {};
-    var catLength = 50; //keep a rolling window of the last n items of each category
     var healthChecking = true;
 
     var clockOffset = 0;
@@ -25,11 +23,11 @@ var HealthChecker = (function(){
             .attr("low",isIndeterminate? 11 : 4)
             .attr("high",isIndeterminate? 12 : 8)
             .attr("optimum",isIndeterminate? 13 : 10)
-    }
+    };
     var check = function(){
         var clientStart = new Date().getTime();
         var reportableHealthObj = describeHealthFunction();
-        var url = "/reportLatency"
+        var url = "/reportLatency";
         if ("latency" in reportableHealthObj){
             var reportableHealth = reportableHealthObj.latency;
             url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
@@ -47,8 +45,7 @@ var HealthChecker = (function(){
                 var latency = (totalTime - serverWorkTime) / 2;
 
                 var serverSideTime = timeObj.serverTime;
-                var timeDiff = nowTime.getTime() - (serverSideTime + latency);
-                clockOffset = timeDiff;
+                clockOffset = nowTime.getTime() - (serverSideTime + latency);
                 addMeasureFunc("serverResponse",true,serverWorkTime);
                 addMeasureFunc("latency",true,latency);
                 _.delay(check,serverStatusInterval);
@@ -152,11 +149,6 @@ var HealthChecker = (function(){
     }
 })();
 
-var augmentArguments = function(args){
-    args[_.size(args)] = new Date().getTime();
-    return args;
-};
-
 var serverResponse = function(responseObj){
     HealthChecker.addMeasure(responseObj.command,responseObj.success,responseObj.duration);
     if ("instant" in responseObj){
@@ -169,10 +161,9 @@ var serverResponse = function(responseObj){
         console.log(responseObj);
         errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "Error encountered");
     }
-}
+};
 
 var HealthCheckViewer = (function(){
-    var refreshRate = 1000; //every 1 second
     var viewing = false;
     var healthCheckContainer = {};
     $("#healthCheckListing");
@@ -395,20 +386,19 @@ var HealthCheckViewer = (function(){
             min:0,
             value:health
         });
-    }
+    };
     var cells = {};
     var c = function(selector){
         if(selector in cells){
             return cells[selector];
         }
         return cells[selector] = $(selector);
-    }
+    };
     var refreshFunc = function(checkData,descriptionData){
         WorkQueue.enqueue(function(){
             summarizeHealth(descriptionData);
         });
         if(viewing){
-            var start = new Date().getTime();
             var overallLatencyData = descriptionData["latency"];
             if (overallLatencyData != undefined){
                 c(".healthCheckSummaryLatencyContainer").show();

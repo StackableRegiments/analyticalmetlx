@@ -57,5 +57,12 @@ window.Canvas = {
         dotC.closePath();
         dotC.fill();
         return dot;
+    },
+    tint:function(){
+        var c = $("<canvas />");
+        var context = c[0].getContext("2d");
+        context.fillStyle = "red";
+        context.fillRect(0,0,1000,1000);
+        return c;
     }
-}
+};

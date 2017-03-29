@@ -3,6 +3,7 @@ var Handwriting = require('../reference/ink');
 var assert = require('assert');
 var _ = require('lodash');
 var sprintf = require('sprintf-js').sprintf;
+
 var BoardPage = function(user) {
     var worldToScreen = function(x,y){
         return user.execute(sprintf("return worldToScreen(%s,%s)",x,y)).value;
@@ -15,7 +16,7 @@ var BoardPage = function(user) {
     };
     var toRadians = function(degrees){
         return (Math.PI / 180) / degrees;
-    }
+    };
     var handwrite = function(pts){
         user.moveToObject("#board",pts[0].x,pts[0].y);
         user.buttonDown();
@@ -33,13 +34,13 @@ var BoardPage = function(user) {
                     x:pts[i],
                     y:pts[i+1]
                 });
-            };
+            }
             handwrite(coords);
         });
-    }
+    };
     var letters = function(ls){
         _.each(ls,letter);
-    }
+    };
     var textStanzas = function() {
         return user.execute("return _.map(boardContent.multiWordTexts, richTextEditorToStanza)").value
     };
@@ -150,7 +151,6 @@ var BoardPage = function(user) {
             user.waitUntil(function(){return user.isVisible("#menuParticipants");});
             this.participants.click();
         }},
-        participants:{get:function(){return user.element("#menuParticipants");}},
         learning:{get:function(){return user.element("#roomToolbar");}},
         toggleFilter:{value:function(name){
             user.execute(sprintf("$('#%s').click()",name));
@@ -203,5 +203,5 @@ var BoardPage = function(user) {
         imageMode: { get: function() { return user.element("#imageMode"); } },
         imageStanzas: {get: function(){ return user.execute("return _.map(boardContent.images,function(image){return _.pickBy(image,function(v,k){return k != 'canvas' && k != 'mipMap'})})").value } }
     });
-}
-module.exports = BoardPage
+};
+module.exports = BoardPage;
