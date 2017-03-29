@@ -1,8 +1,9 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
     <head>
-        <link rel="stylesheet" href="static/css/selectize.default.css"></link>
-        <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
-        <link rel="stylesheet" href="static/css/statistics.css"></link>
+        <link rel="stylesheet" href="static/css/selectize.default.css"/>
+        <link rel="stylesheet" href="static/css/flatpickr.min.css"/>
+        <link rel="stylesheet" href="static/css/directlyOnBackground.css"/>
+        <link rel="stylesheet" href="static/css/statistics.css"/>
         <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
         <script src="static/js/stable/lodash.min.js"></script>
         <script src="static/js/stable/moment.min.js"></script>
@@ -10,6 +11,7 @@
         <script src="static/js/stable/d3.layout.cloud.js"></script>
         <script src="static/js/stable/typo.js"></script>
         <script src="static/js/stable/selectize.min.js"></script>
+        <script src="static/js/stable/flatpickr.min.js"></script>
         <style>
             .result {
                 text-align: right;
@@ -45,19 +47,22 @@
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
             $('#timestampActivity').html('Last run: ' + t + '<br/>Results are cached for 1 minute');
         };
-/*
-        var updateCourses = function (a) {
-            var select = $('#courses');
-            select.empty();
-            _.forEach(a, function (course) {
-                tr.append('<option value="' + course.key + '">' + course.name + '</option>');
-            });
-            select.selectize({maxOptions: 20, closeAfterSelect: true});
-            return select;
+        var restrictDate = function(minimum, dateInputSelector){
+            var value = $(dateInputSelector).text();
+            alert('Restricting: ' + value);
         };
-*/
-        var selectize = function () {
+        var init = function () {
             $('#courses').selectize({maxOptions: 20, closeAfterSelect: true});
+            $('#activityFrom').flatpickr({
+                defaultDate: new Date(2016, 7, 1),
+                altInput: true,
+                onChange: function(selectedDates, dateStr, instance){restrictDate(false, '#activityFrom')}
+            });
+            $('#activityTo').flatpickr({
+                defaultDate: "today",
+                altInput: true,
+                onChange: function(selectedDates, dateStr, instance){restrictDate(true, '#activityTo')}
+            });
         };
     </script>
     <div id="masterLayout" class="flex-container-column">
@@ -91,22 +96,30 @@
                         <span id="selectBox"></span>
                         <div class="flex-container-row">
                         <span class="lift:studentActivity">
+                            <div id="from">
+                                <label for="activityFrom" class="directlyOnBackground">From:</label>
+                                <input type="text" id="activityFrom"/>
+                            </div>
+                            <div id="to">
+                                <label for="activityTo" class="directlyOnBackground">To:</label>
+                                <input type="text" id="activityTo"/>
+                            </div>
                             <div id="courses-container">
                                 <label for="courses" class="directlyOnBackground">Select Course:</label>
                                 <select id="courses" class="demo-default"></select>
                             </div>
-<!--
-                            <button id="analysisButton" type="button" value="Search">
-                                <span class="fa fa-search">
-                                  <span class="icon-txt">Analyse</span>
-                                </span>
-                            </button>
--->
+                            <!--
+                                                        <button id="analysisButton" type="button" value="Search">
+                                                            <span class="fa fa-search">
+                                                              <span class="icon-txt">Analyse</span>
+                                                            </span>
+                                                        </button>
+                            -->
                             <div class="directlyOnBackground">
                                 <span id="courseActivity"/>
                             </div>
                             <span id="timestampActivity" class="directlyOnBackground"/>
-                            <div id="loaderSelectize"></div>
+                            <div id="loaderJs"></div>
                         </span>
                         </div>
                     </div>

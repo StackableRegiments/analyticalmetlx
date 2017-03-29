@@ -35,7 +35,7 @@ class StudentActivity extends Logger {
 
   def render: CssBindFunc = {
     "#courses" #> ajaxSelect(getAllOptions, Empty, handler) &
-      "#loaderSelectize" #> Script(OnLoad(Call("selectize").cmd))
+      "#loaderJs" #> Script(OnLoad(Call("init").cmd))
   }
 
   def createHtmlTable(results: (List[String], List[Map[String, String]])): JObject = {
