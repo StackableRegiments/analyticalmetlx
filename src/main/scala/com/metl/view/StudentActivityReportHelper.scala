@@ -17,7 +17,7 @@ protected case class ProcessedRow(author: String, conversationJid: String, conve
 
 case class RowTime(timestamp: Long, present: Boolean)
 
-object ReportHelper {
+object StudentActivityReportHelper {
 
   protected val config = CacheConfig(10, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU, Some(60))
   protected val reportCache = new ManagedCache[String, String]("studentActivity", (key: String) => generateStudentActivity(key), config)

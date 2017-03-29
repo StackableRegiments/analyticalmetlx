@@ -56,6 +56,7 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def getMessageBus(d:MessageBusDefinition):MessageBus
   def getHistory(jid:String):History
   def getConversationForSlide(slideJid:String):String
+  def getAllConversations:List[Conversation]
   def searchForConversation(query:String):List[Conversation]
   def searchForConversationByCourse(courseId:String):List[Conversation]
   def detailsOfConversation(jid:String):Conversation
@@ -185,6 +186,7 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def getMessageBus(d:MessageBusDefinition) = EmptyMessageBus
   override def getHistory(jid:String) = History.empty
   override def getConversationForSlide(slideJid:String):String = ""
+  override def getAllConversations = List.empty[Conversation]
   override def searchForConversation(query:String) = List.empty[Conversation]
   override def searchForConversationByCourse(courseId:String) = List.empty[Conversation]
   override def detailsOfConversation(jid:String) = Conversation.empty
@@ -218,6 +220,7 @@ object FrontendSerializationAdaptor extends ServerConfiguration("frontend","fron
   override def getMessageBus(d:MessageBusDefinition) = EmptyMessageBus
   override def getHistory(jid:String) = History.empty
   override def getConversationForSlide(slideJid:String):String = ""
+  override def getAllConversations = List.empty[Conversation]
   override def searchForConversation(query:String) = List.empty[Conversation]
   override def searchForConversationByCourse(query:String) = List.empty[Conversation]
   override def detailsOfConversation(jid:String) = Conversation.empty
@@ -250,6 +253,7 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def getMessageBus(d:MessageBusDefinition) = sc.getMessageBus(d)
   override def getHistory(jid:String) = sc.getHistory(jid)
   override def getConversationForSlide(slideJid:String):String = sc.getConversationForSlide(slideJid)
+  override def getAllConversations = sc.getAllConversations
   override def searchForConversation(query:String) = sc.searchForConversation(query)
   override def searchForConversationByCourse(courseId:String) = sc.searchForConversationByCourse(courseId)
   override def detailsOfConversation(jid:String) = sc.detailsOfConversation(jid)

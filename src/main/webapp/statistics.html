@@ -1,5 +1,6 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
     <head>
+        <link rel="stylesheet" href="static/css/selectize.default.css"></link>
         <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
         <link rel="stylesheet" href="static/css/statistics.css"></link>
         <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
@@ -8,6 +9,7 @@
         <script src="static/js/stable/d3.v4.min.js"></script>
         <script src="static/js/stable/d3.layout.cloud.js"></script>
         <script src="static/js/stable/typo.js"></script>
+        <script src="static/js/stable/selectize.min.js"></script>
         <style>
             .result {
                 text-align: right;
@@ -21,27 +23,41 @@
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
             $('#timestampStats').html('Last run: ' + t);
         };
-        var createTable = function(a) {
+        var createTable = function (a) {
             var table = $("<table/>");
             var tr = $("<tr/>");
             table.append(tr);
-            _.forEach(a.headers, function(header){
+            _.forEach(a.headers, function (header) {
                 tr.append('<th>' + header + '</th>');
             });
-            _.forEach(a.data, function(row){
+            _.forEach(a.data, function (row) {
                 tr = $("<tr/>");
                 table.append(tr);
-                _.forEach(a.headers, function(header){
+                _.forEach(a.headers, function (header) {
                     tr.append('<td>' + row[header] + '</td>');
                 });
             });
             return table;
         };
         var updateActivity = function (a) {
-            $('#studentActivity').html(createTable(a));
+            $('#courseActivity').html(createTable(a));
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
             $('#timestampActivity').html('Last run: ' + t + '<br/>Results are cached for 1 minute');
+        };
+/*
+        var updateCourses = function (a) {
+            var select = $('#courses');
+            select.empty();
+            _.forEach(a, function (course) {
+                tr.append('<option value="' + course.key + '">' + course.name + '</option>');
+            });
+            select.selectize({maxOptions: 20, closeAfterSelect: true});
+            return select;
+        };
+*/
+        var selectize = function () {
+            $('#courses').selectize({maxOptions: 20, closeAfterSelect: true});
         };
     </script>
     <div id="masterLayout" class="flex-container-column">
@@ -70,17 +86,27 @@
             </div>
             <div class="indent flex-container-row">
                 <div class="flex-container-column">
-                    <h1 class="directlyOnBackground">Student Statistics</h1>
+                    <h1 class="directlyOnBackground">Course Analysis</h1>
                     <div id="selectBoxContainer" class="mbt indent">
                         <span id="selectBox"></span>
                         <div class="flex-container-row">
                         <span class="lift:studentActivity">
-                            <label for="course" class="directlyOnBackground">Select Course:</label>
-                            <select id="course"></select>
+                            <div id="courses-container">
+                                <label for="courses" class="directlyOnBackground">Select Course:</label>
+                                <select id="courses" class="demo-default"></select>
+                            </div>
+<!--
+                            <button id="analysisButton" type="button" value="Search">
+                                <span class="fa fa-search">
+                                  <span class="icon-txt">Analyse</span>
+                                </span>
+                            </button>
+-->
                             <div class="directlyOnBackground">
-                                <span id="studentActivity"/>
+                                <span id="courseActivity"/>
                             </div>
                             <span id="timestampActivity" class="directlyOnBackground"/>
+                            <div id="loaderSelectize"></div>
                         </span>
                         </div>
                     </div>

@@ -1,22 +1,15 @@
 package com.metl.snippet
 
 import java.text.SimpleDateFormat
-import java.util.Date
 
-import com.metl.data.ServerConfiguration
 import net.liftweb.common.Logger
-import net.liftweb._
-import net.liftweb.common._
-import net.liftweb.http._
 import net.liftweb.http.SHtml._
-import net.liftweb.http.js._
 import net.liftweb.http.js.JE._
 import net.liftweb.http.js.JsCmds._
-import net.liftweb.http.js.JsCommands._
-import net.liftweb.json.JsonAST.{JArray, JString}
-import net.liftweb.util._
-import net.liftweb.util.Helpers._
+import net.liftweb.json.JsonAST.JString
 import net.liftweb.mapper._
+import net.liftweb.util.Helpers._
+import net.liftweb.util._
 
 object Statistics extends Statistics
 
