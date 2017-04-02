@@ -916,6 +916,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 renderSelectionGhosts(canvasContext);
                 renderContentIdentification(canvasContext,rendered);
                 renderCanvasInteractables(canvasContext);
+                renderTint(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
             }
             catch(e){
                 console.log("Render exception",e);
@@ -960,18 +961,22 @@ function updateConversationHeader(){
         groupV.text(sprintf("Group %s of",_.join(_.map(group,"title"),",")));
     }
 }
-function renderTint(canvasContext, x, y, w, h){
-    canvasContext.save();
-    canvasContext.fillStyle = "#FFCCCC";
-    canvasContext.fillRect(x,y,w,h);
-    canvasContext.restore();
+function renderTint(canvasContext,rect){
+    console.log("rendering tint");
+    if ('HealthCheckViewer' in window && !HealthCheckViewer.healthy()) {
+        var r = rect == undefined ? {x: 0, y: 0, w: boardWidth, h: boardHeight} : rect;
+        canvasContext.save();
+        canvasContext.fillStyle = "rgba(255, 0, 0, 0.1)";
+        canvasContext.fillRect(r.x, r.y, r.w, r.h);
+        canvasContext.restore();
+        console.log("added tint");
+    }
 }
 function clearBoard(incContext,rect){
     try {
         var ctx = incContext == undefined ? boardContext : incContext;
         var r = rect == undefined ? {x:0,y:0,w:boardWidth,h:boardHeight} : rect;
         ctx.clearRect(r.x,r.y,r.w,r.h);
-        renderTint(ctx,r.x,r.y,r.w,r.h);
     } catch(e){
         console.log("exception while clearing board:",e,incContext,rect);
     }

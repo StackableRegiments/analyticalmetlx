@@ -1,6 +1,7 @@
 var HealthChecker = (function(){
     var storeLifetime = 5 * 60 * 1000; //1 minute
-    var serverStatusInterval = 20000; //every 20 seconds
+    // var serverStatusInterval = 20000; //every 20 seconds
+    var serverStatusInterval = 1000; //every 20 seconds
     var store = {};
     var healthChecking = true;
 
@@ -53,7 +54,7 @@ var HealthChecker = (function(){
             dataType:"text",
             error:function(){
                 setLatencyIndeterminate(true);
-                addMeasure("latency",false,(new Date().getTime() - clientStart) / 2);
+                addMeasureFunc("latency",false,(new Date().getTime() - clientStart) / 2);
                 _.delay(check,serverStatusInterval);
             }
         });
@@ -124,6 +125,7 @@ var HealthChecker = (function(){
                     min:_.min(durations),
                     average:_.mean(durations),
                     recent:_.mean(_.takeRight(durations,10)),
+                    successful:count == 0 || v[count-1].success,
                     successRate:_.countBy(v,"success")[true] / count
                 };
             }
@@ -169,6 +171,11 @@ var HealthCheckViewer = (function(){
     $("#healthCheckListing");
     var healthCheckItemTemplate = {};
     var charts = {};
+    var min = 0;
+    var max = 13;
+    var high = 8;
+    var low = 4;
+    var healthy = false;
     $(function(){
         healthCheckContainer = $("#healthCheckListing");
         healthCheckItemTemplate = healthCheckContainer.find(".healthCheckItem").clone();
@@ -381,9 +388,29 @@ var HealthCheckViewer = (function(){
         if(data.render){
             health -= Math.min(8,data.render.recent / 20);
         }
+        $(".meters").css("background-color", (function(){
+            if (_.some(["latency","serverResponse"], function(category){
+                    return category in data && data[category].successRate < 1;
+                })){
+                return "red";
+            }
+            else
+            {
+                return "transparent";
+            }
+        })());
+        var wasHealthy = healthy;
+        healthy = _.every(["latency", "serverResponse"], function (category) {
+            return category in data && data[category].successful;
+        });
+        if( wasHealthy != healthy ) {
+            blit();
+        }
         $("#healthStatus").prop({
-            max:13,
-            min:0,
+            max:max,
+            low:low,
+            high:high,
+            min:min,
             value:health
         });
     };
@@ -440,9 +467,13 @@ var HealthCheckViewer = (function(){
             });
         }
     };
+    var healthyFunc = function(){
+      return healthy;
+    };
     return {
         resume:resumeFunc,
         pause:pauseFunc,
-        refreshDisplays:refreshFunc
+        refreshDisplays:refreshFunc,
+        healthy:healthyFunc
     };
 })();
