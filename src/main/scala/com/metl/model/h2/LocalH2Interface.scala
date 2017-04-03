@@ -322,6 +322,10 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
 
     newHistory
   })
+
+  protected val poolMultiplier = 8
+  protected val identityPoolTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(5 * poolMultiplier))
+  protected val stanzaTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15 * poolMultiplier))  
   def newGetHistory(jid:String):History = Stopwatch.time("H2Interface.newGetHistory",{
     val newHistory = History(jid)
     var moveDeltas:List[MeTLMoveDelta] = Nil
@@ -355,7 +359,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
             true
           }
         ).par
-        parI.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(5))  
+        parI.tasksupport = identityPoolTaskSupport  
         parI.map(f => f()).toList
         val resources = Map(H2Resource.findAll(ByList(H2Resource.partialIdentity,(images ::: videos ::: submissions ::: files ::: quizzes ::: submissions).map(_._1.take(H2Constants.identity)))).flatMap(r => {
           r.bytes.get match {
@@ -394,7 +398,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2BooleanGradeValue.findAll(By(H2BooleanGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toBooleanGradeValue(s))),
       () => H2TextGradeValue.findAll(By(H2TextGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toTextGradeValue(s)))
     ).par
-    parO.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15))  
+    parO.tasksupport = stanzaTaskSupport
     parO.map(f => f()).toList
     moveDeltas.foreach(s => newHistory.addStanza(s))
     newHistory
