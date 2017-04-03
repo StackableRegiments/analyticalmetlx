@@ -218,8 +218,7 @@ var stanzaHandlers = {
     submission:submissionReceived,
     attendance:attendanceReceived,
     file:fileReceived,
-    theme:themeReceived,
-    connect:connectReceived
+    theme:themeReceived
 };
 function themeReceived(theme){
     boardContent.themes.push(theme);
