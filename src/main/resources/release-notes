@@ -1,3 +1,6 @@
+1.11.3
+METL-601: Improvement: Red-tint the canvas when in a disconnected state.
+
 1.11.1
 METL-585: Improvement: Export as CSV from /statistics.
 METL-597: Improvement: Allow analysts to report over all courses, not just their own.
