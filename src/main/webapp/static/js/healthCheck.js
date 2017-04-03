@@ -150,6 +150,11 @@ var HealthChecker = (function(){
     }
 })();
 
+var augmentArguments = function(args){
+    args[_.size(args)] = new Date().getTime();
+    return args;
+};
+
 var serverResponse = function(responseObj){
     HealthChecker.addMeasure(responseObj.command,responseObj.success,responseObj.duration);
     if ("instant" in responseObj){
