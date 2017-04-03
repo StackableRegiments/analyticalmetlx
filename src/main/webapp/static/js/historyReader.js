@@ -140,7 +140,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
                     if(loaded >= limit){
                         _.defer(startRender);
                     }
-                }
+                };
                 dataImage.src = url;
             });
         }
@@ -218,7 +218,7 @@ var leftPoint = function(xDelta,yDelta,l,x2,y2,bulge){
         x:px + x2,
         y:py + y2
     }
-}
+};
 var rightPoint = function(xDelta,yDelta,l,x2,y2,bulge){
     var px = yDelta * l * -bulge;
     var py = xDelta * l * bulge;
@@ -226,7 +226,7 @@ var rightPoint = function(xDelta,yDelta,l,x2,y2,bulge){
         x:px + x2,
         y:py + y2
     }
-}
+};
 var determineCanvasConstants = _.once(function(){
     var currentDevice = DeviceConfiguration.getCurrentDevice();
     var maxX = 32767;//2147483647;
@@ -246,7 +246,7 @@ var determineCanvasConstants = _.once(function(){
         maxY = 8192;
     }
     return {x:maxX,y:maxY};
-})
+});
 
 function determineScaling(inX,inY){
     var outputX = inX;
@@ -363,7 +363,7 @@ function alertCanvas(canvas,label){
 var precision = Math.pow(10,3);
 var round = function(n){
     return Math.round(n * precision) / precision;
-}
+};
 function calculateImageBounds(image){
     image.bounds = [image.x,image.y,image.x + image.width,image.y + image.height];
 }
@@ -650,7 +650,7 @@ var renderInks = function(inks,canvasContext,rendered,viewBounds){
             }
         });
     }
-}
+};
 var renderRichTexts = function(texts,canvasContext,rendered,viewBounds){
     if(texts){
         $.each(texts,function(i,text){
@@ -665,7 +665,7 @@ var renderRichTexts = function(texts,canvasContext,rendered,viewBounds){
             }
         });
     }
-}
+};
 var renderVideos = function(videos,canvasContext,rendered,viewBounds){
     if (videos){
         Modes.clearCanvasInteractables("videos");
@@ -677,7 +677,7 @@ var renderVideos = function(videos,canvasContext,rendered,viewBounds){
             }
         });
     }
-}
+};
 
 var renderCanvasInteractables = function(canvasContext){
     _.each(Modes.canvasInteractables,function(category){
@@ -687,10 +687,10 @@ var renderCanvasInteractables = function(canvasContext){
                 canvasContext.lineWidth = 1;
                 interactable.render(canvasContext);
                 canvasContext.restore();
-            };
+            }
         });
     });
-}
+};
 var renderTexts = function(texts,rendered,viewBounds){
     $.each(texts,function(i,text){
         if(intersectRect(text.bounds,viewBounds)){
@@ -698,7 +698,7 @@ var renderTexts = function(texts,rendered,viewBounds){
             rendered.push(text);
         }
     });
-}
+};
 var renderImmediateContent = function(canvasContext,content,rendered,viewBounds){
     renderVideos(content.videos,canvasContext,rendered,viewBounds);
     renderInks(content.highlighters,canvasContext,rendered,viewBounds);
@@ -706,7 +706,7 @@ var renderImmediateContent = function(canvasContext,content,rendered,viewBounds)
     renderRichTexts(content.multiWordTexts,canvasContext,rendered,viewBounds);
     renderInks(content.inks,canvasContext,rendered,viewBounds);
     Progress.call("postRender");
-}
+};
 var renderSelectionOutlines = function(canvasContext){
     var size = Modes.select.resizeHandleSize;
     canvasContext.save();
@@ -732,7 +732,7 @@ var renderSelectionOutlines = function(canvasContext){
         canvasContext.strokeRect(tb.tl.x,tb.tl.y,tb.br.x - tb.tl.x,tb.br.y - tb.tl.y);
     }
     canvasContext.restore();
-}
+};
 var renderContentIdentification = function(canvasContext,rendered){
     canvasContext.save();
     if(Modes.select.isAdministeringContent()){
@@ -757,7 +757,7 @@ var renderContentIdentification = function(canvasContext,rendered){
         });
     }
     canvasContext.restore();
-}
+};
 var renderSelectionGhosts = function(canvasContext){
     var zero = Modes.select.marqueeWorldOrigin;
     if(Modes.select.dragging){
@@ -891,7 +891,7 @@ var renderImages = function(images,canvasContext,rendered,viewBounds){
             console.log("image render failed for",e,image.identity,image);
         }
     });
-}
+};
 function render(content,hq,incCanvasContext,incViewBounds){
     var bucket = Math.floor(new Date() / 1000);
     if(!renders[bucket]){
@@ -916,6 +916,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 renderSelectionGhosts(canvasContext);
                 renderContentIdentification(canvasContext,rendered);
                 renderCanvasInteractables(canvasContext);
+                renderTint(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
             }
             catch(e){
                 console.log("Render exception",e);
@@ -958,6 +959,17 @@ function updateConversationHeader(){
     var group = Conversations.getCurrentGroup();
     if(group.length){
         groupV.text(sprintf("Group %s of",_.join(_.map(group,"title"),",")));
+    }
+}
+function renderTint(canvasContext,rect){
+    console.log("rendering tint");
+    if ('HealthCheckViewer' in window && !HealthCheckViewer.healthy()) {
+        var r = rect == undefined ? {x: 0, y: 0, w: boardWidth, h: boardHeight} : rect;
+        canvasContext.save();
+        canvasContext.fillStyle = "rgba(255, 0, 0, 0.1)";
+        canvasContext.fillRect(r.x, r.y, r.w, r.h);
+        canvasContext.restore();
+        console.log("added tint");
     }
 }
 function clearBoard(incContext,rect){

@@ -46,7 +46,7 @@ var Conversations = (function(){
         };
     })();
     var ThumbCache = (function(){
-        var cacheRefreshTime = 0
+        var cacheRefreshTime = 0;
         var cache = {};
         var groupActivity = {};
         var groupTraces = {};
@@ -58,12 +58,12 @@ var Conversations = (function(){
                     line:_.map(_.range(SIGNAL_HISTORY),function(){return 0})
                 }
             }
-        }
+        };
         var audienceAction = function(audienceO){
             var audience = audienceO.name;
             ensureTracking(audience);
             groupActivity[audience].bucket += 1;
-        }
+        };
         var rollAudience = function(meter){
             meter.line.pop();
             meter.line.unshift(meter.bucket);
@@ -71,7 +71,7 @@ var Conversations = (function(){
         };
         var rollAudiences = function(){
             _.each(groupActivity,rollAudience);
-        }
+        };
         var conversationActivity;
         var displayAudiences = function(){
             ensureTracking("anyPrivate");
@@ -95,10 +95,10 @@ var Conversations = (function(){
                     ]);
                 }
             });
-        }
+        };
         var groupTraceIsAccurate = function(group){
             return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
-        }
+        };
         var scrollContainer;
         var updateSlide = function(slide){
             var gs = Conversations.getGroupsFor(slide);
@@ -116,7 +116,7 @@ var Conversations = (function(){
                     trace.update([groupActivity[group.id].line]);
                 }
             });
-        }
+        };
         var SENSOR_INTERVAL = 500;
         var DISPLAY_INTERVAL = 1000;
         var SIGNAL_HISTORY = (1000 /*milis*/ / SENSOR_INTERVAL) * 60 * 15;
@@ -133,7 +133,7 @@ var Conversations = (function(){
                 audienceAction({name:stanza.author});
             }
             _.each(stanza.audiences,audienceAction);
-        }
+        };
         /*
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
          */
@@ -161,7 +161,7 @@ var Conversations = (function(){
             }
         };
         var paintGroups = function(slide,slideContainer){
-            var groupsContainer = slideContainer.find(".groupSlideContainer")
+            var groupsContainer = slideContainer.find(".groupSlideContainer");
             if(groupsContainer.length == 0){
                 groupsContainer = $("<div />").addClass("groupSlideContainer").appendTo(slideContainer);
                 slideContainer
@@ -189,7 +189,7 @@ var Conversations = (function(){
                 groupTraces[group.id].group = group;
                 groupContainer.find('.count').text(group.members.length);
             });
-        }
+        };
         var blank4to3Canvas = (function(w,h){
             var c = $("<canvas />");
             c.width = w;
@@ -233,7 +233,7 @@ var Conversations = (function(){
                 return true;
             }
         }));
-    }
+    };
     var doIfVisible = function(slide,thumbScroller,func){
         var slidesTop = 0;
         var slidesBottom = thumbScroller.height();
@@ -251,9 +251,9 @@ var Conversations = (function(){
         else if(visible){
             func();
         }
-    }
+    };
     var refreshSlideDisplay = function(){
-        var slideContainer = $("#slideContainer")
+        var slideContainer = $("#slideContainer");
         var scrollContainer = $("#thumbScrollContainer");
         var ss = _.filter(currentConversation.slides,"exposed");
         //Add the new slides
@@ -287,11 +287,11 @@ var Conversations = (function(){
         //Build the UI
         var slideControls = $("#slideControls");
         slideControls.empty();
-        constructPrevSlideButton(slideControls),
-        constructNextSlideButton(slideControls),
-        constructAddSlideButton(slideControls)
-        constructAddGroupSlideButton(slideControls)
-        constructHelpButton(slideControls)
+        constructPrevSlideButton(slideControls);
+        constructNextSlideButton(slideControls);
+        constructAddSlideButton(slideControls);
+        constructAddGroupSlideButton(slideControls);
+        constructHelpButton(slideControls);
         indicateActiveSlide(currentSlide);
         $(".thumbnail:not(.groupSlide)").map(function(){
             var t = $(this);
@@ -302,7 +302,7 @@ var Conversations = (function(){
             t.height(t.width() * 0.75);
         });
         Progress.call("onLayoutUpdated");
-    }
+    };
 
     var setStudentsCanPublishFunction = function(publishingAllowed){
         var jid = currentConversation.jid.toString();
@@ -356,7 +356,7 @@ var Conversations = (function(){
             $("#disableSync").addClass("activePrivacy active");
         }
         $("#followTeacherCheckbox").prop("checked",isSyncedToTeacher);
-    }
+    };
     var toggleSyncMoveFunction = function(){
         if (isSyncedToTeacher){
             disableSyncMoveFunction();
@@ -390,14 +390,14 @@ var Conversations = (function(){
                 }
             });
         }
-    }
+    };
     var actOnConversationDetails = function(details){
         try{
             console.log("received conversation:",details);
             var oldConversationJid = "";
             if ("jid" in currentConversation){
                 oldConversationJid = currentConversation.jid.toString().toLowerCase();
-            };
+            }
             if ("jid" in details && targetConversationJid && details.jid.toString().toLowerCase() == targetConversationJid.toLowerCase()){
                 if (shouldDisplayConversationFunction(details)){
                     currentConversation = details;
@@ -438,11 +438,11 @@ var Conversations = (function(){
                 });
             }
         }
-    }
+    };
     var updateThumbnailFor = function(slideId) {
         var slide = _.find(currentConversation.slides, ['id',parseInt(slideId)]);
         ThumbCache.paint(slide);
-    }
+    };
     var goToNextSlideFunction = function(){
         if ("slides" in currentConversation && currentSlide > 0){
             var curr = _.find(currentConversation.slides,function(s){return s.id == currentSlide;});
@@ -569,7 +569,7 @@ var Conversations = (function(){
                 }
             });
         }
-        ftc.prop("disabled", details.permissions.usersAreCompulsorilySynced)
+        ftc.prop("disabled", details.permissions.usersAreCompulsorilySynced);
         if (isAuthor){
             $("#syncButtons").hide();
             $(".syncCheckbox").hide();
@@ -679,7 +679,7 @@ var Conversations = (function(){
                 text:label
             })));
         }
-    }
+    };
     var overrideAllocationFunction = function(slide){
         if(shouldModifyConversationFunction()){
             overrideAllocation(Conversations.getCurrentConversationJid(),slide);
@@ -722,7 +722,7 @@ var Conversations = (function(){
     };
     var helpFunction = function(){
         showBackstage("help");
-    }
+    };
     var addSlideFunction = function(){
         if(shouldModifyConversationFunction()){
             var currentJid = currentConversation.jid;
@@ -741,22 +741,22 @@ var Conversations = (function(){
             };
         }
     };
-    var always = function(){return true;}
+    var always = function(){return true;};
     var constructPrevSlideButton = function(container){
         constructSlideButton("prevSlideButton","Prev Page","fa-angle-left",always,container);
-    }
+    };
     var constructAddSlideButton = function(container){
         constructSlideButton("addSlideButton","Add Page","fa-plus",shouldModifyConversationFunction,container);
-    }
+    };
     var constructAddGroupSlideButton = function(container){
         constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
-    }
+    };
     var constructHelpButton = function(container){
         constructSlideButton("helpButton","Help","fa-question-circle",always,container);
-    }
+    };
     var constructNextSlideButton = function(container){
         constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
-    }
+    };
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
         if (window != undefined && "history" in window && "pushState" in window.history){
@@ -820,7 +820,7 @@ var Conversations = (function(){
         else{
             alert("You must remain on the current page");
         }
-    }
+    };
     var indicateActiveSlide = function(slideId){
         $(".slideButtonContainer").removeClass("activeSlide");
         var activeSlide = $(sprintf("#slideContainer_%s",slideId));
@@ -830,10 +830,10 @@ var Conversations = (function(){
     };
     var constructSlideId = function(slide){
         return sprintf("slideContainer_%s",slide.id);
-    }
+    };
     var slideLabel = function(slide){
         return sprintf("%s/%s",slide.index+1,currentConversation.slides.length);
-    }
+    };
     var constructSlide = function(slide){
         var slideIndex = slide.index + 1;
         var newSlide = $("<div/>",{
@@ -854,7 +854,7 @@ var Conversations = (function(){
             class: "slideThumbnailNumber"
         }).appendTo($("<div/>").addClass("slide-count").appendTo(newSlide));
         return newSlide;
-    }
+    };
     var getCurrentGroupFunction = function(){
         return _.clone(currentGroup);
     };
