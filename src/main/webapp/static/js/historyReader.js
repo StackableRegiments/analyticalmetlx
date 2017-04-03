@@ -962,14 +962,12 @@ function updateConversationHeader(){
     }
 }
 function renderTint(canvasContext,rect){
-    console.log("rendering tint");
     if ('HealthCheckViewer' in window && !HealthCheckViewer.healthy()) {
         var r = rect == undefined ? {x: 0, y: 0, w: boardWidth, h: boardHeight} : rect;
         canvasContext.save();
         canvasContext.fillStyle = "rgba(255, 0, 0, 0.1)";
         canvasContext.fillRect(r.x, r.y, r.w, r.h);
         canvasContext.restore();
-        console.log("added tint");
     }
 }
 function clearBoard(incContext,rect){
