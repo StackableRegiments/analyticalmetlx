@@ -851,9 +851,8 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
       coll.flatMap(func).toList
     }
   }
-  protected val threadPoolMultiplier = 5
-  protected val groupCategoryTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4 * threadPoolMultiplier))
-  protected val orgUnitTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(16 * threadPoolMultiplier))
+  protected val groupCategoryTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4 * Globals.d2lThreadPoolMultiplier))
+  protected val orgUnitTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(16 * Globals.d2lThreadPoolMultiplier))
 
   protected def nameSection(orgUnit:D2LOrgUnit,section:D2LSection):String = "%s_%s".format(orgUnit.Name,section.Name)
   protected def nameGroupCategory(orgUnit:D2LOrgUnit,groupCategory:D2LGroupCategory):String = "%s_%s".format(orgUnit.Name,groupCategory.Name)

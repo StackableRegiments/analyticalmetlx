@@ -323,9 +323,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     newHistory
   })
 
-  protected val poolMultiplier = 8
-  protected val identityPoolTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(5 * poolMultiplier))
-  protected val stanzaTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15 * poolMultiplier))  
+  protected val identityPoolTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(5 * Globals.h2ThreadPoolMultiplier))
+  protected val stanzaTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15 * Globals.h2ThreadPoolMultiplier))
   def newGetHistory(jid:String):History = Stopwatch.time("H2Interface.newGetHistory",{
     val newHistory = History(jid)
     var moveDeltas:List[MeTLMoveDelta] = Nil
