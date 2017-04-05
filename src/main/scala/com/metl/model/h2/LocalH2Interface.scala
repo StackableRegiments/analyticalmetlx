@@ -5,12 +5,16 @@ import com.metl.utils._
 import com.metl.persisted._
 import com.metl.h2.dbformats._
 import java.util.Date
+
 import net.liftweb.mapper._
 import net.liftweb.common._
 
 import scala.compat.Platform.EOL
-import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, StandardDBVendor}
+import _root_.net.liftweb.mapper.{ConnectionManager, DB, DefaultConnectionIdentifier, Schemifier, StandardDBVendor}
 import _root_.java.sql.{Connection, DriverManager}
+
+import com.metl.model.Globals
+import com.metl.model.Globals._
 
 class H2Interface(config:ServerConfiguration,filename:Option[String],onConversationDetailsUpdated:Conversation=>Unit) extends SqlInterface(config,new StandardDBVendor("org.h2.Driver", filename.map(f => "jdbc:h2:%s;AUTO_SERVER=TRUE".format(f)).getOrElse("jdbc:h2:mem:%s".format(config.name)),Empty,Empty){
   //adding extra db connections - it defaults to 4, with 20 being the maximum

@@ -20,6 +20,8 @@ import net.liftweb.json.JsonAST
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.Printer._
 import net.liftweb.json._
+import com.metl.model.Globals
+import com.metl.model.Globals._
 
 /*
 async:
@@ -841,7 +843,7 @@ class D2LGroupStoreProvider(d2lBaseUrl:String,appId:String,appKey:String,userId:
     110 //Student
   )
   override val canQuery = true
-  def parFlatMap[A,B](coll:List[A],func:A => List[B],threaded:Boolean=false,support:Option[scala.collection.parallel.ForkJoinTaskSupport],forkJoinPoolName:String = "default"):List[B] = {
+  def parFlatMap[A,B](coll:List[A],func:A => List[B],threaded:Boolean=false,support:Option[scala.collection.parallel.TaskSupport],forkJoinPoolName:String = "default"):List[B] = {
     if (threaded && support.nonEmpty){
       val pc = coll.par
       pc.tasksupport = support.get
