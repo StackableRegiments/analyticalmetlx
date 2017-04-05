@@ -74,7 +74,7 @@ var GroupFinder = (function(){
         });
         console.log("contentGroups",contentGroups.length,contentGroups);
         return contentGroups;
-    }
+    };
     String.prototype.hashCode = function(){
         var hash = 0;
         var char;
@@ -85,25 +85,25 @@ var GroupFinder = (function(){
             hash = hash & hash; // Convert to 32bit integer
         }
         return hash;
-    }
+    };
     var delay = function(message,func){
         $("#targetSlide").text(message);
         //showBackstage("loadingSlide");
         showSpinner();
         setTimeout(func,2500);
-    }
+    };
     var ensureUserInCohort = function(name){
         cohort[name] = {
             nickname:name,
             name:name
         };
-    }
+    };
     var listMembers = function(party){
         return _.map(party.members,"nickname").join(", ");
-    }
+    };
     var inParty = function(user,party){
         return user.name in party.members;
-    }
+    };
     var joinParty = function(user,party){
         $.each(parties,function(i,party){
             leaveParty(cohort[user.name],party);
@@ -116,11 +116,11 @@ var GroupFinder = (function(){
                 height:px(50)
             });
         }))).show();
-    }
+    };
     var leaveParty = function(user,party){
         delete party.members[user.name];
         $("#groupHud").hide();
-    }
+    };
     var visitDoc = function(party){
         var doc = $("<iframe />",{
             src:party.url
@@ -138,12 +138,12 @@ var GroupFinder = (function(){
             loadSlide = hijack;
             loadSlide(jid);
         };
-    }
+    };
     var isDone = function(party){
         return ("progress" in party) &&
             ("goal" in party) &&
             party.progress >= party.goal;
-    }
+    };
     var partyOptions = function(party){
         var container = $("<div />",{
             class:"groupOverview"
@@ -199,10 +199,10 @@ var GroupFinder = (function(){
             }).appendTo(container);
         }
         return container;
-    }
+    };
     var idFor = function(party){
         return "party_"+listMembers(party).hashCode();
-    }
+    };
     var renderParty = function(party){
         var previewBlock = $("<div />",{
             class:"groupOverview"
@@ -228,7 +228,7 @@ var GroupFinder = (function(){
                 thumb.click(function(){
                     visitDoc(party);
                 })
-            }; break;
+            } break;
         case "quizzing":thumb.attr({
             src:"/static/images/quizzing.png",
             height:px(60)
@@ -260,7 +260,7 @@ var GroupFinder = (function(){
                     class:"memberDetail",
                     text:listMembers(party)
                 })
-            }))
+            }));
         var line = $("<div />");
         line.append(previewBlock);
         line.append(timerBlock);
@@ -287,7 +287,7 @@ var GroupFinder = (function(){
         setTimeout(updateTime,1000);
         line.attr("id",idFor(party));
         return line;
-    }
+    };
     var renderParties = function(){
         ensureUserInCohort(username);
         var availableGroupDisplay = $("#currentGroupOverview").empty();
@@ -309,7 +309,7 @@ var GroupFinder = (function(){
                 availableGroupDisplay.append(renderParty(party));
             });
         }
-    }
+    };
     var cohort = {
         llewellyn:{
             name:"llewellyn",
@@ -395,7 +395,7 @@ var GroupFinder = (function(){
         renderParties();
         $("#quizzingPopup").hide();
         showBackstage("groupFinder");
-    }
+    };
     $(function(){
         $("<span />",{
             text:"Groups"
@@ -413,7 +413,7 @@ var GroupFinder = (function(){
     });
     Progress.historyReceived["createContentGroups"] = function(){
         boardContent.contentGroups = createContentGroups();
-    }
+    };
     Progress.postRender["showOffscreenGroups"] = function(){
         var viewBounds = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight];
         $.each(boardContent.contentGroups,function(k,g){
@@ -431,7 +431,7 @@ var GroupFinder = (function(){
                 showOffscreenElement(g);
             }
         });
-    }
+    };
     return {
         parties:parties
     };
@@ -467,7 +467,7 @@ var Tagger = (function(){
                             });
                         })));
                     }
-                }
+                };
                 renderTags();
                 var marker = Canvas.circle("blue",20).css({
                     position:"absolute",
@@ -534,8 +534,8 @@ var Tagger = (function(){
     };
 })();
 
-var prettyTime = function(milis){
-    var sec_numb = Math.floor(milis / 1000);
+var prettyTime = function(millis){
+    var sec_numb = Math.floor(millis / 1000);
     var hours   = Math.floor(sec_numb / 3600);
     var minutes = Math.floor((sec_numb - (hours * 3600)) / 60);
     var seconds = sec_numb - (hours * 3600) - (minutes * 60);
@@ -543,6 +543,5 @@ var prettyTime = function(milis){
     if (hours   < 10) {hours   = "0"+hours;}
     if (minutes < 10) {minutes = "0"+minutes;}
     if (seconds < 10) {seconds = "0"+seconds;}
-    var time    = minutes+':'+seconds;
-    return time;
-}
+    return minutes+':'+seconds;
+};

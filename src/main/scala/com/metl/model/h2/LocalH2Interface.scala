@@ -501,6 +501,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       case _ => {}
     }
   }
+  def getAllConversations:List[Conversation] = conversationCache.values.toList
   def searchForConversation(query:String):List[Conversation] = conversationCache.values.filter(c => c.title.toLowerCase.trim.contains(query.toLowerCase.trim) || c.author.toLowerCase.trim == query.toLowerCase.trim).toList
   def searchForConversationByCourse(courseId:String):List[Conversation] = conversationCache.values.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def conversationFor(slide:Int):Int = (slide / 1000 ) * 1000

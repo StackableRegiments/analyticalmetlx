@@ -1,3 +1,12 @@
+1.11.3
+METL-601: Improvement: Red-tint the canvas when in a disconnected state.
+
+1.11.1
+METL-585: Improvement: Export as CSV from /statistics.
+METL-597: Improvement: Allow analysts to report over all courses, not just their own.
+METL-584: Improvement: Add re-entrancy protection to Refresh button on /statistics.
+METL-159: Improvement: Convert SynchronisedWriteMap to ConcurrentHashMap.
+
 1.10.2
 METL-559: Isolation change does not refresh canvas.
 

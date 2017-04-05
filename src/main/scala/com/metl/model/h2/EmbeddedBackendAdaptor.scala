@@ -18,7 +18,7 @@ class LocalH2BackendAdaptor(name:String,filename:Option[String],onConversationDe
 }
 object LocalH2ServerConfigurator extends ServerConfigurator{
   override def matchFunction(e:Node) = (e \\ "type").headOption.exists(_.text == "localH2")
-  override def interpret(e:Node,onConversationDetailsUpdated:Conversation=>Unit,messageBusCredentailsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]) = {
+  override def interpret(e:Node,onConversationDetailsUpdated:Conversation=>Unit,messageBusCredentialsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]) = {
     Some(new LocalH2BackendAdaptor((e \ "name").headOption.map(_.text).getOrElse("localH2"),(e \ "filename").headOption.map(_.text),onConversationDetailsUpdated))
   }
 }
@@ -28,7 +28,7 @@ class SqlBackendAdaptor(name:String,vendor:StandardDBVendor,onConversationDetail
 }
 object SqlServerConfigurator extends ServerConfigurator{
   override def matchFunction(e:Node) = (e \\ "type").headOption.exists(_.text == "sql")
-  override def interpret(e:Node,onConversationDetailsUpdated:Conversation=>Unit,messageBusCredentailsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]) = {
+  override def interpret(e:Node,onConversationDetailsUpdated:Conversation=>Unit,messageBusCredentialsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]) = {
     for (
       driver <- (e \\ "driver").headOption.map(_.text);
       url <- (e \\ "url").headOption.map(_.text)

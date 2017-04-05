@@ -417,6 +417,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = History.empty
   override def getConversationForSlide(slideJid:String):String = ""
+  override def getAllConversations = List.empty[Conversation]
   override def searchForConversation(query:String) = List.empty[Conversation]
   override def searchForConversationByCourse(courseId:String) = List.empty[Conversation]
   override def detailsOfConversation(jid:String) = Conversation.empty

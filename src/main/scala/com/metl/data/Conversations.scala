@@ -12,6 +12,7 @@ import collection._
 abstract class ConversationRetriever(config:ServerConfiguration,onConversationDetailsUpdated:(Conversation) => Unit) {
 	val configName = config.name
 	lazy val isReady:Boolean = true
+	def getAll:List[Conversation]
 	def search(query:String):List[Conversation]
 	def searchByCourse(courseId:String):List[Conversation]
 	def conversationFor(slide:Int):Int
@@ -28,6 +29,7 @@ abstract class ConversationRetriever(config:ServerConfiguration,onConversationDe
 }
 
 object EmptyConversations extends ConversationRetriever(EmptyBackendAdaptor,(c) => {}){
+	override def getAll = List.empty[Conversation]
 	override def search(query:String) = List.empty[Conversation]
 	override def searchByCourse(courseId:String) = List.empty[Conversation]
 	override def conversationFor(slide:Int):Int = 0
