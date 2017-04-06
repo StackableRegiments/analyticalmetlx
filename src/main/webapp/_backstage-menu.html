@@ -195,13 +195,20 @@
         <section id="helpPopup" class="backstage box-model-block">
           <h2 class="mrh nmt">Help</h2>
           <div class="nmt">
+            <i class="fa fa-question-circle"></i>
             <a href="https://stackableregiments.github.io/analyticalmetlx/academy-faq.html" target="_blank">Frequently Asked Questions</a>
           </div>
           <div class="nmt">
+            <i class="fa fa-book"></i>
             <a href="https://stackableregiments.github.io/analyticalmetlx/guide.html" target="_blank">User Guide</a>
           </div>
           <div class="nmt">
-            <a onclick="alert('A problem has occurred');">Report a Problem</a>
+            <i class="fa fa-send"></i>
+            <a href="#" onclick="$.jAlert({
+                    title:'Report a Problem',
+                    iframe:'/reportProblem',
+                    width:'50%'
+                });">Report a Problem</a>
           </div>
         </section>
         <section id="gradesPopup" class="backstage box-model-block">
