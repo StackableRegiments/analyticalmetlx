@@ -1,6 +1,6 @@
 package com.metl.snippet
 
-
+import com.metl.comet.JArgUtils
 import com.metl.data.ServerConfiguration
 import com.metl.model.Globals
 import net.liftweb.common.Logger
@@ -16,7 +16,7 @@ import scala.xml.NodeSeq
 
 //object ReportProblem extends ReportProblem
 
-class ReportProblem extends Logger {
+class ReportProblem extends Logger with JArgUtils {
 
 //  var problemReport = ""
 
@@ -32,6 +32,10 @@ class ReportProblem extends Logger {
       })
   }
 */
+  private val jid = getArgAsString(args(0))
+
+  // capture from whence the user came so we can send them back
+  private val whence = S.referer openOr "/"
 
   def report (xhtml : NodeSeq) : NodeSeq = {
     var reporter = Globals.currentUser.is
@@ -42,7 +46,7 @@ class ReportProblem extends Logger {
     def process (): Unit = {
       error("Problem reported. User: " + reporter + ", Context: " + context + ", Search: " + S.param("search").getOrElse("unset") + ", Report: " + report)
       S.notice("Thanks for reporting a problem. The support team has been notified and will investigate.")
-      S.redirectTo("/")
+      S.redirectTo(whence)
     }
 
     bind("problem", xhtml,
