@@ -32,7 +32,7 @@ class ReportProblem extends Logger with JArgUtils {
       })
   }
 */
-  private val jid = getArgAsString(args(0))
+//  private val jid = getArgAsString(args(0))
 
   // capture from whence the user came so we can send them back
   private val whence = S.referer openOr "/"
