@@ -1,9 +1,10 @@
 package com.metl.snippet
 
 
+import com.metl.data.ServerConfiguration
 import com.metl.model.Globals
 import net.liftweb.common.Logger
-import net.liftweb.http.SHtml
+import net.liftweb.http.{S, SHtml}
 import net.liftweb.http.SHtml.ajaxButton
 import net.liftweb.http.js.JE.Call
 import net.liftweb.http.js.JsCmds.{OnLoad, Script}
@@ -11,33 +12,65 @@ import net.liftweb.json.JsonAST.{JField, JObject, JString}
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 
-object ReportProblem extends ReportProblem
+import scala.xml.NodeSeq
+
+//object ReportProblem extends ReportProblem
 
 class ReportProblem extends Logger {
 
-  var problemReport = ""
+//  var problemReport = ""
 
+/*
   def render: CssBindFunc = {
-    "#name" #> SHtml.text("", report => {
+    val context = getProblemContext
+    "#name" #> SHtml.text(problemReport, report => {
       problemReport = report
     }) &
-    "#reportLoader" #> Script(OnLoad(Call("updateContext", getProblemContext).cmd)) &
+    "#reportLoader" #> Script(OnLoad(Call("updateContext", context).cmd)) &
       "#submitReportButton" #> ajaxButton("Send", () => {
-        Call("displaySent", sendReport(getProblemContext)).cmd
+        Call("displaySent", sendReport(context)).cmd
       })
   }
+*/
 
+  def report (xhtml : NodeSeq) : NodeSeq = {
+    var reporter = Globals.currentUser.is
+    var context = "Doin' Stuff"
+//    var report = ServerConfiguration.default.detailsOfConversation(conversationJid)
+    var report = ""
+
+    def process (): Unit = {
+      error("Problem reported. User: " + reporter + ", Context: " + context + ", Search: " + S.param("search").getOrElse("unset") + ", Report: " + report)
+      S.notice("Thanks for reporting a problem. The support team has been notified and will investigate.")
+      S.redirectTo("/")
+    }
+
+    bind("problem", xhtml,
+      "reporter" -> SHtml.text(reporter, reporter = _, "readonly" -> "true"),
+      "context" -> SHtml.text(context, context = _, "readonly" -> "true"),
+      "report" -> SHtml.textarea(report, report = _),
+      "submit" -> SHtml.submit("Send", process))
+  }
+
+/*
   protected def getUsername: String = {
     Globals.currentUser.is
   }
 
-  protected def getProblemContext: JObject = {
-    JObject(List(JField("username", JString(getUsername)),
-      JField("context", JString("Doin' Stuff"))))
+  private def getCurrentContext = {
+    "Doin' Stuff"
   }
 
+  protected def getProblemContext: JObject = {
+    JObject(List(JField("username", JString(getUsername)),
+      JField("context", JString(getCurrentContext))))
+  }
+*/
+
+/*
   protected def sendReport(problemContext: JObject): String = {
     error("Problem reported. User: " + problemContext.values.getOrElse("username", "") + ", Context: " + problemContext.values.getOrElse("context", "") + ", Report: " + problemReport)
     "Thanks for reporting a problem. The support team has been notified and will investigate."
   }
+*/
 }

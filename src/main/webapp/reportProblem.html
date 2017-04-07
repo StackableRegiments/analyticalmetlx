@@ -19,21 +19,27 @@
             $('#problemContext').html(c.context);
         };
     </script>
-    <div class="lift:ReportProblem">
+    <div class="lift:ReportProblem.report?form=post">
         <div class="indent directlyOnBackground">
             <h1>Report a Problem</h1>
-            <p>Reporter: <span id="problemReporter"></span></p>
-            <p>Context: <span id="problemContext"></span></p>
-            <p>Please tell us what you were doing and what went wrong.</p>
-            <label for="problemReport" class="directlyOnBackground"></label>
-            <textarea id="problemReport" rows="5"></textarea>
-            <button id="submitReportButton" type="button" value="Send">
+            <p>Reporter: <problem:reporter/></p>
+            <p>Context: <problem:context/></p>
+            <p>Please tell us what went wrong, and what you were doing when it happened.</p>
+            <p><problem:report/></p>
+            <!--<label for="report" class="directlyOnBackground"></label>-->
+            <!--<textarea id="report" rows="5"></textarea>-->
+            <problem:submit/>
+<!--
+            <button id="submit" type="button" value="Send">
                 <span class="fa fa-send">
                   <span class="icon-txt">Send</span>
                 </span>
             </button>
+-->
+<!--
             <span id="message" class="directlyOnBackground"/>
             <div id="reportLoader"></div>
+-->
         </div>
     </div>
 </div>
