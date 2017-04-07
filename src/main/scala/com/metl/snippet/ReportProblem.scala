@@ -43,8 +43,10 @@ class ReportProblem extends Logger with JArgUtils {
 //    var report = ServerConfiguration.default.detailsOfConversation(conversationJid)
     var report = ""
 
+    val searchParam = S.request.flatMap(_.param("search"))
+    error("Search param: %s".format(searchParam))
     def process (): Unit = {
-      error("Problem reported. User: " + reporter + ", Context: " + context + ", Search: " + S.param("search").getOrElse("unset") + ", Report: " + report)
+      error("Problem reported. User: " + reporter + ", Context: " + context + ", Search: " + searchParam.getOrElse("unset") + ", Report: " + report)
       S.notice("Thanks for reporting a problem. The support team has been notified and will investigate.")
       S.redirectTo(whence)
     }
