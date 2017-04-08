@@ -19,7 +19,7 @@ class ReportProblem extends Logger with JArgUtils {
         case other =>
           val conversationParam = S.request.flatMap(_.param("conversation"))
           val jid = conversationParam.getOrElse("noConversation")
-          val title = conversationParam.map(j => ServerConfiguration.default.detailsOfConversation(j).title)
+          val title = conversationParam.map(j => ServerConfiguration.default.detailsOfConversation(j).title).getOrElse("noTitle")
           val slideParam = S.request.flatMap(_.param("slide"))
           val slide = slideParam.getOrElse("noSlide")
           f"$title%s ($jid%s.$slide%s)"
