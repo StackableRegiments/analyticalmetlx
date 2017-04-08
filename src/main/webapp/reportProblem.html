@@ -5,16 +5,15 @@
     <link rel="stylesheet" href="static/css/jAlert.css"></link>
     <script src="static/js/stable/jAlert.min.js"></script>
     <script src="static/js/stable/jAlert-functions.min.js"></script>
-    <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
-    <script data-lift="with-resource-id" src="static/js/min/editConversation.js"></script>
-    <div class="lift:ReportProblem.report?form=post">
-        <div class="indent directlyOnBackground">
-            <h1>Describe the Problem</h1>
-            <p><span class="hideOnSubmit">Reporter:</span> <problem:reporter/></p>
-            <p><span class="hideOnSubmit">Context:</span> <problem:context/></p>
-            <p id="message">Please tell us what went wrong, and what you were doing when it happened.</p>
-            <p><problem:report/></p>
-            <problem:submit/>
-        </div>
+    <div class="lift:ReportProblem">
+        <form action="/submitProblemReport" method="post">
+            <span id="hiddenFields"></span>
+            <div class="indent directlyOnBackground">
+                <h1>Describe the Problem</h1>
+                <p id="message">Please tell us what went wrong, and what you were doing when it happened.</p>
+                <p><textarea name="report" title="Report"></textarea></p>
+                <button type="submit">Send</button>
+            </div>
+        </form>
     </div>
 </div>

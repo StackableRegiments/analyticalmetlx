@@ -1,11 +1,11 @@
 package com.metl.view
 
 import java.io.StringWriter
+import java.util.Date
 
 import com.metl.data._
 import com.metl.utils._
 import com.metl.renderer.SlideRenderer
-
 import net.liftweb.json._
 import net.liftweb.util._
 import net.liftweb.common._
@@ -15,7 +15,7 @@ import Helpers._
 import com.metl.model._
 import com.metl.view.ReportHelper._
 
-import scala.xml.XML
+import scala.xml.{Text, XML}
 
 trait Stemmer {
   def stem(in:String):Tuple2[String,String] = {
@@ -599,6 +599,37 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         PlainTextResponse(ReportHelper.studentActivity(courseId))
       }
     })
+    case r @ Req(List("submitProblemReport"),_,PostRequest) =>
+      () => Stopwatch.time("MeTLStatefulRestHelper.submitProblemReport", Full(XhtmlResponse({
+        val nextRandom = nextFuncName(new Date().getTime)
+        val reportId = nextRandom.substring(nextRandom.length - 7, nextRandom.length - 1)
+        val reporter = r.param("reporter").getOrElse("unspecified")
+        val context = r.param("context").getOrElse("unspecified")
+        val report = r.param("report").getOrElse("unspecified")
+        error("Problem #" + reportId +
+          " reported. Reporter: " + reporter +
+          ", Context: " + context +
+          ", Report: " + report)
+
+        <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+          <script src="static/js/stable/lodash-4.12.0.js"></script>
+          <script src="static/js/stable/jquery-ui-1.12.0.min.js"></script>
+          <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+          <link rel="stylesheet" href="static/css/jAlert.css"></link>
+          <script src="static/js/stable/jAlert.min.js"></script>
+          <script src="static/js/stable/jAlert-functions.min.js"></script>
+          <div class="directlyOnBackground">
+            <h1>Problem Reported</h1>
+            {Text("Thanks for reporting this problem, " + reporter + ".")}
+            <br/>
+            {Text("We've recorded your context as: '" + context + "'.")}
+            <br/>
+            {Text("The support team has been notified and will investigate.")}
+            <br/>
+            {Text("Your reference is " + reportId + ".")}
+          </div>
+        </div>}, Empty, Nil, Nil, 200, false
+      )))
   }
 }
 object WebMeTLStatefulRestHelper extends RestHelper with Logger{
