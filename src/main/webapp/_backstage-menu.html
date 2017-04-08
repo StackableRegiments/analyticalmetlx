@@ -206,7 +206,7 @@
             <i class="fa fa-send"></i>
             <a href="#" onclick="$.jAlert({
                     title:'Report a Problem',
-                    iframe:'/reportProblem?search=false',
+                    iframe:'/reportProblem?search=false&conversation=' + Conversations.getCurrentConversation().jid + '&slide=' + Conversations.getCurrentSlide().id,
                     width:'50%'
                 });">Report a Problem</a>
           </div>

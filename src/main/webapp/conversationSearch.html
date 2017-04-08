@@ -94,7 +94,7 @@
         <div>
           <a href="#" style="text-decoration: none" onclick="$.jAlert({
                         title:'Report a Problem',
-                        iframe:'/reportProblem?search=true',
+                        iframe:'/reportProblem?search=true&query=' + Conversations.getQuery(),
                         width:'50%'
                     });"><i class="fa fa-send"></i> Report a Problem</a>
         </div>

@@ -1,82 +1,82 @@
 package com.metl.snippet
 
+import java.util.Date
+
 import com.metl.comet.JArgUtils
 import com.metl.data.ServerConfiguration
 import com.metl.model.Globals
-import net.liftweb.common.Logger
-import net.liftweb.http.{S, SHtml}
-import net.liftweb.http.SHtml.ajaxButton
+import net.liftweb.common.{Full, Logger}
 import net.liftweb.http.js.JE.Call
-import net.liftweb.http.js.JsCmds.{OnLoad, Script}
-import net.liftweb.json.JsonAST.{JField, JObject, JString}
+import net.liftweb.http.js.JsCmd
+import net.liftweb.http.{S, SHtml}
 import net.liftweb.util.Helpers._
-import net.liftweb.util._
 
-import scala.xml.NodeSeq
-
-//object ReportProblem extends ReportProblem
+import scala.xml.{NodeSeq, Text}
 
 class ReportProblem extends Logger with JArgUtils {
 
-//  var problemReport = ""
+  def report(xhtml: NodeSeq): NodeSeq = {
+    val searchParam = S.request.flatMap(_.param("search"))
+    val queryParam = S.request.flatMap(_.param("query"))
+    val conversationParam = S.request.flatMap(_.param("conversation"))
+    val slideParam = S.request.flatMap(_.param("slide"))
 
-/*
-  def render: CssBindFunc = {
-    val context = getProblemContext
-    "#name" #> SHtml.text(problemReport, report => {
-      problemReport = report
-    }) &
-    "#reportLoader" #> Script(OnLoad(Call("updateContext", context).cmd)) &
-      "#submitReportButton" #> ajaxButton("Send", () => {
-        Call("displaySent", sendReport(context)).cmd
-      })
-  }
-*/
-//  private val jid = getArgAsString(args(0))
-
-  // capture from whence the user came so we can send them back
-  private val whence = S.referer openOr "/"
-
-  def report (xhtml : NodeSeq) : NodeSeq = {
     var reporter = Globals.currentUser.is
-    var context = "Doin' Stuff"
-//    var report = ServerConfiguration.default.detailsOfConversation(conversationJid)
+    var context =
+      searchParam match {
+        case Full("true") => queryParam.getOrElse("no query")
+        case other =>
+          val jid = conversationParam.getOrElse("noConversation")
+          val title = conversationParam.map(j => ServerConfiguration.default.detailsOfConversation(j).title)
+          val slide = slideParam.getOrElse("noSlide")
+          f"$title%s ($jid%s.$slide%s)"
+      }
     var report = ""
 
-    val searchParam = S.request.flatMap(_.param("search"))
-    error("Search param: %s".format(searchParam))
-    def process (): Unit = {
-      error("Problem reported. User: " + reporter + ", Context: " + context + ", Search: " + searchParam.getOrElse("unset") + ", Report: " + report)
-      S.notice("Thanks for reporting a problem. The support team has been notified and will investigate.")
-      S.redirectTo(whence)
+    val nextRandom = nextFuncName(new Date().getTime)
+    val reportId = nextRandom.substring(nextRandom.length - 7, nextRandom.length - 1)
+
+    def process() = {
+      error("Report = " + report)
+
+      val msg = searchParam match {
+        case Full("true") => "Problem reported at search (#" + reportId +
+          "). User: " + reporter +
+          ", Query: " + context +
+          ", Report: " + report
+        case other => "Problem reported in conversation (#" + reportId +
+          "). User: " + reporter +
+          ", Conversation.Slide: " + context +
+          ", Report: " + report
+      }
+      error(msg)
     }
 
-    bind("problem", xhtml,
-      "reporter" -> SHtml.text(reporter, reporter = _, "readonly" -> "true"),
-      "context" -> SHtml.text(context, context = _, "readonly" -> "true"),
-      "report" -> SHtml.textarea(report, report = _),
-      "submit" -> SHtml.submit("Send", process))
-  }
+    def respond(): JsCmd = {
+      val message = "Thanks for reporting this problem, " + reporter + ". <br/>" +
+        "The support team has been notified and will investigate. <br/>" +
+        "Your reference is " + reportId + "."
+      Call("formSubmitted", message).cmd
+    }
 
-/*
-  protected def getUsername: String = {
-    Globals.currentUser.is
+    (for {
+      r <- S.request
+      if r.post_?
+    } yield {
+      <div class="directlyOnBackground">
+        <h1>Problem Reported</h1>
+        {Text("Thanks for reporting this problem, " + reporter + ".")}
+        <br/>
+        {Text("The support team has been notified and will investigate.")}
+        <br/>
+        {Text("Your reference is " + reportId + ".")}
+      </div>
+    }).openOr({
+      bind("problem", xhtml,
+        "reporter" -> SHtml.text(reporter, reporter = _, "class" -> "hideOnSubmit"),
+        "context" -> SHtml.text(context, context = _, "readonly" -> "true", "class" -> "hideOnSubmit"),
+        "report" -> SHtml.textarea(report, report = _, "class" -> "hideOnSubmit", "rows" -> "5"),
+        "submit" -> SHtml.submit("Send", () => process(), "class" -> "hideOnSubmit"))
+    })
   }
-
-  private def getCurrentContext = {
-    "Doin' Stuff"
-  }
-
-  protected def getProblemContext: JObject = {
-    JObject(List(JField("username", JString(getUsername)),
-      JField("context", JString(getCurrentContext))))
-  }
-*/
-
-/*
-  protected def sendReport(problemContext: JObject): String = {
-    error("Problem reported. User: " + problemContext.values.getOrElse("username", "") + ", Context: " + problemContext.values.getOrElse("context", "") + ", Report: " + problemReport)
-    "Thanks for reporting a problem. The support team has been notified and will investigate."
-  }
-*/
 }
