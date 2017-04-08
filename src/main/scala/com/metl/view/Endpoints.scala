@@ -622,11 +622,21 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
             val reporter = r.param("reporter").getOrElse("unknown reporter")
             val context = r.param("context").getOrElse("unknown context")
             val report = r.param("report").getOrElse("unknown report")
-
             val nextRandom = nextFuncName(new Date().getTime)
             val reportId = nextRandom.substring(nextRandom.length - 7, nextRandom.length - 1)
 
-            error("Problem reported at search (#%s). Reporter: %s, Context: %s, Report: %s".format(reportId, reporter, context, report))
+            val detectedState = (for {
+              s <- S.session
+              ds <- tryo({S.initIfUninitted(s){
+                (Globals.currentUser.is,Option(Globals.casState.is))
+              }})
+            } yield {
+              ds
+            }).getOrElse((reporter,None))
+
+            val detectedUser = detectedState._1
+            val casState = detectedState._2.getOrElse("").toString
+            error("Problem reported (#%s). Reporter: %s, Context: %s, Report: %s, CAS State: %s".format(reportId, detectedUser, context, report, casState))
             val output = (
               "#reporter *" #> reporter &
                 "#context *" #> context &
