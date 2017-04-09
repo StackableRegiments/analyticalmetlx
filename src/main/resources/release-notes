@@ -1,3 +1,7 @@
+1.12.1
+METL-600: Story: User reports a problem.
+METL-602: Bugfix: metlHistory fetch creates too many threads.
+
 1.11.3
 METL-601: Improvement: Red-tint the canvas when in a disconnected state.
 
