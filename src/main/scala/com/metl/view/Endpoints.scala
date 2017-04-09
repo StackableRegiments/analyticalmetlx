@@ -621,7 +621,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       () =>
         Stopwatch.time("MeTLStatefulRestHelper.submitProblemReport", {
           for {
-            t <- Templates(List("_problemReported"))
+            t <- S.runTemplate(List("_problemReported"))
           } yield {
             val reporter = r.param("reporter").getOrElse("unknown reporter")
             val context = r.param("context").getOrElse("unknown context")
