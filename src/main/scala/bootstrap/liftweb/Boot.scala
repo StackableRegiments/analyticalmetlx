@@ -108,9 +108,11 @@ class Boot extends Logger {
       Menu(Loc("Quizzes","quizzes" :: Nil,"Quizzes",Hidden)),
       Menu(Loc("RemotePluginConversationChooser","remotePluginConversationChooser" :: Nil,"LTI Remote Plugin",Hidden)),
       //Default
-      Menu(Loc("Static", Link(List("static"), true, "/static/index"), "Static Content", Hidden)))
+      Menu(Loc("Static", Link(List("static"), true, "/static/index"), "Static Content", Hidden)),
+      //Help
+      Menu(Loc("reportProblem", "reportProblem" :: Nil, "Report a Problem")))
 
-    LiftRules.setSiteMapFunc(() => sitemap())
+     LiftRules.setSiteMapFunc(() => sitemap())
 
     LiftRules.loggedInTest = Full(() => true)
     info("Started version: %s\r\n".format(com.metl.BuildInfo.version)) // initialize the loading of the version number in the app, for the about page, and also dump it into the logs so that we can see it.

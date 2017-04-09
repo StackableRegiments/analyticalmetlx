@@ -1,0 +1,19 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+    <script src="static/js/stable/lodash-4.12.0.js"></script>
+    <script src="static/js/stable/jquery-ui-1.12.0.min.js"></script>
+    <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+    <link rel="stylesheet" href="static/css/jAlert.css"></link>
+    <script src="static/js/stable/jAlert.min.js"></script>
+    <script src="static/js/stable/jAlert-functions.min.js"></script>
+    <div class="lift:ReportProblem">
+        <form action="/submitProblemReport" method="post">
+            <span id="hiddenFields"></span>
+            <div class="indent directlyOnBackground">
+                <h1>Describe the Problem</h1>
+                <p id="message">Please tell us what went wrong, and what you were doing when it happened.</p>
+                <p><textarea name="report" title="Report"></textarea></p>
+                <button type="submit">Send</button>
+            </div>
+        </form>
+    </div>
+</div>
