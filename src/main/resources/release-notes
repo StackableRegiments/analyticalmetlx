@@ -1,3 +1,6 @@
+1.12.2
+METL-606: Story: Can't insert image/video.
+
 1.12.1
 METL-600: Story: User reports a problem.
 METL-602: Bugfix: metlHistory fetch creates too many threads.
