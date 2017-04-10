@@ -499,7 +499,12 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case Req(List("proxy", slide, source), _, _) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.proxy", StatelessHtml.proxy(slide, source))
     case r@Req(List("proxyImageUrl", slide), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.proxyImageUrl", StatelessHtml.proxyImageUrl(new String(base64Decode(slide)), r.param("source").getOrElse("")))
+      () => Stopwatch.time("MeTLStatefulRestHelper.proxyImageUrl", {
+          val s = new String(base64Decode(slide)) 
+          val u = r.param("source").getOrElse("")
+          println("proxyImageUrl: %s %s".format(s,u))
+        StatelessHtml.proxyImageUrl(s,u)
+      })
     case Req(List("quizProxy", conversation, identity), _, _) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.quizProxy", StatelessHtml.quizProxy(conversation, identity))
     case Req(List("quizResultsGraphProxy", conversation, identity, width, height), _, _) =>

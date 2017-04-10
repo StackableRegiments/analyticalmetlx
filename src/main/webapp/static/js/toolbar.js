@@ -2107,7 +2107,7 @@ var Modes = (function(){
                         url: url,
                         type: 'POST',
                         success: function(e){
-                            var newIdentity = $(e).find("resourceUrl").text();
+                            var newIdentity = $(e).find("resourceUrl").text().trim();
                             var imageStanza = {
                                 type:"image",
                                 author:UserSettings.getUsername(),
@@ -2115,7 +2115,7 @@ var Modes = (function(){
                                 tag:"{\"author\":\""+UserSettings.getUsername()+"\",\"privacy\":\""+Privacy.getCurrentPrivacy()+"\",\"id\":\""+newIdentity+"\",\"isBackground\":false,\"zIndex\":0,\"timestamp\":-1}",
                                 identity:newIdentity,
                                 slide:currentSlide.toString(),
-                                source:$(e).text(),
+                                source:newIdentity,
                                 bounds:[imageDef.x,imageDef.y,imageDef.x+imageDef.width,imageDef.y+imageDef.height],
                                 width:imageDef.width,
                                 height:imageDef.height,
