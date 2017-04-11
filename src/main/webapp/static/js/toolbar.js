@@ -1833,14 +1833,14 @@ var Modes = (function(){
                         url: url,
                         type: 'POST',
                         success: function(e){
-                            var newIdentity = $(e).find("resourceUrl").text();
+                            var newIdentity = $(e).find("resourceUrl").text().trim();
                             var videoStanza = {
                                 type:"video",
                                 author:UserSettings.getUsername(),
                                 timestamp:t,
                                 identity:newIdentity,
                                 slide:currentSlide.toString(),
-                                source:$(e).text(),
+                                source:newIdentity,
                                 bounds:[currentVideo.x,currentVideo.y,currentVideo.x+currentVideo.width,currentVideo.y+currentVideo.height],
                                 width:currentVideo.width,
                                 height:currentVideo.height,
@@ -1848,7 +1848,7 @@ var Modes = (function(){
                                 privacy:Privacy.getCurrentPrivacy(),
                                 x:currentVideo.x,
                                 y:currentVideo.y,
-                                audiences:_.map(Conversations.getCurrentGroup(),"id").map(permitStudentsToPublishCheckbox)
+                                audiences:_.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences()).map(audienceToStanza)
                             };
                             registerTracker(newIdentity,function(){
                                 var insertMargin = Modes.select.handlesAtZoom();
