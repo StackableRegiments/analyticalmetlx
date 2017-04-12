@@ -1,5 +1,8 @@
+1.12.3
+METL-607: Bugfix: Video on canvas stopped working.
+
 1.12.2
-METL-606: Story: Can't insert image/video.
+METL-606: Bugfix: Can't insert image.
 
 1.12.1
 METL-600: Story: User reports a problem.
