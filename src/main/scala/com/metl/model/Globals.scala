@@ -200,6 +200,19 @@ object Globals extends PropertyReader with Logger {
   def getGroupsProvider(providerStoreId:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerStoreId)
   def getGroupsProviders:List[GroupsProvider] = groupsProviders
 
+  var mailer:Option[SimpleMailer] = for {
+    mailerNode <- (propFile \\ "mailer").headOption
+    smtp <- readText(mailerNode, "smtp")
+    port <- readInt(mailerNode, "port")
+    ssl <- readBool(mailerNode, "ssl")
+    username <- readText(mailerNode, "username")
+    password <- readText(mailerNode, "password")
+    fromAddress <- readText(mailerNode, "fromAddress")
+    recipients <- Some(readNodes(readNode(mailerNode, "recipients"),"recipient").map(_.text).toList)
+  } yield {
+    SimpleMailer(smtp, port, ssl, username, password, Full(fromAddress), recipients)
+  }
+
   object casState {
     import com.metl.liftAuthenticator._
     import net.liftweb.http.S
