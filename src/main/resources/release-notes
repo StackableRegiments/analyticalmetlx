@@ -1,5 +1,6 @@
 1.12.4
 METL-607: Bugfix: Video on canvas stopped working.
+METL-605: Improvement: Enhance problem reporter to send email directly.
 
 1.12.2
 METL-606: Bugfix: Can't insert image.
