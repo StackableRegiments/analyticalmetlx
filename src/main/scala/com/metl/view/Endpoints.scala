@@ -636,7 +636,13 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
 
             val detectedUser = detectedState._1
             val casState = detectedState._2.getOrElse("").toString
+
             error("Problem reported (#%s). Reporter: %s, Context: %s, Report: %s, CAS State: %s".format(reportId, detectedUser, context, report, casState))
+            if (Globals.mailer.nonEmpty) {
+              Globals.mailer.get.sendMailMessage("Problem Report #" + reportId,
+                "Report ID: %s\nReporter: %s\nContext: %s\n\nReport:\n%s\n\nCAS State:\n%s".format(reportId, detectedUser, context, report, casState))
+            }
+
             val output = (
               "#reporter *" #> reporter &
                 "#context *" #> context &
