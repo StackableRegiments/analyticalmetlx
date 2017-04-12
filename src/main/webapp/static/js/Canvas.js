@@ -58,4 +58,4 @@ window.Canvas = {
         dotC.fill();
         return dot;
     }
-}
+};

@@ -173,6 +173,9 @@ object Globals extends PropertyReader with Logger {
   val googleAnalytics = ("stackable",readText(propFile,"googleAnalytics"))
   val clientGoogleAnalytics = ("client",readText(propFile,"clientGoogleAnalytics"))
 
+  val d2lThreadPoolMultiplier = readInt(propFile,"d2lThreadPoolMultiplier").getOrElse(5)
+  val h2ThreadPoolMultiplier = readInt(propFile,"h2ThreadPoolMultiplier").getOrElse(8)
+
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
   def stackOverflowName(who:String,location:String):String = "%s_StackOverflow_%s".format(location,who)
 

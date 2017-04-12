@@ -20,6 +20,7 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
   override def getConversationForSlide(slideJid:String) = conversations.conversationFor(slideJid.toInt).toString
+  override def getAllConversations = conversations.getAll
   override def searchForConversation(query:String) = conversations.search(query)
   override def searchForConversationByCourse(courseId:String) = conversations.searchByCourse(courseId)
   override def detailsOfConversation(jid:String) = conversations.detailsOf(jid.toInt)

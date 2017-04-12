@@ -46,6 +46,9 @@ class MeTL2011CachedConversations(config:ServerConfiguration, http:HttpProvider,
     true
   }
 
+  override def getAll:List[Conversation] = Stopwatch.time("CachedConversations.getAll",{
+    conversations.map(_._2).toList
+  })
   override def search(query:String):List[Conversation] = Stopwatch.time("CachedConversations.search",{
     if(query == null || query.length == 0) List.empty[Conversation]
     else{
@@ -158,6 +161,9 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
     }
   }
 
+  override def getAll:List[Conversation] = Stopwatch.time("Conversations.getAll",{
+    (scala.xml.XML.loadString(http.getClient.get(searchBaseUrl + "search?query=")) \\ "conversation").map(c => serializer.toConversation(c)).toList
+  })
   override def search(query:String):List[Conversation] = Stopwatch.time("Conversations.search",{
     (scala.xml.XML.loadString(http.getClient.get(searchBaseUrl + "search?query=" + Helpers.urlEncode(query))) \\ "conversation").map(c => serializer.toConversation(c)).toList
   })

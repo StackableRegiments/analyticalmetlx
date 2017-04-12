@@ -13,7 +13,7 @@ import net.liftweb.http._
 import net.liftweb.http.rest._
 import Helpers._
 import com.metl.model._
-import com.metl.view.ReportHelper._
+import com.metl.view.StudentActivityReportHelper._
 
 import scala.xml.{Text, XML}
 
@@ -605,14 +605,18 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         PlainTextResponse("loggedUserAgent")
       })
     }
-    case Req("studentActivity" :: Nil, _, _) if Globals.isAnalyst => () =>
-      Stopwatch.time("MeTLRestHelper.studentActivity", {
-        for {
-          courseId <- S.param("courseId")
-        } yield {
-          PlainTextResponse(ReportHelper.studentActivity(courseId))
-        }
-      })
+    case Req("studentActivity" :: Nil,_,_) if Globals.isAnalyst => () => Stopwatch.time("MeTLRestHelper.studentActivity", {
+      for{
+        courseId <- S.param("courseId")
+      } yield {
+        PlainTextResponse(StudentActivityReportHelper.studentActivity(courseId),
+          List(("Content-Type", "text/csv"),
+            ("Content-Disposition", "attachment; filename=studentActivity-" + courseId + ".csv"),
+            ("Pragma", "no-cache"),
+            ("Expires", "0")),
+          200)
+      }
+    })
     case r@Req(List("submitProblemReport"), _, PostRequest) =>
       () =>
         Stopwatch.time("MeTLStatefulRestHelper.submitProblemReport", {

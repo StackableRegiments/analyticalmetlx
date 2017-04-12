@@ -1,7 +1,11 @@
 package com.metl.data
 
+import java.util.concurrent.ConcurrentHashMap
+
 import com.metl.utils._
 import net.liftweb.common.Logger
+
+import scala.collection.JavaConversions
 
 // the feedback name should be bound to a particular onReceive function, so that we can use that feedbackName to match particular behaviours (given that the anonymous functions won't work that way for us)
 class MessageBusDefinition(val location:String, val feedbackName:String, val onReceive:(MeTLStanza) => Unit = (s:MeTLStanza) => {}, val onConnectionLost:() => Unit = () => {}, val onConnectionRegained:() => Unit = () => {}){
@@ -20,7 +24,7 @@ abstract class MessageBusProvider {
   def sendMessageToBus(busFilter:MessageBusDefinition => Boolean, message:MeTLStanza):Unit = {}
 }
 abstract class OneBusPerRoomMessageBusProvider extends MessageBusProvider {
-  protected lazy val busses = new SynchronizedWriteMap[MessageBusDefinition,MessageBus](scala.collection.mutable.HashMap.empty[MessageBusDefinition,MessageBus],true,(k:MessageBusDefinition) => createNewMessageBus(k))
+  protected lazy val busses = JavaConversions.mapAsScalaConcurrentMap(new ConcurrentHashMap[MessageBusDefinition,MessageBus]())
   protected def createNewMessageBus(definition:MessageBusDefinition):MessageBus
   override def getMessageBus(definition:MessageBusDefinition) = Stopwatch.time("OneBusPerRoomMessageBusProvider",busses.getOrElseUpdate(definition,createNewMessageBus(definition)))
   override def releaseMessageBus(definition:MessageBusDefinition) = Stopwatch.time("OneBusPerRoomMessageBusProvider",busses.remove(definition))

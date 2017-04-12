@@ -1,11 +1,13 @@
 package com.metl.comet
 
-import com.metl.utils.{Stopwatch,SynchronizedWriteMap,PeriodicallyRefreshingVar}
+import com.metl.utils.{PeriodicallyRefreshingVar, Stopwatch}
 import java.util.Date
+
 import org.apache.commons.io.IOUtils
 import net.liftweb.http._
+
 import scala.collection.mutable.{HashMap, SynchronizedMap}
-import net.liftweb.mongodb.{Limit}
+import net.liftweb.mongodb.Limit
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.JsonParser._
@@ -19,6 +21,7 @@ import S._
 import net.liftweb.util._
 import Helpers._
 import net.liftweb.actor.LiftActor
+
 import xml.{NodeSeq, Text}
 import collection.mutable.ListBuffer
 import ElemAttr._
@@ -26,9 +29,10 @@ import org.bson.types.ObjectId
 import com.metl.model._
 import com.metl.model.Globals._
 import java.text.SimpleDateFormat
+import java.util.concurrent.ConcurrentHashMap
 //import scala.concurrent.ops._
 import org.bson.types.ObjectId
-
+import com.metl.utils.FunctionConverter._
 
 case class Emerge(onPageSelector:String)
 trait Bob{}
@@ -840,16 +844,16 @@ class StackWorker(location:String) extends LiftActor with Logger {
 }
 
 object StackServerManager {
-  private lazy val stackServers = new SynchronizedWriteMap[String,StackServer](scala.collection.mutable.HashMap.empty[String,StackServer],true,(k:String) => createNewStackServer(k))
-  def get(location:String) = {
-    stackServers.getOrElseUpdate(location, createNewStackServer(location))
+  private lazy val stackServers = new ConcurrentHashMap[String, StackServer]()
+  def get(location: String) = {
+    stackServers.computeIfAbsent(location, (l:String) => createNewStackServer(l))
   }
   def createNewStackServer(location:String) = {
     new StackServer(location)
   }
-  private lazy val stackWorkers = new SynchronizedWriteMap[String,StackWorker](scala.collection.mutable.HashMap.empty[String,StackWorker],true,(k:String) => createNewStackWorker(k))
+  private lazy val stackWorkers = new ConcurrentHashMap[String,StackWorker]()
   def getWorker(location:String) = {
-    stackWorkers.getOrElseUpdate(location, createNewStackWorker(location))
+    stackWorkers.computeIfAbsent(location, (l:String) => createNewStackWorker(l))
   }
   def createNewStackWorker(location:String) = {
     new StackWorker(location)
@@ -895,13 +899,16 @@ object StackOverflow extends StackOverflow {
     })
     case other => warn("StackOverflow:localOpenAction received unknown message: %s".format(other))
   }
-  private lazy val openedComments = new SynchronizedWriteMap[Tuple2[String,String],List[String]](scala.collection.mutable.HashMap.empty[Tuple2[String,String],List[String]],true,(k:Tuple2[String,String]) => List.empty[String])
+
+  private lazy val openedComments = new ConcurrentHashMap[Tuple2[String,String],List[String]]()
   def getOpenedComments(location:Tuple2[String,String]) = {
-    openedComments.getOrElseUpdate(location, List.empty[String])
+    openedComments.computeIfAbsent(location, (location:Tuple2[String,String]) => List.empty[String])
   }
-  private lazy val requestedDetailedQuestion = new SynchronizedWriteMap[Tuple2[String,String],Box[String]](scala.collection.mutable.HashMap.empty[Tuple2[String,String],Box[String]],true,(k:Tuple2[String,String]) => Empty)
-  def getRequestedDetailedQuestion(where:Tuple2[String,String]):Box[String] = requestedDetailedQuestion(where)
-  def setRequestedDetailedQuestion(where:Tuple2[String,String],what:String):Unit = requestedDetailedQuestion(where) = Full(what)
+  private lazy val requestedDetailedQuestion = new ConcurrentHashMap[Tuple2[String,String],Box[String]]()
+  def getRequestedDetailedQuestion(where:Tuple2[String,String]):Box[String] = {
+    requestedDetailedQuestion.computeIfAbsent(where, (where:Tuple2[String,String]) => Empty)
+  }
+  def setRequestedDetailedQuestion(where:Tuple2[String,String],what:String):Unit = requestedDetailedQuestion.put(where, Full(what))
   def localSession = S.session
   def remoteMessageRecieved(message:Any, location:String):Unit = {
     StackServerManager.get(location) ! message
@@ -922,14 +929,14 @@ object StackOverflow extends StackOverflow {
     val identifier = Tuple2(currentUser.is,questionId)
     val oldList = getOpenedComments(identifier).filterNot(a => a == changedNode)
     val newList = if (newState){ changedNode :: oldList} else oldList
-    openedComments(identifier) = newList
+    openedComments.put(identifier, newList)
     local(SetExpansionState(questionId,newList),location,session)
   }
   def setCommentState(location:String, questionId:String,changedNode:String,newState:Boolean,who:String,session:Box[LiftSession]):Unit = {
     val identifier = Tuple2(who,questionId)
     val oldList = getOpenedComments(identifier).filterNot(a => a == changedNode)
     val newList = if (newState){ changedNode :: oldList} else oldList
-    openedComments(identifier) = newList
+    openedComments.put(identifier, newList)
     local(SetExpansionState(questionId,newList),who,location,session)
   }
   def getCommentState(where:String,qId:String,rqT:String):Boolean = getCommentState(where,qId,rqT,currentUser.is)
@@ -937,7 +944,7 @@ object StackOverflow extends StackOverflow {
   def setInitialState(location:String,questionId:String,openTopics:List[String]):Unit = setInitialState(location,questionId,openTopics,localSession)
   def setInitialState(location:String,questionId:String,openTopics:List[String],session:Box[LiftSession]):Unit = setInitialState(location,questionId,openTopics,currentUser.is,session)
   def setInitialState(location:String,questionId:String,openTopics:List[String],who:String,session:Box[LiftSession]):Unit = {
-    openedComments(Tuple2(who,questionId)) = openTopics
+    openedComments.put(Tuple2(who,questionId), openTopics)
     local(SetExpansionState(questionId,openTopics),who,location,session)
     setDetailedQuestion(location,questionId,who,session)
   }
