@@ -16,7 +16,7 @@ case class SimpleMailer(smtp:String,port:Int,ssl:Boolean,username:String,passwor
   })
   def sendMailMessage(subject:String,message:String):Unit = {
     try {
-      sendMail(From(fromAddress.getOrElse("metl@stackableregiments.com")),Subject(subject),PlainMailBodyType(message) :: recipients.map(r => To(r)):_*)
+      sendMail(From(fromAddress.getOrElse("no-reply-metl@stackableregiments.com")),Subject(subject),PlainMailBodyType(message) :: recipients.map(r => To(r)):_*)
     }
     catch {
       case e:Throwable => {
