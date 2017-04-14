@@ -553,9 +553,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
             val filename = S.params("filename").head
             val jid = S.params("jid").head
             val server = ServerConfiguration.default
-            XmlResponse(<resourceUrl>
-              {server.postResource(jid, filename, bytes)}
-            </resourceUrl>)
+            XmlResponse(<resourceUrl>{server.postResource(jid, filename, bytes)}</resourceUrl>)
           })
         })
     }
@@ -571,9 +569,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
             val filename = S.params("filename").head
             val jid = S.params("jid").head
             val server = ServerConfiguration.default
-            XmlResponse(<resourceUrl>
-              {server.postResource(jid, filename, bytes)}
-            </resourceUrl>)
+            XmlResponse(<resourceUrl>{server.postResource(jid, filename, bytes)}</resourceUrl>)
           })
         })
     }
@@ -593,9 +589,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
             var quality = r.param("quality").map(_.toFloat).getOrElse(0.4f)
             val bytes = SvgConverter.toJpeg(svg, w, h, quality)
             val server = ServerConfiguration.default
-            XmlResponse(<resourceUrl>
-              {server.postResource(jid, filename, bytes)}
-            </resourceUrl>)
+            XmlResponse(<resourceUrl>{server.postResource(jid, filename, bytes)}</resourceUrl>)
           }
         })
     }
