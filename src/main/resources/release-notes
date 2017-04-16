@@ -1,3 +1,6 @@
+1.13.1
+METL-610: Bugfix: Images do not print.
+
 1.12.4
 METL-607: Bugfix: Video on canvas stopped working.
 METL-605: Improvement: Enhance problem reporter to send email directly.
