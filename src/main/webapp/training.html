@@ -23,6 +23,12 @@
     }
     #exerciseContent{
     flex:1;
+    max-height:90vh;
+    overflow-y:scroll;
+    overflow-x:hidden;
+    }
+    #exerciseControls{
+    padding-left:1em;
     }
     #simulation {
     flex:2;
@@ -37,10 +43,10 @@
       <div id="scriptContainer"></div>
       <div class="flex-container-row" id="exerciseHeader">
         <h1>
-	  <span id="exerciseTitle"></span>
-	  <span>: </span>
-	  <span id="exerciseBlurb"></span>
-	</h1>
+          <span id="exerciseTitle"></span>
+          <span>: </span>
+          <span id="exerciseBlurb"></span>
+        </h1>
       </div>
     </div>
     <div class="flex-container-row">
