@@ -1,5 +1,33 @@
-function simulationOn(conversation,slide){
-    $("#simulation").attr("src",sprintf("/board?conversationJid=%s&slideId=%s&showTools=true&showSlides=true&unique=true",conversation,slide));
+function simulationOn(conversation,slide,onLoad){
+    var f = function(){
+        $("#simulation").css("opacity",0).on("load",function(){
+            _.defer(onLoad);
+        }).attr("src",sprintf("/board?conversationJid=%s&slideId=%s&showTools=true&showSlides=true&unique=true",conversation,slide));
+    };
+    $(f);
+    f();
+}
+function hide(selector){
+    $(selector,$("#simulation").contents()).animate({opacity:0},500);
+}
+function flash(selector){
+    $(selector,$("#simulation").contents()).animate({opacity:1},500);
+}
+function clearTools(){
+    _.map([
+        "#thumbsColumn",
+        "#toolsColumn",
+        "#applicationMenuButton",
+        "#slideControls",
+        ".meters",
+        "#masterFooter"
+    ],hide);
+    _.delay(function(){
+        $("#simulation").animate({opacity:1});
+    },1000);
+}
+function highlight(selector){
+    flash(selector);
 }
 function simulatedUsers(users){
     var container = $("#simulationPopulation").empty();

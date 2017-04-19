@@ -24,10 +24,8 @@ import net.liftweb.http.js.jquery.JqJsCmds._
 
 import net.liftweb.http.js.jquery.JqJE._
 
-trait TrainingBlock
-case class TrainingInstruction(content:NodeSeq) extends TrainingBlock
-case class TrainingControl(label:String,behaviour:()=>JsCmd) extends TrainingBlock
-case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd])
+case class TrainingControl(label:String,behaviour:()=>JsCmd)
+case class TrainingPage(title:NodeSeq,blurb:NodeSeq,instructions:NodeSeq,controls:Seq[TrainingControl])
 
 case object SimulatorTick
 
@@ -59,50 +57,21 @@ case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:Sca
 case class TrainingManual(actor:TrainerActor) {
   import Dimensions._
   val namer = new DataFactory
-  def el(label:String,content:String) = Elem.apply(null,label,scala.xml.Null,scala.xml.TopScope,Text(content))
-  def p(content:String) = TrainingInstruction(el("p",content))
   val pages = List(
     TrainingPage(Text("Exercise 1"),
       Text("The teaching space"),
-      List(
-        p("This space is a whiteboard on which you and your class can write."),
-        p("Like a slide deck or a PowerPoint presentation, it supports multiple pages."),
-        TrainingControl(
-          "Show me the pages",
-          () => actor ! Highlight("#thumbsColumn")
-        ),
-        p("You may choose whether your class can move freely between these."),
-        TrainingControl("How do I move between pages?",
-          () => actor ! Highlight("#slideControls")
-        ),
-        p("Only the author of the conversation can add pages."),
-        TrainingControl(
-          "Show me how",
-          () => actor ! Highlight("#slideControls")
-        ),
-        p("You have control over the way your content appears to other users and what sort of content you want to create."),
-        TrainingControl(
-          "Show me the tools",
-          () => actor ! Highlight("#toolsColumn")
-        ),
-        p("Classroom spaces, the device you're using and network speed can affect whether the whiteboard works well for you."),
-        TrainingControl(
-          "How can I tell if there's a problem?",
-          () => actor ! Highlight(".meters")
-        )),
-      Full(Call("clearTools").cmd)
-    ),
+      Text("This space is a whiteboard on which you can draw.  It has multiple pages and a set of content creation controls enabling you to control the way in which your content appears to other users."),
+      List(TrainingControl(
+        "Show me the pages",
+        () => actor ! Highlight("#thumbsColumn")
+      ))),
     TrainingPage(Text("Exercise 2"),
       Text("Sharing an open space"),
-      List(
-        p("These controls will bring virtual students into your classroom.  Bring one in now.")
-      ) :::
-        List("benign","malicious").map(intent => TrainingControl(
-          "Bring in a %s student".format(intent),() => {
-            actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
-          })),
-      None
-    ))
+      Text("These controls will bring virtual students into your classroom.  Bring one in now."),
+      List("benign","malicious").map(intent => TrainingControl(
+        "Bring in a %s student".format(intent),() => {
+          actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
+        }))))
 }
 
 class TrainerActor extends StronglyTypedJsonActor with Logger {
@@ -184,7 +153,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   override def localSetup = {
     super.localSetup
-    val newConversation = serverConfig.createConversation("a practice conversation",username)
+    val newConversation = serverConfig.createConversation(nextFuncName,username)
     val slide = newConversation.slides(0).id.toString
     currentConversation = Full(newConversation)
     currentSlide = Full(slide)
@@ -193,14 +162,13 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   override def render = "#exerciseTitle *" #> currentPage.title &
   "#exerciseBlurb *" #> currentPage.blurb &
-  "#exerciseControls .control *" #> currentPage.blocks.map {
-    case c:TrainingControl => ajaxButton(c.label,c.behaviour,"class" -> "active")
-    case c:TrainingInstruction => c.content
-  } &
+  "#exerciseInstructions *" #> currentPage.instructions &
+  "#exerciseControls .control *" #> currentPage.controls.map(c =>
+    ajaxButton(c.label,c.behaviour)) &
   "#scriptContainer *" #> (for {
     c <- currentConversation
     s <- currentSlide
-  } yield Script(Call("simulationOn",c.jid,s,currentPage.onLoad.map(AnonFunc(_)).openOr(JsNull)).cmd))
+  } yield Script(Call("simulationOn",c.jid,s).cmd))
 }
 
 case class Glyph(width:Int,strokes:List[List[Point]])

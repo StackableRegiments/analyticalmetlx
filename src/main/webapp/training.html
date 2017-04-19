@@ -4,28 +4,51 @@
   <script data-lift="with-resource-id" src="static/js/trainer.js"></script>
   <link rel="stylesheet" href="static/css/trainer.css"></link>
   <style>
-    html, body, #content{
-    height:100%;
-    }
-    #exerciseTitle,#exerciseBlurb{
-    flex-grow:1;
+    #content{
+    width:1024px;
+    margin:auto;
     }
     #simulationPopulation span{
     margin-right:1em;
     }
+    #topRow *{
+    color:white;
+    background-color:black;
+    }
+    #scriptContainer{
+    display:none;
+    }
+    #exerciseHeader *{
+    font-size:x-large;
+    }
+    #exerciseContent{
+    flex:1;
+    }
+    #simulation {
+    flex:2;
+    }
+    .control {
+    display:inline-block;
+    float:right;
+    }
   </style>
   <div class="lift:Metl.trainer">
+    <div id="topRow">
+      <div id="scriptContainer"></div>
+      <div class="flex-container-row" id="exerciseHeader">
+        <h1>
+	  <span id="exerciseTitle"></span>
+	  <span>: </span>
+	  <span id="exerciseBlurb"></span>
+	</h1>
+      </div>
+    </div>
     <div class="flex-container-row">
-      <div>
-        <div class="flex-container-row">
-          <div id="exerciseTitle"></div>
-          <div id="exerciseBlurb"></div>
-        </div>
-        <div id="exerciseInstructions"></div>
+      <div id="exerciseContent" class="tools main-menu-container">
         <div id="exerciseControls">
           <div class="control"></div>
         </div>
-	<div id="simulationPopulation"></div>
+        <div id="simulationPopulation"></div>
       </div>
       <iframe width="1024" height="768" id="simulation"></iframe>
     </div>
