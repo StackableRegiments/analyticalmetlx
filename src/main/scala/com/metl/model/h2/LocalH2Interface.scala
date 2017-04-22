@@ -5,12 +5,16 @@ import com.metl.utils._
 import com.metl.persisted._
 import com.metl.h2.dbformats._
 import java.util.Date
+
 import net.liftweb.mapper._
 import net.liftweb.common._
 
 import scala.compat.Platform.EOL
-import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, StandardDBVendor}
+import _root_.net.liftweb.mapper.{ConnectionManager, DB, DefaultConnectionIdentifier, Schemifier, StandardDBVendor}
 import _root_.java.sql.{Connection, DriverManager}
+
+import com.metl.model.Globals
+import com.metl.model.Globals._
 
 class H2Interface(config:ServerConfiguration,filename:Option[String],onConversationDetailsUpdated:Conversation=>Unit) extends SqlInterface(config,new StandardDBVendor("org.h2.Driver", filename.map(f => "jdbc:h2:%s;AUTO_SERVER=TRUE".format(f)).getOrElse("jdbc:h2:mem:%s".format(config.name)),Empty,Empty){
   //adding extra db connections - it defaults to 4, with 20 being the maximum
@@ -322,6 +326,9 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
 
     newHistory
   })
+
+  protected val identityPoolTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(5 * Globals.h2ThreadPoolMultiplier))
+  protected val stanzaTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15 * Globals.h2ThreadPoolMultiplier))
   def newGetHistory(jid:String):History = Stopwatch.time("H2Interface.newGetHistory",{
     val newHistory = History(jid)
     var moveDeltas:List[MeTLMoveDelta] = Nil
@@ -355,7 +362,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
             true
           }
         ).par
-        parI.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(5))  
+        parI.tasksupport = identityPoolTaskSupport  
         parI.map(f => f()).toList
         val resources = Map(H2Resource.findAll(ByList(H2Resource.partialIdentity,(images ::: videos ::: submissions ::: files ::: quizzes ::: submissions).map(_._1.take(H2Constants.identity)))).flatMap(r => {
           r.bytes.get match {
@@ -394,7 +401,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => H2BooleanGradeValue.findAll(By(H2BooleanGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toBooleanGradeValue(s))),
       () => H2TextGradeValue.findAll(By(H2TextGradeValue.room,jid)).foreach(s => newHistory.addStanza(serializer.toTextGradeValue(s)))
     ).par
-    parO.tasksupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(15))  
+    parO.tasksupport = stanzaTaskSupport
     parO.map(f => f()).toList
     moveDeltas.foreach(s => newHistory.addStanza(s))
     newHistory

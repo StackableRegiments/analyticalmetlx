@@ -173,6 +173,9 @@ object Globals extends PropertyReader with Logger {
   val googleAnalytics = ("stackable",readText(propFile,"googleAnalytics"))
   val clientGoogleAnalytics = ("client",readText(propFile,"clientGoogleAnalytics"))
 
+  val d2lThreadPoolMultiplier = readInt(propFile,"d2lThreadPoolMultiplier").getOrElse(5)
+  val h2ThreadPoolMultiplier = readInt(propFile,"h2ThreadPoolMultiplier").getOrElse(8)
+
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
   def stackOverflowName(who:String,location:String):String = "%s_StackOverflow_%s".format(location,who)
 
@@ -196,6 +199,19 @@ object Globals extends PropertyReader with Logger {
 
   def getGroupsProvider(providerStoreId:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerStoreId)
   def getGroupsProviders:List[GroupsProvider] = groupsProviders
+
+  var mailer:Option[SimpleMailer] = for {
+    mailerNode <- (propFile \\ "mailer").headOption
+    smtp <- readText(mailerNode, "smtp")
+    port <- readInt(mailerNode, "port")
+    ssl <- readBool(mailerNode, "ssl")
+    username <- readText(mailerNode, "username")
+    password <- readText(mailerNode, "password")
+    fromAddress <- readText(mailerNode, "fromAddress")
+    recipients <- Some(readNodes(readNode(mailerNode, "recipients"),"recipient").map(_.text).toList)
+  } yield {
+    SimpleMailer(smtp, port, ssl, username, password, Full(fromAddress), recipients)
+  }
 
   object casState {
     import com.metl.liftAuthenticator._

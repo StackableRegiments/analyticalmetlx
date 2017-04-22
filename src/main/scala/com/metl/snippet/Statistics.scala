@@ -2,6 +2,7 @@ package com.metl.snippet
 
 import java.text.SimpleDateFormat
 
+import com.metl.model.{CacheConfig, ManagedCache}
 import net.liftweb.common.Logger
 import net.liftweb.http.SHtml._
 import net.liftweb.http.js.JE._
@@ -10,19 +11,23 @@ import net.liftweb.json.JsonAST.JString
 import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
+import net.sf.ehcache.config.MemoryUnit
+import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
 object Statistics extends Statistics
 
 class Statistics extends Logger {
+  protected val config = CacheConfig(10, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU, Some(10))
+  protected val reportCache = new ManagedCache[String, List[List[String]]]("statistics", (key: String) => runAllQueries, config)
 
   val format = new SimpleDateFormat("yyyyMMdd")
   val startDate = "20160801"
 
   def render: CssBindFunc = {
     "#statisticsButton" #> ajaxButton("Refresh", () => {
-      Call("updateStatistics", JString(createHtmlTable(runAllQueries))).cmd
+      Call("updateStatistics", JString(createHtmlTable(reportCache.get("enterprise")))).cmd
     }) &
-      "#loaderStats" #> Script(OnLoad(Call("updateStatistics", JString(createHtmlTable(runAllQueries))).cmd))
+      "#loaderStats" #> Script(OnLoad(Call("updateStatistics", JString(createHtmlTable(reportCache.get("enterprise")))).cmd))
   }
 
   def runQuery(name: String, sql: String, params: List[Any]): List[String] = {

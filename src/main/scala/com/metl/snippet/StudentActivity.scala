@@ -30,7 +30,7 @@ class StudentActivity extends Logger {
     val headers = CSVReader.open(stringReader).allWithOrderedHeaders()
     stringReader.close()
 
-    Call("updateActivity", createHtmlTable(headers)).cmd
+    Call("updateActivity", createHtmlTable(courseId, headers)).cmd
   }
 
   def render: CssBindFunc = {
@@ -38,8 +38,9 @@ class StudentActivity extends Logger {
       "#loaderJs" #> Script(OnLoad(Call("init").cmd))
   }
 
-  def createHtmlTable(results: (List[String], List[Map[String, String]])): JObject = {
+  def createHtmlTable(courseId: String, results: (List[String], List[Map[String, String]])): JObject = {
     JObject(List(
+      JField("courseId", JString(courseId)),
       JField("headers", JArray(results._1.map(h => JString(h)))),
       JField("data", JArray(results._2.filter(r => r.get("ConversationID").nonEmpty || r.get("D2LStudentID").nonEmpty).map(r => {
         JObject(r.toList.map(kv => JField(kv._1, JString(kv._2))))

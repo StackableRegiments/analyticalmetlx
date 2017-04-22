@@ -1,3 +1,22 @@
+1.12.4
+
+New config:
+
+	<mailer>
+		<name>SES emailer</name>
+		<smtp>email-smtp.us-east-1.amazonaws.com</smtp>
+		<port>587</port>
+		<ssl>true</ssl>
+		<username>XXX</username>
+		<password>XXX</password>
+		<fromAddress>no-reply-metl@stackableregiments.com</fromAddress>
+		<recipients>
+			<recipient>dave@stackableregiments.com</recipient>
+			<recipient>chris@stackableregiments.com</recipient>
+			<recipient>doug@stackableregiments.com</recipient>
+		</recipients>
+	</mailer>
+
 1.9.1
 
 New config in specificOverrides.txt:

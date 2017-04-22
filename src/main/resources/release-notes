@@ -1,3 +1,26 @@
+1.13.1
+METL-610: Bugfix: Images do not print.
+
+1.12.4
+METL-607: Bugfix: Video on canvas stopped working.
+METL-605: Improvement: Enhance problem reporter to send email directly.
+
+1.12.2
+METL-606: Bugfix: Can't insert image.
+
+1.12.1
+METL-600: Story: User reports a problem.
+METL-602: Bugfix: metlHistory fetch creates too many threads.
+
+1.11.3
+METL-601: Improvement: Red-tint the canvas when in a disconnected state.
+
+1.11.1
+METL-585: Improvement: Export as CSV from /statistics.
+METL-597: Improvement: Allow analysts to report over all courses, not just their own.
+METL-584: Improvement: Add re-entrancy protection to Refresh button on /statistics.
+METL-159: Improvement: Convert SynchronisedWriteMap to ConcurrentHashMap.
+
 1.10.2
 METL-559: Isolation change does not refresh canvas.
 
