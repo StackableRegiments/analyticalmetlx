@@ -82,7 +82,7 @@ object StudentActivityReportHelper {
 
     val stringWriter = new StringWriter()
     val writer = CSVWriter.open(stringWriter)
-    writer.writeRow(List("ConversationTitle", "MeTLStudentID", "PageLocation", "SecondsOnPage", "VisitsToPage", "ActivityOnPage", "Approximation", "D2LStudentID", "ConversationID"))
+    writer.writeRow(List("Conversation", "Student", "Page", "Seconds", "Visits", "Activity", "Approx", "D2LStudentID", "ConversationID"))
     csvRows.foreach(r => writer.writeRow(r))
     nonAttendingRows.foreach(r => writer.writeRow(r))
     writer.close()
