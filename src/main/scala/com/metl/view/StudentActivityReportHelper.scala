@@ -150,8 +150,8 @@ object StudentActivityReportHelper {
         r.visits.toString,
         r.activity.toString,
         r.approx.toString,
-        formatDate(r.start).toString,
-        formatDate(r.end).toString,
+        formatDate(r.start),
+        formatDate(r.end),
         getD2LUserId(r.conversationForeignRelationship, r.author),
         r.conversationJid.toString) :: csvRows
     })
