@@ -1,6 +1,7 @@
 package com.metl.view
 
 import java.io.StringWriter
+import java.text.{DateFormat, SimpleDateFormat}
 import java.util.Date
 
 import com.github.tototoshi.csv.CSVWriter
@@ -13,7 +14,7 @@ import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
 protected case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
 
-protected case class ProcessedRow(author: String, conversationJid: String, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, visits: Int, activity: Long)
+protected case class ProcessedRow(author: String, conversationJid: String, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, start: Long, end: Long, visits: Int, activity: Long)
 
 case class RowTime(timestamp: Long, present: Boolean)
 
@@ -65,7 +66,7 @@ object StudentActivityReportHelper {
       val head = g._2.head
       val duration = getSecondsOnPage(g._2.map(r => RowTime(r.timestamp, r.present)))
       processedRows = ProcessedRow(head.author, head.conversationJid.toString, head.conversationTitle, head.conversationForeignRelationship, head.location, head.index,
-        duration._1, duration._2, g._2.length,
+        duration._1, duration._2, duration._3, duration._4, g._2.length,
         getRoomActivity(head.author, head.location)) :: processedRows
     })
 
@@ -82,7 +83,7 @@ object StudentActivityReportHelper {
 
     val stringWriter = new StringWriter()
     val writer = CSVWriter.open(stringWriter)
-    writer.writeRow(List("Conversation", "Student", "Page", "Seconds", "Visits", "Activity", "Approx", "D2LStudentID", "ConversationID"))
+    writer.writeRow(List("Conversation", "Student", "Page", "Seconds", "Visits", "Activity", "Approx", "Start", "End", "D2LStudentID", "ConversationID"))
     csvRows.foreach(r => writer.writeRow(r))
     nonAttendingRows.foreach(r => writer.writeRow(r))
     writer.close()
@@ -136,6 +137,11 @@ object StudentActivityReportHelper {
 
   protected def createCsvRows(processedRows: List[ProcessedRow]): List[List[String]] = {
     var csvRows: List[List[String]] = List(List())
+
+    def formatDate(timestamp: Long) = {
+      new SimpleDateFormat("d MMM yy").format(new Date(timestamp))
+    }
+
     processedRows.reverse.foreach(r => {
       csvRows = List(r.conversationTitle,
         r.author,
@@ -144,6 +150,8 @@ object StudentActivityReportHelper {
         r.visits.toString,
         r.activity.toString,
         r.approx.toString,
+        formatDate(r.start).toString,
+        formatDate(r.end).toString,
         getD2LUserId(r.conversationForeignRelationship, r.author),
         r.conversationJid.toString) :: csvRows
     })
@@ -186,12 +194,13 @@ object StudentActivityReportHelper {
   }
 
   /* Traverse via incrementing counter. Increment on enter, decrement on exit, >= 1 is "in", <= 0 is "out". */
-  def getSecondsOnPage(pageRows: List[RowTime]): (Long, Boolean) = {
+  def getSecondsOnPage(pageRows: List[RowTime]): (Long, Boolean, Long, Long) = {
     val rows = pageRows.sortBy(_.timestamp)
     //    println("Getting seconds for " + rows.length + " rows")
     var counter = 0
     var totalTime: Long = 0
     var lastTime: Long = rows.head.timestamp
+    val earliest = lastTime
     var lastPresent: Boolean = false
     for (r <- rows) {
       if (r.present) counter += 1
@@ -211,7 +220,7 @@ object StudentActivityReportHelper {
     // Cap duration at 5 min per segment.
     val duration = Math.min(totalTime / 1000, 300)
     //    println("Total time (s) in room: " + duration)
-    (duration, approx)
+    (duration, approx, earliest, lastTime)
   }
 
   protected def sortRows(l1: List[String], l2: List[String]): Boolean = {
