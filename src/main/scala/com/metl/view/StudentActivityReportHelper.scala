@@ -21,14 +21,18 @@ case class RowTime(timestamp: Long, present: Boolean)
 object StudentActivityReportHelper {
 
   protected val config = CacheConfig(10, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU, Some(60))
-  protected val reportCache = new ManagedCache[String, String]("studentActivity", (key: String) => generateStudentActivity(key), config)
+  protected val reportCache = new ManagedCache[String, List[List[String]]]("studentActivity", (key: String) => generateStudentActivity(key), config)
   protected val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
 
-  def studentActivity(courseId: String): String = {
+  def studentActivity(courseId: String): List[List[String]] = {
     reportCache.get(courseId)
   }
 
-  protected def generateStudentActivity(courseId: String): String = {
+  def studentActivityCsv(courseId: String): String = {
+    rowsToCsv(reportCache.get(courseId))
+  }
+
+  protected def generateStudentActivity(courseId: String): List[List[String]] = {
     println("Generating student activity...")
     val start = new Date().toInstant
 
@@ -81,14 +85,17 @@ object StudentActivityReportHelper {
       }).filter(l => l(7).nonEmpty).filter(l => !csvRows.exists(c => l(1).equals(c(1)))).sortWith((left, right) => left(1).toLowerCase.compareTo(right(1).toLowerCase) < 0) ::: nonAttendingRows
     }
 
+    val finalRows:List[List[String]] = List(List("Conversation", "Student", "Page", "Seconds", "Visits", "Activity", "Approx", "Start", "End", "D2LStudentID", "ConversationID")) ::: csvRows ::: nonAttendingRows
+    println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
+
+    finalRows
+  }
+
+  protected def rowsToCsv(finalRows: List[List[String]]): String = {
     val stringWriter = new StringWriter()
     val writer = CSVWriter.open(stringWriter)
-    writer.writeRow(List("Conversation", "Student", "Page", "Seconds", "Visits", "Activity", "Approx", "Start", "End", "D2LStudentID", "ConversationID"))
-    csvRows.foreach(r => writer.writeRow(r))
-    nonAttendingRows.foreach(r => writer.writeRow(r))
+    finalRows.foreach(r => writer.writeRow(r))
     writer.close()
-
-    println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
     stringWriter.toString
   }
 

@@ -13,7 +13,6 @@ import net.liftweb.http._
 import net.liftweb.http.rest._
 import Helpers._
 import com.metl.model._
-import com.metl.view.StudentActivityReportHelper._
 
 import scala.xml.{Text, XML}
 
@@ -603,7 +602,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       for{
         courseId <- S.param("courseId")
       } yield {
-        PlainTextResponse(StudentActivityReportHelper.studentActivity(courseId),
+        PlainTextResponse(StudentActivityReportHelper.studentActivityCsv(courseId),
           List(("Content-Type", "text/csv"),
             ("Content-Disposition", "attachment; filename=studentActivity-" + courseId + ".csv"),
             ("Pragma", "no-cache"),

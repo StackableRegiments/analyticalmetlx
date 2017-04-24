@@ -1,9 +1,7 @@
 package com.metl.snippet
 
-import java.io.StringReader
 import java.util.Date
 
-import com.github.tototoshi.csv.CSVReader
 import com.metl.data.ServerConfiguration
 import com.metl.view.StudentActivityReportHelper
 import net.liftweb.common.{Empty, Logger}
@@ -26,11 +24,9 @@ class StudentActivity extends Logger {
   }
 
   def handler(courseId: String): JsCmd = {
-    val stringReader = new StringReader(StudentActivityReportHelper.studentActivity(courseId))
-    val headers = CSVReader.open(stringReader).allWithOrderedHeaders()
-    stringReader.close()
-
-    Call("updateActivity", createHtmlTable(courseId, headers)).cmd
+    val studentActivity = StudentActivityReportHelper.studentActivity(courseId)
+    val headers = studentActivity.head
+    Call("updateActivity", createHtmlTable(courseId, (headers, studentActivity.tail))).cmd
   }
 
   def render: CssBindFunc = {
@@ -38,12 +34,14 @@ class StudentActivity extends Logger {
       "#loaderJs" #> Script(OnLoad(Call("init").cmd))
   }
 
-  def createHtmlTable(courseId: String, results: (List[String], List[Map[String, String]])): JObject = {
+  def createHtmlTable(courseId: String, results: (List[String], List[List[String]])): JObject = {
     JObject(List(
       JField("courseId", JString(courseId)),
       JField("headers", JArray(results._1.map(h => JString(h)))),
-      JField("data", JArray(results._2.filter(r => r.get("ConversationID").nonEmpty || r.get("D2LStudentID").nonEmpty).map(r => {
-        JObject(r.toList.map(kv => JField(kv._1, JString(kv._2))))
+//      JField("data", JArray(results._2.filter(r => r.get("ConversationID").nonEmpty || r.get("D2LStudentID").nonEmpty).map(r => {
+//        JObject(r.toList.map(kv => JField(kv._1, JString(kv._2))))
+      JField("data", JArray(results._2.map(r => {
+        JArray(r.map(value => JString(value)))
       })))
     ))
   }

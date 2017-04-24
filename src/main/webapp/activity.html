@@ -1,0 +1,112 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+    <head>
+        <link rel="stylesheet" href="static/css/selectize.default.css"/>
+        <link rel="stylesheet" href="static/css/flatpickr.min.css"/>
+        <link rel="stylesheet" href="static/css/directlyOnBackground.css"/>
+        <link rel="stylesheet" href="static/css/activity.css"/>
+        <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+        <script src="static/js/stable/lodash.min.js"></script>
+        <script src="static/js/stable/moment.min.js"></script>
+        <script src="static/js/stable/d3.v4.min.js"></script>
+        <script src="static/js/stable/d3.layout.cloud.js"></script>
+        <script src="static/js/stable/typo.js"></script>
+        <script src="static/js/stable/selectize.min.js"></script>
+        <script src="static/js/stable/flatpickr.min.js"></script>
+        <style>
+            .result {
+                text-align: right;
+                font-family: 'Courier New', Monospace;
+            }
+        </style>
+    </head>
+    <script type="text/javascript">
+        var createTable = function (a) {
+            var table = $("<table/>");
+            var tr = $("<tr/>");
+            table.append(tr);
+            _.forEach(a.headers, function (header) {
+                tr.append('<th>' + header + '</th>');
+            });
+            _.forEach(a.data, function (values) {
+                tr = $("<tr/>");
+                table.append(tr);
+                _.forEach(values, function (value) {
+                    tr.append('<td>' + value + '</td>');
+                });
+            });
+            return table;
+        };
+        var updateActivity = function (a) {
+            var div = $("<div/>");
+            div.append($("<a href='/studentActivity?courseId=" + a.courseId + "'>Download as CSV</a>")).append(createTable(a));
+            $('#courseActivity').html(div);
+            var now = new Date();
+            var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
+            $('#timestampActivity').html('Last run: ' + t + '<br/>Results are cached for 1 minute');
+        };
+        var restrictDate = function (minimum, dateInputSelector) {
+            var value = $(dateInputSelector).text();
+            alert('Restricting: ' + value);
+        };
+        var init = function () {
+            $('#courses').selectize({maxOptions: 20, closeAfterSelect: true});
+            $('#activityFrom').flatpickr({
+                defaultDate: new Date(2016, 7, 1),
+                altInput: true,
+                onChange: function (selectedDates, dateStr, instance) {
+                    restrictDate(false, '#activityFrom')
+                }
+            });
+            $('#activityTo').flatpickr({
+                defaultDate: "today",
+                altInput: true,
+                onChange: function (selectedDates, dateStr, instance) {
+                    restrictDate(true, '#activityTo')
+                }
+            });
+        };
+    </script>
+    <div id="masterLayout" class="flex-container-column">
+        <div class="mbt">
+            <span class="lift:studentActivity">
+                <div class="indent flex-container-row">
+                    <h1 class="directlyOnBackground">Course Analysis</h1>
+                </div>
+                <div class="indent flex-container-row">
+                    <div class="flex-container-row">
+                        <span id="from">
+                            <label for="activityFrom" class="directlyOnBackground">From:</label>
+                            <input type="text" id="activityFrom"/>
+                        </span>
+                        <span id="to">
+                            <label for="activityTo" class="directlyOnBackground">To:</label>
+                            <input type="text" id="activityTo"/>
+                        </span>
+                    </div>
+                </div>
+                <div class="indent flex-container-row">
+                    <div class="flex-container-column">
+                        <div id="selectBoxContainer" class="mbt indent">
+                            <span id="selectBox"></span>
+                            <div class="flex-container-row">
+                                <div id="courses-container">
+                                    <label for="courses" class="directlyOnBackground">Select Course:</label>
+                                    <select id="courses" class="demo-default"></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="indent flex-container-row">
+                    <div class="flex-container-column">
+                        <div class="directlyOnBackground">
+                            <span id="courseActivity"/>
+                        </div>
+                        <span id="timestampActivity" class="directlyOnBackground"/>
+                        <div id="loaderJs"></div>
+                    </div>
+                </div>
+            </span>
+        </div>
+    </div>
+</div>
