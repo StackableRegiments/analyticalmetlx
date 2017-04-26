@@ -1,24 +1,25 @@
 package com.metl.view
 
 import java.io.StringWriter
-import java.text.{DateFormat, SimpleDateFormat}
+import java.text.SimpleDateFormat
 import java.util.Date
 
 import com.github.tototoshi.csv.CSVWriter
 import com.metl.data.ServerConfiguration
 import com.metl.liftAuthenticator.{ForeignRelationship, Member}
 import com.metl.model._
+import net.liftweb.common.Logger
 import net.liftweb.mapper.DB
 import net.sf.ehcache.config.MemoryUnit
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
 protected case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
 
-protected case class ProcessedRow(author: String, conversationJid: String, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, start: Long, end: Long, visits: Int, activity: Long)
+protected case class ProcessedRow(author: String, conversationJid: String, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, start: Long, end: Long, days: Double, visits: Int, activity: Long)
 
 case class RowTime(timestamp: Long, present: Boolean)
 
-object StudentActivityReportHelper {
+object StudentActivityReportHelper extends Logger {
 
   protected val config = CacheConfig(10, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU, Some(60))
   protected val reportCache = new ManagedCache[String, List[List[String]]]("studentActivity", (key: String) => generateStudentActivity(key), config)
@@ -30,6 +31,10 @@ object StudentActivityReportHelper {
 
   def studentActivityCsv(courseId: String): String = {
     rowsToCsv(reportCache.get(courseId))
+  }
+
+  def countDays(duration: (Long, Boolean, Long, Long)): Double = {
+    (duration._4 - duration._3) / 1000d / 60 / 60 / 24
   }
 
   protected def generateStudentActivity(courseId: String): List[List[String]] = {
@@ -70,7 +75,7 @@ object StudentActivityReportHelper {
       val head = g._2.head
       val duration = getSecondsOnPage(g._2.map(r => RowTime(r.timestamp, r.present)))
       processedRows = ProcessedRow(head.author, head.conversationJid.toString, head.conversationTitle, head.conversationForeignRelationship, head.location, head.index,
-        duration._1, duration._2, duration._3, duration._4, g._2.length,
+        duration._1, duration._2, duration._3, duration._4, countDays(duration), g._2.length,
         getRoomActivity(head.author, head.location)) :: processedRows
     })
 
@@ -81,11 +86,11 @@ object StudentActivityReportHelper {
     if (conversations.nonEmpty) {
       val conversation = conversations.head
       nonAttendingRows = getAllD2LUserIds(conversation.foreignRelationship).map(m => {
-        List("", getMemberDetail(m, "UserName"), "", "", "", "", "", getMemberDetail(m, "OrgDefinedId"), "")
+        List("", getMemberDetail(m, "UserName"), "", "", "", "", "", "", getMemberDetail(m, "OrgDefinedId"), "")
       }).filter(l => l(7).nonEmpty).filter(l => !csvRows.exists(c => l(1).equals(c(1)))).sortWith((left, right) => left(1).toLowerCase.compareTo(right(1).toLowerCase) < 0) ::: nonAttendingRows
     }
 
-    val finalRows:List[List[String]] = List(List("Conversation", "Student", "Page", "Seconds", "Visits", "Activity", "Approx", "Start", "End", "D2LStudentID", "ConversationID")) ::: csvRows ::: nonAttendingRows
+    val finalRows:List[List[String]] = List(List("Conversation", "Student", "Page", "Seconds", "Visits", "Activity", "Approx", "Start", "End", "Days", "D2LStudentID", "ConversationID")) ::: csvRows ::: nonAttendingRows
     println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
 
     finalRows
@@ -159,6 +164,7 @@ object StudentActivityReportHelper {
         r.approx.toString,
         formatDate(r.start),
         formatDate(r.end),
+        "%.1f".format(r.days),
         getD2LUserId(r.conversationForeignRelationship, r.author),
         r.conversationJid.toString) :: csvRows
     })
