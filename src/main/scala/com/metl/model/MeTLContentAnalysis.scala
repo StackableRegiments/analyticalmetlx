@@ -85,7 +85,7 @@ class ChunkAnalyzer extends Logger with Chunker{
         us.foreach(url =>{
           val identity = "%s@%s:%s".format(url,c.author,room.location)
           if(!alreadyReleased(identity)){
-            room ! MotherMessage(<a href={url}>{url}</a>,Nil)
+            room ! MotherMessage(<a href={url} target="_blank">{url}</a>,Nil)
             alreadyReleased = alreadyReleased + identity
           }
         })
