@@ -202,11 +202,13 @@ var Plugins = (function(){
         "Face to face":(function(){
             var container = $("<div />");
             return {
-                style:".publishedStream {background:green;} .subscribedStream {background:red;}"+
-                    " .videoConfStartButton, .videoConfSubscribeButton, .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
-                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer, .videoConfPermitStudentBroadcastContainer{display:flex;}"+
+                style:".publishedStream {background:green;}, .subscribedStream {background:red;}"+
+                    " .videoConfStartButton, .videoConfSubscribeButton{padding-top:0;margin-top:0;}"+
+                    " .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
+                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer" +
+                    " .videoConfPermitStudentBroadcastContainer{display:flex;}"+
                     " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
-                    " .videoConfStartButton, .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
+                    " .videoConfStartButton{padding-top:0;margin-top:0;}, .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
                     " #videoConfSessionsContainer{display:none;}"+
                     " .videoContainer{display:flex;}"+
                     " .context, .publisherName{font-size:1rem;}"+
