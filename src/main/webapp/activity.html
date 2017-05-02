@@ -44,31 +44,33 @@
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
             $('#timestampActivity').html('Last run: ' + t + '<br/>Results are cached for 1 minute');
         };
-        var restrictDate = function (minimum, dateInputSelector) {
-            var value = $(dateInputSelector).text();
-            alert('Restricting: ' + value);
+//        var restrictDate = function (minimum, dateInputSelector, selectedDates) {
+//            var value = $(dateInputSelector).text();
+//            alert('Restricting: ' + value + ", dates: " + selectedDates);
+//            $("#activityFrom");
+//            $("#activityTo");
+//        };
+        var refreshData = function () {
+            // Go get stuff
+            getStudentActivity($("#activityFrom").text(), ...);
         };
         var init = function () {
-            $('#courses').selectize({maxOptions: 20, closeAfterSelect: true});
+            $('#courses').selectize({maxOptions: 20, closeAfterSelect: true, onChange: refreshData});
             $('#activityFrom').flatpickr({
                 defaultDate: new Date(2016, 7, 1),
                 altInput: true,
-                onChange: function (selectedDates, dateStr, instance) {
-                    restrictDate(false, '#activityFrom')
-                }
+                onChange: refreshData
             });
             $('#activityTo').flatpickr({
                 defaultDate: "today",
                 altInput: true,
-                onChange: function (selectedDates, dateStr, instance) {
-                    restrictDate(true, '#activityTo')
-                }
+                onChange: refreshData
             });
         };
     </script>
     <div id="masterLayout" class="flex-container-column">
         <div class="mbt">
-            <span class="lift:studentActivity">
+            <span class="lift:comet?type=studentActivity">
                 <div class="indent flex-container-row">
                     <h1 class="directlyOnBackground">Course Analysis</h1>
                 </div>
