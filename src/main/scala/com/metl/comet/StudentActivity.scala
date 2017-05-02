@@ -6,13 +6,12 @@ import com.metl.data.ServerConfiguration
 import com.metl.liftExtensions.StronglyTypedJsonActor
 import com.metl.view.StudentActivityReportHelper
 import net.liftweb.actor.LiftActor
-import net.liftweb.common.{Empty, Full, Logger, SimpleActor}
-import net.liftweb.http.{ListenerManager, SHtml}
+import net.liftweb.common.{Full, Logger, SimpleActor}
+import net.liftweb.http.{ListenerManager, RenderOut}
 import net.liftweb.http.SHtml._
 import net.liftweb.http.js.JE.Call
 import net.liftweb.http.js.JsCmds.{OnLoad, Script}
 import net.liftweb.json.JsonAST.{JArray, JField, JObject, JString}
-import net.liftweb.util._
 
 class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
 
@@ -33,8 +32,8 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
     createHtmlTable(courseId, (headers, studentActivity.tail))
   }
 
-  override def render: CssBindFunc = {
-    "#courses" #> selectElem[(String,String)](getAllOptions, Empty, BasicElemAttr("bob", "fred")) &
+  override def render: RenderOut = {
+    "#courses" #> selectElem[(String,String)](getAllOptions, Full(blankOption))((x: (String, String)) => ()) &
       "#loaderJs" #> Script(OnLoad(Call("init").cmd))
   }
 
