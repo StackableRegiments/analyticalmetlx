@@ -107,22 +107,13 @@ var Pan = {
         takeControlOfViewbox();
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
-        /*
-         viewboxX -= xDelta * xScale;
-         viewboxY -= yDelta * yScale;
-         blit();
-         */
         TweenController.panViewboxRelative(xDelta * xScale, yDelta * yScale);
     },
     translate:function(xDelta,yDelta){
         takeControlOfViewbox();
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
-        /*
-         viewboxX -= xDelta * xScale;
-         viewboxY -= yDelta * yScale;
-         blit();
-         */
+        console.log("Translate",xDelta,yDelta,xScale,yScale);
         TweenController.translateViewboxRelative(xDelta * xScale, yDelta * yScale);
     }
 }
@@ -256,8 +247,8 @@ var TweenController = (function(){
         requestedViewboxWidth = viewboxWidth;
         requestedViewboxHeight = viewboxHeight;
     };
-    var throttleSpeed = 10;
-    var instantAlterViewboxFunction = _.throttle(function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
+    var throttleSpeed = 30;
+    var instantAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
                 onComplete();
@@ -265,26 +256,23 @@ var TweenController = (function(){
             return;
         }
         if(tween){
-            //console.log("instantAlterViewboxFunc stopped tween");
             tween.stop();
         }
         tween = false;
-        viewboxX = finalX;
-        viewboxY = finalY;
-        viewboxWidth = finalWidth;
-        viewboxHeight = finalHeight;
+        tX = viewboxX = finalX;
+        tY = viewboxY = finalY;
+        tW = viewboxWidth = finalWidth;
+        tH = viewboxHeight = finalHeight;
         if (!shouldAvoidUpdatingRequestedViewbox){
             updateRequestedPosition();
         }
-        clearBoard();
-        blit();//render(boardContent);
         if (onComplete){
             onComplete();
         }
-        //console.log("sending viewbox update");
+        blit();
         teacherViewUpdated(finalX,finalY,finalWidth,finalHeight);
         Progress.call("onViewboxChanged");
-    },throttleSpeed,{trailing:true,leading:true});
+    };
     var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
             //var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
@@ -309,6 +297,7 @@ var TweenController = (function(){
         }
     },300);
     var tween;
+    var tX,tY,tW,tH;/*These T variables are to hold the visual box as it is zooming, so that no element gets tricked into trying to measure against a mid-tween viewbox.  The logical state is set to what it will be after the zoom*/
     var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
@@ -321,6 +310,10 @@ var TweenController = (function(){
         var startY = viewboxY;
         var startWidth = viewboxWidth;
         var startHeight = viewboxHeight;
+        tX = startX;
+        tY = startY;
+        tW = startWidth;
+        tH = startHeight;
         var xDelta = finalX - startX;
         var yDelta = finalY - startY;
         var widthDelta = finalWidth - startWidth;
@@ -332,19 +325,21 @@ var TweenController = (function(){
             tween.stop();
             tween = false;
         }
-        //console.log("startingTween:",startX,startY,startWidth,startHeight,xDelta,yDelta,widthDelta,heightDelta);
         tween = new TWEEN.Tween({x:0,y:0,w:0,h:0})
             .to({x:xDelta,y:yDelta,w:widthDelta,h:heightDelta}, interval)
             .easing(TWEEN.Easing.Quadratic.Out)
             .onUpdate(function(){
-                //console.log("easingTweening: ",this.x,this.y,this.w,this.h);
-                viewboxX = startX + this.x;
-                viewboxY = startY + this.y;
-                viewboxWidth = startWidth + this.w;
-                viewboxHeight = startHeight + this.h;
+                tX = startX + this.x;
+                tY = startY + this.y;
+                tW = startWidth + this.w;
+                tH = startHeight + this.h;
             }).onComplete(function(){
-                //console.log("easingAlterViewboxFunction complete",onComplete);
                 tween = false;
+                tX = viewboxX = finalX;
+                tY = viewboxY = finalY;
+                tW = viewboxWidth = finalWidth;
+                tH = viewboxHeight = finalHeight;
+                blit();
                 if (!shouldAvoidUpdatingRequestedViewbox){
                     updateRequestedPosition();
                 }
@@ -356,10 +351,10 @@ var TweenController = (function(){
             }).start();
         var update = function(t){
             if (tween){
-                requestAnimationFrame(update);
                 TWEEN.update();
-                clearBoard();
-                blit();//render(boardContent);
+                blit();
+                console.log("Tween blit");
+                requestAnimationFrame(update);
             }
         };
         requestAnimationFrame(update);
@@ -381,7 +376,10 @@ var TweenController = (function(){
         panViewboxRelative:panViewboxRelativeFunction,
         translateViewboxRelative:translateViewboxRelativeFunction,
         zoomAndPanViewboxRelative:zoomAndPanViewboxRelativeFunction,
-        scaleAndTranslateViewboxRelative:scaleAndTranslateViewboxRelativeFunction
+        scaleAndTranslateViewboxRelative:scaleAndTranslateViewboxRelativeFunction,
+        immediateView:function(){
+            return [tX, tY, tW, tH];
+        }
     }
 })();
 var Extend = (function(){
@@ -826,22 +824,22 @@ $(function(){
     var pasteDialogTemplate = $("#pasteDialogTemplate").clone();
     $("#pasteDialogTemplate").remove();
     var func = function(ev){
-			//console.log("ev",ev,ev.clipboardData,ev.clipboardData.files[0],ev.clipboardData.items[0]);
+        //console.log("ev",ev,ev.clipboardData,ev.clipboardData.files[0],ev.clipboardData.items[0]);
         var df = ("dataTransfer" in ev) ? ev.dataTransfer : ev.clipboardData;
         if ("types" in df){
             var x = ev.offsetX || 10;
             var y = ev.offsetY || 10;
             var availableTypes = _.filter(df.types,function(t){
-							return t.toLowerCase().startsWith("text") || t.toLowerCase().startsWith("image") || t.toLowerCase().startsWith("file");
-						});
+                return t.toLowerCase().startsWith("text") || t.toLowerCase().startsWith("image") || t.toLowerCase().startsWith("file");
+            });
             var items = _.toArray(df.items);
             var files = _.toArray(df.files);
-						var newDf = {
-							items:items,
-							files:files,
-							types:availableTypes
-						};
-						console.log("newDf",newDf);
+            var newDf = {
+                items:items,
+                files:files,
+                types:availableTypes
+            };
+            console.log("newDf",newDf);
             var dataSets = _.map(availableTypes,function(type){
                 return {
                     key:type,
@@ -854,7 +852,7 @@ $(function(){
                     action(elem,df.getData(elem));
                 };
             };
-						console.log("availableTypes:",availableTypes,items,files);
+            console.log("availableTypes:",availableTypes,items,files);
             if (_.size(availableTypes) > 1){
                 var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
                 var rootElem = pasteDialogTemplate.clone().attr("id",rootId);
@@ -1004,8 +1002,8 @@ $(function(){
     });
     new Clipboard('.deeplink', {
         text: function(trigger) {
-	    /*The native browser will absolutize all hrefs where JQuery would not.  Don't convert this into $.attr*/
-	    var t = $(trigger.nextElementSibling).find("a")[0].href;
+            /*The native browser will absolutize all hrefs where JQuery would not.  Don't convert this into $.attr*/
+            var t = $(trigger.nextElementSibling).find("a")[0].href;
             return t;
         }
     }).on("success",function(e){

@@ -1044,7 +1044,6 @@ var board = function(options){
         if (onComplete){
             onComplete();
         }
-        //console.log("sending viewbox update");
         Progress.call("onViewboxChanged",[finalX,finalY,finalWidth,finalHeight]);
     };
     var tween;
@@ -1076,13 +1075,11 @@ var board = function(options){
             .to({x:xDelta,y:yDelta,w:widthDelta,h:heightDelta}, interval)
             .easing(TWEEN.Easing.Quadratic.Out)
             .onUpdate(function(){
-							//console.log("easingTweening: ",this.x,this.y,this.w,this.h);
                 viewboxX = startX + this.x;
                 viewboxY = startY + this.y;
                 viewboxWidth = startWidth + this.w;
                 viewboxHeight = startHeight + this.h;
             }).onComplete(function(){
-                //console.log("easingAlterViewboxFunction complete",onComplete);
                 tween = false;
                 if (!shouldAvoidUpdatingRequestedViewbox){
                     updateRequestedPosition();
