@@ -1,3 +1,6 @@
+1.14.2
+METL-631: Bugfix: Extremely large text box makes other content super small.
+
 1.14.1
 METL-625: Include user email address in Problem Report email.
 METL-536: Toggle button should be as tall as Stream To / Hide From button.
