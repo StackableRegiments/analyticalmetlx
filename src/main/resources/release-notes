@@ -2,9 +2,9 @@
 METL-631: Bugfix: Extremely large text box makes other content super small.
 
 1.14.1
-METL-625: Include user email address in Problem Report email.
-METL-536: Toggle button should be as tall as Stream To / Hide From button.
-METL-616: Links extracted into chat by Mother should open in _blank.
+METL-625: Improvement: Include user email address in Problem Report email.
+METL-616: Improvement: Links extracted into chat by Mother should open in _blank.
+METL-536: Bugfix: Toggle button should be as tall as Stream To / Hide From button.
 
 1.13.1
 METL-610: Bugfix: Images do not print.
