@@ -44,15 +44,15 @@
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
             $('#timestampActivity').html('Last run: ' + t + '<br/>Results are cached for 1 minute');
         };
-//        var restrictDate = function (minimum, dateInputSelector, selectedDates) {
-//            var value = $(dateInputSelector).text();
-//            alert('Restricting: ' + value + ", dates: " + selectedDates);
-//            $("#activityFrom");
-//            $("#activityTo");
-//        };
+        //        var restrictDate = function (minimum, dateInputSelector, selectedDates) {
+        //            var value = $(dateInputSelector).text();
+        //            alert('Restricting: ' + value + ", dates: " + selectedDates);
+        //            $("#activityFrom");
+        //            $("#activityTo");
+        //        };
         var refreshData = function () {
             // Go get stuff
-            getStudentActivity($("#activityFrom").text(), ...);
+            getStudentActivity($("#activityFrom").text(), $("#activityFrom").text(), $("#courses-selectized").text());
         };
         var init = function () {
             $('#courses').selectize({maxOptions: 20, closeAfterSelect: true, onChange: refreshData});
@@ -67,6 +67,10 @@
                 onChange: refreshData
             });
         };
+        function augmentArguments(args){
+            args[_.size(args)] = new Date().getTime();
+            return args;
+        }
     </script>
     <div id="masterLayout" class="flex-container-column">
         <div class="mbt">
@@ -75,38 +79,32 @@
                     <h1 class="directlyOnBackground">Course Analysis</h1>
                 </div>
                 <div class="indent flex-container-row">
-                    <div class="flex-container-row">
-                        <span id="from">
-                            <label for="activityFrom" class="directlyOnBackground">From:</label>
-                            <input type="text" id="activityFrom"/>
-                        </span>
-                        <span id="to">
-                            <label for="activityTo" class="directlyOnBackground">To:</label>
-                            <input type="text" id="activityTo"/>
-                        </span>
-                    </div>
+                    <span id="from">
+                        <label for="activityFrom" class="directlyOnBackground">From:</label>
+                        <input type="text" id="activityFrom"/>
+                    </span>
+                    <span id="to">
+                        <label for="activityTo" class="directlyOnBackground">To:</label>
+                        <input type="text" id="activityTo"/>
+                    </span>
                 </div>
                 <div class="indent flex-container-row">
-                    <div class="flex-container-column">
-                        <div id="selectBoxContainer" class="mbt indent">
-                            <span id="selectBox"></span>
-                            <div class="flex-container-row">
-                                <div id="courses-container">
-                                    <label for="courses" class="directlyOnBackground">Select Course:</label>
-                                    <select id="courses" class="demo-default"></select>
-                                </div>
+                    <div id="selectBoxContainer" class="mbt">
+                        <span id="selectBox"></span>
+                        <div class="flex-container-row">
+                            <div id="courses-container">
+                                <label for="courses" class="directlyOnBackground">Select Course:</label>
+                                <select id="courses" class="demo-default"></select>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="indent flex-container-row">
-                    <div class="flex-container-column">
-                        <div class="directlyOnBackground">
-                            <span id="courseActivity"/>
-                        </div>
-                        <span id="timestampActivity" class="directlyOnBackground"/>
-                        <div id="loaderJs"></div>
+                    <div class="directlyOnBackground">
+                        <span id="courseActivity"/>
                     </div>
+                    <span id="timestampActivity" class="directlyOnBackground"/>
+                    <div id="loaderJs"></div>
                 </div>
             </span>
         </div>
