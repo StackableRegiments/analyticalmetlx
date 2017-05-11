@@ -649,6 +649,9 @@ var renderInks = function(inks,canvasContext,rendered,viewBounds){
     }
 };
 var renderRichTexts = function(texts,canvasContext,rendered,viewBounds){
+    RichText.render(canvasContext);
+};
+var _renderRichTexts = function(texts,canvasContext,rendered,viewBounds){
     if(texts){
         $.each(texts,function(i,text){
             if(text.doc){
@@ -914,12 +917,6 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 renderContentIdentification(canvasContext,rendered);
                 renderCanvasInteractables(canvasContext);
                 renderTint(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
-                console.log("rendered viewbounds",
-                            viewBounds[0],
-                            viewBounds[1],
-                            viewBounds[2],
-                            viewBounds[3]
-                           );
             }
             catch(e){
                 console.log("Render exception",e);
@@ -1015,7 +1012,6 @@ var IncludeView = (function(){
             requestedViewboxHeight = h;
         }
         var dim = {width:w,height:h,x:x,y:y};
-        console.log("IncludeView",dim);
         var constrained = Zoom.constrainRequestedViewbox(dim);
         var hr = boardHeight / constrained.height;
         var wr = boardWidth / constrained.width;

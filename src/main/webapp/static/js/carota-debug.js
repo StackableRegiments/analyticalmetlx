@@ -14,9 +14,9 @@ var carotaTest = (function(){
         var mean = _.mean(samples);
         console.log(sprintf("//Average %s milis over %s runs of %s in %s milis",mean,testCount,label,elapsed));
     }
-    var wordCount = 5000;
+    var wordCount = 200;
     var prime = function(){
-        var width = 2000;
+        var width = 500;
         var height = 500;
         var x = 100;
         var y = 100;
@@ -47,7 +47,6 @@ var carotaTest = (function(){
         boardContent.multiWordTexts[stanza.identity] = stanza;
         prerenderMultiwordText(stanza);
         boardContent.multiWordTexts[stanza.identity].doc.invalidateBounds();
-        var bounds = boardContent.multiWordTexts[stanza.identity].bounds;
     };
     var paintCount = 0;
     return {
@@ -66,6 +65,43 @@ var carotaTest = (function(){
             }
             carotaTest.sample();
         }
+    };
+})();
+var RichText = (function(){
+    var boxes = {};
+    var cursor = {
+        after:0,
+        target:false,
+        selection:false
+    };
+    var render = function(box,context){
+	context.fillStyle = "black";
+	context.size = 14;
+	var screenPos = worldToScreen(box.x,box.y);
+	context.fillText(box.identity, screenPos.x, screenPos.y);
+    };
+    return {
+        newIdentity:function(){
+            return sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId());
+        },
+        create:function(worldPos){
+	    var id = RichText.newIdentity();
+	    boxes[id] = {
+		x:worldPos.x,
+		y:worldPos.y,
+		identity:id,
+		author:UserSettings.getUsername()
+	    };
+        },
+	add:function(){},
+	clear:function(){
+	    boxes = {};
+	},
+	render:function(canvasContext){
+	    _.each(boxes,function(box,identity){
+		render(box,canvasContext);
+	    });
+	}
     };
 })();
 (function(){
@@ -366,9 +402,9 @@ var carotaTest = (function(){
                         return util.derive(obj, {
                             block: function(left, top, width, ordinal, parent, formatting) {
                                 var list = node.generic('list', parent, left, top),
-                                    itemNode,
-                                    itemFrame,
-                                    itemMarker;
+                                itemNode,
+                                itemFrame,
+                                itemMarker;
 
                                 var indent = 50, spacing = 10;
 
@@ -668,7 +704,7 @@ var carotaTest = (function(){
                         },
                         runs: function(emit, range) {
                             var startDetails = this.wordContainingOrdinal(Math.max(0, range.start)),
-                                endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1)) || startDetails;
+                            endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1)) || startDetails;
                             if(!(startDetails && endDetails)){
                                 /*The words aren't constructed yet*/
                                 throw new Exception("range miss");
@@ -690,12 +726,12 @@ var carotaTest = (function(){
                             var self = this;
 
                             var newWords = per(characters(runs))
-                                    .per(split(self.codes))
-                                    .truthy()
-                                    .map(function(w) {
-                                        return word(w, self.codes);
-                                    })
-                                    .all();
+                                .per(split(self.codes))
+                                .truthy()
+                                .map(function(w) {
+                                    return word(w, self.codes);
+                                })
+                                .all();
 
                             // Check if old or new content contains any fancy control codes:
                             var runFilters = false;
@@ -739,8 +775,8 @@ var carotaTest = (function(){
                             if (typeof text === 'string') {
                                 var sample = Math.max(0, start - 1);
                                 var sampleRun = per({ start: sample, end: sample + 1 })
-                                        .per(this.runs, this)
-                                        .first();
+                                    .per(this.runs, this)
+                                    .first();
                                 text = [
                                     sampleRun ? Object.create(sampleRun, { text: { value: text } }) : { text: text }
                                 ];
@@ -751,7 +787,7 @@ var carotaTest = (function(){
                             this.applyInsertFormatting(text);
 
                             var startWord = this.wordContainingOrdinal(start),
-                                endWord = this.wordContainingOrdinal(end);
+                            endWord = this.wordContainingOrdinal(end);
                             /*Toggling formatting on an empty box*/
                             if(!endWord) endWord = startWord;
 
@@ -888,8 +924,8 @@ var carotaTest = (function(){
                         },
                         performUndo: function(redo) {
                             var fromStack = redo ? this.redo : this.undo,
-                                toStack = redo ? this.undo : this.redo,
-                                oldCommand = fromStack.pop();
+                            toStack = redo ? this.undo : this.redo,
+                            oldCommand = fromStack.pop();
 
                             if (oldCommand) {
                                 oldCommand(function(newCommand) {
@@ -1025,14 +1061,14 @@ var carotaTest = (function(){
                             '</div>';
 
                         var textAreaDiv = host.querySelector('.carotaTextArea'),
-                            textArea = host.querySelector('textarea'),
-                            doc = carotaDoc(stanza),
-                            keyboardSelect = 0,
-                            keyboardX = null, nextKeyboardX = null,
-                            focusChar = null,
-                            textAreaContent = '',
-                            richClipboard = null,
-                            plainClipboard = null;
+                        textArea = host.querySelector('textarea'),
+                        doc = carotaDoc(stanza),
+                        keyboardSelect = 0,
+                        keyboardX = null, nextKeyboardX = null,
+                        focusChar = null,
+                        textAreaContent = '',
+                        richClipboard = null,
+                        plainClipboard = null;
 
                         doc.claimFocus = function(){
                             $(textArea).focus();
@@ -1355,7 +1391,7 @@ var carotaTest = (function(){
                                 nextCaretToggle = 0;
                                 doc.updateCanvas();
                                 doc.update();
-				doc.notifySelectionChanged();
+                                doc.notifySelectionChanged();
                                 repaintCursor(doc);
                                 blit();
                             }
@@ -1365,9 +1401,9 @@ var carotaTest = (function(){
                         };
 
                         var nextCaretToggle = new Date().getTime(),
-                            focused = false,
-                            cachedWidth = host.clientWidth,
-                            cachedHeight = host.clientHeight;
+                        focused = false,
+                        cachedWidth = host.clientWidth,
+                        cachedHeight = host.clientHeight;
 
                         doc.update = function() {
                             if(Conversations.getCurrentSlideJid() == doc.slide){
@@ -1689,25 +1725,25 @@ var carotaTest = (function(){
                     var runs = require('./runs');
 
                     /*  A Line is returned by the wrap function. It contains an array of PositionedWord objects that are
-                     all on the same physical line in the wrapped text.
+                        all on the same physical line in the wrapped text.
 
-                     It has a width (which is actually the same for all lines returned by the same wrap). It also has
-                     coordinates for baseline, ascent and descent. The ascent and descent have the maximum values of
-                     the individual words' ascent and descent coordinates.
+                        It has a width (which is actually the same for all lines returned by the same wrap). It also has
+                        coordinates for baseline, ascent and descent. The ascent and descent have the maximum values of
+                        the individual words' ascent and descent coordinates.
 
-                     It has methods:
+                        It has methods:
 
-                     draw(ctx, x, y)
-                     - Draw all the words in the line applying the specified (x, y) offset.
-                     bounds()
-                     - Returns a Rect for the bounding box.
-                     */
+                        draw(ctx, x, y)
+                        - Draw all the words in the line applying the specified (x, y) offset.
+                        bounds()
+                        - Returns a Rect for the bounding box.
+                    */
 
                     var prototype = node.derive({
                         bounds: function(minimal) {
                             if (minimal) {
                                 var firstWord = this.first().bounds(),
-                                    lastWord = this.last().bounds();
+                                lastWord = this.last().bounds();
                                 return rect(
                                     firstWord.l,
                                     this.baseline - this.ascent,
@@ -1958,24 +1994,24 @@ var carotaTest = (function(){
                     };
 
                     /*  A Part is a section of a word with its own run, because a Word can span the
-                     boundaries between runs, so it may have several parts in its text or space
-                     arrays.
+                        boundaries between runs, so it may have several parts in its text or space
+                        arrays.
 
-                     run           - Run being measured.
-                     isNewLine     - True if this part only contain a newline (\n). This will be
-                     the only Part in the Word, and this is the only way newlines
-                     ever occur.
-                     width         - Width of the run
-                     ascent        - Distance from baseline to top
-                     descent       - Distance from baseline to bottom
+                        run           - Run being measured.
+                        isNewLine     - True if this part only contain a newline (\n). This will be
+                        the only Part in the Word, and this is the only way newlines
+                        ever occur.
+                        width         - Width of the run
+                        ascent        - Distance from baseline to top
+                        descent       - Distance from baseline to bottom
 
-                     And methods:
+                        And methods:
 
-                     draw(ctx, x, y)
-                     - Draws the Word at x, y on the canvas context ctx. The y
-                     coordinate is assumed to be the baseline. The call
-                     prepareContext(ctx) will set the canvas up appropriately.
-                     */
+                        draw(ctx, x, y)
+                        - Draws the Word at x, y on the canvas context ctx. The y
+                        coordinate is assumed to be the baseline. The call
+                        prepareContext(ctx) will set the canvas up appropriately.
+                    */
                     var prototype = {
                         draw: function(ctx, x, y) {
                             if (typeof this.run.text === 'string') {
@@ -2030,8 +2066,8 @@ var carotaTest = (function(){
                         bounds: function() {
                             var wb = this.word.bounds();
                             var width = this.word.word.isNewLine()
-                                    ? newLineWidth(this.word.word.run)
-                                    : this.width || this.part.width;
+                                ? newLineWidth(this.word.word.run)
+                                : this.width || this.part.width;
                             return rect(wb.l + this.left, wb.t, width, wb.h);
                         },
                         parent: function() {
@@ -2050,25 +2086,25 @@ var carotaTest = (function(){
                     });
 
                     /*  A positionedWord is just a realised Word plus a reference back to the containing Line and
-                     the left coordinate (x coordinate of the left edge of the word).
+                        the left coordinate (x coordinate of the left edge of the word).
 
-                     It has methods:
+                        It has methods:
 
-                     draw(ctx, x, y)
-                     - Draw the word within its containing line, applying the specified (x, y)
-                     offset.
-                     bounds()
-                     - Returns a rect for the bounding box.
-                     */
+                        draw(ctx, x, y)
+                        - Draw the word within its containing line, applying the specified (x, y)
+                        offset.
+                        bounds()
+                        - Returns a rect for the bounding box.
+                    */
                     var prototype = node.derive({
                         draw: function(ctx) {
                             this.word.draw(ctx, this.line.left + this.left, this.line.baseline);
 
                             // Handy for showing how word boundaries work
                             /*
-                             var b = this.bounds();
-                             ctx.strokeRect(b.l, b.t, b.w, b.h);
-                             */
+                              var b = this.bounds();
+                              ctx.strokeRect(b.l, b.t, b.w, b.h);
+                            */
                         },
                         bounds: function() {
                             return rect(
@@ -2085,7 +2121,7 @@ var carotaTest = (function(){
                             if (!this._characters) {
                                 var cache = [];
                                 var x = 0, self = this, ordinal = this.ordinal,
-                                    codes = this.parentOfType('document').codes;
+                                codes = this.parentOfType('document').codes;
                                 this.parts(function(wordPart) {
                                     runs.pieceCharacters(function(char) {
                                         var charRun = Object.create(wordPart.run);
@@ -2250,13 +2286,13 @@ var carotaTest = (function(){
                         offset: function(x, y) {
                             return rect(this.l + x, this.t + y, this.w, this.h);
                         },
-                        equals: function(other) {
-                            return this.l === other.l && this.t === other.t &&
-                                this.w === other.w && this.h === other.h;
-                        },
-                        center: function() {
-                            return { x: this.l + this.w/2, y: this.t + this.h/2 };
-                        }
+                            equals: function(other) {
+                                return this.l === other.l && this.t === other.t &&
+                                    this.w === other.w && this.h === other.h;
+                            },
+                            center: function() {
+                                return { x: this.l + this.w/2, y: this.t + this.h/2 };
+                            }
                     };
 
                     var rect = module.exports = function(l, t, w, h) {
@@ -2373,12 +2409,12 @@ var carotaTest = (function(){
                     };
 
                     /*  The text property of a run can be an ordinary string, or a "character object",
-                     or it can be an array containing strings and "character objects".
+                        or it can be an array containing strings and "character objects".
 
-                     A character object is not a string, but is treated as a single character.
+                        A character object is not a string, but is treated as a single character.
 
-                     We abstract over this to provide the same string-like operations regardless.
-                     */
+                        We abstract over this to provide the same string-like operations regardless.
+                    */
                     exports.getPieceLength = function(piece) {
                         return piece.length || 1; // either a string or something like a character
                     };
@@ -2451,19 +2487,19 @@ var carotaTest = (function(){
                 },
                 "split.js": function (exports, module, require) {
                     /*  Creates a stateful transformer function that consumes Characters and produces "word coordinate"
-                     objects, which are triplets of Characters representing the first characters of:
+                        objects, which are triplets of Characters representing the first characters of:
 
-                     start   - the word itself
-                     end     - any trailing whitespace
-                     next    - the subsequent word, or end of document.
+                        start   - the word itself
+                        end     - any trailing whitespace
+                        next    - the subsequent word, or end of document.
 
-                     Newline characters are NOT whitespace. They are always emitted as separate single-character
-                     words.
+                        Newline characters are NOT whitespace. They are always emitted as separate single-character
+                        words.
 
-                     If start.equals(end) then the "word" only contains whitespace and so must represent spaces
-                     at the start of a line. So even in this case, whitespace is always treated as "trailing
-                     after" a word - even if that word happens to be zero characters long!
-                     */
+                        If start.equals(end) then the "word" only contains whitespace and so must represent spaces
+                        at the start of a line. So even in this case, whitespace is always treated as "trailing
+                        after" a word - even if that word happens to be zero characters long!
+                    */
 
                     module.exports = function(codes) {
                         var word = null, trailingSpaces = null, newLine = true;
@@ -2584,11 +2620,11 @@ var carotaTest = (function(){
                     var enter = exports.enter = nbsp; // String.fromCharCode(9166);
 
                     /*  Returns width, height, ascent, descent in pixels for the specified text and font.
-                     The ascent and descent are measured from the baseline. Note that we add/remove
-                     all the DOM elements used for a measurement each time - this is not a significant
-                     part of the cost, and if we left the hidden measuring node in the DOM then it
-                     would affect the dimensions of the whole page.
-                     */
+                        The ascent and descent are measured from the baseline. Note that we add/remove
+                        all the DOM elements used for a measurement each time - this is not a significant
+                        part of the cost, and if we left the hidden measuring node in the DOM then it
+                        would affect the dimensions of the whole page.
+                    */
                     var measureText = exports.measureText = function(text, style) {
                         var span, block, div;
 
@@ -2631,22 +2667,22 @@ var carotaTest = (function(){
                     };
 
                     /*  Create a function that works like measureText except it caches every result for every
-                     unique combination of (text, style) - that is, it memoizes measureText.
+                        unique combination of (text, style) - that is, it memoizes measureText.
 
-                     So for example:
+                        So for example:
 
-                     var measure = cachedMeasureText();
+                        var measure = cachedMeasureText();
 
-                     Then you can repeatedly do lots of separate calls to measure, e.g.:
+                        Then you can repeatedly do lots of separate calls to measure, e.g.:
 
-                     var m = measure('Hello, world', 'font: 12pt Arial');
-                     console.log(m.ascent, m.descent, m.width);
+                        var m = measure('Hello, world', 'font: 12pt Arial');
+                        console.log(m.ascent, m.descent, m.width);
 
-                     A cache may grow without limit if the text varies a lot. However, during normal interactive
-                     editing the growth rate will be slow. If memory consumption becomes a problem, the cache
-                     can be occasionally discarded, although of course this will cause a slow down as the cache
-                     has to build up again (text measuring is by far the most costly operation we have to do).
-                     */
+                        A cache may grow without limit if the text varies a lot. However, during normal interactive
+                        editing the growth rate will be slow. If memory consumption becomes a problem, the cache
+                        can be occasionally discarded, although of course this will cause a slow down as the cache
+                        has to build up again (text measuring is by far the most costly operation we have to do).
+                    */
                     var createCachedMeasureText = exports.createCachedMeasureText = function() {
                         var cache = {};
                         return function(text, style) {
@@ -2718,28 +2754,28 @@ var carotaTest = (function(){
 
                     /*  A Word has the following properties:
 
-                     text      - Section (see below) for non-space portion of word.
-                     space     - Section for trailing space portion of word.
-                     ascent    - Ascent (distance from baseline to top) for whole word
-                     descent   - Descent (distance from baseline to bottom) for whole word
-                     width     - Width of the whole word (including trailing space)
+                        text      - Section (see below) for non-space portion of word.
+                        space     - Section for trailing space portion of word.
+                        ascent    - Ascent (distance from baseline to top) for whole word
+                        descent   - Descent (distance from baseline to bottom) for whole word
+                        width     - Width of the whole word (including trailing space)
 
-                     It has methods:
+                        It has methods:
 
-                     isNewLine()
-                     - Returns true if the Word represents a newline. Newlines are
-                     always represented by separate words.
+                        isNewLine()
+                        - Returns true if the Word represents a newline. Newlines are
+                        always represented by separate words.
 
-                     draw(ctx, x, y)
-                     - Draws the Word at x, y on the canvas context ctx.
+                        draw(ctx, x, y)
+                        - Draws the Word at x, y on the canvas context ctx.
 
-                     Note: a section (i.e. text and space) is an object containing:
+                        Note: a section (i.e. text and space) is an object containing:
 
-                     parts     - array of Parts
-                     ascent    - Ascent (distance from baseline to top) for whole section
-                     descent   - Descent (distance from baseline to bottom) for whole section
-                     width     - Width of the whole section
-                     */
+                        parts     - array of Parts
+                        ascent    - Ascent (distance from baseline to top) for whole section
+                        descent   - Descent (distance from baseline to bottom) for whole section
+                        width     - Width of the whole section
+                    */
 
                     var prototype = {
                         isNewLine: function() {
@@ -2853,24 +2889,24 @@ var carotaTest = (function(){
                     var line = require('./line');
 
                     /*  A stateful transformer function that accepts words and emits lines. If the first word
-                     is too wide, it will overhang; if width is zero or negative, there will be one word on
-                     each line.
+                        is too wide, it will overhang; if width is zero or negative, there will be one word on
+                        each line.
 
-                     The y-coordinate is the top of the first line, not the baseline.
+                        The y-coordinate is the top of the first line, not the baseline.
 
-                     Returns a stream of line objects, each containing an array of positionedWord objects.
-                     */
+                        Returns a stream of line objects, each containing an array of positionedWord objects.
+                    */
 
                     module.exports = function(left, top, width, ordinal, parent,
                                               includeTerminator, initialAscent, initialDescent) {
 
                         var lineBuffer = [],
-                            lineWidth = 0,
-                            maxAscent = initialAscent || 0,
-                            maxDescent = initialDescent || 0,
-                            quit,
-                            lastNewLineHeight = 0,
-                            y = top;
+                        lineWidth = 0,
+                        maxAscent = initialAscent || 0,
+                        maxDescent = initialDescent || 0,
+                        quit,
+                        lastNewLineHeight = 0,
+                        y = top;
 
                         var store = function(word, emit) {
                             lineBuffer.push(word);
@@ -3105,8 +3141,8 @@ var carotaTest = (function(){
                     }
 
                     /*  A passive observer - gathers results into the specified array, but
-                     otherwise has no effect on the stream of values
-                     */
+                        otherwise has no effect on the stream of values
+                    */
                     Per.prototype.into = function(ar, limit) {
                         if (!Array.isArray(ar)) {
                             throw new Error("into expects an array");
@@ -3132,14 +3168,14 @@ var carotaTest = (function(){
                     }
 
                     /*  Tracks first, last and count for the values as they go past,
-                     up to an optional limit (see 'first' and 'last' methods).
-                     */
+                        up to an optional limit (see 'first' and 'last' methods).
+                    */
                     Per.prototype.monitor = function(data) {
                         var n = 0;
                         var count = setOrCall(data, 'count'),
-                            first = setOrCall(data, 'first'),
-                            last = setOrCall(data, 'last'),
-                            limit = data.limit;
+                        first = setOrCall(data, 'first'),
+                        last = setOrCall(data, 'last'),
+                        limit = data.limit;
                         if (typeof limit != 'number') {
                             limit = Number.MAX_VALUE;
                         }
@@ -3160,9 +3196,9 @@ var carotaTest = (function(){
                     };
 
                     /*  Send a value into the pipeline without caring what emerges
-                     (only useful if you set up monitors and/or intos, or
-                     similar stateful observers).
-                     */
+                        (only useful if you set up monitors and/or intos, or
+                        similar stateful observers).
+                    */
                     function ignore() { }
                     Per.prototype.submit = function(value) {
                         return this.forEach(ignore, value);

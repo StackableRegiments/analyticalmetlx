@@ -1640,6 +1640,9 @@ var Modes = (function(){
                         }
                     };
                     var up = function(x,y,z,worldPos){
+			RichText.create(worldPos);
+			blit();
+			return;
                         var clickTime = Date.now();
                         var oldEditor = Modes.text.oldEditorAt(x,y,z,worldPos);
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
