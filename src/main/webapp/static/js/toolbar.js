@@ -1642,6 +1642,7 @@ var Modes = (function(){
                     var up = function(x,y,z,worldPos){
 			RichText.create(worldPos);
 			blit();
+			RichText.listen(boardContext);
 			return;
                         var clickTime = Date.now();
                         var oldEditor = Modes.text.oldEditorAt(x,y,z,worldPos);

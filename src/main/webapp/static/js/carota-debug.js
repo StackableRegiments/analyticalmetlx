@@ -67,43 +67,6 @@ var carotaTest = (function(){
         }
     };
 })();
-var RichText = (function(){
-    var boxes = {};
-    var cursor = {
-        after:0,
-        target:false,
-        selection:false
-    };
-    var render = function(box,context){
-	context.fillStyle = "black";
-	context.size = 14;
-	var screenPos = worldToScreen(box.x,box.y);
-	context.fillText(box.identity, screenPos.x, screenPos.y);
-    };
-    return {
-        newIdentity:function(){
-            return sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId());
-        },
-        create:function(worldPos){
-	    var id = RichText.newIdentity();
-	    boxes[id] = {
-		x:worldPos.x,
-		y:worldPos.y,
-		identity:id,
-		author:UserSettings.getUsername()
-	    };
-        },
-	add:function(){},
-	clear:function(){
-	    boxes = {};
-	},
-	render:function(canvasContext){
-	    _.each(boxes,function(box,identity){
-		render(box,canvasContext);
-	    });
-	}
-    };
-})();
 (function(){
     (function (modules) {
         'use strict';
@@ -1156,9 +1119,9 @@ var RichText = (function(){
 
                         var handleKey = function(key, selecting, ctrlKey) {
                             var start = doc.selection.start,
-                                end = doc.selection.end,
-                                length = doc.frame.length - 1,
-                                handled = false;
+                            end = doc.selection.end,
+                            length = doc.frame.length - 1,
+                            handled = false;
 
                             nextKeyboardX = null;
 
@@ -2286,13 +2249,13 @@ var RichText = (function(){
                         offset: function(x, y) {
                             return rect(this.l + x, this.t + y, this.w, this.h);
                         },
-                            equals: function(other) {
-                                return this.l === other.l && this.t === other.t &&
-                                    this.w === other.w && this.h === other.h;
-                            },
-                            center: function() {
-                                return { x: this.l + this.w/2, y: this.t + this.h/2 };
-                            }
+                        equals: function(other) {
+                            return this.l === other.l && this.t === other.t &&
+                                this.w === other.w && this.h === other.h;
+                        },
+                        center: function() {
+                            return { x: this.l + this.w/2, y: this.t + this.h/2 };
+                        }
                     };
 
                     var rect = module.exports = function(l, t, w, h) {
@@ -2802,7 +2765,7 @@ var RichText = (function(){
                         },
                         runs: function(emit, range) {
                             var start = range && range.start || 0,
-                                end = range && range.end;
+                            end = range && range.end;
                             if (typeof end !== 'number') {
                                 end = Number.MAX_VALUE;
                             }

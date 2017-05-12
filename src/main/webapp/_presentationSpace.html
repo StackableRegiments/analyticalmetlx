@@ -1,6 +1,6 @@
 <div id="boardContainer">
   <canvas id="board" class="fill" ></canvas>
-  <div id="textInputInvisibleHost"></div>
+  <textarea id="textInputInvisibleHost" autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0" style="position:absolute;padding:0px;width:1000px;height:1em;top:-10000px;left:-10000px;outline:none;font-size:4px;"></textarea>
   <div id="selectionAdorner"></div>
   <div id="radar" ></div>
   <div id="marquee" ></div>
@@ -9,7 +9,7 @@
     <div id="imageInsertOptions" class="block with-border input-full-width">
       <h2 class="med-txt nmt"><strong><label for="imageInsertOptionsClose" class="nm">Insert image</label></strong></h2>
       <button id="imageInsertOptionsClose" class=" btn-close fa fa-times nmt"><span class="hidden">Close</span></button>
-			<img src="/static/images/spinner.gif" id="imageWorking"></img>
+      <img src="/static/images/spinner.gif" id="imageWorking"></img>
       <input type="file" id="imageFileChoice"></input>
     </div>
     <div id="videoInsertOptions" class="block with-border input-full-width">
