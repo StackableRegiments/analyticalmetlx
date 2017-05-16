@@ -1,15 +1,15 @@
 var RichText = (function(){
     var ergonomics = {
+        cursorWidth:3,
+        cursorOverlap:1.5,
         comfortableColumnWidth:28,
         lineHeightRatio:1.8,
         letterSpacing:String.fromCharCode(8202)
     };
     var boxes = {};
     var cursor = {
-        after:0,
-        target:false,
-        selection:false,
-        visible:false
+        head:[],
+        tail:[]
     };
     var measureCanvas = $("<canvas />")[0].getContext("2d");
     var measureChar = function(char,preceding){
@@ -21,18 +21,22 @@ var RichText = (function(){
         else{
             width = measureCanvas.measureText(char.char).width;
         }
+        switch(char.char){
+        case " ": break;
+        default: width += measureCanvas.measureText(ergonomics.letterSpacing).width;
+        }
         return {
-            width:char == " " ? width : width+measureCanvas.measureText(ergonomics.letterSpacing).width,
+            width:width,
             height:Math.floor(parseFloat(char.font))
-        };
+        }
     }
-    var measureCurrentLine = function(){
-        var y = cursor.y;
+    var measureLine = function(y){
+        y = y || cursor.y;
         var width = 0,height = 0;
-        var i,char,prevChar,charSize;
-        var chars = cursor.box.chars;
+        var i,char;
+        var chars = _.concat(cursor.head,cursor.tail);
         var line = [];
-        for(i = 0;i<cursor.box.chars.length;i++){
+        for(i = 0;i<chars.length;i++){
             char = chars[i];
             if(char.y < cursor.y) continue;
             if(char.y > cursor.y) break;
@@ -40,10 +44,8 @@ var RichText = (function(){
         }
         for(i = 0;i<line.length;i++){
             char = line[i];
-            charSize = measureChar(char,prevChar);
-            height = Math.max(height,charSize.height);
-            width += charSize.width;
-            prevChar = char;
+            height = Math.max(height,char.height);
+            width += char.width;
         }
         return {
             x:width > 0 ? line[0].x : 0,
@@ -62,99 +64,139 @@ var RichText = (function(){
         cursor.size = size || cursor.size;
         cursor.font = sprintf("%spt %s",Math.floor(cursor.size),cursor.family);
     }
-    var render = function(box,context){
-        for(var i = 0; i < box.chars.length; i++){
-            var char = box.chars[i];
-            context.fillStyle = char.fill;
+    var render = function(context){
+        var char;
+        var i;
+        var screenPos;
+        for(i = 0; i < cursor.head.length; i++){
+            char = cursor.head[i];
             context.font = char.font;
-            var screenPos = worldToScreen(char.x,char.y);
+            screenPos = worldToScreen(char.x,char.y);
             context.fillText(char.char, screenPos.x, screenPos.y);
         }
+        for(i = 0; i < cursor.tail.length; i++){
+            char = cursor.tail[i];
+            context.font = char.font;
+            screenPos = worldToScreen(char.x,char.y);
+            context.fillText(char.char, screenPos.x, screenPos.y);
+        }
+        char = cursor.head.length ? cursor.head[cursor.head.length-1] : {
+            x:cursor.x,
+            y:cursor.y,
+            width:0,
+            height:cursor.size
+        };
+        var cursorPos = worldToScreen(char.x,char.y);
+        var cursorWidth = scaleWorldToScreen(ergonomics.cursorWidth);
+        var charWidth = scaleWorldToScreen(char.width);
+        var cursorHeight = char.height;
+        context.fillRect(
+            cursorPos.x+charWidth,
+            cursorPos.y - cursorHeight,
+            cursorWidth,
+            cursorHeight * ergonomics.cursorOverlap);
     };
-    var dropLine = function(){
-        var currentLine = measureCurrentLine();
-        setCursorPos(currentLine.x,cursor.y + currentLine.height * ergonomics.lineHeightRatio);
-    }
+    var wrap = function(){
+        var leftMargin = cursor.x;
+        var cursorX = leftMargin;
+        var cursorY = cursor.y;
+        var startOfLine = 0;
+        var wordStart = 0;
+        var lineDimension;
+        var chars = _.concat(cursor.head,cursor.tail);
+        var char;
+        for(var i = 0;i<chars.length;i++){
+            char = chars[i];
+            char.x = cursorX;
+            char.y = cursorY;
+            if(char.char == " "){
+                wordStart = i;
+            }
+            if(wordStart != startOfLine && (i - startOfLine) > ergonomics.comfortableColumnWidth){
+                startOfLine = wordStart;
+                i = wordStart;
+                cursorY = cursorY + measureLine(char.y).height * ergonomics.lineHeightRatio;
+                cursorX = leftMargin;
+            }
+            else{
+                cursorX += char.width;
+            }
+        }
+    };
     return {
         newIdentity:function(){
             return sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId());
         },
         create:function(worldPos){
-            var id = RichText.newIdentity();
-            var box = boxes[id] = {
-                identity:id,
-                author:UserSettings.getUsername(),
-                chars:[]
-            };
-            cursor.box = box;
-            cursor.x = worldPos.x;
-            cursor.y = worldPos.y;
-            cursor.visible = true;
             if(!cursor.font){
                 setCursorFont("Arial",Math.floor(scaleScreenToWorld(25)));
             }
+            var id = RichText.newIdentity();
+            var box = boxes[id] = {
+                identity:id,
+                author:UserSettings.getUsername()
+            };
+            cursor.head = [];
+            cursor.tail = [];
+            setCursorPos(worldPos.x,worldPos.y);
+            blit();
         },
         listen:function(context){
             $("#textInputInvisibleHost").off("keydown").on("keydown",function(e){
-                var chars = cursor.box.chars;
+                var chars = cursor.chars;
                 var typed = e.key;
+                var charSize;
+                var tip, pretip;
                 switch(typed){
                 case "Shift":break;
                 case "Alt":break;
                 case "Control":break;
+                case "CapsLock":break;
                 case "Enter":
-                    dropLine();
+                    var currentLine = measureLine();
+                    setCursorPos(currentLine.x,cursor.y + currentLine.height * ergonomics.lineHeightRatio);
                     blit();
+                    break;
+                case "ArrowLeft":
+                    if(cursor.head.length){
+                        cursor.tail.unshift(cursor.head.pop());
+                        blit();
+                    }
+                    break;
+                case "ArrowRight":
+                    if(cursor.tail.length){
+                        cursor.head.push(cursor.tail.shift());
+                        blit();
+                    }
                     break;
                 case "Backspace":
-                    var removed = chars.pop();
-                    if(chars.length == 0){
-                        setCursorPos(removed.x,removed.y);
+                    if(cursor.head.length){
+                        cursor.head.pop();
+                        wrap();
+                        blit();
                     }
-                    else{
-                        var l = chars.length;
-                        var tip = chars[l-1];
-                        var pretip = chars[l-2];
-                        var charSize = measureChar(tip,pretip);
-                        setCursorPos(tip.x + charSize.width,tip.y);
+                    break;
+                case "Delete":
+                    if(cursor.tail.length){
+                        cursor.tail.shift();
+                        wrap();
+                        blit();
                     }
-                    blit();
                     break;
                 default:
+                    if(typed.length > 1) return;/*F keys, Control codes etc.*/
                     var char = {
                         char:typed,
                         font:cursor.font,
                         x:cursor.x,
                         y:cursor.y
                     };
-                    chars.push(char);
-                    var charSize = measureChar(char,chars[chars.length-2]);
-                    var currentLine = measureCurrentLine();
-                    if(currentLine.chars.length >= ergonomics.comfortableColumnWidth){
-                        var charsToDrop = [];
-			var drop = currentLine.height * ergonomics.lineHeightRatio;
-                        var c,i,preC;
-                        for(i = currentLine.chars.length-1;i > 0;i--){
-                            c = currentLine.chars[i];
-                            if(c.char == " ") break;
-                            charsToDrop.unshift(c);
-                        }
-                        console.log("drop",charsToDrop);
-                        if(charsToDrop.length != currentLine.chars.length){/*We wont't drop a word which takes the whole line*/
-                            var x = currentLine.x;
-                            for(i = 0;i < charsToDrop.length;i++){
-                                c = charsToDrop[i];
-                                preC = charsToDrop[i-1];
-                                c.y = c.y + drop;
-                                c.x = x;
-                                x += measureChar(c,preC).width;
-                            }
-                            setCursorPos(x,cursor.y + drop);
-                        }
-                    }
-                    else{
-                        setCursorPos(cursor.x+charSize.width,cursor.y);
-                    }
+                    var previous = cursor.head[cursor.head.length-1];
+                    cursor.head.push(char);
+                    charSize = measureChar(char,previous);
+                    char.width = charSize.width;
+                    char.height = charSize.height;
+                    wrap();
                     blit();
                 }
             }).focus();
@@ -164,9 +206,13 @@ var RichText = (function(){
             boxes = {};
         },
         render:function(canvasContext){
-            _.each(boxes,function(box,identity){
-                render(box,canvasContext);
-            });
+            render(canvasContext);
+        },
+        cursor:function(){
+            return cursor;
+        },
+        measureChar:function(i){
+            return measureChar(cursor.box.chars[i]);
         }
     };
 })();
