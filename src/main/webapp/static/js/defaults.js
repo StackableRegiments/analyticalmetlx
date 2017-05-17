@@ -162,7 +162,7 @@ var Brushes = (function(){
         {
             id:1,
             width:2.0,
-            color:"#000000",
+            color:"#0000ff",
             isHighlighter:false
         },
         {
