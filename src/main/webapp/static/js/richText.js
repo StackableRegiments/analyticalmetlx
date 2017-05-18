@@ -23,6 +23,7 @@ var RichText = (function(){
         }
         switch(char.char){
         case " ": break;
+        case "\n": width = 0; break;
         default: width += measureCanvas.measureText(ergonomics.letterSpacing).width;
         }
         return {
@@ -107,16 +108,24 @@ var RichText = (function(){
         var char;
         for(var i = 0;i<chars.length;i++){
             char = chars[i];
+            console.log(char);
             char.x = cursorX;
             char.y = cursorY;
             if(char.char == " "){
                 wordStart = i;
             }
-            if(wordStart != startOfLine && (i - startOfLine) > ergonomics.comfortableColumnWidth){
+            if(char.char == "\n"){
                 startOfLine = wordStart;
-                i = wordStart;
+                cursorX = leftMargin;
+                cursorY = cursorY + measureLine(char.y).height * ergonomics.lineHeightRatio;
+		char.x = cursorX;
+		char.y = cursorY;
+            }
+            else if((i - startOfLine) > ergonomics.comfortableColumnWidth && wordStart != startOfLine){
+                startOfLine = wordStart;
                 cursorY = cursorY + measureLine(char.y).height * ergonomics.lineHeightRatio;
                 cursorX = leftMargin;
+                i = wordStart;
             }
             else{
                 cursorX += char.width;
@@ -152,11 +161,6 @@ var RichText = (function(){
                 case "Alt":break;
                 case "Control":break;
                 case "CapsLock":break;
-                case "Enter":
-                    var currentLine = measureLine();
-                    setCursorPos(currentLine.x,cursor.y + currentLine.height * ergonomics.lineHeightRatio);
-                    blit();
-                    break;
                 case "ArrowLeft":
                     if(cursor.head.length){
                         cursor.tail.unshift(cursor.head.pop());
@@ -184,6 +188,7 @@ var RichText = (function(){
                     }
                     break;
                 default:
+                    typed = typed == "Enter" ? "\n" : typed;
                     if(typed.length > 1) return;/*F keys, Control codes etc.*/
                     var char = {
                         char:typed,

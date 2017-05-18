@@ -1418,22 +1418,7 @@ var Modes = (function(){
                     }
                 });
             };
-            var setV = function(context,selector,prop){
-                var isToggled = (context[prop] == true);
-                if(isToggled){
-                    carota.runs.nextInsertFormatting[prop] = isToggled;
-                }
-                selector.toggleClass("active",isToggled);
-            };
-            var setIf = function(context,selector,prop,value){
-                var equal = _.isEqual(context[prop],value);
-                if(prop in context){
-                    if(equal){
-                        carota.runs.nextInsertFormatting[prop] = value;
-                    }
-                }
-                selector.toggleClass("active",equal);
-            }
+
             var getTextColors = function(){
                 return [
                     $("#blackText"),
@@ -1445,7 +1430,6 @@ var Modes = (function(){
             };
             var textColors = getTextColors();
             var updateControlState = function(context){
-                carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
                 setV(context,fontBoldSelector,"bold");
                 setV(context,fontItalicSelector,"italic");
                 setV(context,fontUnderlineSelector,"underline");
@@ -1455,19 +1439,38 @@ var Modes = (function(){
                 setIf(context,textColors[3],"color",["#ffff00",255]);
                 setIf(context,textColors[4],"color",["#00ff00",255]);
             }
+            var setV = function(context,selector,prop){
+                var isToggled = (context[prop] == true);
+                if(isToggled){
+                    attributesAtCursor[prop] = isToggled;
+                }
+                selector.toggleClass("active",isToggled);
+            };
+            var setIf = function(context,selector,prop,value){
+                var equal = _.isEqual(context[prop],value);
+                if(prop in context){
+                    if(equal){
+                        attributesAtCursor[prop] = value;
+                    }
+                }
+                selector.toggleClass("active",equal);
+            }
+            var attributesAtCursor = {
+                fontSize:25,
+                bold:false,
+                underline:false,
+                italic:false,
+                color:"#000000"
+            };
             return {
                 name:"text",
                 echoesToDisregard:{},
                 minimumWidth:240,
+                attributesAtCursor:function(){
+                    return attributesAtCursor;
+                },
                 minimumHeight:function(){
                     return Modes.select.resizeHandleSize * 3;
-                },
-                default:{
-                    fontSize:12,
-                    bold:false,
-                    underline:false,
-                    italic:false,
-                    color:["#000000",255]
                 },
                 invalidateSelectedBoxes:function(){
                     Modes.text.mapSelected(function(box){
@@ -1618,13 +1621,10 @@ var Modes = (function(){
                     }
                 },
                 activate:function(){
-                    var doubleClickThreshold = 500;
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.text;
                     setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
-                    Progress.call("onLayoutUpdated");
-                    var lastClick = 0;
                     var down = function(x,y,z,worldPos){
                         var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
                         if (editor){
@@ -1640,107 +1640,14 @@ var Modes = (function(){
                         }
                     };
                     var up = function(x,y,z,worldPos){
-			RichText.create(worldPos);
-			blit();
-			RichText.listen(boardContext);
-			return;
-                        var clickTime = Date.now();
-                        var oldEditor = Modes.text.oldEditorAt(x,y,z,worldPos);
-                        var editor = Modes.text.editorAt(x,y,z,worldPos);
-                        _.each(boardContent.multiWordTexts,function(t){
-                            t.doc.isActive = t.doc.identity == editor.identity;
-                            if((t.doc.selection.start + t.doc.selection.end) > 0 && t.doc.identity != editor.identity){
-                                t.doc.select(0,0);
-                                t.doc.updateCanvas();
-                            }
-                            if(t.doc.documentRange().plainText().trim().length == 0){
-                                delete boardContent.multiWordTexts[t.identity];
-                                blit();
-                            }
-                        });
-                        var sel;
-                        Modes.select.clearSelection();
-                        if (oldEditor){
-                            var deleteTransform = batchTransform();
-                            deleteTransform.isDeleted = true;
-                            if ("texts" in Modes.select.selected){
-                                deleteTransform.textIds = [oldEditor.identity];
-                            }
-                            sendStanza(deleteTransform);
-
-                            var newEditor = createBlankText({x:oldEditor.x,y:oldEditor.y},[{
-                                text: oldEditor.text,
-                                italic: oldEditor.style == "italic",
-                                bold: oldEditor.weight == "bold",
-                                underline: oldEditor.decoration == "underline",
-                                color: oldEditor.color,
-                                size: oldEditor.size
-                            }]);
-                            var newDoc = newEditor.doc;
-                            newDoc.select(0,1);
-                            boardContent.multiWordTexts[newEditor.identity] = newEditor;
-                            sel = {multiWordTexts:{}};
-                            sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-                            Modes.select.setSelection(sel);
-                            editor = newEditor;
-
-                            var source = newEditor;
-                            source.privacy = Privacy.getCurrentPrivacy();
-                            source.target = "presentationSpace";
-                            source.slide = Conversations.getCurrentSlideJid();
-                            sendRichText(source);
-                            /*This is important to the zoom strategy*/
-                            incorporateBoardBounds(editor.bounds);
-
-                            var node = newDoc.byOrdinal(0);
-                            newDoc.mousedownHandler(node);
-                            newDoc.mouseupHandler(node);
-
-                        } else if (editor){
-                            var doc = editor.doc;
-                            var context = Modes.text.contextFor(doc,worldPos);
-                            if(clickTime - lastClick <= doubleClickThreshold){
-                                doc.dblclickHandler(context.node);
-                            }
-                            else{
-                                doc.mouseupHandler(context.node);
-                            }
-                            lastClick = clickTime;
-                            sel = {
-                                multiWordTexts:{}
-                            };
-                            sel.multiWordTexts[editor.identity] = editor;
-                            Modes.select.setSelection(sel);
-                        } else {
-                            var newEditor = createBlankText(worldPos,[{
-                                text:" ",
-                                italic:carota.runs.nextInsertFormatting.italic == true,
-                                bold:carota.runs.nextInsertFormatting.bold == true,
-                                underline:carota.runs.nextInsertFormatting.underline == true,
-                                color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-                                size:carota.runs.defaultFormatting.newBoxSize / scale()
-                            }]);
-                            var newDoc = newEditor.doc;
-                            newDoc.select(0,1);
-                            boardContent.multiWordTexts[newEditor.identity] = newEditor;
-                            sel = {multiWordTexts:{}};
-                            sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-                            Modes.select.setSelection(sel);
-                            editor = newEditor;
-                            var node = newDoc.byOrdinal(0);
-                            newDoc.mousedownHandler(node);
-                            newDoc.mouseupHandler(node);
-                        }
-                        editor.doc.invalidateBounds();
-                        editor.doc.isActive = true;
-                        Progress.historyReceived["ClearMultiTextEchoes"] = function(){
-                            Modes.text.echoesToDisregard = {};
-                        };
+                        RichText.create(worldPos);
+                        RichText.listen(boardContext);
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
                     textColors = getTextColors();
-                    updateControlState(carota.runs.defaultFormatting);
+                    updateControlState(attributesAtCursor);
                     registerPositionHandlers(board,down,move,up);
+                    Progress.call("onLayoutUpdated");
                 },
                 handleDrop:function(html,x,y){
                     if (html.length > 0){
