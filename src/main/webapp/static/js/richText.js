@@ -3,8 +3,7 @@ var RichText = (function(){
         cursorWidth:3,
         cursorOverlap:1.5,
         comfortableColumnWidth:28,
-        lineHeightRatio:1.8,
-        letterSpacing:String.fromCharCode(8202)
+        lineHeightRatio:1.8
     };
     var boxes = {};
     var cursor = {
@@ -12,8 +11,11 @@ var RichText = (function(){
         tail:[]
     };
     var measureCanvas = $("<canvas />")[0].getContext("2d");
+    var fontHeight = function(char){
+        return Math.floor(parseFloat(char.fontSize));
+    };
     var measureChar = function(char,preceding){
-        measureCanvas.font = char.font;
+        measureCanvas.font = fontString(char.fontFamily,char.fontSize);
         var width;
         if(preceding){
             width = measureCanvas.measureText([preceding.char,char.char].join("")).width  - measureCanvas.measureText(preceding.char).width;
@@ -24,11 +26,11 @@ var RichText = (function(){
         switch(char.char){
         case " ": break;
         case "\n": width = 0; break;
-        default: width += measureCanvas.measureText(ergonomics.letterSpacing).width;
+        default:;
         }
         return {
             width:width,
-            height:Math.floor(parseFloat(char.font))
+            height:fontHeight(char)
         }
     }
     var measureLine = function(y){
@@ -60,10 +62,12 @@ var RichText = (function(){
         cursor.x = x;
         cursor.y = y;
     }
-    var setCursorFont = function(family,size){
-        cursor.family = family || cursor.family;
-        cursor.size = size || cursor.size;
-        cursor.font = sprintf("%spt %s",Math.floor(cursor.size),cursor.family);
+    var fontString = function(fontFamily,fontSize){
+        return sprintf("%spt %s",Math.floor(fontSize),fontFamily);
+    };
+    var setCursorFont = function(fontFamily,fontSize){
+        cursor.fontFamily = fontFamily || cursor.fontFamily;
+        cursor.fontSize = fontSize || cursor.fontSize;
     }
     var render = function(context){
         var char;
@@ -71,13 +75,14 @@ var RichText = (function(){
         var screenPos;
         for(i = 0; i < cursor.head.length; i++){
             char = cursor.head[i];
-            context.font = char.font;
+            context.font = fontString(char.fontFamily,scaleWorldToScreen(char.fontSize));
+            console.log("context",context.font);
             screenPos = worldToScreen(char.x,char.y);
             context.fillText(char.char, screenPos.x, screenPos.y);
         }
         for(i = 0; i < cursor.tail.length; i++){
             char = cursor.tail[i];
-            context.font = char.font;
+            context.font = fontString(char.fontFamily,scaleWorldToScreen(char.fontSize));
             screenPos = worldToScreen(char.x,char.y);
             context.fillText(char.char, screenPos.x, screenPos.y);
         }
@@ -85,12 +90,12 @@ var RichText = (function(){
             x:cursor.x,
             y:cursor.y,
             width:0,
-            height:cursor.size
+            height:cursor.fontSize
         };
         var cursorPos = worldToScreen(char.x,char.y);
         var cursorWidth = scaleWorldToScreen(ergonomics.cursorWidth);
         var charWidth = scaleWorldToScreen(char.width);
-        var cursorHeight = char.height;
+        var cursorHeight = scaleWorldToScreen(char.height);
         context.fillRect(
             cursorPos.x+charWidth,
             cursorPos.y - cursorHeight,
@@ -108,7 +113,6 @@ var RichText = (function(){
         var char;
         for(var i = 0;i<chars.length;i++){
             char = chars[i];
-            console.log(char);
             char.x = cursorX;
             char.y = cursorY;
             if(char.char == " "){
@@ -118,8 +122,8 @@ var RichText = (function(){
                 startOfLine = wordStart;
                 cursorX = leftMargin;
                 cursorY = cursorY + measureLine(char.y).height * ergonomics.lineHeightRatio;
-		char.x = cursorX;
-		char.y = cursorY;
+                char.x = cursorX;
+                char.y = cursorY;
             }
             else if((i - startOfLine) > ergonomics.comfortableColumnWidth && wordStart != startOfLine){
                 startOfLine = wordStart;
@@ -136,10 +140,8 @@ var RichText = (function(){
         newIdentity:function(){
             return sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId());
         },
-        create:function(worldPos){
-            if(!cursor.font){
-                setCursorFont("Arial",Math.floor(scaleScreenToWorld(25)));
-            }
+        create:function(worldPos,attributes){
+            setCursorFont(attributes.fontFamily,attributes.fontSize);
             var id = RichText.newIdentity();
             var box = boxes[id] = {
                 identity:id,
@@ -192,7 +194,8 @@ var RichText = (function(){
                     if(typed.length > 1) return;/*F keys, Control codes etc.*/
                     var char = {
                         char:typed,
-                        font:cursor.font,
+                        fontSize:cursor.fontSize,
+                        fontFamily:cursor.fontFamily,
                         x:cursor.x,
                         y:cursor.y
                     };

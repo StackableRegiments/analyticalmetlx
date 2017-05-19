@@ -1457,6 +1457,7 @@ var Modes = (function(){
             }
             var attributesAtCursor = {
                 fontSize:25,
+		fontFamily:"Arial",
                 bold:false,
                 underline:false,
                 italic:false,
@@ -1640,7 +1641,7 @@ var Modes = (function(){
                         }
                     };
                     var up = function(x,y,z,worldPos){
-                        RichText.create(worldPos);
+                        RichText.create(worldPos,attributesAtCursor);
                         RichText.listen(boardContext);
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
