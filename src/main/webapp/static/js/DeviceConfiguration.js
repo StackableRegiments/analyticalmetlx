@@ -228,8 +228,8 @@ var DeviceConfiguration = (function(){
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
                 var headerHeight = masterHeader.height();
-		DeviceConfiguration.headerHeight = headerHeight;
-		DeviceConfiguration.footerHeight = masterFooter.height();
+                DeviceConfiguration.headerHeight = headerHeight;
+                DeviceConfiguration.footerHeight = masterFooter.height();
                 thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
@@ -295,9 +295,7 @@ var DeviceConfiguration = (function(){
             fitFunction();
         }
     }
-    var outerFit = function(){
-        innerFit();
-    };
+    var outerFit = innerFit;
     var initialized = false;
     Progress.onLayoutUpdated["DeviceConfiguration"] = outerFit;
     Progress.historyReceived["DeviceConfiguration_showChrome"] = function(){
