@@ -1263,55 +1263,12 @@ var Modes = (function(){
                 return editor;
             };
             var toggleFormattingProperty = function(prop){
-                return function(){
-                    var matched = false;
-                    _.each(boardContent.multiWordTexts,function(t){
-                        if(t.doc.isActive){
-                            matched = true;
-                            var selRange = t.doc.selectedRange();
-                            /*General would interfere with specific during setFormatting*/
-                            carota.runs.nextInsertFormatting = {};
-                            selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
-                            t.doc.updateCanvas();
-                            if(t.doc.save().length > 0){
-                                sendRichText(t);
-                            }
-                        }
-                    });
-                    if(!matched){
-                        carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-                        var intention = carota.runs.nextInsertFormatting[prop] = !carota.runs.nextInsertFormatting[prop];
-                        var target = $(sprintf(".font%sSelector",_.capitalize(prop)));
-                        target.toggleClass("active",intention);
-                    }
-                    blit();
-                }
+                attributesAtCursor[prop] = !attributesAtCursor[prop];
+                RichText.setAttributes(attributesAtCursor);
             }
             var setFormattingProperty = function(prop,newValue){
-                return function(){
-                    var matched = false;
-                    newValue = newValue || $(this).val();
-                    _.each(boardContent.multiWordTexts,function(t){
-                        if(t.doc.isActive){
-                            matched = true;
-                            /*General would interfere with specific during setFormatting*/
-                            carota.runs.nextInsertFormatting = {};
-                            t.doc.selectedRange().setFormatting(prop,newValue);
-                            carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-                            carota.runs.nextInsertFormatting[prop] = newValue;
-                            t.doc.updateCanvas();
-                            t.doc.claimFocus();/*Focus might have left when a control was clicked*/
-                            if(t.doc.save().length > 0){
-                                sendRichText(t);
-                            }
-                        }
-                    });
-                    if(!matched){
-                        carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-                        carota.runs.nextInsertFormatting[prop] = newValue;
-                    }
-                    blit();
-                }
+                attributesAtCursor[prop] = newValue;
+                RichText.setAttributes(attributesAtCursor);
             };
             var scaleEditor = function(d,factor){
                 var originalRange = d.selectedRange();
@@ -1405,8 +1362,7 @@ var Modes = (function(){
                     $(sprintf("#%sText",color)).click(function(){
                         $("#textTools .fa-tint").removeClass("active");
                         $(this).addClass("active");
-                        Modes.text.refocussing = true;
-                        setFormattingProperty("color",[colorCodes[subject],255])();
+                        setFormattingProperty("color",colorCodes[subject]);
                     });
                 });
             });
@@ -1433,11 +1389,11 @@ var Modes = (function(){
                 setV(context,fontBoldSelector,"bold");
                 setV(context,fontItalicSelector,"italic");
                 setV(context,fontUnderlineSelector,"underline");
-                setIf(context,textColors[0],"color",["#000000",255]);
-                setIf(context,textColors[1],"color",["#ff0000",255]);
-                setIf(context,textColors[2],"color",["#0000ff",255]);
-                setIf(context,textColors[3],"color",["#ffff00",255]);
-                setIf(context,textColors[4],"color",["#00ff00",255]);
+                setIf(context,textColors[0],"color","#000000");
+                setIf(context,textColors[1],"color","#ff0000");
+                setIf(context,textColors[2],"color","#0000ff");
+                setIf(context,textColors[3],"color","#ffff00");
+                setIf(context,textColors[4],"color","#00ff00");
             }
             var setV = function(context,selector,prop){
                 var isToggled = (context[prop] == true);
@@ -1457,7 +1413,7 @@ var Modes = (function(){
             }
             var attributesAtCursor = {
                 fontSize:25,
-		fontFamily:"Arial",
+                fontFamily:"Arial",
                 bold:false,
                 underline:false,
                 italic:false,

@@ -1,15 +1,12 @@
 var RichText = (function(){
+    var boxes = {};
     var ergonomics = {
         cursorWidth:3,
         cursorOverlap:1.5,
         comfortableColumnWidth:28,
         lineHeightRatio:1.8
     };
-    var boxes = {};
-    var cursor = {
-        head:[],
-        tail:[]
-    };
+    var cursor = {};
     var measureCanvas = $("<canvas />")[0].getContext("2d");
     var fontHeight = function(char){
         return Math.floor(parseFloat(char.fontSize));
@@ -33,11 +30,11 @@ var RichText = (function(){
             height:fontHeight(char)
         }
     }
-    var measureLine = function(y){
+    var measureLine = function(y,box){
         y = y || cursor.y;
         var width = 0,height = 0;
         var i,char;
-        var chars = _.concat(cursor.head,cursor.tail);
+        var chars = _.concat(box.head,box.tail);
         var line = [];
         for(i = 0;i<chars.length;i++){
             char = chars[i];
@@ -58,10 +55,6 @@ var RichText = (function(){
             chars:line
         };
     }
-    var setCursorPos = function(x,y){
-        cursor.x = x;
-        cursor.y = y;
-    }
     var fontString = function(fontFamily,fontSize){
         return sprintf("%spt %s",Math.floor(fontSize),fontFamily);
     };
@@ -69,47 +62,50 @@ var RichText = (function(){
         cursor.fontFamily = fontFamily || cursor.fontFamily;
         cursor.fontSize = fontSize || cursor.fontSize;
     }
-    var render = function(context){
+    var render = function(context,box){
         var char;
         var i;
         var screenPos;
-        for(i = 0; i < cursor.head.length; i++){
-            char = cursor.head[i];
+        for(i = 0; i < box.head.length; i++){
+            char = box.head[i];
             context.font = fontString(char.fontFamily,scaleWorldToScreen(char.fontSize));
-            console.log("context",context.font);
+            context.fillStyle = char.color;
             screenPos = worldToScreen(char.x,char.y);
             context.fillText(char.char, screenPos.x, screenPos.y);
         }
-        for(i = 0; i < cursor.tail.length; i++){
-            char = cursor.tail[i];
+        for(i = 0; i < box.tail.length; i++){
+            char = box.tail[i];
             context.font = fontString(char.fontFamily,scaleWorldToScreen(char.fontSize));
+            context.fillStyle = char.color;
             screenPos = worldToScreen(char.x,char.y);
             context.fillText(char.char, screenPos.x, screenPos.y);
         }
-        char = cursor.head.length ? cursor.head[cursor.head.length-1] : {
-            x:cursor.x,
-            y:cursor.y,
-            width:0,
-            height:cursor.fontSize
-        };
-        var cursorPos = worldToScreen(char.x,char.y);
-        var cursorWidth = scaleWorldToScreen(ergonomics.cursorWidth);
-        var charWidth = scaleWorldToScreen(char.width);
-        var cursorHeight = scaleWorldToScreen(char.height);
-        context.fillRect(
-            cursorPos.x+charWidth,
-            cursorPos.y - cursorHeight,
-            cursorWidth,
-            cursorHeight * ergonomics.cursorOverlap);
+        if(box == cursor.box){
+            char = box.head.length ? box.head[box.head.length-1] : {
+                x:cursor.x,
+                y:cursor.y,
+                width:0,
+                height:cursor.fontSize
+            };
+            var cursorPos = worldToScreen(char.x,char.y);
+            var cursorWidth = scaleWorldToScreen(ergonomics.cursorWidth);
+            var charWidth = scaleWorldToScreen(char.width);
+            var cursorHeight = scaleWorldToScreen(char.height);
+            context.fillRect(
+                cursorPos.x+charWidth,
+                cursorPos.y - cursorHeight,
+                cursorWidth,
+                cursorHeight * ergonomics.cursorOverlap);
+        }
     };
-    var wrap = function(){
-        var leftMargin = cursor.x;
+    var wrap = function(box){
+        var leftMargin = box.x;
         var cursorX = leftMargin;
-        var cursorY = cursor.y;
+        var cursorY = box.y;
         var startOfLine = 0;
         var wordStart = 0;
         var lineDimension;
-        var chars = _.concat(cursor.head,cursor.tail);
+        var chars = _.concat(box.head,box.tail);
         var char;
         for(var i = 0;i<chars.length;i++){
             char = chars[i];
@@ -121,13 +117,13 @@ var RichText = (function(){
             if(char.char == "\n"){
                 startOfLine = wordStart;
                 cursorX = leftMargin;
-                cursorY = cursorY + measureLine(char.y).height * ergonomics.lineHeightRatio;
+                cursorY = cursorY + measureLine(char.y,box).height * ergonomics.lineHeightRatio;
                 char.x = cursorX;
                 char.y = cursorY;
             }
             else if((i - startOfLine) > ergonomics.comfortableColumnWidth && wordStart != startOfLine){
                 startOfLine = wordStart;
-                cursorY = cursorY + measureLine(char.y).height * ergonomics.lineHeightRatio;
+                cursorY = cursorY + measureLine(char.y,box).height * ergonomics.lineHeightRatio;
                 cursorX = leftMargin;
                 i = wordStart;
             }
@@ -140,16 +136,21 @@ var RichText = (function(){
         newIdentity:function(){
             return sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId());
         },
-        create:function(worldPos,attributes){
+        setAttributes:function(attributes){
             setCursorFont(attributes.fontFamily,attributes.fontSize);
+            cursor.color = attributes.color;
+        },
+        create:function(worldPos){
             var id = RichText.newIdentity();
             var box = boxes[id] = {
                 identity:id,
-                author:UserSettings.getUsername()
+                author:UserSettings.getUsername(),
+                head:[],
+                tail:[],
+                x:worldPos.x,
+                y:worldPos.y
             };
-            cursor.head = [];
-            cursor.tail = [];
-            setCursorPos(worldPos.x,worldPos.y);
+            cursor.box = box;
             blit();
         },
         listen:function(context){
@@ -164,47 +165,49 @@ var RichText = (function(){
                 case "Control":break;
                 case "CapsLock":break;
                 case "ArrowLeft":
-                    if(cursor.head.length){
-                        cursor.tail.unshift(cursor.head.pop());
+                    if(cursor.box.head.length){
+                        cursor.box.tail.unshift(cursor.box.head.pop());
                         blit();
                     }
                     break;
                 case "ArrowRight":
-                    if(cursor.tail.length){
-                        cursor.head.push(cursor.tail.shift());
+                    if(cursor.box.tail.length){
+                        cursor.box.head.push(cursor.box.tail.shift());
                         blit();
                     }
                     break;
                 case "Backspace":
-                    if(cursor.head.length){
-                        cursor.head.pop();
-                        wrap();
+                    if(cursor.box.head.length){
+                        cursor.box.head.pop();
+                        wrap(cursor.box);
                         blit();
                     }
                     break;
                 case "Delete":
-                    if(cursor.tail.length){
-                        cursor.tail.shift();
-                        wrap();
+                    if(cursor.box.tail.length){
+                        cursor.box.tail.shift();
+                        wrap(cursor.box);
                         blit();
                     }
                     break;
                 default:
                     typed = typed == "Enter" ? "\n" : typed;
                     if(typed.length > 1) return;/*F keys, Control codes etc.*/
+                    console.log("cursor",typed,cursor.color);
                     var char = {
                         char:typed,
                         fontSize:cursor.fontSize,
                         fontFamily:cursor.fontFamily,
+                        color:cursor.color,
                         x:cursor.x,
                         y:cursor.y
                     };
-                    var previous = cursor.head[cursor.head.length-1];
-                    cursor.head.push(char);
+                    var previous = cursor.box.head[cursor.box.head.length-1];
+                    cursor.box.head.push(char);
                     charSize = measureChar(char,previous);
                     char.width = charSize.width;
                     char.height = charSize.height;
-                    wrap();
+                    wrap(cursor.box);
                     blit();
                 }
             }).focus();
@@ -214,7 +217,9 @@ var RichText = (function(){
             boxes = {};
         },
         render:function(canvasContext){
-            render(canvasContext);
+            _.each(boxes,function(box){
+                render(canvasContext,box);
+            });
         },
         cursor:function(){
             return cursor;
