@@ -81,6 +81,7 @@ var RichText = (function(){
             context.fillText(char.char, screenPos.x, screenPos.y);
         }
         if(box == cursor.box){
+	    context.fillStyle = cursor.color;
             char = box.head.length ? box.head[box.head.length-1] : {
                 x:cursor.x,
                 y:cursor.y,
@@ -139,6 +140,8 @@ var RichText = (function(){
         setAttributes:function(attributes){
             setCursorFont(attributes.fontFamily,attributes.fontSize);
             cursor.color = attributes.color;
+	    console.log("Set attributes",cursor.color);
+	    blit();
         },
         create:function(worldPos){
             var id = RichText.newIdentity();
