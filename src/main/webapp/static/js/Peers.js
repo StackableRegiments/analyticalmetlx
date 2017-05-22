@@ -19,7 +19,6 @@ var Peers = (function(){
             act:function(){
                 var roll = Math.random();
                 move();
-                //var stanza = Modes.insert.createBlankText(location.x,location.y);
             },
             react:function(stimulus){
             }

@@ -14,6 +14,7 @@ var RichText = (function(){
     var measureChar = function(char,preceding){
         measureCanvas.font = fontString(char.fontFamily,char.fontSize);
         var width;
+        var height = fontHeight(char);
         if(preceding){
             width = measureCanvas.measureText([preceding.char,char.char].join("")).width  - measureCanvas.measureText(preceding.char).width;
         }
@@ -27,7 +28,7 @@ var RichText = (function(){
         }
         return {
             width:width,
-            height:fontHeight(char)
+            height:height
         }
     }
     var measureLine = function(y,box){
@@ -62,29 +63,25 @@ var RichText = (function(){
         cursor.fontFamily = fontFamily || cursor.fontFamily;
         cursor.fontSize = fontSize || cursor.fontSize;
     }
+    var charRenderer = function(context){
+        return function(char){
+            context.font = fontString(char.fontFamily,scaleWorldToScreen(char.fontSize));
+            context.fillStyle = char.color;
+            var screenPos = worldToScreen(char.x,char.y);
+            var screenWidth = scaleWorldToScreen(char.width);
+            var screenHeight = scaleWorldToScreen(char.height);
+            context.fillText(char.char, screenPos.x, screenPos.y);
+        };
+    }
     var render = function(context,box){
-        var char;
-        var i;
-        var screenPos;
-        for(i = 0; i < box.head.length; i++){
-            char = box.head[i];
-            context.font = fontString(char.fontFamily,scaleWorldToScreen(char.fontSize));
-            context.fillStyle = char.color;
-            screenPos = worldToScreen(char.x,char.y);
-            context.fillText(char.char, screenPos.x, screenPos.y);
-        }
-        for(i = 0; i < box.tail.length; i++){
-            char = box.tail[i];
-            context.font = fontString(char.fontFamily,scaleWorldToScreen(char.fontSize));
-            context.fillStyle = char.color;
-            screenPos = worldToScreen(char.x,char.y);
-            context.fillText(char.char, screenPos.x, screenPos.y);
-        }
+        var renderChar = charRenderer(context);
+        _.each(box.head,renderChar);
+        _.each(box.tail,renderChar);
         if(box == cursor.box){
-	    context.fillStyle = cursor.color;
-            char = box.head.length ? box.head[box.head.length-1] : {
-                x:cursor.x,
-                y:cursor.y,
+            context.fillStyle = cursor.color;
+            var char = box.head.length ? box.head[box.head.length-1] : {
+                x:box.x,
+                y:box.y,
                 width:0,
                 height:cursor.fontSize
             };
@@ -112,6 +109,7 @@ var RichText = (function(){
             char = chars[i];
             char.x = cursorX;
             char.y = cursorY;
+            char.bounds = [char.x,char.y - char.height,char.x + char.width,char.y];
             if(char.char == " "){
                 wordStart = i;
             }
@@ -137,24 +135,55 @@ var RichText = (function(){
         newIdentity:function(){
             return sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId());
         },
+        scaleSelection:function(factor){
+            _.each(cursor.selected,function(char){
+                char.fontSize = char.fontSize * factor;
+            });
+            wrap();
+            blit();
+        },
         setAttributes:function(attributes){
             setCursorFont(attributes.fontFamily,attributes.fontSize);
             cursor.color = attributes.color;
-	    console.log("Set attributes",cursor.color);
-	    blit();
-        },
-        create:function(worldPos){
-            var id = RichText.newIdentity();
-            var box = boxes[id] = {
-                identity:id,
-                author:UserSettings.getUsername(),
-                head:[],
-                tail:[],
-                x:worldPos.x,
-                y:worldPos.y
-            };
-            cursor.box = box;
+            cursor.bold = attributes.bold;
+            cursor.italic = attributes.italic;
+            cursor.underline = attributes.underline;
             blit();
+        },
+        click:function(worldPos){
+            delete cursor.box;
+            var radius = 1;
+            var ray = [worldPos.x - radius,worldPos.y - radius,worldPos.x + radius,worldPos.y + radius];
+            _.each(boxes,function(box){
+                var chars = _.concat(box.head,box.tail);
+                var hit = false;
+                _.each(chars,function(char,i){
+                    if(intersectRect(ray,char.bounds)){
+                        cursor.box = box;
+                        box.head = chars.slice(0,i+1);
+                        box.tail = chars.slice(i+1,chars.length);
+                        hit = true;
+                        blit();
+                    }
+                    return !hit;
+                });
+                return !hit;
+            });
+            if(!cursor.box){
+                var id = RichText.newIdentity();
+                var box = boxes[id] = {
+                    identity:id,
+                    author:UserSettings.getUsername(),
+                    head:[],
+                    tail:[],
+                    x:worldPos.x,
+                    y:worldPos.y
+                };
+                cursor.box = box;
+                cursor.x = box.x;
+                cursor.y = box.y
+                blit();
+            }
         },
         listen:function(context){
             $("#textInputInvisibleHost").off("keydown").on("keydown",function(e){
@@ -196,7 +225,6 @@ var RichText = (function(){
                 default:
                     typed = typed == "Enter" ? "\n" : typed;
                     if(typed.length > 1) return;/*F keys, Control codes etc.*/
-                    console.log("cursor",typed,cursor.color);
                     var char = {
                         char:typed,
                         fontSize:cursor.fontSize,
@@ -211,6 +239,8 @@ var RichText = (function(){
                     char.width = charSize.width;
                     char.height = charSize.height;
                     wrap(cursor.box);
+                    cursor.x = char.bounds[2];
+                    cursor.y = char.bounds[3];
                     blit();
                 }
             }).focus();
@@ -226,9 +256,6 @@ var RichText = (function(){
         },
         cursor:function(){
             return cursor;
-        },
-        measureChar:function(i){
-            return measureChar(cursor.box.chars[i]);
         }
     };
 })();

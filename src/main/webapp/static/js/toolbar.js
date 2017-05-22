@@ -1242,29 +1242,11 @@ var Modes = (function(){
                 presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen,fontOptionsToggle,fontOptions,fontLargerSelector,fontSmallerSelector;
 
             var echoesToDisregard = {};
-            var createBlankText = function(worldPos,runs){
-                var width = Modes.text.minimumWidth / scale();
-                var editor = Modes.text.editorFor({
-                    bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
-                    identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
-                    privacy:Privacy.getCurrentPrivacy(),
-                    slide:Conversations.getCurrentSlideJid(),
-                    target:"presentationSpace",
-                    requestedWidth:width,
-                    width:width,
-                    height:0,
-                    x:worldPos.x,
-                    y:worldPos.y,
-                    type:"multiWordText",
-                    author:UserSettings.getUsername(),
-                    words:[]
-                });
-                editor.doc.load(runs);
-                return editor;
-            };
             var toggleFormattingProperty = function(prop){
-                attributesAtCursor[prop] = !attributesAtCursor[prop];
-                RichText.setAttributes(attributesAtCursor);
+                return function(){
+                    attributesAtCursor[prop] = !attributesAtCursor[prop];
+                    RichText.setAttributes(attributesAtCursor);
+                }
             }
             var setFormattingProperty = function(prop,newValue){
                 attributesAtCursor[prop] = newValue;
@@ -1299,18 +1281,7 @@ var Modes = (function(){
             };
             var scaleCurrentSelection = function(factor){
                 return function(){
-                    _.each(boardContent.multiWordTexts,function(t){
-                        var d = t.doc;
-                        if(d.isActive){
-                            var sizes = scaleEditor(d,factor);
-                            if(factor > 1){
-                                carota.runs.defaultFormatting.newBoxSize = _.max(sizes);
-                            }
-                            else{
-                                carota.runs.defaultFormatting.newBoxSize = _.min(sizes);
-                            }
-                        }
-                    });
+                    RichText.scaleSelection(factor);
                 };
             };
             $(function(){
@@ -1344,7 +1315,7 @@ var Modes = (function(){
                 Colors.getAllNamedColors().map(function(color){
                     fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
                 });
-                fontLargerSelector.on("click",scaleCurrentSelection(1.2));
+                fontLargerSelector.on("click",scaleCurrentSelection(1.25));
                 fontSmallerSelector.click(scaleCurrentSelection(0.8));
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
                 fontItalicSelector.click(toggleFormattingProperty("italic"));
@@ -1539,36 +1510,6 @@ var Modes = (function(){
                     editor.doc.width(t.width);
                     return editor;
                 },
-                oldEditorAt : function(x,y,z,worldPos){
-                    var threshold = 10;
-                    var me = UserSettings.getUsername();
-                    var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                    var texts = _.values(boardContent.texts).filter(function(text){
-                        var intersects = intersectRect(text.bounds,ray)
-                        return intersects && (text.author == me);
-                    });
-                    if(texts.length > 0){
-                        return texts[0];
-                    }
-                    else{
-                        return false;
-                    }
-                },
-                editorAt : function(x,y,z,worldPos){
-                    var threshold = 10;
-                    var me = UserSettings.getUsername();
-                    var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-                    var texts = _.values(boardContent.multiWordTexts).filter(function(text){
-                        var intersects = intersectRect(text.bounds,ray)
-                        return intersects && (text.author == me);
-                    }).filter(ContentFilter.exposes);
-                    if(texts.length > 0){
-                        return texts[0];
-                    }
-                    else{
-                        return false;
-                    }
-                },
                 contextFor : function(editor,worldPos){
                     var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
                     var node = editor.byCoordinate(relativePos.x,relativePos.y);
@@ -1583,69 +1524,19 @@ var Modes = (function(){
                     setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
                     var down = function(x,y,z,worldPos){
-                        var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
-                        if (editor){
-                            editor.isActive = true;
-                            editor.caretVisible = true;
-                            editor.mousedownHandler(Modes.text.contextFor(editor,worldPos).node);
-                        };
                     }
                     var move = function(x,y,z,worldPos){
-                        var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
-                        if (editor){
-                            editor.mousemoveHandler(Modes.text.contextFor(editor,worldPos).node);
-                        }
                     };
                     var up = function(x,y,z,worldPos){
-                        RichText.create(worldPos,attributesAtCursor);
+                        RichText.click(worldPos);
                         RichText.listen(boardContext);
                         Progress.call("onSelectionChanged",[Modes.select.selected]);
                     };
                     textColors = getTextColors();
                     updateControlState(attributesAtCursor);
                     registerPositionHandlers(board,down,move,up);
+                    RichText.setAttributes(attributesAtCursor);
                     Progress.call("onLayoutUpdated");
-                },
-                handleDrop:function(html,x,y){
-                    if (html.length > 0){
-                        var newRuns = carota.html.parse(html,{});
-                        var worldPos = screenToWorld(x,y);
-                        Modes.text.activate();
-                        var clickTime = Date.now();
-                        var sel;
-                        Modes.select.clearSelection();
-                        var newEditor = createBlankText(worldPos,[{
-                            text:" ",
-                            italic:carota.runs.nextInsertFormatting.italic == true,
-                            bold:carota.runs.nextInsertFormatting.bold == true,
-                            underline:carota.runs.nextInsertFormatting.underline == true,
-                            color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-                            size:carota.runs.defaultFormatting.newBoxSize / scale()
-                        }]);
-                        var newDoc = newEditor.doc;
-                        newDoc.select(0,1);
-                        boardContent.multiWordTexts[newEditor.identity] = newEditor;
-                        sel = {multiWordTexts:{}};
-                        sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-                        Modes.select.setSelection(sel);
-                        editor = newEditor;
-                        var node = newDoc.byOrdinal(0);
-                        newDoc.mousedownHandler(node);
-                        newDoc.mouseupHandler(node);
-                        editor.doc.invalidateBounds();
-                        editor.doc.isActive = true;
-                        editor.doc.load(newRuns);
-                        Progress.historyReceived["ClearMultiTextEchoes"] = function(){
-                            Modes.text.echoesToDisregard = {};
-                        };
-                        Modes.text.scrollToCursor(editor);
-                        var source = boardContent.multiWordTexts[editor.identity];
-                        source.privacy = Privacy.getCurrentPrivacy();
-                        source.target = "presentationSpace";
-                        source.slide = Conversations.getCurrentSlideJid();
-                        sendRichText(source);
-                        Progress.call("onSelectionChanged",[Modes.select.selected]);
-                    };
                 },
                 deactivate:function(){
                     DeviceConfiguration.setKeyboard(false);
@@ -2195,6 +2086,7 @@ var Modes = (function(){
                         } else if ("videos" in sel && _.size(sel.videos) > 0){
                             return true;
                         } else {
+
                             return false;
                         }
                     }
