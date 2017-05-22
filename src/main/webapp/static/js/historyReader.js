@@ -914,12 +914,12 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 renderContentIdentification(canvasContext,rendered);
                 renderCanvasInteractables(canvasContext);
                 renderTint(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
-                console.log("rendered viewbounds",
-                            viewBounds[0],
-                            viewBounds[1],
-                            viewBounds[2],
-                            viewBounds[3]
-                           );
+                // console.log("rendered viewbounds",
+                //             viewBounds[0],
+                //             viewBounds[1],
+                //             viewBounds[2],
+                //             viewBounds[3]
+                //            );
             }
             catch(e){
                 console.log("Render exception",e);

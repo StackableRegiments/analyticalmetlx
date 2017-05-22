@@ -353,7 +353,7 @@ var TweenController = (function(){
             if (tween){
                 TWEEN.update();
                 blit();
-                console.log("Tween blit");
+                // console.log("Tween blit");
                 requestAnimationFrame(update);
             }
         };
