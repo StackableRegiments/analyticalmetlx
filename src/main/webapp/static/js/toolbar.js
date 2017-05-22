@@ -104,9 +104,27 @@ function worldToScreen(x,y){
     var screenY = scaleWorldToScreen(y - viewboxY);
     return {x:screenX,y:screenY};
 }
+function scaleWorldToVisual(i,visual){
+    var p = proportion(boardWidth,boardHeight);
+    var scale;
+    if(p > 1){//Viewbox wider than board
+        scale = visual[2] / boardWidth;
+    }
+    else{//Viewbox narrower than board
+        scale = visual[3] / boardHeight;
+    }
+    return i / scale;
+}
+function worldToVisual(x,y){
+    var visual = TweenController.immediateView();
+    var screenX = scaleWorldToVisual(x - visual[0],visual);
+    var screenY = scaleWorldToVisual(y - visual[1],visual);
+    return {x:screenX,y:screenY};
+
+}
 /*
- RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
- * */
+  RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
+  * */
 
 function detectPointerEvents(){
     try {
@@ -228,9 +246,9 @@ function registerPositionHandlers(contexts,down,move,up){
                 "z":z,
                 "worldPos":worldPos
             };
-        }
+        };
         if (detectPointerEvents()){
-            var performGesture = _.throttle(function(){
+            var performGesture = function(){
                 takeControlOfViewbox();
 
                 var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
@@ -261,7 +279,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 var previousScale = (prevXScale + prevYScale)       / 2;
                 var currentScale = (xScale + yScale)        / 2;
                 Zoom.scale(previousScale / currentScale);
-            },25);
+            };
             context.bind("pointerdown",function(e){
                 if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && checkIsGesture(e)){
                     isGesture = true;
@@ -969,7 +987,7 @@ var Modes = (function(){
                         blit();
                         return false;
                     },
-                    move:_.throttle(function(worldPos){
+                    move:function(worldPos){
                         if(resizeAspectLocked.activated){
                             bounds = [
                                 worldPos.x - s,
@@ -988,7 +1006,7 @@ var Modes = (function(){
                             blit();
                         }
                         return false;
-                    },20),
+                    },
                     deactivate:function(){
                         Modes.select.aspectLocked = false;
                         resizeAspectLocked.activated = false;
@@ -1523,12 +1541,14 @@ var Modes = (function(){
                         if(isAuthor){
                             var onChange = _.debounce(function(){
                                 var source = boardContent.multiWordTexts[editor.identity];
-                                source.target = "presentationSpace";
-                                source.slide = Conversations.getCurrentSlideJid();
-                                source.audiences = ContentFilter.getAudiences();
-                                sendRichText(source);
-                                /*This is important to the zoom strategy*/
-                                incorporateBoardBounds(editor.bounds);
+                                if(source){
+                                    source.target = "presentationSpace";
+                                    source.slide = Conversations.getCurrentSlideJid();
+                                    source.audiences = ContentFilter.getAudiences();
+                                    sendRichText(source);
+                                    /*This is important to the zoom strategy*/
+                                    incorporateBoardBounds(editor.bounds);
+                                }
                             },1000);
                             Progress.beforeChangingAudience[t.identity] = function(){
                                 onChange.flush();
@@ -1625,10 +1645,10 @@ var Modes = (function(){
                         var editor = Modes.text.editorAt(x,y,z,worldPos);
                         _.each(boardContent.multiWordTexts,function(t){
                             t.doc.isActive = t.doc.identity == editor.identity;
-			    if((t.doc.selection.start + t.doc.selection.end) > 0 && t.doc.identity != editor.identity){
-				t.doc.select(0,0);
-				t.doc.updateCanvas();
-			    }
+                            if((t.doc.selection.start + t.doc.selection.end) > 0 && t.doc.identity != editor.identity){
+                                t.doc.select(0,0);
+                                t.doc.updateCanvas();
+                            }
                             if(t.doc.documentRange().plainText().trim().length == 0){
                                 delete boardContent.multiWordTexts[t.identity];
                                 blit();
@@ -2058,17 +2078,17 @@ var Modes = (function(){
                     var h = dims.h;
                     var quality = dims.q;
                     /*
-                     renderCanvas.width = w;
-                     renderCanvas.height = h;
-                     renderCanvas.attr("width",w);
-                     renderCanvas.attr("height",h);
-                     renderCanvas.css({
-                     width:px(w),
-                     height:px(h)
-                     });
-                     renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
-                     currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
-                     */
+                      renderCanvas.width = w;
+                      renderCanvas.height = h;
+                      renderCanvas.attr("width",w);
+                      renderCanvas.attr("height",h);
+                      renderCanvas.css({
+                      width:px(w),
+                      height:px(h)
+                      });
+                      renderCanvas[0].getContext("2d").drawImage(img,0,0,w,h);
+                      currentImage.resizedImage = renderCanvas[0].toDataURL("image/jpeg",quality);
+                    */
                     renderCanvas.width = width;
                     renderCanvas.height = height;
                     renderCanvas.attr("width",width);
@@ -2183,7 +2203,6 @@ var Modes = (function(){
             });
             return {
                 activate:function(){
-		    console.log("activating insert");
                     Modes.currentMode.deactivate();
                     Modes.currentMode = Modes.image;
                     setActiveMode("#insertTools","#imageMode");
@@ -2206,7 +2225,7 @@ var Modes = (function(){
                     Progress.call("onLayoutUpdated");
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
-		    console.log("activated insert");
+                    console.log("activated insert");
                 },
                 handleDroppedSrc:function(src,x,y){
                     console.log("handleDroppedSrc:",src,x,y);
@@ -2884,16 +2903,16 @@ var Modes = (function(){
                     _.each(container.find(".modeSpecificTool.pen"),function(button,i){
                         var brush = brushes[i];
                         var thisButton = $(button)
-                                .css({color:brush.color})
-                                .click(function(){
-                                    $(".activeBrush").removeClass("activeBrush");
-                                    $(this).addClass("activeBrush");
-                                    currentBrush = brush;
-                                    updateOriginalBrush(brush);
-                                    Modes.draw.drawingAttributes = currentBrush;
-                                    erasing = false;
-                                    drawAdvancedTools(brush);
-                                }).removeClass("fa-tint").removeClass("fa-circle").addClass(brush.isHighlighter ? "fa-circle" : "fa-tint");
+                            .css({color:brush.color})
+                            .click(function(){
+                                $(".activeBrush").removeClass("activeBrush");
+                                $(this).addClass("activeBrush");
+                                currentBrush = brush;
+                                updateOriginalBrush(brush);
+                                Modes.draw.drawingAttributes = currentBrush;
+                                erasing = false;
+                                drawAdvancedTools(brush);
+                            }).removeClass("fa-tint").removeClass("fa-circle").addClass(brush.isHighlighter ? "fa-circle" : "fa-tint");
                         thisButton.find(".widthIndicator").text(brush.width);
                         if (brush == currentBrush){
                             thisButton.addClass("activeBrush");

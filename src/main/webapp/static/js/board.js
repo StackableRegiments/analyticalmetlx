@@ -181,7 +181,8 @@ function richTextEditorToStanza(t){
     if (t.privacy == undefined){
         t.privacy = Privacy.getCurrentPrivacy();
     }
-
+    var w = t.doc.width();
+    console.log("Constructing stanza with width",w);
     return {
         author:t.author,
         timestamp:-1,
@@ -193,8 +194,8 @@ function richTextEditorToStanza(t){
         type:t.type,
         x:bounds[0],
         y:bounds[1],
-        requestedWidth:t.doc.width(),
-        width:t.doc.width(),
+        requestedWidth:w,
+        width:w,
         height:bounds[3]-bounds[1],
         words:text.map(partToStanza),
         audiences:t.audiences.map(audienceToStanza)
@@ -755,8 +756,8 @@ function isInClearSpace(bounds){
     });
 }
 function screenBounds(worldBounds){
-    var screenPos = worldToScreen(worldBounds[0],worldBounds[1]);
-    var screenLimit = worldToScreen(worldBounds[2],worldBounds[3]);
+    var screenPos = worldToVisual(worldBounds[0],worldBounds[1]);
+    var screenLimit = worldToVisual(worldBounds[2],worldBounds[3]);
     var screenWidth = screenLimit.x - screenPos.x;
     var screenHeight = screenLimit.y - screenPos.y;
     return {
