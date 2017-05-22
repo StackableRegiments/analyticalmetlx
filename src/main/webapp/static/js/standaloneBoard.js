@@ -339,7 +339,7 @@ var board = function(options){
             };
         }
         if (detectPointerEvents()){
-            var performGesture = _.throttle(function(){
+            var performGesture = function(){
                 if (_.size(trackedTouches) > 1){
                     takeControlOfViewbox();
 
@@ -372,7 +372,7 @@ var board = function(options){
                     var currentScale = (xScale + yScale)        / 2;
                     Zoom.scale(previousScale / currentScale);
                 }
-            },25);
+            };
             context.bind("pointerdown",function(e){
                 var point = updatePoint(e);
                 e.preventDefault();
