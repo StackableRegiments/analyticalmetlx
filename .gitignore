@@ -31,3 +31,9 @@ docs/.jekyll-metadata
 .idea
 *.iml
 *.ipr
+
+# Eclipse (scala-ide) files
+.settings/
+library/
+.classpath
+.project
