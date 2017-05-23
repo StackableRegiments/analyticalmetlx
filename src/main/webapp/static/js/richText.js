@@ -6,7 +6,9 @@ var RichText = (function(){
         comfortableColumnWidth:28,
         lineHeightRatio:1.8
     };
-    var cursor = {};
+    var cursor = {
+        selected:[]
+    };
     var measureCanvas = $("<canvas />")[0].getContext("2d");
     var fontHeight = function(char){
         return Math.floor(parseFloat(char.fontSize));
@@ -66,10 +68,14 @@ var RichText = (function(){
     var charRenderer = function(context){
         return function(char){
             context.font = fontString(char.fontFamily,scaleWorldToScreen(char.fontSize));
-            context.fillStyle = char.color;
             var screenPos = worldToScreen(char.x,char.y);
             var screenWidth = scaleWorldToScreen(char.width);
             var screenHeight = scaleWorldToScreen(char.height);
+            if(_.includes(cursor.selected,char)){
+                context.fillStyle = "yellow";
+                context.fillRect(screenPos.x,screenPos.y-screenHeight,screenWidth,screenHeight);
+            }
+            context.fillStyle = char.color;
             context.fillText(char.char, screenPos.x, screenPos.y);
         };
     }
@@ -129,6 +135,15 @@ var RichText = (function(){
             else{
                 cursorX += char.width;
             }
+        }
+    };
+    var toggleSelected = function(char){
+	console.log(cursor.selected,char,_.includes(cursor.selected,char));
+        if(_.includes(cursor.selected,char)){
+            _.pull(cursor.selected,char);
+        }
+        else{
+            cursor.selected.push(char);
         }
     };
     return {
@@ -197,14 +212,23 @@ var RichText = (function(){
                 case "Control":break;
                 case "CapsLock":break;
                 case "ArrowLeft":
+                    console.log(e);
                     if(cursor.box.head.length){
-                        cursor.box.tail.unshift(cursor.box.head.pop());
+                        var underCursor = cursor.box.head.pop();
+                        cursor.box.tail.unshift(underCursor);
+                        if(e.shiftKey){
+                            toggleSelected(underCursor);
+                        }
                         blit();
                     }
                     break;
                 case "ArrowRight":
                     if(cursor.box.tail.length){
-                        cursor.box.head.push(cursor.box.tail.shift());
+			var underCursor = cursor.box.tail.shift();
+                        cursor.box.head.push(underCursor);
+                        if(e.shiftKey){
+                            toggleSelected(underCursor);
+                        }
                         blit();
                     }
                     break;
@@ -214,6 +238,10 @@ var RichText = (function(){
                         wrap(cursor.box);
                         blit();
                     }
+                    break;
+                case "Escape":
+                    cursor.selected = [];
+                    blit();
                     break;
                 case "Delete":
                     if(cursor.box.tail.length){
