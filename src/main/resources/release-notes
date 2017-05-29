@@ -3,6 +3,9 @@ METL-631: Bugfix: Extremely large text box makes other content super small.
 METL-632: Improvement: Add UserAgent string to Problem Report.
 METL-642: Improvement: Unthrottle everything but blit().
 
+1.14.2
+METL-631: Bugfix: Extremely large text box makes other content super small.
+
 1.14.1
 METL-625: Improvement: Include user email address in Problem Report email.
 METL-616: Improvement: Links extracted into chat by Mother should open in _blank.
