@@ -79,7 +79,7 @@ var Blacklist = (function(){
             {name:"slide",type:"number",title:"Page",readOnly:true},
             {name:"timestamp",type:"dateField",title:"When",readOnly:true},
             {name:"userCount",type:"number",title:"Who",readOnly:true,itemTemplate:function(v,o){
-                return _.map(o.blacklist,"username");
+                return _.map(o.blacklist,"username").join(", ");
             }}
         ];
         blacklistDatagrid.jsGrid({
@@ -183,7 +183,7 @@ var Blacklist = (function(){
                 blacklistDatagrid.jsGrid("sort",sortObj);
             }
         });
-    }
+    };
     var historyReceivedFunction = function(history){
         try {
             if ("type" in history && history.type == "history"){
@@ -222,7 +222,7 @@ var Blacklist = (function(){
     };
     var clientSideBanSelectionFunc = function(conversationJid,slideId,inks,texts,multiWordTexts,images){
         WorkQueue.pause();
-        var bannedAuthors = _.uniq(_.map(_.flatMap([inks,texts,multiWordTexts,images],_.values),"author")).join(", ");
+        var bannedAuthors = _.uniq(_.map(_.flatMap([inks,texts,multiWordTexts,images],_.values),"author"));
 
         var cc = Conversations.getCurrentConversation();
         changeBlacklistOfConversation(cc.jid.toString(),_.uniq(_.flatten([cc.blacklist,bannedAuthors])));
@@ -259,8 +259,7 @@ var Blacklist = (function(){
 	    var highlight = _.find(colouredAuthors,{username:ink.author});
             inkShadow.color = highlight ? highlight.highlight : "red";
             inkShadow.isHighlighter = true;
-            var tempIdentity = inkShadow.identity + "_banning";
-            inkShadow.identity = tempIdentity;
+            inkShadow.identity = inkShadow.identity + "_banning";
             prerenderInk(inkShadow);
             drawInk(inkShadow,tempCtx);
         });
@@ -333,7 +332,7 @@ var Blacklist = (function(){
                 sendStanza(deleter);
 
                 WorkQueue.gracefullyResume();
-                successAlert("Banned content",sprintf("You have banned: %s", bannedAuthors));
+                successAlert("Banned content",sprintf("You have banned: %s", bannedAuthors.join(", ")));
             },
             error: function(e){
                 console.log(e);
@@ -345,7 +344,7 @@ var Blacklist = (function(){
             contentType: false,
             processData: false
         });
-    }
+    };
     Progress.conversationDetailsReceived["blacklist"] = updateAuthorList;
     Progress.onConversationJoin["blacklist"] = clearState;
     Progress.historyReceived["blacklist"] = historyReceivedFunction;
