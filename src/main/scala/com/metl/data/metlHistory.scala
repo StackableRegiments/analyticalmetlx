@@ -248,6 +248,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected val canvasContents:HistoryCollection[MeTLCanvasContent] = emptyColl[MeTLCanvasContent]
   protected val highlighters:HistoryCollection[MeTLInk] = emptyColl[MeTLInk]
   protected val inks:HistoryCollection[MeTLInk] = emptyColl[MeTLInk]
+  protected val chars:HistoryCollection[MeTLSingleChar] = emptyColl[MeTLSingleChar]
   protected val dirtyInks:HistoryCollection[MeTLDirtyInk] = emptyColl[MeTLDirtyInk]
   protected val images:HistoryCollection[MeTLImage] = emptyColl[MeTLImage]
   protected val dirtyImages:HistoryCollection[MeTLDirtyImage] = emptyColl[MeTLDirtyImage]
@@ -280,6 +281,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getChatMessages = chatMessages.toList
   def getHighlighters = highlighters.toList
   def getInks = inks.toList
+  def getChars = chars.toList
   def getImages = images.toList
   def getVideos = videos.toList
   def getTexts = texts.toList
