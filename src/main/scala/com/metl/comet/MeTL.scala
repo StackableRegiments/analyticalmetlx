@@ -194,12 +194,12 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       listing = (newConv :: listing).distinct
       serializer.fromConversation(newConv)
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS))/*,
-    ClientSideFunction("sleepAndThenAlert",List("delay","message"),(args) => {
-      val delay = getArgAsInt(args(0))
-      val message = getArgAsString(args(1))
-      Thread.sleep(delay)
-      JString(message)
-    },Full("alert"))*/
+                                              ClientSideFunction("sleepAndThenAlert",List("delay","message"),(args) => {
+                                              val delay = getArgAsInt(args(0))
+                                              val message = getArgAsString(args(1))
+                                              Thread.sleep(delay)
+                                              JString(message)
+                                              },Full("alert"))*/
   )
 
   protected var query:Option[String] = None
@@ -742,6 +742,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       JNull
     },Empty),
     ClientSideFunction("sendStanza",List("stanza"),(args) => {
+      trace("sendStanza getArg: %s".format(args))
       val stanza = getArgAsJValue(args(0))
       trace("sendStanza: %s".format(stanza.toString))
       sendStanzaToServer(stanza)
@@ -772,7 +773,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                   m.slide+username
                 }
                 case Privacy.PUBLIC => {
-                    m.slide
+                  m.slide
                 }
                 case other => {
                   warn("unexpected privacy found in: %s".format(m))
@@ -780,7 +781,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                 }
               }
               rooms.get((server,roomId)).foreach(targetRoom => {
-                val room = targetRoom() 
+                val room = targetRoom()
                 room.getHistory.getDeletedCanvasContents.find(dc => {
                   dc.identity == m.identity && dc.author == m.author
                 }).foreach(dc => {
@@ -790,7 +791,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                   val newUDM = MeTLUndeletedCanvasContent(config,username,0L,dc.target,dc.privacy,dc.slide,"%s_%s_%s".format(new Date().getTime(),dc.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),dc.identity,newIdentity,Nil)
                   trace("created newUDM: %s".format(newUDM))
                   room ! LocalToServerMeTLStanza(newUDM)
-                  
+
                   room ! LocalToServerMeTLStanza(newM)
                 })
               })
@@ -1564,7 +1565,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     partialUpdate(Call("errorAlert",JString(heading),JString(message)))
   }
   private def sendStanzaToServer(jVal:JValue,serverName:String = server):Unit  = Stopwatch.time("MeTLActor.sendStanzaToServer (jVal) (%s)".format(serverName),{
+    trace("comet.MeTL sendStanzaToServer 1 %s".format(jVal))
     val metlData = serializer.toMeTLData(jVal)
+    trace("comet.MeTL sendStanzaToServer 2 %s".format(metlData))
     metlData match {
       case m:MeTLStanza => sendStanzaToServer(m,serverName)
       case notAStanza => error("Not a stanza at sendStanzaToServer %s".format(notAStanza))
@@ -1648,20 +1651,24 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
       }
       case c:MeTLCanvasContent => {
+        trace("comet.MeTL routing %s".format(c))
         if (c.author == username){
           currentConversation.map(cc => {
             val t = c match {
-              case i:MeTLInk => "ink"
-              case i:MeTLImage => "img"
-              case i:MeTLMultiWordText => "txt"
-              case _ => "_"
+              case i:MeTLInk => (true,"ink")
+              case i:MeTLImage => (true,"img")
+              case i:MeTLMultiWordText => (true,"txt")
+              case i:MeTLSingleChar => (false,"key")
+              case _ => (false,"_")
             }
             val p = c.privacy match {
               case Privacy.PRIVATE => "private"
               case Privacy.PUBLIC => "public"
               case _ => "_"
             }
-            emit(p,c.identity,t)
+            if(t._1){
+              emit(p,c.identity,t._2)
+            }
             val (shouldSend,roomId,finalItem) = c.privacy match {
               case Privacy.PRIVATE => {
                 (true,c.slide+username,c)
@@ -1672,6 +1679,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                 } else {
                   (true,c.slide+username,c match {
                     case i:MeTLInk => i.alterPrivacy(Privacy.PRIVATE)
+                    case i:MeTLSingleChar => i.alterPrivacy(Privacy.PRIVATE)
                     case t:MeTLText => t.alterPrivacy(Privacy.PRIVATE)
                     case i:MeTLImage => i.alterPrivacy(Privacy.PRIVATE)
                     case i:MeTLMultiWordText => i.alterPrivacy(Privacy.PRIVATE)
@@ -1688,6 +1696,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
               }
             }
             if (shouldSend){
+              trace("comet.MeTL sendStanza should send %s".format(finalItem))
               rooms.get((serverName,roomId)).map(targetRoom => targetRoom() ! LocalToServerMeTLStanza(finalItem))
             }
           })

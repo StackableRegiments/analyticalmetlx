@@ -96,6 +96,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     inputObject match {
       case i:A => {
         i.metlType.get match {
+          case "singleChar" => toMeTLSingleChar(i.asInstanceOf[H2SingleChar])
           case "ink" => toMeTLInk(i.asInstanceOf[H2Ink])
           case "theme" => toTheme(i.asInstanceOf[H2Theme])
           case "chatMessage" => toChatMessage(i.asInstanceOf[H2ChatMessage])
@@ -233,6 +234,16 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     trace(audienceString)
     net.liftweb.json.parse(audienceString).extract[List[Audience]]
   }
+  def toMeTLSingleChar(i:H2SingleChar):MeTLSingleChar = {
+    trace("H2Serializer.toMeTLSingleChar: %s".format(i))
+    val cc = decCanvasContent(i)
+    MeTLSingleChar(config,cc.author,cc.timestamp,i.char.get,i.x.get,i.y.get,i.fontFamily.get,i.fontSize.get,toColor(i.color.get),i.box.get,cc.identity,cc.target,cc.privacy,cc.slide,cc.audiences)
+  }
+  override def fromMeTLSingleChar(c:MeTLSingleChar):H2SingleChar = {
+    trace("H2Serializer.fromMeTLSingleChar: %s".format(c))
+    incCanvasContent(H2SingleChar.create,c,"singleChar").x(c.x).y(c.y).fontFamily(c.fontFamily).fontSize(c.fontSize).color(fromColor(c.color)).box(c.box)
+  }
+
   def toMeTLMultiWordText(i:H2MultiWordText):MeTLMultiWordText = {
     val cc = decCanvasContent(i)
     MeTLMultiWordText(config,cc.author,cc.timestamp,i.height,i.width,i.requestedWidth.get,i.x.get,i.y.get,i.tag.get,cc.identity,cc.target,cc.privacy,cc.slide,decodeMultiWords(i.words.get),cc.audiences)
@@ -439,7 +450,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   override def toPointList(input:AnyRef):List[Point] = Stopwatch.time("H2Serializer.toPointList",PointConverter.fromText(input.toString))
   override def fromPointList(input:List[Point]):AnyRef = Stopwatch.time("H2Serializer.fromPointList",PointConverter.toText(input))
   override def toColor(input:AnyRef):Color = ColorConverter.fromARGBHexString(input.toString)
-  override def fromColor(input:Color):AnyRef = ColorConverter.toARGBHexString(input)
+  override def fromColor(input:Color):String = ColorConverter.toARGBHexString(input)
 
   def toGrade(i:H2Grade):MeTLGrade = Stopwatch.time("H2Serializer.toGrade",{
     val c = decStanza(i)

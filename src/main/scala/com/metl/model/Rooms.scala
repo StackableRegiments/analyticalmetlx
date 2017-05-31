@@ -371,7 +371,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       trace("MeTLRoom(%s):sendToServer.backlogging".format(location))
       backlog.enqueue((s,updateTimestamp))
     } else {
-      trace("sendingStanzaToServer: %s".format(s))
+      trace("Room.scala sendingStanzaToServer: %s, %s".format(messageBus,s))
       messageBus.sendStanzaToRoom(s,updateTimestamp)
     }
   })

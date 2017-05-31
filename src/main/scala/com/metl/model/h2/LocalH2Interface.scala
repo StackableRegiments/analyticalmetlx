@@ -24,7 +24,7 @@ class H2Interface(config:ServerConfiguration,filename:Option[String],onConversat
 },onConversationDetailsUpdated,500) {
 }
 
-class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit,startingPool:Int = 0,maxPoolSize:Int = 0) extends PersistenceInterface(config) with Logger{
+class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversationDetailsUpdated:Conversation=>Unit,startingPool:Int = 0,maxPoolSize:Int = 0) extends PersistenceInterface(config) with Logger {
   val configName = config.name
   val serializer = new H2Serializer(config)
 
@@ -40,6 +40,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     Schemifier.schemify(true,Schemifier.infoF _,
       List(
         H2Ink,
+        H2SingleChar,
         H2MultiWordText,
         H2Text,
         H2Image,
@@ -207,9 +208,11 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
 
   //stanzas table
   def storeStanza[A <: MeTLStanza](jid:String,stanza:A):Option[A] = Stopwatch.time("H2Interface.storeStanza",{
+    trace("LocalH2Interface.storeStanza: %s %s".format(stanza.isInstanceOf[MeTLSingleChar],stanza))
     val transformedStanza:Option[_ <: H2MeTLStanza[_]] = stanza match {
       case s:MeTLStanza if s.isInstanceOf[Attendance] => Some(serializer.fromMeTLAttendance(s.asInstanceOf[Attendance]).room(jid))
-      case s:Attendance => Some(serializer.fromMeTLAttendance(s).room(jid)) // for some reason, it just can't make these match
+      case s:MeTLStanza if s.isInstanceOf[MeTLSingleChar]=> Some(serializer.fromMeTLSingleChar(s.asInstanceOf[MeTLSingleChar]).room(jid))
+      // for some reason, it just can't make these match
       case s:MeTLStanza if s.isInstanceOf[MeTLTheme] => Some(serializer.fromTheme(s.asInstanceOf[MeTLTheme]).room(jid))
       case s:MeTLTheme => Some(serializer.fromTheme(s).room(jid))
       case s:MeTLChatMessage => Some(serializer.fromChatMessage(s).room(jid))

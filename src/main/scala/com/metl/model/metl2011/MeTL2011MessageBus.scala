@@ -182,7 +182,7 @@ class XmppSharedConnMessageBus(config:ServerConfiguration,hostname:String,creden
     xmpp.map(x => x.joinRoom(jid,this.hashCode.toString))
   }
   override def sendStanzaToRoom[A <: MeTLStanza](stanza:A,shouldUpdateTimestamp:Boolean = true):Boolean = Stopwatch.time("XmppSharedConnMessageBus.sendStanzaToRoom",{
-    debug("XMPPSharedConnMessageBus(%s):sendStanzaToRoom(%s)".format(d,xmpp))
+    trace("XMPPSharedConnMessageBus(%s):sendStanzaToRoom(%s)".format(d,xmpp))
     stanza match {
       case i:MeTLInk =>{
         xmpp.map(x => x.sendMessage(jid,"ink",i))
@@ -241,50 +241,53 @@ class XmppMessageBus(config:ServerConfiguration,hostname:String,credentialsFunc:
   val jid = d.location
   lazy val xmpp = new MeTL2011XmppConn(credentialsFunc,"metlxConnector_%s".format(new Date().getTime.toString),hostname,domain,config,this)
   xmpp.joinRoom(jid,this.hashCode.toString)
-  override def sendStanzaToRoom[A <: MeTLStanza](stanza:A,shouldUpdateStanza:Boolean = true):Boolean = stanza match {
-    case i:MeTLInk =>{
-      xmpp.sendMessage(jid,"ink",i)
-      true}
-    case t:MeTLText =>{
-      xmpp.sendMessage(jid,"textbox",t)
-      true}
-    case i:MeTLImage =>{
-      xmpp.sendMessage(jid,"image",i)
-      true}
-    case di:MeTLDirtyInk => {
-      xmpp.sendMessage(jid,"dirtyInk",di)
-      true}
-    case dt:MeTLDirtyText =>{
-      xmpp.sendMessage(jid,"dirtyText",dt)
-      true}
-    case di:MeTLDirtyImage =>{
-      xmpp.sendMessage(jid,"dirtyImage",di)
-      true}
-    case q:MeTLQuiz =>{
-      xmpp.sendMessage(jid,"quiz",q)
-      true}
-    case qr:MeTLQuizResponse =>{
-      xmpp.sendMessage(jid,"quizResponse",qr)
-      true}
-    case s:MeTLSubmission =>{
-      xmpp.sendMessage(jid,"submission",s)
-      true}
-    case c:MeTLCommand =>{
-      xmpp.sendSimpleMessage(jid,(c.command :: c.commandParameters).mkString(" "))
-      true}
-    case d:MeTLMoveDelta =>{
-      xmpp.sendMessage(jid,"moveDelta",d)
-      true}
-    case a:Attendance => {
-      xmpp.sendMessage(jid,"attendance",a)
-      true
-    }
-    case t:MeTLTheme => {
-      xmpp.sendMessage(jid,"theme",t)
-      true
-    }
-    case _ => {
-      false
+  override def sendStanzaToRoom[A <: MeTLStanza](stanza:A,shouldUpdateStanza:Boolean = true):Boolean = {
+    trace("XmppMessageBus sendStanzaToRoom: %s".format(stanza))
+    stanza match {
+      case i:MeTLInk =>{
+        xmpp.sendMessage(jid,"ink",i)
+        true}
+      case t:MeTLText =>{
+        xmpp.sendMessage(jid,"textbox",t)
+        true}
+      case i:MeTLImage =>{
+        xmpp.sendMessage(jid,"image",i)
+        true}
+      case di:MeTLDirtyInk => {
+        xmpp.sendMessage(jid,"dirtyInk",di)
+        true}
+      case dt:MeTLDirtyText =>{
+        xmpp.sendMessage(jid,"dirtyText",dt)
+        true}
+      case di:MeTLDirtyImage =>{
+        xmpp.sendMessage(jid,"dirtyImage",di)
+        true}
+      case q:MeTLQuiz =>{
+        xmpp.sendMessage(jid,"quiz",q)
+        true}
+      case qr:MeTLQuizResponse =>{
+        xmpp.sendMessage(jid,"quizResponse",qr)
+        true}
+      case s:MeTLSubmission =>{
+        xmpp.sendMessage(jid,"submission",s)
+        true}
+      case c:MeTLCommand =>{
+        xmpp.sendSimpleMessage(jid,(c.command :: c.commandParameters).mkString(" "))
+        true}
+      case d:MeTLMoveDelta =>{
+        xmpp.sendMessage(jid,"moveDelta",d)
+        true}
+      case a:Attendance => {
+        xmpp.sendMessage(jid,"attendance",a)
+        true
+      }
+      case t:MeTLTheme => {
+        xmpp.sendMessage(jid,"theme",t)
+        true
+      }
+      case _ => {
+        false
+      }
     }
   }
   override def release = {

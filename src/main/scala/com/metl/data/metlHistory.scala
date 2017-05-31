@@ -344,6 +344,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLDirtyVideo => removeVideo(s)
     case s:MeTLMoveDelta => addMeTLMoveDelta(s)
     case s:MeTLInk if s.isHighlighter => addHighlighter(s)
+    case s:MeTLSingleChar => addChar(s)
     case s:MeTLInk => addInk(s)
     case s:MeTLImage => addImage(s)
     case s:MeTLVideo => addVideo(s)
@@ -367,6 +368,12 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       warn("makeHistory: I don't know what to do with a MeTLStanza: %s".format(s))
       this
     }
+  }
+
+  def addChar(c:MeTLSingleChar) = {
+    chars += c
+    outputHook(c)
+    this
   }
 
   def addGrade(t:MeTLGrade) = {

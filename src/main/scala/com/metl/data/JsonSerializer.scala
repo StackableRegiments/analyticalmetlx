@@ -105,7 +105,7 @@ trait JsonSerializerHelper {
     })
     //input.values(name).asInstanceOf[List[AnyRef]].map(i => i.asInstanceOf[JObject])
   }
-  def getOptionalObjectByName(input:JObject,name:String) = input.obj.find(_.name == name).toList.headOption 
+  def getOptionalObjectByName(input:JObject,name:String) = input.obj.find(_.name == name).toList.headOption
   def getColorByName(input:JObject,name:String) = input.values(name).asInstanceOf[List[Any]]
 }
 
@@ -278,6 +278,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     input match {
       case jo:JObject if (isOfType(jo,"ink")) => toMeTLInk(jo)
       case jo:JObject if (isOfType(jo,"text")) => toMeTLText(jo)
+      case jo:JObject if (isOfType(jo,"singleChar")) => toMeTLSingleChar(jo)
       case jo:JObject if (isOfType(jo,"multiWordText")) => toMeTLMultiWordText(jo)
       case jo:JObject if (isOfType(jo,"image")) => toMeTLImage(jo)
       case jo:JObject if (isOfType(jo,"video")) => toMeTLVideo(jo)
@@ -572,6 +573,26 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     ) ::: input.source.map(u => List(JField("source",JString(u)))).openOr(List.empty[JField]) ::: parseMeTLContent(input) ::: parseCanvasContent(input))
   })
 
+  override def toMeTLSingleChar(i:JValue):MeTLSingleChar = Stopwatch.time("JsonSerializer.toMeTLSingleChar",{
+    val c = i match {
+      case input:JObject => {
+        val mc = parseJObjForMeTLContent(input,config)
+        val cc = parseJObjForCanvasContent(input)
+        val x = getDoubleByName(input,"x");
+        val y = getDoubleByName(input,"y");
+        val identity = getStringByName(input,"identity");
+        val char = getStringByName(input,"char");
+        val fontFamily = getStringByName(input,"fontFamily");
+        val fontSize = getDoubleByName(input,"fontSize");
+        val color = toColor(getStringByName(input,"color"));
+        val box = getStringByName(input,"box");
+        MeTLSingleChar(config,mc.author,mc.timestamp,char,x,y,fontFamily,fontSize,color,box,cc.identity,cc.target,cc.privacy,cc.slide,mc.audiences);
+      }
+      case _ => MeTLSingleChar.empty
+    }
+    trace("toMeTLSingleChar res: %s".format(c))
+    c
+  });
   override def toMeTLText(i:JValue):MeTLText = Stopwatch.time("JsonSerializer.toMeTLText",{
     i match {
       case input:JObject => {
@@ -639,6 +660,16 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("tag",JString(input.tag)),
       JField("requestedWidth",JDouble(input.requestedWidth)),
       JField("words",JArray(words))
+    ) ::: parseMeTLContent(input) ::: parseCanvasContent(input))
+  });
+  override def fromMeTLSingleChar(input:MeTLSingleChar):JValue = Stopwatch.time("JsonSerializer.fromMeTLSingleChar",{
+    toJsObj("singleChar",List(
+      JField("char",JString(input.char)),
+      JField("x",JDouble(input.x)),
+      JField("y",JDouble(input.x)),
+      JField("fontFamily",JString(input.fontFamily)),
+      JField("fontSize",JDouble(input.fontSize)),
+      JField("box",JString(input.box))
     ) ::: parseMeTLContent(input) ::: parseCanvasContent(input))
   });
   override def fromMeTLText(input:MeTLText):JValue = Stopwatch.time("JsonSerializer.fromMeTLText",{

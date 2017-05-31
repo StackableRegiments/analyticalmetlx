@@ -112,6 +112,26 @@ function batchTransform(){
         newPrivacy:"not_set"
     }
 }
+function sendChar(char,boxId){
+    var currentSlide = Conversations.getCurrentSlideJid();
+    sendStanza({
+        type:"singleChar",
+	identity:char.identity,
+	box:boxId,
+	x:char.x,
+	y:char.y,
+	fontFamily:char.fontFamily,
+	fontSize:char.fontSize,
+	char:char.char,
+	color:char.color,
+        author:UserSettings.getUsername(),
+        timestamp:Date.now(),
+        slide:currentSlide.toString(),
+        target:"presentationSpace",
+        privacy:Privacy.getCurrentPrivacy(),
+        audiences:_.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences())
+    });
+}
 function sendDirtyInk(ink){
     var currentSlide = Conversations.getCurrentSlideJid();
     sendStanza({
@@ -206,6 +226,14 @@ function sendRichText(t){
     var stanza = richTextEditorToStanza(t);
     sendStanza(stanza);
 }
+function themeReceived(theme){
+    boardContent.themes.push(theme);
+    Progress.call("themeReceived");
+}
+function charReceived(char){
+    alert("Char received",char);
+    console.log(char);
+}
 var stanzaHandlers = {
     ink:inkReceived,
     dirtyInk:dirtyInkReceived,
@@ -219,12 +247,9 @@ var stanzaHandlers = {
     submission:submissionReceived,
     attendance:attendanceReceived,
     file:fileReceived,
-    theme:themeReceived
+    theme:themeReceived,
+    singleChar:charReceived
 };
-function themeReceived(theme){
-    boardContent.themes.push(theme);
-    Progress.call("themeReceived");
-}
 function fileReceived(file){
     //doing nothing with files yet.
 }
@@ -279,8 +304,8 @@ function richTextReceived(t){
         WorkQueue.enqueue(function(){
             var e = Modes.text.editorFor(t);
             e.doc.load(t.words);
-	    e.doc.updateCanvas();
-	    return true;
+            e.doc.updateCanvas();
+            return true;
         });
     }
 }

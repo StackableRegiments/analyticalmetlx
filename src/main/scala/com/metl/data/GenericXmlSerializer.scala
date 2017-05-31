@@ -80,6 +80,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
   override def toMeTLData(input:NodeSeq):MeTLData = Stopwatch.time("GenericXmlSerializer.toMeTLStanza",{
     input match {
       case i:NodeSeq if hasChild(i,"ink") => toMeTLInk(i)
+      case i:NodeSeq if hasChild(i,"singleChar") => toMeTLSingleChar(i)
       case i:NodeSeq if hasChild(i,"textbox") => toMeTLText(i)
       case i:NodeSeq if hasChild(i,"image") => toMeTLImage(i)
       case i:NodeSeq if hasChild(i,"video") => toMeTLVideo(i)
@@ -403,6 +404,29 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     <words>{input.words.map(fromMeTLWord _)}</words>,
     <audiences>{input.audiences.map(fromAudience _)}</audiences>
   )))
+  override def toMeTLSingleChar(input:NodeSeq):MeTLSingleChar = Stopwatch.time("GenericXmlSerializer.toSingleChar",{
+    val m = parseMeTLContent(input,config)
+    val c = parseCanvasContent(input)
+    val x = getDoubleByName(input,"x")
+    val y = getDoubleByName(input,"y")
+    val fontSize = getDoubleByName(input,"fontSize")
+    val box = getStringByName(input,"box")
+    val fontFamily = getStringByName(input,"fontFamily")
+    val char = getStringByName(input,"char")
+    val color = getColorByName(input,"color")
+    MeTLSingleChar(config,m.author,m.timestamp,char,x,y,fontFamily,fontSize,color,box,c.identity,c.target,c.privacy,c.slide,m.audiences)
+  })
+  override def fromMeTLSingleChar(input:MeTLSingleChar) = Stopwatch.time("GenericXmlSerializer.toMeTLSingleChar",{
+    canvasContentToXml("singleChar",input,List(
+      <x>{input.x}</x>,
+      <y>{input.y}</y>,
+      <fontFamily>{input.fontFamily}</fontFamily>,
+      <fontSize>{input.fontSize}</fontSize>,
+      <color>{fromColor(input.color)}</color>,
+      <box>{input.box}</box>,
+      <char>{input.char}</char>
+    ))
+  })
   override def toMeTLText(input:NodeSeq):MeTLText = Stopwatch.time("GenericXmlSerializer.toMeTLText",{
     val m = parseMeTLContent(input,config)
     val c = parseCanvasContent(input)

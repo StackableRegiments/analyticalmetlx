@@ -138,7 +138,6 @@ var RichText = (function(){
         }
     };
     var toggleSelected = function(char){
-	console.log(cursor.selected,char,_.includes(cursor.selected,char));
         if(_.includes(cursor.selected,char)){
             _.pull(cursor.selected,char);
         }
@@ -205,16 +204,15 @@ var RichText = (function(){
                 var chars = cursor.chars;
                 var typed = e.key;
                 var charSize;
-                var tip, pretip;
+                var tip, pretip, underCursor;
                 switch(typed){
                 case "Shift":break;
                 case "Alt":break;
                 case "Control":break;
                 case "CapsLock":break;
                 case "ArrowLeft":
-                    console.log(e);
                     if(cursor.box.head.length){
-                        var underCursor = cursor.box.head.pop();
+                        underCursor = cursor.box.head.pop();
                         cursor.box.tail.unshift(underCursor);
                         if(e.shiftKey){
                             toggleSelected(underCursor);
@@ -224,7 +222,7 @@ var RichText = (function(){
                     break;
                 case "ArrowRight":
                     if(cursor.box.tail.length){
-			var underCursor = cursor.box.tail.shift();
+                        underCursor = cursor.box.tail.shift();
                         cursor.box.head.push(underCursor);
                         if(e.shiftKey){
                             toggleSelected(underCursor);
@@ -237,6 +235,7 @@ var RichText = (function(){
                         cursor.box.head.pop();
                         wrap(cursor.box);
                         blit();
+                        syncAll(cursor.box);
                     }
                     break;
                 case "Escape":
@@ -248,6 +247,7 @@ var RichText = (function(){
                         cursor.box.tail.shift();
                         wrap(cursor.box);
                         blit();
+                        syncAll(cursor.box);
                     }
                     break;
                 default:
@@ -259,8 +259,10 @@ var RichText = (function(){
                         fontFamily:cursor.fontFamily,
                         color:cursor.color,
                         x:cursor.x,
-                        y:cursor.y
+                        y:cursor.y,
+			box:cursor.box.identity
                     };
+                    char.identity = sprintf("%s@%s,%s",char.char,char.x,char.y);
                     var previous = cursor.box.head[cursor.box.head.length-1];
                     cursor.box.head.push(char);
                     charSize = measureChar(char,previous);
@@ -270,6 +272,7 @@ var RichText = (function(){
                     cursor.x = char.bounds[2];
                     cursor.y = char.bounds[3];
                     blit();
+                    sendChar(char,cursor.box.identity);
                 }
             }).focus();
         },
