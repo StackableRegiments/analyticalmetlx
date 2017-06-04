@@ -270,8 +270,9 @@ var RichText = (function(){
                     if(cursor.box.head.length){
                         cursor.box.head.pop();
                         charsToSync = wrap(cursor.box);
+			console.log("Backspace",cursor.box.head.length,cursor.box.tail.length,charsToSync.length);
                         blit();
-                        sendChars(charsToSync,cursor.box);
+                        sendChars(charsToSync,cursor.box.identity);
                     }
                     break;
                 case "Escape":
@@ -283,7 +284,7 @@ var RichText = (function(){
                         cursor.box.tail.shift();
                         charsToSync = wrap(cursor.box);
                         blit();
-                        sendChars(charsToSync,cursor.box);
+                        sendChars(charsToSync,cursor.box.identity);
                     }
                     break;
                 default:

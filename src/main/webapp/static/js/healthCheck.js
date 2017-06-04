@@ -30,7 +30,13 @@ var HealthChecker = (function(){
         var url = "/reportLatency";
         if ("latency" in reportableHealthObj){
             var reportableHealth = reportableHealthObj.latency;
-            url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
+            if(reportableHealth){
+                url = sprintf("%s?minLatency=%s&maxLatency=%s&meanLatency=%s&sampleCount=%s",url,reportableHealth.min,reportableHealth.max,reportableHealth.average,reportableHealth.count)
+            }
+            else{
+                console.log("recoverable error",e);
+                setLatencyIndeterminate(false);
+            }
         }
         setLatencyIndeterminate(true);
         $.ajax(url,{
@@ -51,10 +57,17 @@ var HealthChecker = (function(){
                 _.delay(check,serverStatusInterval);
             },
             dataType:"text",
-            error:function(){
+            error:function(e){
                 setLatencyIndeterminate(true);
                 addMeasureFunc("latency",false,(new Date().getTime() - clientStart) / 2);
-                _.delay(check,serverStatusInterval);
+                if(e.state() == "rejected"){
+                    console.log("unrecoverable error.  refreshing",e);
+                    location.reload(true);
+                }
+                else{
+                    console.log("recoverable error",e);
+                    _.delay(check,serverStatusInterval);
+                }
             }
         });
     };
@@ -394,8 +407,8 @@ var HealthCheckViewer = (function(){
         }
         $(".meters").css("background-color", (function(){
             if (_.some(["latency","serverResponse"], function(category){
-                    return category in data && data[category].successRate < 1;
-                })){
+                return category in data && data[category].successRate < 1;
+            })){
                 return "red";
             }
             else
@@ -472,7 +485,7 @@ var HealthCheckViewer = (function(){
         }
     };
     var healthyFunc = function(){
-      return healthy;
+        return healthy;
     };
     return {
         resume:resumeFunc,

@@ -119,7 +119,7 @@ function sendChars(chars,boxId){
     var author = UserSettings.getUsername();
     var timestamp = Date.now();
     var slide = currentSlide.toString();
-    sendCharStanzas(_.map(chars,function(char){
+    var stanzas = _.map(chars,function(char){
         return {
             identity:char.identity,
             type:"singleChar",
@@ -137,7 +137,10 @@ function sendChars(chars,boxId){
             audiences:audiences,
             privacy:privacy
         }
-    }));
+    });
+    //console.log("Stanza length",JSON.stringify(stanzas).length);
+    /*This really doesn't seem like it should be possible to get a > 200KB post out of this - about 10KB is the most I can do.  It did though.*/
+    sendCharStanzas(stanzas);
 }
 function sendDirtyInk(ink){
     var currentSlide = Conversations.getCurrentSlideJid();
