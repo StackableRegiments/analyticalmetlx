@@ -29,6 +29,7 @@ object StatelessHtml extends Stemmer with Logger {
   private val config = ServerConfiguration.default
   implicit val formats = DefaultFormats
   val serializer = new GenericXmlSerializer(config)
+  val jsonSerializer = new JsonSerializer(config)
   val metlClientSerializer = new GenericXmlSerializer(config){
     override def metlXmlToXml(rootName:String,additionalNodes:Seq[Node],wrapWithMessage:Boolean = false,additionalAttributes:List[(String,String)] = List.empty[(String,String)]) = Stopwatch.time("GenericXmlSerializer.metlXmlToXml",  {
       val messageAttrs = List(("xmlns","jabber:client"),("to","nobody@nowhere.nothing"),("from","metl@local.temp"),("type","groupchat"))
@@ -104,39 +105,6 @@ object StatelessHtml extends Stemmer with Logger {
   })
   def describeUser(user:com.metl.liftAuthenticator.LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
     Full(JsonResponse(Extraction.decompose(user),200))
-    /*
-    Full(JsonResponse(JObject(List(
-      JField("authenticated",JBool(user.authenticated)),
-      JField("username",JString(user.username)),
-      JField("eligibleGroups",JArray(user.eligibleGroups.map(g => {
-        JObject(List(
-          JField("ouType",JString(g.ouType)),
-          JField("name",JString(g.name)),
-          JField("members",JArray(g.members.map(m => JString(m)))),
-          JField("groupSets",JArray(g.groupSets.map(gs => {
-            JObject(List(
-              JField("groupSetType",JString(gs.groupSetType)),
-              JField("name",JString(gs.name)),
-              JField("members",JArray(gs.members.map(m => JString(m)))),
-              JField("groups",JArray(gs.groups.map(gp => {
-                JObject(List(
-                  JField("groupType",JString(gp.groupType)),
-                  JField("name",JString(gp.name)),
-                  JField("members",JArray(gp.members.map(m => JString(m))))
-                ))
-              })))
-            ))
-          })))
-        ))
-      }).toList)),
-      JField("personalDetails",JArray(user.informationGroups.map(t => {
-        JObject(List(
-          JField("key",JString(t._1)),
-          JField("value",JString(t._2))
-        ))
-      }).toList))
-    )),200))
-    */
   })
   def impersonate(newUsername:String,params:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.impersonate", {
     describeUser(Globals.impersonate(newUsername,params))
@@ -244,7 +212,7 @@ object StatelessHtml extends Stemmer with Logger {
   def resourceProxy(identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.resourceProxy(%s)".format(identity), {
     val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
     Full(InMemoryResponse(config.getResource(identity),headers,Nil,200))
-  }) 
+  })
   def attachmentProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.attachmentProxy(%s)".format(identity), {
     MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getFiles.find(_.id == identity).map(file => {
       val headers = List(
@@ -276,6 +244,8 @@ object StatelessHtml extends Stemmer with Logger {
     <history>{serializer.fromRenderableHistory(getSecureHistoryForRoom(jid,username).merge(getSecureHistoryForRoom(jid+username,username)))}</history>
   })
   def history(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(jid), Full(XmlResponse(loadHistory(jid))))
+
+  def jsonHistory(jid:String):Box[LiftResponse] = Full(JsonResponse(JArray(jsonSerializer.fromRenderableHistory(getSecureHistoryForRoom(jid,Globals.currentUser.is)))))
 
   protected def getSecureHistoryForRoom(jid:String,username:String):History = {
     val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
@@ -769,20 +739,6 @@ object StatelessHtml extends Stemmer with Logger {
   })
   def importConversationAsMe(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",{
     importConversation(req)
-    /*
-     (for (
-     xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
-     historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
-     val hist = exportSerializer.toHistory(h)
-     (hist.jid,hist)
-     }):_*));
-     conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
-     remoteConv = StatelessHtml.importConversation(Globals.currentUser.is,conversation,historyMap);
-     node <- serializer.fromConversation(remoteConv).headOption
-     ) yield {
-     XmlResponse(node)
-     })
-     */
   })
 
   def foreignConversationImportEndpoint(r:Req):Box[LiftResponse] = {
@@ -794,11 +750,6 @@ object StatelessHtml extends Stemmer with Logger {
       title = "%s's (%s) created at %s".format(author,filename,new java.util.Date());
 
       remoteConv <- com.metl.model.Importer.importConversation(title,filename,bytes,author);
-      /*
-       conv = config.createConversation(title,author);
-       histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);
-       remoteConv <- foreignConversationImport(config,author,conv,histories);
-       */
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
@@ -806,41 +757,9 @@ object StatelessHtml extends Stemmer with Logger {
   }
   def powerpointImport(r:Req):Box[LiftResponse] = {
     foreignConversationImport(r)
-    /*
-     (for (
-     title <- r.param("title");
-     bytes <- {
-     r.body match {
-     case Full(b) => Some(b)
-     case _ => r.uploadedFiles.headOption.map(_.file)
-     }
-     };
-     author = Globals.currentUser.is;
-     filename = title;
-     conv = config.createConversation(title,author);
-     histories <- foreignConversationParse(filename,conv.jid,bytes,config,author);
-     remoteConv <- foreignConversationImport(config,author,conv,histories);
-     node <- serializer.fromConversation(remoteConv).headOption
-     ) yield {
-     XmlResponse(node)
-     })
-     */
   }
   def powerpointImportFlexible(r:Req):Box[LiftResponse] = {
     foreignConversationImport(r)
-    /*
-     (for (
-     title <- r.param("title");
-     bytes <- r.body;
-     author = Globals.currentUser.is;
-     conv = config.createConversation(title,author);
-     histories <- foreignConversationParse(title,conv.jid,bytes,config,author);
-     remoteConv <- foreignConversationImport(config,author,conv,histories);
-     node <- serializer.fromConversation(remoteConv).headOption
-     ) yield {
-     XmlResponse(node)
-     })
-     */
   }
 
   def foreignConversationImport(r:Req):Box[LiftResponse] = {
@@ -849,7 +768,6 @@ object StatelessHtml extends Stemmer with Logger {
       bytes <- r.body;
       author = Globals.currentUser.is;
       remoteConv <- com.metl.model.Importer.importConversation(title,title,bytes,author);
-      //      remoteConv <- foreignConversationImport(title,title,bytes,author);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
