@@ -1617,7 +1617,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             rooms.get((serverName,roomId)).map(r =>{
               debug("sendStanzaToServer sending chatMessage: "+r)
               if( cc.blackList.contains(username)) {
-                val newS = s.adjustAudience(List(Audience(cc.server, "", cc.author, "", "")))
+                val newS = s.adjustAudience(List(Audience(cc.server, "domain", cc.author, "identity", "action")))
                 debug("New audience: " + {newS.audiences match {
                   case Nil => "empty"
                   case _ => newS.audiences.head
