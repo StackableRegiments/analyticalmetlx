@@ -119,7 +119,7 @@ var RichText = (function(){
             char = chars[i];
             if(char.identity == cursorChar.identity){
 		cursorPos = i;
-		breakPointToSync = lastInterestingBreakPoint+1;
+		breakPointToSync = lastInterestingBreakPoint;
             }
             char.x = cursorX;
             char.y = cursorY;
@@ -270,7 +270,6 @@ var RichText = (function(){
                     if(cursor.box.head.length){
                         cursor.box.head.pop();
                         charsToSync = wrap(cursor.box);
-			console.log("Backspace",cursor.box.head.length,cursor.box.tail.length,charsToSync.length);
                         blit();
                         sendChars(charsToSync,cursor.box.identity);
                     }
