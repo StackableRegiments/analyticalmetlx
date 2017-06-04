@@ -409,19 +409,22 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val c = parseCanvasContent(input)
     val x = getDoubleByName(input,"x")
     val y = getDoubleByName(input,"y")
+    val width = getDoubleByName(input,"width")
+    val height = getDoubleByName(input,"height")
     val fontSize = getDoubleByName(input,"fontSize")
     val box = getStringByName(input,"box")
     val fontFamily = getStringByName(input,"fontFamily")
     val char = getStringByName(input,"char")
     val color = getColorByName(input,"color")
-    val res = MeTLSingleChar(config,m.author,m.timestamp,char,x,y,fontFamily,fontSize,color,box,c.identity,c.target,c.privacy,c.slide,m.audiences)
-    warn("toMeTLSingleChar %s -> %s".format(input,res))
+    val res = MeTLSingleChar(config,m.author,m.timestamp,char,x,y,width,height,fontFamily,fontSize,color,box,c.identity,c.target,c.privacy,c.slide,m.audiences)
     res
   })
   override def fromMeTLSingleChar(input:MeTLSingleChar) = Stopwatch.time("GenericXmlSerializer.toMeTLSingleChar",{
     canvasContentToXml("singleChar",input,List(
       <x>{input.x}</x>,
       <y>{input.y}</y>,
+      <width>{input.width}</width>,
+      <height>{input.height}</height>,
       <fontFamily>{input.fontFamily}</fontFamily>,
       <fontSize>{input.fontSize}</fontSize>,
       <color>{fromColor(input.color)}</color>,

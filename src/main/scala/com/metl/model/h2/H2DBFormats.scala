@@ -93,6 +93,8 @@ class H2SingleChar extends H2MeTLCanvasContent[H2SingleChar] {
   def getSingleton = H2SingleChar
   object x extends MappedDouble(this)
   object y extends MappedDouble(this)
+  object width extends MappedDouble(this)
+  object height extends MappedDouble(this)
   object fontSize extends MappedDouble(this)
   object fontFamily extends MappedString(this,256)
   object char extends MappedString(this,1)

@@ -89,64 +89,64 @@ class ImmutableListHistoryCollection[A](seedValue:Seq[A] = Nil) extends HistoryC
   }
 }
 /*
-class MapHistoryCollection[A,B](keyCalc:A=>B,seedValue:Map[B,A] = Map.emty[B,A]) extends HistoryCollection[A]{
-  protected var coll:Map[B,A] = {
-    seedValue.toList
-  }
-  override def toList:List[A] = coll.toList
-  override def +=(cand:A):HistoryCollection[A] = {
-    coll = coll.updated(keyCalc(cand),cand)
-    this
-  }
-  override def -=(cand:A):HistoryCollection[A] = {
-    coll = coll.remove(keyCalc(cand))
-    this
-  }
-  override def ++=(cand:Seq[A]):HistoryCollection[A] = {
-    cand.foreach(c => {
-      += c
-    })
-    this
-  }
-  override def --=(cand:Seq[A]):HistoryCollection[A] = {
-    cand.foreach(c => {
-      -= c
-    })
-    this
-  }
-  override def remove(pred:A=>Boolean):HistoryCollection[A] = {
-    coll = coll.filter(pred)
-    this
-  }
-  override def filter(pred:A=>Boolean):HistoryCollection[A] = {
-    new ImmutableListHistoryCollection(coll.filter(pred))
-  }
-  override def filterNot(pred:A=>Boolean):HistoryCollection[A] = {
-    new ImmutableListHistoryCollection(coll.filterNot(pred))
-  }
-  override def find(pred:A=>Boolean):Option[A] = {
-    coll.find(pred)
-  }
-  override def exists(pred:A=>Boolean):Boolean = {
-    coll.exists(pred)
-  }
-  override def partition(pred:A=>Boolean):Tuple2[HistoryCollection[A],HistoryCollection[A]] = {
-    val (a,b) = coll.partition(pred)
-    (new ImmutableListHistoryCollection(a),new ImmutableListHistoryCollection(b))
-  }
-  override def map[B](func:A=>B):HistoryCollection[B] = new MutableListHistoryCollection(coll.map(func))
-  override def foldLeft[B](seed:B)(func:Tuple2[B,A]=>B):B = coll.foldLeft(seed)((a,i) => func((a,i)))
-  override def sortWith(func:Tuple2[A,A]=>Boolean):HistoryCollection[A] = {
-    new ImmutableListHistoryCollection(coll.sortWith((a,b) => func(a,b)))
-  }
-  override def sortBy[B](func:A=>B)(implicit ord: Ordering[B]):HistoryCollection[A] = {
-    new ImmutableListHistoryCollection(coll.sortBy(func))
-  }
-  override def reverse:HistoryCollection[A] = {
-    new ImmutableListHistoryCollection(coll.reverse)
-  }
-}
-*/
+ class MapHistoryCollection[A,B](keyCalc:A=>B,seedValue:Map[B,A] = Map.emty[B,A]) extends HistoryCollection[A]{
+ protected var coll:Map[B,A] = {
+ seedValue.toList
+ }
+ override def toList:List[A] = coll.toList
+ override def +=(cand:A):HistoryCollection[A] = {
+ coll = coll.updated(keyCalc(cand),cand)
+ this
+ }
+ override def -=(cand:A):HistoryCollection[A] = {
+ coll = coll.remove(keyCalc(cand))
+ this
+ }
+ override def ++=(cand:Seq[A]):HistoryCollection[A] = {
+ cand.foreach(c => {
+ += c
+ })
+ this
+ }
+ override def --=(cand:Seq[A]):HistoryCollection[A] = {
+ cand.foreach(c => {
+ -= c
+ })
+ this
+ }
+ override def remove(pred:A=>Boolean):HistoryCollection[A] = {
+ coll = coll.filter(pred)
+ this
+ }
+ override def filter(pred:A=>Boolean):HistoryCollection[A] = {
+ new ImmutableListHistoryCollection(coll.filter(pred))
+ }
+ override def filterNot(pred:A=>Boolean):HistoryCollection[A] = {
+ new ImmutableListHistoryCollection(coll.filterNot(pred))
+ }
+ override def find(pred:A=>Boolean):Option[A] = {
+ coll.find(pred)
+ }
+ override def exists(pred:A=>Boolean):Boolean = {
+ coll.exists(pred)
+ }
+ override def partition(pred:A=>Boolean):Tuple2[HistoryCollection[A],HistoryCollection[A]] = {
+ val (a,b) = coll.partition(pred)
+ (new ImmutableListHistoryCollection(a),new ImmutableListHistoryCollection(b))
+ }
+ override def map[B](func:A=>B):HistoryCollection[B] = new MutableListHistoryCollection(coll.map(func))
+ override def foldLeft[B](seed:B)(func:Tuple2[B,A]=>B):B = coll.foldLeft(seed)((a,i) => func((a,i)))
+ override def sortWith(func:Tuple2[A,A]=>Boolean):HistoryCollection[A] = {
+ new ImmutableListHistoryCollection(coll.sortWith((a,b) => func(a,b)))
+ }
+ override def sortBy[B](func:A=>B)(implicit ord: Ordering[B]):HistoryCollection[A] = {
+ new ImmutableListHistoryCollection(coll.sortBy(func))
+ }
+ override def reverse:HistoryCollection[A] = {
+ new ImmutableListHistoryCollection(coll.reverse)
+ }
+ }
+ */
 class MutableListHistoryCollection[A](seedValue:Seq[A] = Nil) extends HistoryCollection[A]{
   import scala.collection.mutable.{ListBuffer=>MutList}
   protected val coll:MutList[A] = {
@@ -285,7 +285,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getImages = images.toList
   def getVideos = videos.toList
   def getTexts = texts.toList
-  def getMultiWordTexts = multiWordTexts.toList 
+  def getMultiWordTexts = multiWordTexts.toList
   def getQuizzes = quizzes.toList
   def getQuizResponses = quizResponses.toList
   def getSubmissions = submissions.toList
@@ -373,11 +373,23 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     }
   }
 
-  def addChar(c:MeTLSingleChar) = {
-    chars += c
-    outputHook(c)
+  def addChar(c:MeTLSingleChar,store:Boolean = true) = Stopwatch.time("History.addChar",{
+    if(shouldAdd(c)){
+      canvasContents.remove(cc => cc match {
+        case ch:MeTLSingleChar => ch.matches(c)
+        case _ => false
+      }) += c
+      growBounds(c.x,c.x+c.width,c.y-c.height,c.y)
+      if(store){
+        outputHook(c)
+      }
+      update(true)
+    }
+    if(store){
+      chars += c
+    }
     this
-  }
+  })
 
   def addGrade(t:MeTLGrade) = {
     grades += t
@@ -567,9 +579,9 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       outputHook(s)
       val candidates:HistoryCollection[MeTLFile] = files.filter(_.id == s.id)
       files --= candidates
-      (candidates += s).sortWith((abTup) => abTup._1.timestamp > abTup._2.timestamp).headOption.filterNot(_.deleted).foreach(candidate => {
-        files += candidate
-      })
+        (candidates += s).sortWith((abTup) => abTup._1.timestamp > abTup._2.timestamp).headOption.filterNot(_.deleted).foreach(candidate => {
+          files += candidate
+        })
     }
     this
   })
@@ -578,9 +590,9 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       outputHook(s)
       val candidates:HistoryCollection[MeTLVideoStream] = videoStreams.filter(_.id == s.id)
       videoStreams --= candidates
-      (candidates += s).sortWith((abTup) => abTup._1.timestamp > abTup._2.timestamp).headOption.filterNot(_.isDeleted).foreach(candidate => {
-        videoStreams += candidate
-      })
+        (candidates += s).sortWith((abTup) => abTup._1.timestamp > abTup._2.timestamp).headOption.filterNot(_.isDeleted).foreach(candidate => {
+          videoStreams += candidate
+        })
     }
     this
   })
@@ -927,20 +939,20 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     newHistory
   })
   /*
-  def getUserSpecificHistory(user:String, isTeacher:Boolean = false) = Stopwatch.time("History.getUserSpecificHistory(%s)".format(user),{
-    val newHistory = createHistory(jid,xScale,yScale,xOffset,yOffset)
-    getAllWithMdsAtEnd().foreach(i => i match {
-      case q:MeTLQuiz => newHistory.addStanza(q)
-      case c:MeTLCommand => newHistory.addStanza(c)
-      case f:MeTLFile => newHistory.addStanza(f)
-      case s:MeTLStanza => {
-        if (isTeacher || s.author.toLowerCase == user)
-          newHistory.addStanza(s)
-      }
-    })
-    newHistory
-  })
-  */
+   def getUserSpecificHistory(user:String, isTeacher:Boolean = false) = Stopwatch.time("History.getUserSpecificHistory(%s)".format(user),{
+   val newHistory = createHistory(jid,xScale,yScale,xOffset,yOffset)
+   getAllWithMdsAtEnd().foreach(i => i match {
+   case q:MeTLQuiz => newHistory.addStanza(q)
+   case c:MeTLCommand => newHistory.addStanza(c)
+   case f:MeTLFile => newHistory.addStanza(f)
+   case s:MeTLStanza => {
+   if (isTeacher || s.author.toLowerCase == user)
+   newHistory.addStanza(s)
+   }
+   })
+   newHistory
+   })
+   */
   protected def shouldAdjust:Boolean = (xScale != 1.0 || yScale != 1.0 || xOffset != 0 || yOffset != 0)
   def shouldRender:Boolean = ((getLeft < 0 || getRight > 0 || getTop < 0 || getBottom > 0) && getCanvasContents.length > 0)
 }

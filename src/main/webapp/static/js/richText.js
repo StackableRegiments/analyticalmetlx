@@ -223,6 +223,7 @@ var RichText = (function(){
             }
         },
         incorporate:function(char){
+	    if(_.isArray(char.color)) char.color = char.color[0];
             var box = boxes[char.box];
             if(!box){
                 box = addBox(char.x,char.y,char.author,char.box);

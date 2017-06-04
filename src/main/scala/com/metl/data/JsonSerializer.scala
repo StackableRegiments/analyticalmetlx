@@ -582,13 +582,15 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val cc = parseJObjForCanvasContent(input)
         val x = getDoubleByName(input,"x");
         val y = getDoubleByName(input,"y");
+        val width = getDoubleByName(input,"width");
+        val height = getDoubleByName(input,"height");
         val identity = getStringByName(input,"identity");
         val char = getStringByName(input,"char");
         val fontFamily = getStringByName(input,"fontFamily");
         val fontSize = getDoubleByName(input,"fontSize");
-        val color = toColor(getStringByName(input,"color"));
+        val color = toColor(List(getStringByName(input,"color"),1.0));
         val box = getStringByName(input,"box");
-        MeTLSingleChar(config,mc.author,mc.timestamp,char,x,y,fontFamily,fontSize,color,box,cc.identity,cc.target,cc.privacy,cc.slide,mc.audiences);
+        MeTLSingleChar(config,mc.author,mc.timestamp,char,x,y,width,height,fontFamily,fontSize,color,box,cc.identity,cc.target,cc.privacy,cc.slide,mc.audiences);
       }
       case _ => MeTLSingleChar.empty
     }
@@ -669,8 +671,11 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("char",JString(input.char)),
       JField("x",JDouble(input.x)),
       JField("y",JDouble(input.y)),
+      JField("width",JDouble(input.width)),
+      JField("height",JDouble(input.height)),
       JField("fontFamily",JString(input.fontFamily)),
       JField("fontSize",JDouble(input.fontSize)),
+      JField("color",fromColor(input.color).asInstanceOf[JValue]),
       JField("box",JString(input.box))
     ) ::: parseMeTLContent(input) ::: parseCanvasContent(input))
   });

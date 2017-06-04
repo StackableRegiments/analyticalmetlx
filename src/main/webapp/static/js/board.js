@@ -126,6 +126,8 @@ function sendChars(chars,boxId){
             box:boxId,
             x:char.x,
             y:char.y,
+            width:char.width,
+            height:char.height,
             fontFamily:char.fontFamily,
             fontSize:char.fontSize,
             timestamp:timestamp,
