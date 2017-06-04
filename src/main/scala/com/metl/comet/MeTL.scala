@@ -749,7 +749,6 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     ClientSideFunction("sendCharStanzas",List("chars"),(args) => {
       val chars = getArgAsJArray(args(0))
       chars.arr.foreach(c =>{
-        warn("char: %s".format(c))
         sendStanzaToServer(c)
       })
       JNull

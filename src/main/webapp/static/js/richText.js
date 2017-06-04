@@ -106,13 +106,21 @@ var RichText = (function(){
         var leftMargin = box.x;
         var cursorX = leftMargin;
         var cursorY = box.y;
+        var cursorChar = cursor.box.head[cursor.box.head.length-1];
         var startOfLine = 0;
         var wordStart = 0;
         var lineDimension;
         var chars = _.concat(box.head,box.tail);
         var char;
+	var lastInterestingBreakPoint = 0;
+	var breakPointToSync = lastInterestingBreakPoint;
+	var cursorPos = chars.length - 1;
         for(var i = 0;i<chars.length;i++){
             char = chars[i];
+            if(char.identity == cursorChar.identity){
+		cursorPos = i;
+		breakPointToSync = lastInterestingBreakPoint+1;
+            }
             char.x = cursorX;
             char.y = cursorY;
             char.bounds = [char.x,char.y - char.height,char.x + char.width,char.y];
@@ -131,11 +139,14 @@ var RichText = (function(){
                 cursorY = cursorY + measureLine(char.y,box).height * ergonomics.lineHeightRatio;
                 cursorX = leftMargin;
                 i = wordStart;
+                lastInterestingBreakPoint = Math.min(i,cursorPos);
             }
             else{
                 cursorX += char.width;
             }
         }
+	var res = chars.slice(breakPointToSync);
+	return res;
     };
     var toggleSelected = function(char){
         if(_.includes(cursor.selected,char)){
@@ -229,7 +240,7 @@ var RichText = (function(){
                 var chars = cursor.chars;
                 var typed = e.key;
                 var charSize;
-                var tip, pretip, underCursor;
+                var tip, pretip, underCursor, charsToSync;
                 switch(typed){
                 case "Shift":break;
                 case "Alt":break;
@@ -258,9 +269,9 @@ var RichText = (function(){
                 case "Backspace":
                     if(cursor.box.head.length){
                         cursor.box.head.pop();
-                        wrap(cursor.box);
+                        charsToSync = wrap(cursor.box);
                         blit();
-                        syncAll(cursor.box);
+                        sendChars(charsToSync,cursor.box);
                     }
                     break;
                 case "Escape":
@@ -270,9 +281,9 @@ var RichText = (function(){
                 case "Delete":
                     if(cursor.box.tail.length){
                         cursor.box.tail.shift();
-                        wrap(cursor.box);
+                        charsToSync = wrap(cursor.box);
                         blit();
-                        syncAll(cursor.box);
+                        sendChars(charsToSync,cursor.box);
                     }
                     break;
                 default:
@@ -293,11 +304,11 @@ var RichText = (function(){
                     charSize = measureChar(char,previous);
                     char.width = charSize.width;
                     char.height = charSize.height;
-                    wrap(cursor.box);
+                    charsToSync = wrap(cursor.box);
                     cursor.x = char.bounds[2];
                     cursor.y = char.bounds[3];
                     blit();
-                    sendChars(_.concat([char],cursor.box.tail),cursor.box.identity);
+                    sendChars(charsToSync,cursor.box.identity);
                 }
             }).focus();
         },
