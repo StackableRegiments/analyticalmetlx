@@ -260,10 +260,8 @@ object MeTLUnhandledData {
 case class MeTLUnhandledStanza(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,unhandled:String,valueType:String,override val audiences:List[Audience] = Nil) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime) = Stopwatch.time("MeTLUnhandledStanza.adjustTimestamp",copy(timestamp = newTime))
 }
-class MeTLStanza(override val server:ServerConfiguration,val author:String,val timestamp:Long,override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
-  def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLStanza = Stopwatch.time("MeTLStanza.adjustTimestamp",{
-    MeTLStanza(server,author,newTime,audiences)
-  })
+abstract class MeTLStanza(override val server:ServerConfiguration,val author:String,val timestamp:Long,override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
+  def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLStanza
   override def equals(a:Any) = a match {
     case MeTLStanza(aServer,aAuthor,aTimestamp,aAudiences) => aServer == server && aAuthor == author && aTimestamp == timestamp && aAudiences == audiences
     case _ => false
@@ -274,9 +272,7 @@ object MeTLUnhandledStanza {
   def empty(unhandled:String,valueType:String) = MeTLUnhandledStanza(ServerConfiguration.empty,"",0L,unhandled,valueType)
 }
 object MeTLStanza{
-  def apply(server:ServerConfiguration,author:String,timestamp:Long,audiences:List[Audience] = Nil) = new MeTLStanza(server,author,timestamp,audiences)
   def unapply(in:MeTLStanza) = Some((in.server,in.author,in.timestamp,in.audiences))
-  def empty = MeTLStanza(ServerConfiguration.empty,"",0L)
 }
 object MeTLTheme {
   def empty = MeTLTheme(ServerConfiguration.empty,"",0L,"",Theme("","",""),Nil)
@@ -686,8 +682,8 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
   def generateChanges(rawPublicHistory:History,rawPrivateHistory:History):Tuple2[List[MeTLStanza],Map[String,List[MeTLStanza]]] = Stopwatch.time("MeTLMoveDelta.generateChanges",{
     val privateHistory = rawPrivateHistory.filterCanvasContentsForMoveDelta(this)
     val publicHistory = rawPublicHistory.filterCanvasContentsForMoveDelta(this)
-    val (publicTexts,publicHighlighters,publicInks,publicImages,publicMultiWordTexts,publicVideos) = publicHistory.getRenderableGrouped
-    val (privateTexts,privateHighlighters,privateInks,privateImages,privateMultiWordTexts,privateVideos) = privateHistory.getRenderableGrouped
+    val (publicTexts,publicHighlighters,publicInks,publicImages,publicMultiWordTexts,publicVideos,publicChars) = publicHistory.getRenderableGrouped
+    val (privateTexts,privateHighlighters,privateInks,privateImages,privateMultiWordTexts,privateVideos,privateChars) = privateHistory.getRenderableGrouped
     newPrivacy match {
       case p:Privacy if p == Privacy.PUBLIC => {
         val notP = Privacy.PRIVATE
@@ -697,6 +693,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
         val privateImagesToPublicize = privateImages.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val privateMultiWordTextsToPublicize = privateMultiWordTexts.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val privateVideosToPublicize = privateVideos.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
+        val privateCharsToPublicize = privateChars.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val privateAuthors = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts ::: privateVideos).map(_.author).distinct
         val privateDirtiers = (privateAuthors.length > 0) match {
           case true => Map(privateAuthors.map(pa => (

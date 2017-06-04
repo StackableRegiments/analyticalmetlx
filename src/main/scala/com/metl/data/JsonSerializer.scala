@@ -170,7 +170,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     ParsedCanvasContent(target,privacy,slide,identity)
   }
   override def fromHistory(input:History):JValue = Stopwatch.time("JsonSerializer.fromHistory",{
-    val (texts,highlighters,inks,images,multiWordTexts,videos) = input.getRenderableGrouped
+    val (texts,highlighters,inks,images,multiWordTexts,videos,chars) = input.getRenderableGrouped
     val latestTexts = (texts.groupBy(_.identity).toList.flatMap{
       case (identity,Nil) => None
       case (identity,items) => items.sortBy(_.timestamp).reverse.headOption.map(head => JField(identity,fromMeTLText(head)))
@@ -186,6 +186,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("images",JObject(images.map(i => JField(i.identity,fromMeTLImage(i))))),
       JField("videos",JObject(videos.map(i => JField(i.identity,fromMeTLVideo(i))))),
       JField("texts",JObject(latestTexts)),
+      JField("chars",JArray(chars.map(fromMeTLSingleChar _))),
       //JField("texts",JObject(texts.map(i => JField(i.identity,fromMeTLText(i))))),
       JField("themes",JArray(input.getThemes.map(fromTheme _))),
       JField("chatMessages",JArray(input.getChatMessages.map(fromChatMessage _))),
@@ -228,6 +229,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     }
     val history = new History(jid)
     getFields(i,"inks").foreach(jf => history.addStanza(toMeTLInk(jf.value)))
+    getFields(i,"chars").foreach(jf => history.addStanza(toMeTLSingleChar(jf.value)))
     getFields(i,"highlighters").foreach(jf => history.addStanza(toMeTLInk(jf.value)))
     getFields(i,"images").foreach(jf => history.addStanza(toMeTLImage(jf.value)))
     getFields(i,"videos").foreach(jf => history.addStanza(toMeTLVideo(jf.value)))
@@ -666,7 +668,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     toJsObj("singleChar",List(
       JField("char",JString(input.char)),
       JField("x",JDouble(input.x)),
-      JField("y",JDouble(input.x)),
+      JField("y",JDouble(input.y)),
       JField("fontFamily",JString(input.fontFamily)),
       JField("fontSize",JDouble(input.fontSize)),
       JField("box",JString(input.box))

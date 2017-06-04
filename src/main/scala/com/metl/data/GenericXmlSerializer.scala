@@ -73,7 +73,7 @@ trait XmlUtils {
 case class ParsedMeTLContent(author:String,timestamp:Long,audiences:List[Audience])
 case class ParsedCanvasContent(target:String,privacy:Privacy,slide:String,identity:String)
 
-class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with XmlUtils{
+class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with XmlUtils with Logger{
   type T = NodeSeq
   val configName = config.name
 
@@ -414,7 +414,9 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val fontFamily = getStringByName(input,"fontFamily")
     val char = getStringByName(input,"char")
     val color = getColorByName(input,"color")
-    MeTLSingleChar(config,m.author,m.timestamp,char,x,y,fontFamily,fontSize,color,box,c.identity,c.target,c.privacy,c.slide,m.audiences)
+    val res = MeTLSingleChar(config,m.author,m.timestamp,char,x,y,fontFamily,fontSize,color,box,c.identity,c.target,c.privacy,c.slide,m.audiences)
+    warn("toMeTLSingleChar %s -> %s".format(input,res))
+    res
   })
   override def fromMeTLSingleChar(input:MeTLSingleChar) = Stopwatch.time("GenericXmlSerializer.toMeTLSingleChar",{
     canvasContentToXml("singleChar",input,List(

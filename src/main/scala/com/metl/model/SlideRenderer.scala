@@ -611,8 +611,8 @@ class SlideRenderer extends Logger {
   def renderMultiple(h:History,requestedSizes:List[RenderDescription],target:String= "presentationSpace"):Map[RenderDescription,Array[Byte]] = Stopwatch.time("SlideRenderer.renderMultiple",{
     h.shouldRender match {
       case true => {
-        val (texts,highlighters,inks,images,multiWordTexts,_videos) = h.getRenderableGrouped
-        val dimensions = measureItems(h,texts,highlighters,inks,images,multiWordTexts,target)
+        val (texts,highlighters,inks,images,multiWordTexts,_videos,chars) = h.getRenderableGrouped
+        val dimensions = measureItems(h,texts,highlighters,inks,images,multiWordTexts,chars,target)
         Map(requestedSizes.map(rs => {
           val width = rs.width
           val height = rs.height
@@ -632,13 +632,13 @@ class SlideRenderer extends Logger {
   def measureHistory(h:History, target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureHistory",{
     h.shouldRender match {
       case true => {
-        val (texts,highlighters,inks,images,multiWordTexts,_videos) = h.getRenderableGrouped
-        measureItems(h,texts,highlighters,inks,images,multiWordTexts)
+        val (texts,highlighters,inks,images,multiWordTexts,_videos,chars) = h.getRenderableGrouped
+        measureItems(h,texts,highlighters,inks,images,multiWordTexts,chars)
       }
       case false => Dimensions(0.0,0.0,0.0,0.0,0.0,0.0)
     }
   })
-  def measureItems(h:History,texts:List[MeTLText],highlighters:List[MeTLInk],inks:List[MeTLInk],images:List[MeTLImage], multiWordTexts:List[MeTLMultiWordText],target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureItems",{
+  def measureItems(h:History,texts:List[MeTLText],highlighters:List[MeTLInk],inks:List[MeTLInk],images:List[MeTLImage], multiWordTexts:List[MeTLMultiWordText], chars:List[MeTLSingleChar],target:String = "presentationSpace"):Dimensions = Stopwatch.time("SlideRenderer.measureItems",{
     val nativeScaleTextBoxes = filterAccordingToTarget[MeTLText](target,texts).map(t => measureText(t)) :::
     filterAccordingToTarget[MeTLMultiWordText](target,multiWordTexts).map(t => measureText(t))
     val td = nativeScaleTextBoxes.foldLeft(Dimensions(h.getLeft,h.getTop,h.getRight,h.getBottom,0.0,0.0))((acc,item) => {
@@ -693,7 +693,7 @@ class SlideRenderer extends Logger {
       case false => h
     }
     def sort[A <: MeTLStanza](m:List[A]):List[A] = m.sortWith((a,b) => a.timestamp < b.timestamp)
-    val (scaledTexts,scaledHighlighters,scaledInks,scaledImages,scaledMultiWordTexts,scaledVideos) = scaledHistory.getRenderableGrouped
+    val (scaledTexts,scaledHighlighters,scaledInks,scaledImages,scaledMultiWordTexts,scaledVideos,scaledChars) = scaledHistory.getRenderableGrouped
     filterAccordingToTarget[MeTLImage](target,sort(scaledImages)).foreach(img => renderImage(img,g))
     filterAccordingToTarget[MeTLVideo](target,sort(scaledVideos)).foreach(img => renderVideo(img,g))
     filterAccordingToTarget[MeTLInk](target,sort(scaledHighlighters)).foreach(renderInk(_,g))

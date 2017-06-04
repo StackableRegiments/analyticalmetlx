@@ -301,18 +301,19 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getGradeValues = gradeValues.toList
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
-  def getRenderableGrouped:Tuple6[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo]] = Stopwatch.time("History.getRenderableGrouped",{
+  def getRenderableGrouped:Tuple7[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo],List[MeTLSingleChar]] = Stopwatch.time("History.getRenderableGrouped",{
     val grouped = getRenderableGroupedInternal
-    (grouped._1.toList,grouped._2.toList,grouped._3.toList,grouped._4.toList,grouped._5.toList,grouped._6.toList)
+    (grouped._1.toList,grouped._2.toList,grouped._3.toList,grouped._4.toList,grouped._5.toList,grouped._6.toList,grouped._7.toList)
   })
-  def getRenderableGroupedInternal:Tuple6[HistoryCollection[MeTLText],HistoryCollection[MeTLInk],HistoryCollection[MeTLInk],HistoryCollection[MeTLImage],HistoryCollection[MeTLMultiWordText],HistoryCollection[MeTLVideo]] = Stopwatch.time("History.getRenderableGroupedInternal",{
-    getRenderable.foldLeft((emptyColl[MeTLText],emptyColl[MeTLInk],emptyColl[MeTLInk],emptyColl[MeTLImage],emptyColl[MeTLMultiWordText],emptyColl[MeTLVideo]))((acc,item) => item match {
-      case t:MeTLText => (acc._1 += t,acc._2,acc._3,acc._4,acc._5,acc._6)
-      case h:MeTLInk if h.isHighlighter => (acc._1,acc._2 += h,acc._3,acc._4,acc._5,acc._6)
-      case s:MeTLInk => (acc._1,acc._2,acc._3 += s,acc._4,acc._5,acc._6)
-      case i:MeTLImage => (acc._1,acc._2,acc._3,acc._4 += i,acc._5,acc._6)
-      case i:MeTLMultiWordText => (acc._1,acc._2,acc._3,acc._4,acc._5 += i,acc._6)
-      case i:MeTLVideo => (acc._1,acc._2,acc._3,acc._4,acc._5,acc._6 += i)
+  def getRenderableGroupedInternal:Tuple7[HistoryCollection[MeTLText],HistoryCollection[MeTLInk],HistoryCollection[MeTLInk],HistoryCollection[MeTLImage],HistoryCollection[MeTLMultiWordText],HistoryCollection[MeTLVideo],HistoryCollection[MeTLSingleChar]] = Stopwatch.time("History.getRenderableGroupedInternal",{
+    getRenderable.foldLeft((emptyColl[MeTLText],emptyColl[MeTLInk],emptyColl[MeTLInk],emptyColl[MeTLImage],emptyColl[MeTLMultiWordText],emptyColl[MeTLVideo],emptyColl[MeTLSingleChar]))((acc,item) => item match {
+      case t:MeTLText => (acc._1 += t,acc._2,acc._3,acc._4,acc._5,acc._6,acc._7)
+      case h:MeTLInk if h.isHighlighter => (acc._1,acc._2 += h,acc._3,acc._4,acc._5,acc._6,acc._7)
+      case s:MeTLInk => (acc._1,acc._2,acc._3 += s,acc._4,acc._5,acc._6,acc._7)
+      case i:MeTLImage => (acc._1,acc._2,acc._3,acc._4 += i,acc._5,acc._6,acc._7)
+      case i:MeTLMultiWordText => (acc._1,acc._2,acc._3,acc._4,acc._5 += i,acc._6,acc._7)
+      case i:MeTLVideo => (acc._1,acc._2,acc._3,acc._4,acc._5,acc._6 += i,acc._7)
+      case i:MeTLSingleChar => (acc._1,acc._2,acc._3,acc._4,acc._5,acc._6,acc._7 += i)
       case _ => acc
     })
   })

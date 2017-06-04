@@ -145,10 +145,30 @@ var RichText = (function(){
             cursor.selected.push(char);
         }
     };
+    var addBox = function(x,y,author,id){
+        var box = {
+            identity:id,
+            author:author,
+            head:[],
+            tail:[],
+            x:x,
+            y:y
+        };
+        boxes[box.identity] = box;
+        return box;
+    }
+    var removeChar = function(box,char){
+        var predicate = function(c){
+            return c.identity == char.identity;
+        };
+        _.remove(box.head,predicate);
+        _.remove(box.tail,predicate);
+        return box;
+    }
+    var newIdentity = function(){
+        return sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId());
+    }
     return {
-        newIdentity:function(){
-            return sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId());
-        },
         scaleSelection:function(factor){
             _.each(cursor.selected,function(char){
                 char.fontSize = char.fontSize * factor;
@@ -184,20 +204,25 @@ var RichText = (function(){
                 return !hit;
             });
             if(!cursor.box){
-                var id = RichText.newIdentity();
-                var box = boxes[id] = {
-                    identity:id,
-                    author:UserSettings.getUsername(),
-                    head:[],
-                    tail:[],
-                    x:worldPos.x,
-                    y:worldPos.y
-                };
+                var box = addBox(worldPos.x,worldPos.y,UserSettings.getUsername(),newIdentity());
                 cursor.box = box;
                 cursor.x = box.x;
                 cursor.y = box.y
                 blit();
             }
+        },
+        incorporate:function(char){
+            var box = boxes[char.box];
+            if(!box){
+                box = addBox(char.x,char.y,char.author,char.box);
+                box.head = [];
+                box.tail = [];
+            }
+            if(box != cursor.box){
+                removeChar(box,char);
+                box.tail.push(char);
+            }
+            blit();
         },
         listen:function(context){
             $("#textInputInvisibleHost").off("keydown").on("keydown",function(e){
@@ -260,7 +285,7 @@ var RichText = (function(){
                         color:cursor.color,
                         x:cursor.x,
                         y:cursor.y,
-			box:cursor.box.identity
+                        box:cursor.box.identity
                     };
                     char.identity = sprintf("%s@%s,%s",char.char,char.x,char.y);
                     var previous = cursor.box.head[cursor.box.head.length-1];
@@ -272,13 +297,13 @@ var RichText = (function(){
                     cursor.x = char.bounds[2];
                     cursor.y = char.bounds[3];
                     blit();
-                    sendChar(char,cursor.box.identity);
+                    sendChars(_.concat([char],cursor.box.tail),cursor.box.identity);
                 }
             }).focus();
         },
-        add:function(){},
         clear:function(){
             boxes = {};
+            blit();
         },
         render:function(canvasContext){
             _.each(boxes,function(box){

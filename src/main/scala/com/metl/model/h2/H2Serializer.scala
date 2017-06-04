@@ -235,13 +235,12 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     net.liftweb.json.parse(audienceString).extract[List[Audience]]
   }
   def toMeTLSingleChar(i:H2SingleChar):MeTLSingleChar = {
-    trace("H2Serializer.toMeTLSingleChar: %s".format(i))
     val cc = decCanvasContent(i)
     MeTLSingleChar(config,cc.author,cc.timestamp,i.char.get,i.x.get,i.y.get,i.fontFamily.get,i.fontSize.get,toColor(i.color.get),i.box.get,cc.identity,cc.target,cc.privacy,cc.slide,cc.audiences)
   }
   override def fromMeTLSingleChar(c:MeTLSingleChar):H2SingleChar = {
     trace("H2Serializer.fromMeTLSingleChar: %s".format(c))
-    incCanvasContent(H2SingleChar.create,c,"singleChar").x(c.x).y(c.y).fontFamily(c.fontFamily).fontSize(c.fontSize).color(fromColor(c.color)).box(c.box)
+    incCanvasContent(H2SingleChar.create,c,"singleChar").x(c.x).y(c.y).char(c.char).fontFamily(c.fontFamily).fontSize(c.fontSize).color(fromColor(c.color)).box(c.box)
   }
 
   def toMeTLMultiWordText(i:H2MultiWordText):MeTLMultiWordText = {

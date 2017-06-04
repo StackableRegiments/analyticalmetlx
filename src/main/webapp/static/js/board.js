@@ -112,25 +112,32 @@ function batchTransform(){
         newPrivacy:"not_set"
     }
 }
-function sendChar(char,boxId){
+function sendChars(chars,boxId){
     var currentSlide = Conversations.getCurrentSlideJid();
-    sendStanza({
-        type:"singleChar",
-	identity:char.identity,
-	box:boxId,
-	x:char.x,
-	y:char.y,
-	fontFamily:char.fontFamily,
-	fontSize:char.fontSize,
-	char:char.char,
-	color:char.color,
-        author:UserSettings.getUsername(),
-        timestamp:Date.now(),
-        slide:currentSlide.toString(),
-        target:"presentationSpace",
-        privacy:Privacy.getCurrentPrivacy(),
-        audiences:_.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences())
-    });
+    var audiences = _.map(Conversations.getCurrentGroup(),"id").concat(ContentFilter.getAudiences());
+    var privacy = Privacy.getCurrentPrivacy();
+    var author = UserSettings.getUsername();
+    var timestamp = Date.now();
+    var slide = currentSlide.toString();
+    sendCharStanzas(_.map(chars,function(char){
+        return {
+            identity:char.identity,
+            type:"singleChar",
+            box:boxId,
+            x:char.x,
+            y:char.y,
+            fontFamily:char.fontFamily,
+            fontSize:char.fontSize,
+            timestamp:timestamp,
+            char:char.char,
+            color:char.color,
+            slide:slide,
+            target:"presentationSpace",
+            author:author,
+            audiences:audiences,
+            privacy:privacy
+        }
+    }));
 }
 function sendDirtyInk(ink){
     var currentSlide = Conversations.getCurrentSlideJid();
@@ -231,8 +238,7 @@ function themeReceived(theme){
     Progress.call("themeReceived");
 }
 function charReceived(char){
-    alert("Char received",char);
-    console.log(char);
+    RichText.incorporate(char);
 }
 var stanzaHandlers = {
     ink:inkReceived,

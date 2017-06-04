@@ -23,7 +23,7 @@
   <logger name="bootstrap.liftweb.Boot" level="ALL">
     <appender-ref ref="DEBUG" />
   </logger>
-  <root level="TRACE">
+  <root level="WARN">
     <appender-ref ref="STDOUT"/>
   </root>
 </configuration>
