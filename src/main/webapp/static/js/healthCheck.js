@@ -1,6 +1,6 @@
 var HealthChecker = (function(){
-    var storeLifetime = 5 * 60 * 100; //1 minute
-    var serverStatusInterval = 2000; //every 20 seconds
+    var storeLifetime = 5 * 60 * 1000; //1 minute
+    var serverStatusInterval = 20000; //every 20 seconds
     var store = {};
     var healthChecking = true;
 
