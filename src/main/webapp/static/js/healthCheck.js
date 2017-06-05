@@ -1,6 +1,6 @@
 var HealthChecker = (function(){
-    var storeLifetime = 5 * 60 * 1000; //1 minute
-    var serverStatusInterval = 20000; //every 20 seconds
+    var storeLifetime = 5 * 60 * 100; //1 minute
+    var serverStatusInterval = 2000; //every 20 seconds
     var store = {};
     var healthChecking = true;
 
@@ -38,6 +38,9 @@ var HealthChecker = (function(){
             success:function(jsonTime){
                 setLatencyIndeterminate(false);
                 var nowTime = new Date();
+
+                console.log("jsonTime = " + jsonTime);
+
                 var timeObj = JSON.parse(jsonTime);
                 var time = timeObj.serverWorkTime;
                 var serverWorkTime = parseInt(time);
@@ -394,7 +397,7 @@ var HealthCheckViewer = (function(){
         }
         $(".meters").css("background-color", (function(){
             if (_.some(["latency","serverResponse"], function(category){
-                    return category in data && data[category].successRate < 1;
+                    return category in data && (data[category] == undefined || data[category].successRate < 1);
                 })){
                 return "red";
             }
@@ -405,7 +408,7 @@ var HealthCheckViewer = (function(){
         })());
         var wasHealthy = healthy;
         healthy = _.every(["latency", "serverResponse"], function (category) {
-            return category in data && data[category].successful;
+            return category in data && data[category] != undefined && data[category].successful;
         });
         if( wasHealthy != healthy ) {
             blit();
