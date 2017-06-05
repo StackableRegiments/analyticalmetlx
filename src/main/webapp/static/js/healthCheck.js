@@ -38,9 +38,6 @@ var HealthChecker = (function(){
             success:function(jsonTime){
                 setLatencyIndeterminate(false);
                 var nowTime = new Date();
-
-                console.log("jsonTime = " + jsonTime);
-
                 var timeObj = JSON.parse(jsonTime);
                 var time = timeObj.serverWorkTime;
                 var serverWorkTime = parseInt(time);
