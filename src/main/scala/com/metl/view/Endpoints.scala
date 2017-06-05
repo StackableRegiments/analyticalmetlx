@@ -638,10 +638,11 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
             val email = CasUtils.getEmailAddress(liftAuthStateData)
             val orgUnits = CasUtils.getOrgUnits(liftAuthStateData).mkString(", ")
 
-            error("Problem report from %s (#%s). Name: %s, Username: %s, Email: %s, Context: %s, Report: %s, OrgUnits: %s, CAS State: %s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, rawCasState))
+            val userAgent = r.userAgent.getOrElse("")
+            error("Problem report from %s (#%s). Name: %s, Username: %s, Email: %s, Context: %s, Report: %s, OrgUnits: %s, UserAgent: %s, CAS State: %s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, userAgent, rawCasState))
             if (Globals.mailer.nonEmpty) {
               Globals.mailer.get.sendMailMessage("Problem Report from %s (#%s)".format(r.hostName, reportId),
-                "Host: %s\nReport ID: %s\nName: %s\nUsername: %s\nEmail: %s\nContext: %s\n\nReport:\n%s\n\nOrgUnits:\n%s\n\nCAS State:\n%s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, rawCasState))
+                "Host: %s\nReport ID: %s\nName: %s\nUsername: %s\nEmail: %s\nContext: %s\n\nReport:\n%s\n\nOrgUnits:\n%s\n\nUserAgent:\n%s\n\nCAS State:\n%s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, userAgent, rawCasState))
             }
 
             val output = (
