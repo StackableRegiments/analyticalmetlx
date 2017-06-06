@@ -35,20 +35,26 @@ var HealthChecker = (function(){
         setLatencyIndeterminate(true);
         $.ajax(url,{
             method:"GET",
-            success:function(jsonTime){
-                setLatencyIndeterminate(false);
-                var nowTime = new Date();
-                var timeObj = JSON.parse(jsonTime);
-                var time = timeObj.serverWorkTime;
-                var serverWorkTime = parseInt(time);
-                var totalTime = new Date().getTime() - clientStart;
-                var latency = (totalTime - serverWorkTime) / 2;
+            success:function(response){
+                if( response.includes("<html") ) {
+                    // Redirect to the url if it returned HTML instead of the latency, as it's likely to be the auth page.
+                    window.location.href = url;
+                }
+                else {
+                    setLatencyIndeterminate(false);
+                    var nowTime = new Date();
+                    var timeObj = JSON.parse(response);
+                    var time = timeObj.serverWorkTime;
+                    var serverWorkTime = parseInt(time);
+                    var totalTime = new Date().getTime() - clientStart;
+                    var latency = (totalTime - serverWorkTime) / 2;
 
-                var serverSideTime = timeObj.serverTime;
-                clockOffset = nowTime.getTime() - (serverSideTime + latency);
-                addMeasureFunc("serverResponse",true,serverWorkTime);
-                addMeasureFunc("latency",true,latency);
-                _.delay(check,serverStatusInterval);
+                    var serverSideTime = timeObj.serverTime;
+                    clockOffset = nowTime.getTime() - (serverSideTime + latency);
+                    addMeasureFunc("serverResponse",true,serverWorkTime);
+                    addMeasureFunc("latency",true,latency);
+                    _.delay(check,serverStatusInterval);
+                }
             },
             dataType:"text",
             error:function(){
