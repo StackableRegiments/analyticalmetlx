@@ -245,7 +245,7 @@ object StatelessHtml extends Stemmer with Logger {
   })
   def history(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(jid), Full(XmlResponse(loadHistory(jid))))
 
-  def jsonHistory(jid:String):Box[LiftResponse] = Full(JsonResponse(JArray(jsonSerializer.fromRenderableHistory(getSecureHistoryForRoom(jid,Globals.currentUser.is)))))
+  def jsonHistory(jid:String):Box[LiftResponse] = Full(JsonResponse(jsonSerializer.fromHistory(getSecureHistoryForRoom(jid,Globals.currentUser.is))))
 
   protected def getSecureHistoryForRoom(jid:String,username:String):History = {
     val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))

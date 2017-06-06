@@ -106,7 +106,7 @@ var Enterprise = (function(){
             return acc;
         },{});
         var stacked = d3.stack()
-                .keys(["creation","update"])(_.values(stackable));
+            .keys(["creation","update"])(_.values(stackable));
         var totalConversations = _.sortBy(_.toPairs(_.reduce(creationSeparated,function(acc,v){
             var k = v.timestamp;
             acc.total += v.creation.length;
@@ -140,15 +140,15 @@ var Enterprise = (function(){
 
         var authorLevel = d3.select("#ep")
         var authorLine = authorLevel.selectAll(".authorLine")
-                .data(_.sortBy(_.toPairs(_.groupBy(updates,"author")),function(d){
-                    return d[1].length;
-                }).reverse())
-                .enter()
-                .append("tr")
-                .attr("class","authorLine")
-                .attr("y",function(d,i){
-                    return i * 25;
-                });
+            .data(_.sortBy(_.toPairs(_.groupBy(updates,"author")),function(d){
+                return d[1].length;
+            }).reverse())
+            .enter()
+            .append("tr")
+            .attr("class","authorLine")
+            .attr("y",function(d,i){
+                return i * 25;
+            });
 
         authorLine.append("th")
             .text(function(d){
@@ -159,22 +159,22 @@ var Enterprise = (function(){
                 return d[1].length;
             });
         var span = authorLine.append("td")
-                .append("svg:svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height",20)
-                .append("g")
-                .attr("transform", "translate(" + 10 + "," + 0 + ")");
+            .append("svg:svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height",20)
+            .append("g")
+            .attr("transform", "translate(" + 10 + "," + 0 + ")");
         span.selectAll(".span")
             .data(function(d){
                 return [_.map(d[1],function(x){
-		    return parseInt(x.timestamp);
-		})];
+                    return parseInt(x.timestamp);
+                })];
             })
             .enter()
             .append("rect")
             .attr("class","span")
             .attr("width",function(d){
-		console.log(d);
+                console.log(d);
                 return xM(_.max(d)) - xM(_.min(d));
             })
             .attr("height",3)
@@ -214,24 +214,24 @@ var Enterprise = (function(){
                     : formatYear)(date);
         }
         var detailX = d3.axisBottom(x)
-                .tickSize(-height, 0)
-                .tickFormat(multiFormat)
+            .tickSize(-height, 0)
+            .tickFormat(multiFormat)
 
         var detailY = d3.axisLeft(y)
-                .tickSizeInner(-width)
+            .tickSizeInner(-width)
 
         var masterX = d3.axisBottom(xM)
-                .tickFormat(multiFormat)
+            .tickFormat(multiFormat)
         var masterY = d3.axisLeft(yM)
-                .tickSizeInner(0)
+            .tickSizeInner(0)
 
         var svg = d3.select(sel).append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top * 2 + margin.bottom + masterHeight);
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top * 2 + margin.bottom + masterHeight);
 
         var context = svg.append("g")
-                .attr("class", "context")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            .attr("class", "context")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         var detail = context.append("g")
 
@@ -263,27 +263,27 @@ var Enterprise = (function(){
         xB.domain(_.map(masterData,"0"));
         var c10 = d3.scaleOrdinal(d3.schemeCategory10);
         var createdBar = detail.append("g")
-                .selectAll("serie")
-                .data(stacked)
-                .enter()
-                .append("g")
-                .attr("class", "serie")
-                .attr("fill",function(d,i){
-                    return c10(i);
-                })
-                .selectAll("rect")
-                .data(function(d) { return d; })
-                .enter().append("rect")
-                .attr("x",function(d){
-                    return x(d.data.timestamp) - xB.bandwidth() / 2;
-                })
-                .attr("y",function(d){
-                    return y(d[1]) + margin.top;
-                })
-                .attr("height",function(d){
-                    return y(d[0]) - y(d[1]);
-                })
-                .attr("width",xB.bandwidth());
+            .selectAll("serie")
+            .data(stacked)
+            .enter()
+            .append("g")
+            .attr("class", "serie")
+            .attr("fill",function(d,i){
+                return c10(i);
+            })
+            .selectAll("rect")
+            .data(function(d) { return d; })
+            .enter().append("rect")
+            .attr("x",function(d){
+                return x(d.data.timestamp) - xB.bandwidth() / 2;
+            })
+            .attr("y",function(d){
+                return y(d[1]) + margin.top;
+            })
+            .attr("height",function(d){
+                return y(d[0]) - y(d[1]);
+            })
+            .attr("width",xB.bandwidth());
 
         detail.append("g")
             .attr("class", "x axis")
@@ -295,33 +295,33 @@ var Enterprise = (function(){
             .call(detailY);
 
         var legendLines = detail.append("g")
-                .attr("class","detailLegend")
-                .attr("transform","translate("+50+","+20+")")
-                .selectAll(".legendLine")
-                .data([
-                    {
-                        text:"New conversations",
-                        color:c10(0)
-                    },
-                    {
-                        text:"Conversation edits",
-                        color:c10(1)
-                    },
-                    {
-                        text:"Total conversations",
-                        color:c10(2)
-                    },
-                    {
-                        text:"Total activity",
-                        color:"blue"
-                    }
-                ])
-                .enter()
-                .append("g")
-                .attr("class","legendLine")
-                .attr("transform",function(d,i){
-                    return "translate("+0+","+(i * 35)+")";
-                });
+            .attr("class","detailLegend")
+            .attr("transform","translate("+50+","+20+")")
+            .selectAll(".legendLine")
+            .data([
+                {
+                    text:"New conversations",
+                    color:c10(0)
+                },
+                {
+                    text:"Conversation edits",
+                    color:c10(1)
+                },
+                {
+                    text:"Total conversations",
+                    color:c10(2)
+                },
+                {
+                    text:"Total activity",
+                    color:"blue"
+                }
+            ])
+            .enter()
+            .append("g")
+            .attr("class","legendLine")
+            .attr("transform",function(d,i){
+                return "translate("+0+","+(i * 35)+")";
+            });
 
         legendLines.append("rect")
             .attr("height",30)
@@ -337,22 +337,22 @@ var Enterprise = (function(){
             .attr("y",20);
 
         var masterGraphic = d3.area()
-                .x(function(d){
-                    return xM(d[0]);
-                })
-                .y0(yM(0))
-                .y1(function(d){
-                    return yM(d[1].length);
-                });
+            .x(function(d){
+                return xM(d[0]);
+            })
+            .y0(yM(0))
+            .y1(function(d){
+                return yM(d[1].length);
+            });
         var totalsAxis = d3.axisRight(totalsY);
         var totalsGraphic = d3.area()
-                .x(function(d){
-                    return xM(d[0]);
-                })
-                .y0(totalsY(preMigration))
-                .y1(function(d){
-                    return totalsY(preMigration + d[1].conversations);
-                });
+            .x(function(d){
+                return xM(d[0]);
+            })
+            .y0(totalsY(preMigration))
+            .y1(function(d){
+                return totalsY(preMigration + d[1].conversations);
+            });
         var master = context.append("g");
         master.attr("transform","translate("+0+","+height+")");
         master.append("g")
@@ -390,19 +390,19 @@ var Enterprise = (function(){
             .attr("transform", "translate(" + (width - margin.right) + "," + 0 + ")")
             .call(totalsAxis)
         var masterLegend = master.append("g")
-                .attr("transform","translate("+50+","+20+")")
-                .selectAll(".legendLine")
-                .data([
-                    {
-                        text:"Distinct authors",
-                        class:"circ"
-                    }
-                ])
-                .enter()
-                .append("g")
-                .attr("transform",function(d,i){
-                    return "translate("+0+","+(35 * i)+")";
-                });
+            .attr("transform","translate("+50+","+20+")")
+            .selectAll(".legendLine")
+            .data([
+                {
+                    text:"Distinct authors",
+                    class:"circ"
+                }
+            ])
+            .enter()
+            .append("g")
+            .attr("transform",function(d,i){
+                return "translate("+0+","+(35 * i)+")";
+            });
         masterLegend.append("circle")
             .attr("class","circ")
             .attr("cx",15)
@@ -418,19 +418,13 @@ var Enterprise = (function(){
     }
     return {
         prime:function(){
-            $.get("/fullClientHistory?source=global",function(history){
-                var commands = _.map($(history).find("message"),function(mx){
-                    var message = $(mx);
-                    var timestamp = message.attr("timestamp");
-                    var command = message.find("command");
-                    var name = command.find("name").text();
-                    var author = command.find("author").text();
-                    var parameters = command.find("parameter").text();
+            $.get("/fullJsonHistory?source=global",function(history){
+                var commands = history.commands.map(function(c){
                     return {
-                        timestamp:timestamp,
-                        author:author,
-                        command:name,
-                        parameters:parameters
+                        timestamp:c.timestamp,
+                        author:c.author,
+                        command:c.command,
+                        parameters:c.parameters
                     };
                 });
                 var updates = _.filter(commands,function(command){
