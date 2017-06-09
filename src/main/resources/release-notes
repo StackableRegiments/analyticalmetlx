@@ -1,3 +1,6 @@
+1.16.2
+METL-649: Bugfix: Problem report fails when LiftAuthStateData does not contain expected values.
+
 1.16.1
 METL-393: Bugfix: Banned students should not be able to chat with other students.
 METL-614: Bugfix: Chat entries created by Mother are not replayed to new entrants to the conversation.
