@@ -1,15 +1,19 @@
 package com.metl.model
 
+import java.util.Date
+
 import dispatch._
 import dispatch.Defaults._
 import com.metl.data._
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
 import net.liftweb.common.Logger
+
 import scala.xml._
 import collection._
 import net.liftweb.util.SecurityHelpers._
 import com.metl.renderer._
+import net.liftweb.util.Helpers.nextFuncName
 
 case class Theme(author:String,text:String,origin:String)
 
@@ -85,7 +89,8 @@ class ChunkAnalyzer extends Logger with Chunker{
         us.foreach(url =>{
           val identity = "%s@%s:%s".format(url,c.author,room.location)
           if(!alreadyReleased(identity)){
-            room ! MotherMessage(<a href={url}>{url}</a>,Nil)
+            room ! LocalToServerMeTLStanza(MeTLChatMessage(room.config, "| mother |", new Date().getTime, nextFuncName, "html",
+              "<a href='" + url + "' target='_blank'>" + url + "</a>", room.roomMetaData.getJid.toString, Nil))
             alreadyReleased = alreadyReleased + identity
           }
         })

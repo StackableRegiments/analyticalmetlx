@@ -1,6 +1,5 @@
 package com.metl.view
 
-import java.io.StringWriter
 import java.util.Date
 
 import com.metl.data._
@@ -13,6 +12,7 @@ import net.liftweb.http._
 import net.liftweb.http.rest._
 import Helpers._
 import com.metl.model._
+import com.metl.utils.CasUtils._
 
 import scala.xml.{Text, XML}
 
@@ -632,12 +632,17 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
             }).getOrElse((reporter,None))
 
             val detectedUser = detectedState._1
-            val casState = detectedState._2.getOrElse("").toString
+            val liftAuthStateData = detectedState._2
+            val rawCasState = liftAuthStateData.getOrElse("").toString
+            val name = CasUtils.getFirstName(liftAuthStateData) + " " + CasUtils.getSurname(liftAuthStateData)
+            val email = CasUtils.getEmailAddress(liftAuthStateData)
+            val orgUnits = CasUtils.getOrgUnits(liftAuthStateData).mkString(", ")
 
-            error("Problem report from %s (#%s). Reporter: %s, Context: %s, Report: %s, CAS State: %s".format(r.hostName, reportId, detectedUser, context, report, casState))
+            val userAgent = r.userAgent.getOrElse("")
+            error("Problem report from %s (#%s). Name: %s, Username: %s, Email: %s, Context: %s, Report: %s, OrgUnits: %s, UserAgent: %s, CAS State: %s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, userAgent, rawCasState))
             if (Globals.mailer.nonEmpty) {
               Globals.mailer.get.sendMailMessage("Problem Report from %s (#%s)".format(r.hostName, reportId),
-                "Host: %s\nReport ID: %s\nReporter: %s\nContext: %s\n\nReport:\n%s\n\nCAS State:\n%s".format(r.hostName, reportId, detectedUser, context, report, casState))
+                "Host: %s\nReport ID: %s\nName: %s\nUsername: %s\nEmail: %s\nContext: %s\n\nReport:\n%s\n\nOrgUnits:\n%s\n\nUserAgent:\n%s\n\nCAS State:\n%s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, userAgent, rawCasState))
             }
 
             val output = (
@@ -645,7 +650,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
                 "#context *" #> context &
                 "#reportId *" #> reportId
               ).apply(t)
-            XhtmlResponse(output.head, Empty, Nil, Nil, 200, false)
+            XhtmlResponse(output.head, Empty, Nil, Nil, 200, renderInIEMode = false)
           }
         })
   }

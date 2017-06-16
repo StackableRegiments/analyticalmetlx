@@ -79,19 +79,16 @@ function receiveHistory(json,incCanvasContext,afterFunc){
                 requestedViewboxY = 0;
                 requestedViewboxWidth = boardWidth;
                 requestedViewboxHeight = boardHeight;
-                IncludeView.default();
             }
             else{
                 requestedViewboxX = boardContent.minX;
                 requestedViewboxY = boardContent.minY;
                 requestedViewboxWidth = boardContent.width;
                 requestedViewboxHeight = boardContent.height;
-                IncludeView.default();
             }
+            IncludeView.default();
             hideBackstage();
 
-            clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
-            blit();
             blitMark = Date.now();
             if (!UserSettings.getIsInteractive()){
                 //projector mode should always start viewing the entire slide
@@ -102,7 +99,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
             }
         }
         if(_.keys(boardContent.images).length == 0){
-            _.defer(startRender);
+            startRender();
         }
         else{
             var loaded = 0;
@@ -192,10 +189,10 @@ function isUsable(element){
     var textOk =  "text" in element? element.text.length > 0 : true;
     var myGroups = _.map(Conversations.getCurrentGroup(),"id");
     var forMyGroup = _.isEmpty(element.audiences) ||
-            Conversations.isAuthor() ||
-            _.some(element.audiences,function(audience){
-                return audience.action == "whitelist" && _.includes(myGroups,audience.name);
-            });
+        Conversations.isAuthor() ||
+        _.some(element.audiences,function(audience){
+            return audience.action == "whitelist" && _.includes(myGroups,audience.name);
+        });
     var isMine = element.author == UserSettings.getUsername();
     var isDirectedToMe = _.some(element.audiences,function(audience){
         return audience.action == "direct" && audience.name == UserSettings.getUsername();
@@ -626,7 +623,7 @@ var boardContent = {
 var pressureSimilarityThreshold = 32,
     viewboxX = 0,
     viewboxY = 0,
-    viewboxWidth = 80,
+    viewboxWidth = 80,//why wouldnt this be device size
     viewboxHeight = 60,
     contentOffsetX = 0,
     contentOffsetY = 0,
@@ -901,15 +898,15 @@ function render(content,hq,incCanvasContext,incViewBounds){
     try {
         var renderStart = new Date().getTime();
         var canvasContext = incCanvasContext || boardContext;
+        clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
         if(content){
             var startMark = Date.now();
             try{
-                var viewBounds = incViewBounds == undefined ? [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight] : incViewBounds;
+                var viewBounds = incViewBounds || TweenController.immediateView();
                 visibleBounds = [];
                 var rendered = [];
                 var loadedCount = 0;
                 var loadedLimit = Object.keys(content.images).length;
-                clearBoard(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
                 renderImages(content.images,canvasContext,rendered,viewBounds);
                 renderImmediateContent(canvasContext,content,rendered,viewBounds);
                 renderSelectionOutlines(canvasContext);
@@ -917,6 +914,12 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 renderContentIdentification(canvasContext,rendered);
                 renderCanvasInteractables(canvasContext);
                 renderTint(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
+                // console.log("rendered viewbounds",
+                //             viewBounds[0],
+                //             viewBounds[1],
+                //             viewBounds[2],
+                //             viewBounds[3]
+                //            );
             }
             catch(e){
                 console.log("Render exception",e);
@@ -941,6 +944,7 @@ var blit = function(canvasContext,content){
         console.log("exception in render:",e);
     }
 };
+blit = _.throttle(blit,30,{leading:false,trailing:true});
 function pica(value){
     return value / 128;
 }
@@ -1010,7 +1014,9 @@ var IncludeView = (function(){
             shouldUpdateRequestedViewbox = true;
             requestedViewboxHeight = h;
         }
-        var constrained = Zoom.constrainRequestedViewbox({width:w,height:h,x:x,y:y});
+        var dim = {width:w,height:h,x:x,y:y};
+        console.log("IncludeView",dim);
+        var constrained = Zoom.constrainRequestedViewbox(dim);
         var hr = boardHeight / constrained.height;
         var wr = boardWidth / constrained.width;
         var targetHeight,targetWidth;
@@ -1022,9 +1028,10 @@ var IncludeView = (function(){
             targetHeight = constrained.height / wr * hr;
             targetWidth = constrained.width;
         }
-        var notFollowable = _.every([incX,incY,incW,incH],function(elem){
+        notFollowable = _.every([incX,incY,incW,incH],function(elem){
             return elem == undefined;
         }) || notFollowable;
+
         TweenController.zoomAndPanViewbox(constrained.x,constrained.y,targetWidth,targetHeight,undefined,!shouldUpdateRequestedViewbox,notFollowable);
         Progress.call("onViewboxChanged");
     };
