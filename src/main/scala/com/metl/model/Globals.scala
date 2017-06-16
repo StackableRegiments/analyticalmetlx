@@ -223,7 +223,7 @@ object Globals extends PropertyReader with Logger {
           assumeContainerSession
         }))
       } else {
-        error("No session available")
+        debug("Attempting to use casState when no session available")
         None
       }
     }
