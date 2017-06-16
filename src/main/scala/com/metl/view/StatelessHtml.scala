@@ -102,7 +102,7 @@ object StatelessHtml extends Stemmer with Logger {
     }).mkString("\r\n")
     Full(PlainTextResponse(sessions))
   })
-  def describeUser(user:com.metl.liftAuthenticator.LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
+  def describeUser(user:com.metl.liftAuthenticator.LiftAuthStateData = Globals.casState.is.get):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
     Full(JsonResponse(Extraction.decompose(user),200))
     /*
     Full(JsonResponse(JObject(List(

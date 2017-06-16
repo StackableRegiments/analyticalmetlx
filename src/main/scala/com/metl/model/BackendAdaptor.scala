@@ -46,7 +46,7 @@ object SecurityListener extends Logger {
     SessionRecord.is.map(rec => {
       rec.lastActivity = now.getTime
     }).getOrElse({
-      val currentCasState = Globals.casState.is
+      val currentCasState = Globals.casState.is.get
       val newRecord = new SessionRecord(sessionId,authenticatedUser)
       SessionRecord(Some(newRecord))
       newRecord.userAgent = S.userAgent

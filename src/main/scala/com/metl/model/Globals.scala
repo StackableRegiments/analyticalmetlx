@@ -187,7 +187,7 @@ object Globals extends PropertyReader with Logger {
 
   object currentStack extends SessionVar[Topic](Topic.defaultValue)
   def getUserGroups:List[OrgUnit] = {
-    casState.is.eligibleGroups.toList
+    casState.is.get.eligibleGroups.toList
   }
   var userProfileProvider:Option[UserProfileProvider] = Some(new CachedInMemoryProfileProvider())
 
@@ -217,21 +217,34 @@ object Globals extends PropertyReader with Logger {
     import com.metl.liftAuthenticator._
     import net.liftweb.http.S
     private object validState extends SessionVar[Option[LiftAuthStateData]](None)
-    def is:LiftAuthStateData = {
-      validState.is.getOrElse({
-        assumeContainerSession
-      })
+    def is:Option[LiftAuthStateData] = {
+      if (validState.set_?) {
+        Some(validState.is.getOrElse({
+          assumeContainerSession
+        }))
+      } else {
+        error("No session available")
+        None
+      }
     }
     private object actualUsername extends SessionVar[String]("forbidden")
     private object actuallyIsImpersonator extends SessionVar[Boolean](false)
     def isSuperUser:Boolean = {
-      is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
+      is.get.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
     }
     def isAnalyst:Boolean = {
-      is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "analyst")
+      is.get.eligibleGroups.exists(g => g.ouType == "special" && g.name == "analyst")
     }
-    def isImpersonator:Boolean = actuallyIsImpersonator.is
-    def authenticatedUsername:String = actualUsername.is
+    def isImpersonator:Boolean = {
+      if(actuallyIsImpersonator.set_?)
+        actuallyIsImpersonator.is
+      else false
+    }
+    def authenticatedUsername:String = {
+      if(actualUsername.set_?)
+        actualUsername.is
+      else "unknown"
+    }
     def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
       if (isImpersonator){
         val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,(personalAttributes.map(pa => Detail(pa._1,pa._2)) ::: userProfileProvider.toList.flatMap(_.getProfiles(newUsername).right.toOption.toList.flatten.flatMap(_.foreignRelationships.toList)).map(pa => Detail(pa._1,pa._2))))
@@ -274,7 +287,12 @@ object Globals extends PropertyReader with Logger {
     }
   }
   object currentUser {
-    def is:String = casState.is.username
+    def is:String = {
+      if( casState.is.nonEmpty)
+        casState.is.get.username
+      else
+        "unknown"
+    }
   }
   // special roles
   def isSuperUser:Boolean = casState.isSuperUser

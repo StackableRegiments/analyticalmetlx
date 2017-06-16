@@ -66,7 +66,7 @@ trait ConversationFilter {
   protected def refreshForeignRelationship(c:Conversation,me:String,myGroups:List[OrgUnit]):Conversation = {
     (for {
       fr <- c.foreignRelationship
-      newFr <- Globals.casState.is.eligibleGroups.find(g => g.foreignRelationship.exists(gfr => gfr.key == fr.key && gfr.system == fr.system)).flatMap(_.foreignRelationship)
+      newFr <- Globals.casState.is.get.eligibleGroups.find(g => g.foreignRelationship.exists(gfr => gfr.key == fr.key && gfr.system == fr.system)).flatMap(_.foreignRelationship)
     } yield {
       c.copy(foreignRelationship = Some(newFr))
     }).getOrElse(c)
@@ -78,7 +78,7 @@ trait ConversationFilter {
   }
   def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
     lazy val me = Globals.currentUser.is.toLowerCase.trim
-    lazy val myGroups = Globals.casState.is.eligibleGroups.toList
+    lazy val myGroups = Globals.casState.is.get.eligibleGroups.toList
     in.groupBy(_.jid).flatMap{
       case (jid,result :: _) => Some(result)
       case _ => None
@@ -454,7 +454,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
           key <- newRelationshipKey
           if (sys != null && sys != "")
           if (key != null && key != "")
-          newFr <- Globals.casState.is.eligibleGroups.find(g => g.foreignRelationship.exists(fr => fr.key == key && fr.system == sys)).flatMap(_.foreignRelationship)
+          newFr <- Globals.casState.is.get.eligibleGroups.find(g => g.foreignRelationship.exists(fr => fr.key == key && fr.system == sys)).flatMap(_.foreignRelationship)
         } yield {
           newFr
         }
@@ -1128,7 +1128,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       JObject(List(
         JField("groupsProvider",gp),
         JField("orgUnits",JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
-          gp.getGroupsFor(Globals.casState.is).map(g => Extraction.decompose(g))
+          gp.getGroupsFor(Globals.casState.is.get).map(g => Extraction.decompose(g))
         }).toList))
       ))
     },Full("receiveOrgUnitsFromGroupsProviders")),

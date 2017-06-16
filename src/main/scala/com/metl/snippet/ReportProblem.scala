@@ -24,7 +24,11 @@ class ReportProblem extends Logger with JArgUtils {
           val slide = slideParam.getOrElse("noSlide")
           f"conversation '$title%s' ($jid%s.$slide%s)"
       }
-    val reporter = Globals.currentUser.is
+    val reporter = {
+      if( Globals.casState.is.nonEmpty )
+        Globals.currentUser.is
+      else "unknown"
+    }
     "#hiddenFields" #> List(<input type="hidden" name="reporter" value={reporter}/><input type="hidden" name="context" value={context}/>)
   }
 }

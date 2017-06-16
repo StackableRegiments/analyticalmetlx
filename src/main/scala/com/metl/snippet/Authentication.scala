@@ -16,7 +16,7 @@ import S._
 
 class AuthenticationSnippet {
   def render = {
-    val authData = Globals.casState.is
+    val authData = Globals.casState.is.get
     val xml =
       <authData>{
         <username>{ authData.username }</username>

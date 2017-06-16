@@ -625,7 +625,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
             val detectedState = (for {
               s <- S.session
               ds <- tryo({S.initIfUninitted(s){
-                (Globals.currentUser.is,Option(Globals.casState.is))
+                (Globals.currentUser.is,Option(Globals.casState.is.get))
               }})
             } yield {
               ds
