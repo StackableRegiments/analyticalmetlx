@@ -246,9 +246,9 @@ function registerPositionHandlers(contexts,down,move,up){
                 "z":z,
                 "worldPos":worldPos
             };
-        }
+        };
         if (detectPointerEvents()){
-            var performGesture = _.throttle(function(){
+            var performGesture = function(){
                 takeControlOfViewbox();
 
                 var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
@@ -279,7 +279,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 var previousScale = (prevXScale + prevYScale)       / 2;
                 var currentScale = (xScale + yScale)        / 2;
                 Zoom.scale(previousScale / currentScale);
-            },25);
+            };
             context.bind("pointerdown",function(e){
                 if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && checkIsGesture(e)){
                     isGesture = true;
@@ -987,7 +987,7 @@ var Modes = (function(){
                         blit();
                         return false;
                     },
-                    move:_.throttle(function(worldPos){
+                    move:function(worldPos){
                         if(resizeAspectLocked.activated){
                             bounds = [
                                 worldPos.x - s,
@@ -1006,7 +1006,7 @@ var Modes = (function(){
                             blit();
                         }
                         return false;
-                    },20),
+                    },
                     deactivate:function(){
                         Modes.select.aspectLocked = false;
                         resizeAspectLocked.activated = false;
