@@ -38,6 +38,7 @@ var Conversations = (function(){
                     pushUnbannedMessage();
                 }
                 updateBannedVisualState();
+                return bannedState;
             },
             reset:function(){
                 haveCheckedBanned = false;
