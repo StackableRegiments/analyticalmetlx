@@ -58,10 +58,13 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
 
   override lazy val functionDefinitions: List[ClientSideFunction] =
     List(ClientSideFunction("getStudentActivity", List("from", "to", "courseId"), (args) => {
+      error("In client side function!")
+
       val fromDate = getArgAsInt(args.head) // Timestamp
       val toDate = getArgAsInt(args(1)) // Timestamp
       val courseId = getArgAsString(args(2)).toLowerCase.trim
       error("fromDate: " + fromDate + ", toDate: " + toDate + ", courseId: " + courseId)
+
       calculateResults(courseId, new Date(fromDate), new Date(toDate))
     }, Full("updateActivity")))
 
@@ -94,6 +97,7 @@ object StudentActivityServer extends LiftActor with ListenerManager with Logger 
   }
 
   override protected def createUpdate: Any = {
-    getCoursesForAllConversations
+//    getCoursesForAllConversations
+    Nil
   }
 }

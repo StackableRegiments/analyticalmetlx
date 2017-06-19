@@ -20,6 +20,9 @@
         </style>
     </head>
     <script type="text/javascript">
+        var fromDatePickr;
+        var toDatePickr;
+
         var createTable = function (a) {
             var table = $("<table/>");
             var tr = $("<tr/>");
@@ -52,16 +55,22 @@
         //        };
         var refreshData = function () {
             // Go get stuff
-            getStudentActivity($("#activityFrom").text(), $("#activityFrom").text(), $("#courses-selectized").text());
+            var from = fromDatePickr.selectedDates[0].getTime()/1000;
+            var to = toDatePickr.selectedDates[0].getTime()/1000;
+
+            console.log("Arguments: ", arguments);
+
+            var selectId = arguments[0];
+            getStudentActivity(from, to, selectId);
         };
         var init = function () {
             $('#courses').selectize({maxOptions: 20, closeAfterSelect: true, onChange: refreshData});
-            $('#activityFrom').flatpickr({
+            fromDatePickr = $('#activityFrom').flatpickr({
                 defaultDate: new Date(2016, 7, 1),
                 altInput: true,
                 onChange: refreshData
             });
-            $('#activityTo').flatpickr({
+            toDatePickr = $('#activityTo').flatpickr({
                 defaultDate: "today",
                 altInput: true,
                 onChange: refreshData
