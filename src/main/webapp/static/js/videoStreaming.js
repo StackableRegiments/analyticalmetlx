@@ -72,8 +72,8 @@ var TokBox = (function(){
     };
 
     Progress.conversationDetailsReceived["TokBox"] = actOnConversationDetails;
-    // find out what this string should be.
-    Progress.conversationDetailsReceived["Banning"] = actOnConversationDetails;
+    Progress.userBanned["TokBox"] = actOnConversationDetails;
+    Progress.userUnbanned["TokBox"] = actOnConversationDetails;
     return {
         getSessions:function(){return sessions;},
         initialize:function(){
