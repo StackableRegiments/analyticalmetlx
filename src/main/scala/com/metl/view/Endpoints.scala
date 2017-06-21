@@ -599,16 +599,15 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       })
     }
     case Req("studentActivity" :: Nil,_,_) if Globals.isAnalyst => () => Stopwatch.time("MeTLRestHelper.studentActivity", {
-      for{
-        courseId <- S.param("courseId")
-      } yield {
-        PlainTextResponse(StudentActivityReportHelper.studentActivityCsv(courseId),
-          List(("Content-Type", "text/csv"),
-            ("Content-Disposition", "attachment; filename=studentActivity-" + courseId + ".csv"),
-            ("Pragma", "no-cache"),
-            ("Expires", "0")),
-          200)
-      }
+      val courseId = S.param("courseId")
+//      val from = S.param("from").map()
+//      val to = S.param("to")
+      Full(PlainTextResponse(StudentActivityReportHelper.studentActivityCsv(courseId,None,None),
+        List(("Content-Type", "text/csv"),
+          ("Content-Disposition", "attachment; filename=studentActivity-" + courseId + ".csv"),
+          ("Pragma", "no-cache"),
+          ("Expires", "0")),
+        200))
     })
     case r@Req(List("submitProblemReport"), _, PostRequest) =>
       () =>

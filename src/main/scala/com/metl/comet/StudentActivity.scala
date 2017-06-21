@@ -5,10 +5,10 @@ import java.util.Date
 import com.metl.data.ServerConfiguration
 import com.metl.liftExtensions.StronglyTypedJsonActor
 import com.metl.view.StudentActivityReportHelper
+import net.liftweb.util.Helpers._
 import net.liftweb.actor.LiftActor
 import net.liftweb.common.{Full, Logger, SimpleActor}
-import net.liftweb.http.SHtml._
-import net.liftweb.http.js.JE.Call
+import net.liftweb.http.js.JE._
 import net.liftweb.http.js.JsCmds.{OnLoad, Script}
 import net.liftweb.http.{ListenerManager, RenderOut}
 import net.liftweb.json.JsonAST.{JArray, JField, JObject, JString}
@@ -23,30 +23,24 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
     blankOption :: StudentActivityServer.getCoursesForAllConversations
   }
 
-  def calculateResults(courseId: String, from: Date, to: Date): JObject = {
-    val studentActivity = StudentActivityReportHelper.studentActivity(courseId)
+  def calculateResults(courseId: Option[String], from: Option[Date], to: Option[Date]): JObject = {
+    val studentActivity = StudentActivityReportHelper.studentActivity(courseId,from,to)
     val headers = studentActivity.head
-
-    //    error("From: " + jQuery("#activityFrom"))
-
-    createHtmlTable(courseId, (headers, studentActivity.tail))
+    createJResults(courseId, (headers, studentActivity.tail))
   }
 
   override def render: RenderOut = {
-    "#courses" #> selectElem[(String, String)](getAllOptions, Full(blankOption))((x: (String, String)) => ())((p: (String, String)) => {
-      if (!p._1.isEmpty) {
-        p._2 + " (" + p._1 + ")"
-      }
-      else {
-        ""
-      }
-    }) &
       "#loaderJs" #> Script(OnLoad(Call("init").cmd))
   }
 
-  def createHtmlTable(courseId: String, results: (List[String], List[List[String]])): JObject = {
+  def createJCourses(courses: (List[(String, String)])): JArray = {
+    JArray(courses.map(c => JObject(List(JField("id",JString(c._1)),
+      JField("name",JString(c._2))))))
+  }
+
+  def createJResults(courseId: Option[String], results: (List[String], List[List[String]])): JObject = {
     JObject(List(
-      JField("courseId", JString(courseId)),
+      JField("courseId", JString(courseId.getOrElse(""))),
       JField("headers", JArray(results._1.map(h => JString(h)))),
       //      JField("data", JArray(results._2.filter(r => r.get("ConversationID").nonEmpty || r.get("D2LStudentID").nonEmpty).map(r => {
       //        JObject(r.toList.map(kv => JField(kv._1, JString(kv._2))))
@@ -57,15 +51,15 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
   }
 
   override lazy val functionDefinitions: List[ClientSideFunction] =
-    List(ClientSideFunction("getStudentActivity", List("from", "to", "courseId"), (args) => {
-      error("In client side function!")
-
-      val fromDate = getArgAsInt(args.head) // Timestamp
-      val toDate = getArgAsInt(args(1)) // Timestamp
-      val courseId = getArgAsString(args(2)).toLowerCase.trim
-      error("fromDate: " + fromDate + ", toDate: " + toDate + ", courseId: " + courseId)
-
-      calculateResults(courseId, new Date(fromDate), new Date(toDate))
+    List(ClientSideFunction("getCourses", List(), (args) => {
+      val options = getAllOptions
+      createJCourses(options)
+    }, Full("updateCourses")),
+      ClientSideFunction("getStudentActivity", List("from", "to", "courseId"), (args) => {
+      val fromDate = tryo(new Date(getArgAsInt(args.head))) // Timestamp
+      val toDate = tryo(new Date(getArgAsInt(args(1)))) // Timestamp
+      val courseId = tryo(getArgAsString(args(2)).toLowerCase.trim).filter(c => c.nonEmpty)
+      calculateResults(courseId, fromDate, toDate)
     }, Full("updateActivity")))
 
   override protected def registerWith: SimpleActor[Any] = {
@@ -97,7 +91,6 @@ object StudentActivityServer extends LiftActor with ListenerManager with Logger 
   }
 
   override protected def createUpdate: Any = {
-//    getCoursesForAllConversations
     Nil
   }
 }

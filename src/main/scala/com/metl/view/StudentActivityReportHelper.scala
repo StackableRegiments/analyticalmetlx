@@ -22,27 +22,27 @@ case class RowTime(timestamp: Long, present: Boolean)
 object StudentActivityReportHelper extends Logger {
 
   protected val config = CacheConfig(10, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU, Some(60))
-  protected val reportCache = new ManagedCache[String, List[List[String]]]("studentActivity", (key: String) => generateStudentActivity(key), config)
+  protected val reportCache = new ManagedCache[(Option[String],Option[Date],Option[Date]), List[List[String]]]("studentActivity", (key: (Option[String],Option[Date],Option[Date])) => generateStudentActivity(key._1,key._2,key._3), config)
   protected val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
 
-  def studentActivity(courseId: String): List[List[String]] = {
-    reportCache.get(courseId)
+  def studentActivity(courseId: Option[String],from:Option[Date],to:Option[Date]): List[List[String]] = {
+    reportCache.get((courseId,from,to))
   }
 
-  def studentActivityCsv(courseId: String): String = {
-    rowsToCsv(reportCache.get(courseId))
+  def studentActivityCsv(courseId: Option[String],from:Option[Date],to:Option[Date]): String = {
+    rowsToCsv(reportCache.get(courseId,from,to))
   }
 
   def countDays(duration: (Long, Boolean, Long, Long)): Double = {
     (duration._4 - duration._3) / 1000d / 60 / 60 / 24
   }
 
-  protected def generateStudentActivity(courseId: String): List[List[String]] = {
+  protected def generateStudentActivity(courseId: Option[String] = None, from: Option[Date] = None, to: Option[Date] = None): List[List[String]] = {
     println("Generating student activity...")
     val start = new Date().toInstant
 
     val server = ServerConfiguration.default
-    val conversations = server.searchForConversationByCourse(courseId)
+    val conversations = courseId.map(c => server.searchForConversationByCourse(c)).getOrElse(server.getAllConversations)
 
     /*
         val globalRoom = MeTLXConfiguration.getRoom("global", server.name, GlobalRoom(server.name))
