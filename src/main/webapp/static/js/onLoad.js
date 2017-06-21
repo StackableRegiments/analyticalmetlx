@@ -104,13 +104,13 @@ var WorkQueue = (function(){
 })();
 var Pan = {
     pan:function(xDelta,yDelta){
-        takeControlOfViewbox();
+        takeControlOfViewbox(true);
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         TweenController.panViewboxRelative(xDelta * xScale, yDelta * yScale);
     },
     translate:function(xDelta,yDelta){
-        takeControlOfViewbox();
+        takeControlOfViewbox(true);
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         console.log("Translate",xDelta,yDelta,xScale,yScale);
@@ -174,7 +174,7 @@ var Zoom = (function(){
     }
     return {
         scale:function(scale,ignoreLimits){
-            takeControlOfViewbox();
+            takeControlOfViewbox(true);
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -191,7 +191,7 @@ var Zoom = (function(){
             TweenController.scaleAndTranslateViewbox(finalX,finalY,requestedWidth,requestedHeight);
         },
         zoom:function(scale,ignoreLimits,onComplete){
-            takeControlOfViewbox();
+            takeControlOfViewbox(true);
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -297,7 +297,6 @@ var TweenController = (function(){
         }
     },300);
     var tween;
-    var tX,tY,tW,tH;/*These T variables are to hold the visual box as it is zooming, so that no element gets tricked into trying to measure against a mid-tween viewbox.  The logical state is set to what it will be after the zoom*/
     var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
@@ -310,10 +309,6 @@ var TweenController = (function(){
         var startY = viewboxY;
         var startWidth = viewboxWidth;
         var startHeight = viewboxHeight;
-        tX = startX;
-        tY = startY;
-        tW = startWidth;
-        tH = startHeight;
         var xDelta = finalX - startX;
         var yDelta = finalY - startY;
         var widthDelta = finalWidth - startWidth;
@@ -329,16 +324,16 @@ var TweenController = (function(){
             .to({x:xDelta,y:yDelta,w:widthDelta,h:heightDelta}, interval)
             .easing(TWEEN.Easing.Quadratic.Out)
             .onUpdate(function(){
-                tX = startX + this.x;
-                tY = startY + this.y;
-                tW = startWidth + this.w;
-                tH = startHeight + this.h;
+                viewboxX = startX + this.x;
+                viewboxY = startY + this.y;
+                viewboxWidth = startWidth + this.w;
+                viewboxHeight = startHeight + this.h;
             }).onComplete(function(){
                 tween = false;
-                tX = viewboxX = finalX;
-                tY = viewboxY = finalY;
-                tW = viewboxWidth = finalWidth;
-                tH = viewboxHeight = finalHeight;
+                viewboxX = finalX;
+                viewboxY = finalY;
+                viewboxWidth = finalWidth;
+                viewboxHeight = finalHeight;
                 blit();
                 if (!shouldAvoidUpdatingRequestedViewbox){
                     updateRequestedPosition();
@@ -377,7 +372,7 @@ var TweenController = (function(){
         zoomAndPanViewboxRelative:zoomAndPanViewboxRelativeFunction,
         scaleAndTranslateViewboxRelative:scaleAndTranslateViewboxRelativeFunction,
         immediateView:function(){
-            return [tX, tY, tW, tH];
+            return [viewboxX, viewboxY, viewboxWidth, viewboxHeight];
         }
     }
 })();
@@ -594,6 +589,7 @@ $(function(){
     $("#zoomToFull").click(bounceAnd(function(){ zoomToFit(); }));
     $("#zoomToPage").click(bounceAnd(function(){ zoomToPage(); }));
     $("#zoomToOriginal").click(bounceAnd(function(){ zoomToOriginal(); }));
+    $("#zoomToCurrent").click(bounceAnd(function(){ takeControlOfViewbox(true); }));
     window.currentBackstage = noActiveBackstage;
     $("#hideBackstage").click(bounceAnd(hideBackstage));
     $("#applicationMenuButton").click(function(){

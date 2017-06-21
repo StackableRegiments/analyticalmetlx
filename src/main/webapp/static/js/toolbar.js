@@ -249,7 +249,7 @@ function registerPositionHandlers(contexts,down,move,up){
         };
         if (detectPointerEvents()){
             var performGesture = function(){
-                takeControlOfViewbox();
+                takeControlOfViewbox(true);
 
                 var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
                     var first = _.first(item.points);
@@ -327,11 +327,11 @@ function registerPositionHandlers(contexts,down,move,up){
                 var worldX = worldPos.x;
                 var worldY = worldPos.y;
                 if(worldX < viewboxX){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Extend.left();
                 }
                 else if(worldX >= (viewboxX + viewboxWidth)){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Extend.right();
                 }
                 else{
@@ -407,11 +407,11 @@ function registerPositionHandlers(contexts,down,move,up){
                 var worldY = worldPos.y;
                 var z = 0.5;
                 if(worldX < viewboxX){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Extend.left();
                 }
                 else if(worldX >= (viewboxX + viewboxWidth)){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Extend.right();
                 }
                 else{
@@ -499,7 +499,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     var xDelta = pos.x - prevPos.x;
                     var yDelta =  pos.y - prevPos.y;
                     prevPos = pos;
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Pan.translate(-1 * xDelta,-1 * yDelta);
                     break;
                 }
@@ -535,7 +535,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 var scale = e.originalEvent.scale;
                 //Zoom.scale(previousScale / scale,true);
                 // I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
-                takeControlOfViewbox();
+                takeControlOfViewbox(true);
                 Zoom.scale(previousScale / scale);
                 previousScale = scale;
             });
@@ -2050,7 +2050,7 @@ var Modes = (function(){
                 var originX;
                 var originY;
                 var down = function(x,y,z){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     originX = x;
                     originY = y;
                 }
@@ -2535,7 +2535,7 @@ var Modes = (function(){
                 var originPoint = {x:0,y:0};
                 var down = function(x,y,z,worldPos){
                     //adding this so that using the zoom marquee results in the autofit being turned off.
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     proportion = boardHeight / boardWidth;
                     startX = x;
                     startY = y;
@@ -2585,6 +2585,7 @@ var Modes = (function(){
                     var vW = constrained.width;
                     var vH = constrained.height;
                     IncludeView.specific(vX,vY,vW,vH);
+		    takeControlOfViewbox(true);
                 }
                 registerPositionHandlers(board,down,move,up);
             },

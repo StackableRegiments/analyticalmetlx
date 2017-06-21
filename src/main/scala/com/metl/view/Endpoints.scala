@@ -624,25 +624,26 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
           val nextRandom = nextFuncName(new Date().getTime)
           val reportId = nextRandom.substring(nextRandom.length - 7, nextRandom.length - 1)
 
-            val detectedUser = detectedState._1
-            val liftAuthStateData = detectedState._2
-            val rawCasState = liftAuthStateData.getOrElse("").toString
-            val name = CasUtils.getFirstName(liftAuthStateData) + " " + CasUtils.getSurname(liftAuthStateData)
-            val email = CasUtils.getEmailAddress(liftAuthStateData)
-            val orgUnits = CasUtils.getOrgUnits(liftAuthStateData).mkString(", ")
+          val detectedState = (for {
+            s <- S.session
+            ds <- tryo({S.initIfUninitted(s){
+              (Globals.currentUser.is,Option(Globals.casState.is))
+            }})
+          } yield {
+            ds
+          }).getOrElse((reporter,None))
 
-            error("Problem report from %s (#%s). Name: %s, Username: %s, Email: %s, Context: %s, Report: %s, OrgUnits: %s, CAS State: %s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, rawCasState))
-            if (Globals.mailer.nonEmpty) {
-              Globals.mailer.get.sendMailMessage("Problem Report from %s (#%s)".format(r.hostName, reportId),
-                "Host: %s\nReport ID: %s\nName: %s\nUsername: %s\nEmail: %s\nContext: %s\n\nReport:\n%s\n\nOrgUnits:\n%s\n\nCAS State:\n%s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, rawCasState))
-            }
+          val detectedUser = detectedState._1
+          val liftAuthStateData = detectedState._2
+          val rawCasState = liftAuthStateData.getOrElse("").toString
+          val name = CasUtils.getFirstName(liftAuthStateData) + " " + CasUtils.getSurname(liftAuthStateData)
+          val email = CasUtils.getEmailAddress(liftAuthStateData)
+          val orgUnits = CasUtils.getOrgUnits(liftAuthStateData).mkString(", ")
 
-            val output = (
-              "#reporter *" #> reporter &
-                "#context *" #> context &
-                "#reportId *" #> reportId
-              ).apply(t)
-            XhtmlResponse(output.head, Empty, Nil, Nil, 200, renderInIEMode = false)
+          error("Problem report from %s (#%s). Name: %s, Username: %s, Email: %s, Context: %s, Report: %s, OrgUnits: %s, CAS State: %s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, rawCasState))
+          if (Globals.mailer.nonEmpty) {
+            Globals.mailer.get.sendMailMessage("Problem Report from %s (#%s)".format(r.hostName, reportId),
+              "Host: %s\nReport ID: %s\nName: %s\nUsername: %s\nEmail: %s\nContext: %s\n\nReport:\n%s\n\nOrgUnits:\n%s\n\nCAS State:\n%s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, rawCasState))
           }
 
           val output = (
@@ -650,7 +651,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
               "#context *" #> context &
               "#reportId *" #> reportId
           ).apply(t)
-          XhtmlResponse(output.head, Empty, Nil, Nil, 200, false)
+          XhtmlResponse(output.head, Empty, Nil, Nil, 200, renderInIEMode = false)
         }
       })
   }

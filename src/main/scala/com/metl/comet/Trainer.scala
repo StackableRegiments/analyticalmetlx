@@ -51,6 +51,8 @@ case class Watching(ticks:Int) extends SimulatedActivity
 case class Scribbling(what:List[Char]) extends SimulatedActivity
 
 case class Highlight(selector:String)
+case class Flash(selector:String)
+case class ShowClick(selector:String)
 
 case class ClaimedArea(left:Double,top:Double,right:Double,bottom:Double,width:Double)
 case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:ScanDirection,intention:String,activity:SimulatedActivity,history:List[SimulatedActivity]){
@@ -61,7 +63,11 @@ case class TrainingManual(actor:TrainerActor) {
   val namer = new DataFactory
   def el(label:String,content:String) = Elem.apply(null,label,scala.xml.Null,scala.xml.TopScope,Text(content))
   def p(content:String) = TrainingInstruction(el("p",content))
-  val pages = List(
+  def makeStudent(intent:String) = TrainingControl(
+    "Bring in a %s student".format(intent),() => {
+      actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
+    })
+  val pages:List[TrainingPage] = List(
     TrainingPage(Text("Exercise 1"),
       Text("The teaching space"),
       List(
@@ -69,40 +75,72 @@ case class TrainingManual(actor:TrainerActor) {
         p("Like a slide deck or a PowerPoint presentation, it supports multiple pages."),
         TrainingControl(
           "Show me the pages",
-          () => actor ! Highlight("#thumbsColumn")
+          () => actor ! Flash("#thumbsColumn")
         ),
         p("You may choose whether your class can move freely between these."),
         TrainingControl("How do I move between pages?",
-          () => actor ! Highlight("#slideControls")
+          () => actor ! Flash("#slideControls")
         ),
         p("Only the author of the conversation can add pages."),
         TrainingControl(
           "Show me how",
-          () => actor ! Highlight("#slideControls")
+          () => {
+            Schedule.schedule(actor,Flash("#addSlideButton"),1000)
+            actor ! Highlight("#slideControls")
+          }
         ),
-        p("You have control over the way your content appears to other users and what sort of content you want to create."),
+        p("In the next exercise, we'll do some work on the pages"),
         TrainingControl(
-          "Show me the tools",
-          () => actor ! Highlight("#toolsColumn")
-        ),
-        p("Classroom spaces, the device you're using and network speed can affect whether the whiteboard works well for you."),
-        TrainingControl(
-          "How can I tell if there's a problem?",
-          () => actor ! Highlight(".meters")
+          "Take me there",
+          () => actor ! pages(1)
         )),
       Full(Call("clearTools").cmd)
     ),
     TrainingPage(Text("Exercise 2"),
       Text("Sharing an open space"),
       List(
-        p("These controls will bring virtual students into your classroom.  Bring one in now.")
-      ) :::
-        List("benign","malicious").map(intent => TrainingControl(
-          "Bring in a %s student".format(intent),() => {
-            actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
-          })),
-      None
-    ))
+        p("In this trainer you can bring virtual students into your classroom.  These students will stay with you during your training session.  Bring one in now."),
+        makeStudent("benign"),
+        p("The students you create can work anywhere, even outside of where you are currently looking."),
+        p("To observe all their work, set your camera to include all content no matter where it appears."),
+        TrainingControl(
+          "Show me how to watch everything",
+          () => {
+            Schedule.schedule(actor,Highlight("#zoomToFull"),1000)
+            actor ! ShowClick("#zoomMode")
+          }
+        ),
+        p("If you just want to concentrate on your own work, set your camera not to move automatically."),
+        TrainingControl(
+          "Show me how to stop the camera moving",
+          () => {
+            Schedule.schedule(actor,Highlight("#fixZoom"),1000)
+            actor ! ShowClick("#zoomMode")
+          }
+        )
+      ),
+      Full(Call("showTools").cmd)
+    ),
+    TrainingPage(Text("Exercise 3"),
+      Text("Your creative space"),
+      List(
+        p("You have control over whether your content appears to other users."),
+        TrainingControl(
+          "Which controls do that?",
+          () => {
+            actor ! Highlight("#toolsColumn")
+            actor ! Flash(".permission-states")
+          }
+        ),
+        p("Classroom spaces, the device you're using and network speed can affect whether the whiteboard works well for you."),
+        TrainingControl(
+          "How can I tell if there's a problem?",
+          () => actor ! Highlight(".meters")
+        )
+      ),
+      Full(Call("showTools").cmd)
+    )
+  )
 }
 
 class TrainerActor extends StronglyTypedJsonActor with Logger {
@@ -141,6 +179,12 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   override def lowPriority  = {
     case Highlight(selector) => partialUpdate(Call("highlight",JString(selector)).cmd)
+    case Flash(selector) => partialUpdate(Call("flash",JString(selector)).cmd)
+    case ShowClick(selector) => partialUpdate(Call("showClick",JString(selector)).cmd)
+    case p:TrainingPage => {
+      currentPage = p
+      reRender(true)
+    }
     case SimulatorTick => {
       var furtherClaimsAllowed = true
       users = users.map {
@@ -178,7 +222,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
         }
       }
       partialUpdate(Call("simulatedUsers",Extraction.decompose(users)).cmd)
-      ActorPing.schedule(this,SimulatorTick,1000)
+      Schedule.schedule(this,SimulatorTick,1000)
     }
   }
 
@@ -188,7 +232,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     val slide = newConversation.slides(0).id.toString
     currentConversation = Full(newConversation)
     currentSlide = Full(slide)
-    ActorPing.schedule(this,SimulatorTick,500)
+    Schedule.schedule(this,SimulatorTick,500)
   }
 
   override def render = "#exerciseTitle *" #> currentPage.title &
