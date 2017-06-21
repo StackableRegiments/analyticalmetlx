@@ -21,7 +21,7 @@
     </head>
     <script type="text/javascript">
         var serverResponse = function(response){
-            console.log("serverResponse:",response);
+//            console.log("serverResponse:",response);
         };
         var fromDatePickr;
         var toDatePickr;
@@ -32,11 +32,11 @@
             getStudentActivity(from, to, courseId);
         };
         var refreshOnFrom = function() {
-            from = fromDatePickr.selectedDates[0].getTime()/1000;
+            from = fromDatePickr.selectedDates[0].getTime();
             refreshData();
         };
         var refreshOnTo = function() {
-            to = toDatePickr.selectedDates[0].getTime()/1000;
+            to = toDatePickr.selectedDates[0].getTime();
             refreshData();
         };
         var refreshOnCourse = function(a) {
@@ -44,8 +44,6 @@
             refreshData();
         };
         var updateCourses = function(c) {
-            console.log("updating courses", c);
-
             $('#courses').selectize({
                 maxOptions: 20,
                 closeAfterSelect: true,
@@ -87,13 +85,13 @@
                 altInput: true,
                 onChange: refreshOnFrom
             });
-            from = fromDatePickr.selectedDates[0].getTime()/1000;
+            from = fromDatePickr.selectedDates[0].getTime();
             toDatePickr = $('#activityTo').flatpickr({
                 defaultDate: "today",
                 altInput: true,
                 onChange: refreshOnTo
             });
-            to = toDatePickr.selectedDates[0].getTime()/1000;
+            to = toDatePickr.selectedDates[0].getTime();
             getCourses();
         };
         function augmentArguments(args){

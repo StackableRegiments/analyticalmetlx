@@ -52,10 +52,16 @@ object StudentActivityReportHelper extends Logger {
 
     var rawRows: List[RawRow] = List()
     conversations.foreach(conversation => {
+      // Load all detail of the room
       val room = MeTLXConfiguration.getRoom(conversation.jid.toString, server.name, ConversationRoom(server.name, conversation.jid.toString))
 
+      room.getHistory.getAttendances
+        .foreach(a => println("Timestamp: " + a.timestamp + ", from: " + from.get.getTime + ", to: " + to.get.getTime))
+
       // Sort attendances just in case.
-      val slideAttendances = room.getHistory.getAttendances.sortBy(_.timestamp)
+      val slideAttendances = room.getHistory.getAttendances
+        .filter(a => from.map(f => a.timestamp >= f.getTime).getOrElse(true) && to.map(t => a.timestamp <= t.getTime).getOrElse(true))
+        .sortBy(_.timestamp)
 
       println("Room " + room.location + ": " + slideAttendances.length + " attendances")
 
