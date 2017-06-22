@@ -17,7 +17,7 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
 
   protected lazy val serverConfig: ServerConfiguration = ServerConfiguration.default
 
-  protected val blankOption: (String, String) = "" -> "Select a course..."
+  protected val blankOption: (String, String) = "" -> "All"
 
   def getAllOptions: List[(String, String)] = {
     blankOption :: StudentActivityServer.getCoursesForAllConversations
@@ -42,8 +42,6 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
     JObject(List(
       JField("courseId", JString(courseId.getOrElse(""))),
       JField("headers", JArray(results._1.map(h => JString(h)))),
-      //      JField("data", JArray(results._2.filter(r => r.get("ConversationID").nonEmpty || r.get("D2LStudentID").nonEmpty).map(r => {
-      //        JObject(r.toList.map(kv => JField(kv._1, JString(kv._2))))
       JField("data", JArray(results._2.map(r => {
         JArray(r.map(value => JString(value)))
       })))
@@ -51,7 +49,7 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
   }
 
   override lazy val functionDefinitions: List[ClientSideFunction] =
-    List(ClientSideFunction("getCourses", List(), (args) => {
+    List(ClientSideFunction("getCourses", List(), (_) => {
       val options = getAllOptions
       createJCourses(options)
     }, Full("updateCourses")),

@@ -55,12 +55,10 @@ object StudentActivityReportHelper extends Logger {
       // Load all detail of the room
       val room = MeTLXConfiguration.getRoom(conversation.jid.toString, server.name, ConversationRoom(server.name, conversation.jid.toString))
 
-      room.getHistory.getAttendances
-        .foreach(a => println("Timestamp: " + a.timestamp + ", from: " + from.get.getTime + ", to: " + to.get.getTime))
-
       // Sort attendances just in case.
       val slideAttendances = room.getHistory.getAttendances
-        .filter(a => from.map(f => a.timestamp >= f.getTime).getOrElse(true) && to.map(t => a.timestamp <= t.getTime).getOrElse(true))
+        .filter(a => from.map(f => a.timestamp >= f.getTime).getOrElse(true) &&
+          to.map(t => a.timestamp <= t.getTime).getOrElse(true))
         .sortBy(_.timestamp)
 
       println("Room " + room.location + ": " + slideAttendances.length + " attendances")
@@ -132,7 +130,7 @@ object StudentActivityReportHelper extends Logger {
       case Some(fr) =>
         val members = membersCache.get((fr.system, fr.key))
         members match {
-          case Some(m) =>
+          case Some(_) =>
             members.getOrElse(List())
           case _ => List()
         }
