@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="static/css/trainer.css"></link>
   <style>
     #content{
-    width:1024px;
+    width:1366px;
     margin:auto;
     }
     #simulationPopulation span{
@@ -39,11 +39,18 @@
     display:inline-block;
     float:right;
     }
+    .actioned {
+    display:inline-block;
+    float:left;
+    }
     .simulatedUser{
     clear:right;
     }
     .coord{
     font-size:xx-small;
+    }
+    #simulationPopulation{
+    background-color:white;
     }
   </style>
   <div class="lift:Metl.trainer">
@@ -58,11 +65,9 @@
       </div>
     </div>
     <div class="flex-container-row">
+      <div id="simulationPopulation"></div>
       <div id="exerciseContent" class="tools main-menu-container">
-        <div id="exerciseControls">
-          <div class="control"></div>
-        </div>
-        <div id="simulationPopulation"></div>
+        <div id="exerciseControls"></div>
       </div>
       <iframe width="1024" height="768" id="simulation"></iframe>
     </div>

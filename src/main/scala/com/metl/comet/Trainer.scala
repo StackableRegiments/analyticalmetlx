@@ -7,6 +7,7 @@ import net.liftweb._
 import net.liftweb.json._
 import common._
 import http._
+import net.liftweb.http.js.JsCmds.SetHtml
 import util._
 import Helpers._
 import HttpHelpers._
@@ -26,8 +27,16 @@ import scala.collection.mutable.Queue
 
 trait TrainingBlock
 case class TrainingInstruction(content:NodeSeq) extends TrainingBlock
-case class TrainingControl(label:String,behaviour:()=>JsCmd) extends TrainingBlock
-case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd])
+case class TrainingControl(label:String,behaviour:()=>JsCmd) extends TrainingBlock {
+  var isActioned = false
+  var progressMarker = 0
+  var maxProgress = 0
+  def actioned = isActioned = true
+  def progress = progressMarker = progressMarker + 1
+}
+case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd]) {
+  def receiveStanza(s:MeTLStanza):Unit = ()
+}
 
 case object SimulatorTick
 
@@ -326,12 +335,35 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     Schedule.schedule(this,SimulatorTick,500)
   }
 
+  def blockMarkup:NodeSeq = currentPage.blocks.map(b => {
+    val id = nextFuncName
+    NodeSeq.fromSeq(List(
+      b match {
+        case c:TrainingControl => <div class="actioned">{
+          NodeSeq.fromSeq(List(
+            c.isActioned match {
+              case true => <input type="checkbox" id={id} disabled="true" checked="checked" />
+              case _ => <input type="checkbox" id={id} disabled="true" />
+            },
+            <label for={id}><span class="icon-txt"></span></label>))
+        }</div>
+        case _ => <span />
+      },
+      <div class="control">{
+        b match {
+          case c:TrainingControl =>
+            ajaxButton(c.label,() => {
+              c.actioned
+              c.behaviour()
+              SetHtml("exerciseControls",blockMarkup)
+            },"class" -> "active")
+          case c:TrainingInstruction => c.content
+        }
+      }</div>
+    ))}).reduce(_ ++ _)
   override def render = "#exerciseTitle *" #> currentPage.title &
   "#exerciseBlurb *" #> currentPage.blurb &
-  "#exerciseControls .control *" #> currentPage.blocks.map {
-    case c:TrainingControl => ajaxButton(c.label,c.behaviour,"class" -> "active")
-    case c:TrainingInstruction => c.content
-  } &
+  "#exerciseControls *" #> blockMarkup &
   "#scriptContainer *" #> (for {
     c <- currentConversation
     s <- currentSlide
