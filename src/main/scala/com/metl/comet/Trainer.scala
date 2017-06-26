@@ -124,6 +124,10 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "Show me the rest of the tools",
           () => actor ! pages(2)
+        ),
+        TrainingControl(
+          "Show me exercise 1 again",
+          () => actor ! pages(0)
         )
       ),
       Full(
@@ -165,6 +169,10 @@ case class TrainingManual(actor:TrainerActor) {
           () => {
             actor ! ShowClick("#selectMode")
           }
+        ),
+        TrainingControl(
+          "Show me exercise 2 again",
+          () => actor ! pages(1)
         )
       ),
       Full(Call("Trainer.showTools").cmd)
