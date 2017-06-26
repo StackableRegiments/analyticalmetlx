@@ -266,9 +266,17 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   override def localSetup = {
     super.localSetup
     val newConversation = serverConfig.createConversation("a practice conversation",username)
-    val slide = newConversation.slides(0).id.toString
+    val newSlide = newConversation.slides(0)
+    val slide = newSlide.id.toString
     currentConversation = Full(newConversation)
     currentSlide = Full(slide)
+
+    val location = newConversation.jid
+    // Don't need to actually store the messageBus
+    serverConfig.getMessageBus(new MessageBusDefinition(location.toString, "unicastBackToOwner", (m:MeTLStanza) => {
+      println("Received stanza at: " + m.timestamp)
+    }))
+
     Schedule.schedule(this,SimulatorTick,500)
   }
 
