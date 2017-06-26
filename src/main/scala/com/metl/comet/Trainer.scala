@@ -273,7 +273,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     }
   }
 
-  class StanzaTrigger(val actOn:(MeTLStanza) => Option[MeTLStanza] = (s:MeTLStanza) => Some(s)) {
+  class StanzaTrigger(val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s) {
     override def equals(other:Any):Boolean = {
       other match {
         case ost:StanzaTrigger => ost.actOn == actOn
@@ -284,31 +284,19 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   }
 
   val humanAuthor = "public"
-  def humanStanza(stanza:MeTLStanza):Option[MeTLStanza] = {
-    if(humanAuthor.equals(stanza.author)) {
-      return Some(stanza)
-    }
-    None
-  }
-
-  def simulatedStanza(stanza: MeTLStanza):Option[MeTLStanza] = {
-    if(!humanAuthor.equals(stanza.author)) {
-      return Some(stanza)
-    }
-    None
-  }
+  def isHuman(stanza:MeTLStanza):Boolean = {humanAuthor.equals(stanza.author)}
 
   val humanStanzas = new Queue[MeTLStanza]()
   val simulatedStanzas = new Queue[MeTLStanza]()
-  def captureStanza(stanza: MeTLStanza, queue: Queue[MeTLStanza]):MeTLStanza = {
+  def enqueueStanza(stanza: MeTLStanza, queue: Queue[MeTLStanza]):MeTLStanza = {
     queue += stanza
     println("Queue(" + queue.size + "): " + queue.toString)
     stanza
   }
 
-  private def logStanza(s: MeTLStanza, prefix:String): Option[MeTLStanza] = {
+  private def logStanza(s: MeTLStanza, prefix:String):MeTLStanza = {
     println(prefix + " (" + "author: " + s.author + ", " + "timestamp: " + s.timestamp + ")")
-    Some(s)
+    s
   }
 
   override def localSetup = {
@@ -320,14 +308,17 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     currentSlide = Full(slide)
 
     triggers = List(
-      new StanzaTrigger((stanza:MeTLStanza) => {humanStanza(stanza).map(s => {
-        logStanza(s,"Human")
-        captureStanza(s,humanStanzas)
-      })}),
-      new StanzaTrigger((stanza:MeTLStanza) => {simulatedStanza(stanza).map(s => {
-        logStanza(s, "All")
-        captureStanza(s,simulatedStanzas)
-      })})
+      new StanzaTrigger((stanza:MeTLStanza) => {
+        if(isHuman(stanza)) {
+          logStanza(stanza,"Human")
+          enqueueStanza(stanza,humanStanzas)
+        }
+        else {
+          logStanza(stanza,"Simulated")
+          enqueueStanza(stanza,simulatedStanzas)
+        }
+      }),
+      new StanzaTrigger((stanza:MeTLStanza) => {logStanza(stanza, "All")})
     )
     serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner",
       (s:MeTLStanza) => { triggers.foreach(t => t.actOn(s))}))
