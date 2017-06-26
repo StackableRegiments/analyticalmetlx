@@ -113,7 +113,6 @@ var Pan = {
         takeControlOfViewbox(true);
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
-        console.log("Translate",xDelta,yDelta,xScale,yScale);
         TweenController.translateViewboxRelative(xDelta * xScale, yDelta * yScale);
     }
 }
