@@ -2535,7 +2535,6 @@ var Modes = (function(){
                 var originPoint = {x:0,y:0};
                 var down = function(x,y,z,worldPos){
                     //adding this so that using the zoom marquee results in the autofit being turned off.
-                    takeControlOfViewbox(true);
                     proportion = boardHeight / boardWidth;
                     startX = x;
                     startY = y;

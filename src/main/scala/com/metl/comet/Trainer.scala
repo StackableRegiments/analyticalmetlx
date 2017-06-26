@@ -94,7 +94,9 @@ case class TrainingManual(actor:TrainerActor) {
           "Take me there",
           () => actor ! pages(1)
         )),
-      Full(Call("clearTools").cmd)
+      Full(
+        Call("Trainer.clearTools").cmd
+      )
     ),
     TrainingPage(Text("Exercise 2"),
       Text("Sharing an open space"),
@@ -106,7 +108,7 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "Show me how to watch everything",
           () => {
-            Schedule.schedule(actor,Highlight("#zoomToFull"),1000)
+            Schedule.schedule(actor,ShowClick("#zoomToFull"),1000)
             actor ! ShowClick("#zoomMode")
           }
         ),
@@ -114,12 +116,23 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "Show me how to stop the camera moving",
           () => {
-            Schedule.schedule(actor,Highlight("#fixZoom"),1000)
+            Schedule.schedule(actor,ShowClick("#zoomToCurrent"),1000)
             actor ! ShowClick("#zoomMode")
           }
+        ),
+        p("Now let's make some of your own content."),
+        TrainingControl(
+          "Show me the rest of the tools",
+          () => actor ! pages(2)
         )
       ),
-      Full(Call("showTools").cmd)
+      Full(
+        Call("Trainer.clearTools").cmd &
+          Call("Trainer.highlight","#toolsColumn").cmd &
+          Call("Trainer.hide",".permission-states").cmd &
+          Call("Trainer.hide","#floatingToggleContainer").cmd &
+          Call("Trainer.hide",".meters").cmd
+      )
     ),
     TrainingPage(Text("Exercise 3"),
       Text("Your creative space"),
@@ -136,9 +149,25 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "How can I tell if there's a problem?",
           () => actor ! Highlight(".meters")
+        ),
+        p("You can add several kinds of content to the space.  Your selection of Public versus Private at the time you add new content will determine whether that content is visible to others.  It is always visible to you, and you can change your mind later."),
+        TrainingControl(
+          "Show me how to add content",
+          () => {
+            actor ! Flash("#drawMode")
+            actor ! Flash("#insertText")
+            actor ! Flash("#insertMode")
+          }
+        ),
+        p("Once you have added content, you may need to move it, resize it, hide or show it."),
+        TrainingControl(
+          "Show me how to modify existing content",
+          () => {
+            actor ! ShowClick("#selectMode")
+          }
         )
       ),
-      Full(Call("showTools").cmd)
+      Full(Call("Trainer.showTools").cmd)
     )
   )
 }
@@ -178,9 +207,9 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   }
 
   override def lowPriority  = {
-    case Highlight(selector) => partialUpdate(Call("highlight",JString(selector)).cmd)
-    case Flash(selector) => partialUpdate(Call("flash",JString(selector)).cmd)
-    case ShowClick(selector) => partialUpdate(Call("showClick",JString(selector)).cmd)
+    case Highlight(selector) => partialUpdate(Call("Trainer.highlight",JString(selector)).cmd)
+    case Flash(selector) => partialUpdate(Call("Trainer.flash",JString(selector)).cmd)
+    case ShowClick(selector) => partialUpdate(Call("Trainer.showClick",JString(selector)).cmd)
     case p:TrainingPage => {
       currentPage = p
       reRender(true)
@@ -221,7 +250,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
           }
         }
       }
-      partialUpdate(Call("simulatedUsers",Extraction.decompose(users)).cmd)
+      partialUpdate(Call("Trainer.simulatedUsers",Extraction.decompose(users)).cmd)
       Schedule.schedule(this,SimulatorTick,1000)
     }
   }
@@ -244,7 +273,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   "#scriptContainer *" #> (for {
     c <- currentConversation
     s <- currentSlide
-  } yield Script(Call("simulationOn",c.jid,s,currentPage.onLoad.map(AnonFunc(_)).openOr(JsNull)).cmd))
+  } yield Script(Call("Trainer.simulationOn",c.jid,s,currentPage.onLoad.map(AnonFunc(_)).openOr(JsNull)).cmd))
 }
 
 case class Glyph(width:Int,strokes:List[List[Point]])
