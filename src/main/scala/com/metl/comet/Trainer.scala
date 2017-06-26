@@ -3,7 +3,6 @@ package com.metl.comet
 import com.metl.data._
 import com.metl.utils._
 import com.metl.liftExtensions._
-
 import net.liftweb._
 import net.liftweb.json._
 import common._
@@ -12,17 +11,18 @@ import util._
 import Helpers._
 import HttpHelpers._
 import actor._
+
 import scala.xml._
 import com.metl.model._
 import SHtml._
 import org.fluttercode.datafactory.impl._
-
 import js._
 import JsCmds._
 import JE._
 import net.liftweb.http.js.jquery.JqJsCmds._
-
 import net.liftweb.http.js.jquery.JqJE._
+
+import scala.collection.mutable.Queue
 
 trait TrainingBlock
 case class TrainingInstruction(content:NodeSeq) extends TrainingBlock
@@ -192,6 +192,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   protected val username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
   protected lazy val server = serverConfig.name
+  protected var triggers = List.empty[StanzaTrigger]
 
   override lazy val functionDefinitions = List.empty[ClientSideFunction]
 
@@ -263,6 +264,44 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     }
   }
 
+  class StanzaTrigger(val actOn:(MeTLStanza) => Option[MeTLStanza] = (s:MeTLStanza) => Some(s)) {
+    override def equals(other:Any):Boolean = {
+      other match {
+        case ost:StanzaTrigger => ost.actOn == actOn
+        case _ => false
+      }
+    }
+    override def hashCode = actOn.hashCode
+  }
+
+  val humanAuthor = "public"
+  def humanStanza(stanza:MeTLStanza):Option[MeTLStanza] = {
+    if(humanAuthor.equals(stanza.author)) {
+      return Some(stanza)
+    }
+    None
+  }
+
+  def simulatedStanza(stanza: MeTLStanza):Option[MeTLStanza] = {
+    if(!humanAuthor.equals(stanza.author)) {
+      return Some(stanza)
+    }
+    None
+  }
+
+  val humanStanzas = new Queue[MeTLStanza]()
+  val simulatedStanzas = new Queue[MeTLStanza]()
+  def captureStanza(stanza: MeTLStanza, queue: Queue[MeTLStanza]):MeTLStanza = {
+    queue += stanza
+    println("Queue(" + queue.size + "): " + queue.toString)
+    stanza
+  }
+
+  private def logStanza(s: MeTLStanza, prefix:String): Option[MeTLStanza] = {
+    println(prefix + " (" + "author: " + s.author + ", " + "timestamp: " + s.timestamp + ")")
+    Some(s)
+  }
+
   override def localSetup = {
     super.localSetup
     val newConversation = serverConfig.createConversation("a practice conversation",username)
@@ -271,11 +310,18 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     currentConversation = Full(newConversation)
     currentSlide = Full(slide)
 
-    val location = newConversation.jid
-    // Don't need to actually store the messageBus
-    serverConfig.getMessageBus(new MessageBusDefinition(location.toString, "unicastBackToOwner", (m:MeTLStanza) => {
-      println("Received stanza at: " + m.timestamp)
-    }))
+    triggers = List(
+      new StanzaTrigger((stanza:MeTLStanza) => {humanStanza(stanza).map(s => {
+        logStanza(s,"Human")
+        captureStanza(s,humanStanzas)
+      })}),
+      new StanzaTrigger((stanza:MeTLStanza) => {simulatedStanza(stanza).map(s => {
+        logStanza(s, "All")
+        captureStanza(s,simulatedStanzas)
+      })})
+    )
+    serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner",
+      (s:MeTLStanza) => { triggers.foreach(t => t.actOn(s))}))
 
     Schedule.schedule(this,SimulatorTick,500)
   }
