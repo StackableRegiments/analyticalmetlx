@@ -23,22 +23,27 @@ import JE._
 import net.liftweb.http.js.jquery.JqJsCmds._
 import net.liftweb.http.js.jquery.JqJE._
 
-import scala.collection.mutable.Queue
+import scala.collection.mutable.{ListBuffer,Queue}
 
 trait TrainingBlock
 case class TrainingInstruction(content:NodeSeq) extends TrainingBlock
-case class TrainingControl(label:String,behaviour:()=>JsCmd) extends TrainingBlock {
+case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:Boolean=true) extends TrainingBlock {
   var isActioned = false
   var progressMarker = 0
   var maxProgress = 0
   def actioned = isActioned = true
   def progress = progressMarker = progressMarker + 1
+  def reps(i:Int) = {
+    maxProgress = i
+    this
+  }
 }
 case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd]) {
-  def receiveStanza(s:MeTLStanza):Unit = ()
+  def receiveStanza(s:MeTLStanza):MeTLStanza = s
 }
 
 case object SimulatorTick
+case object RefreshControls
 
 case class ScanDirection(label:String)
 object ScanDirections {
@@ -73,9 +78,22 @@ case class TrainingManual(actor:TrainerActor) {
   def el(label:String,content:String) = Elem.apply(null,label,scala.xml.Null,scala.xml.TopScope,Text(content))
   def p(content:String) = TrainingInstruction(el("p",content))
   def makeStudent(intent:String) = TrainingControl(
-    "Bring in a %s student".format(intent),() => {
+    "Bring in some %s students".format(intent),c => {
+      c.progress
       actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
-    })
+    }).reps(3)
+  val inkTracker:TrainingControl = TrainingControl(
+    "Show me how to start inking",
+    _ => {
+      actor ! new StanzaTrigger(s => {
+        inkTracker.progress
+        actor ! RefreshControls
+        println("Refreshing controls",inkTracker)
+        s
+      })
+      actor ! ShowClick("#drawMode")
+    }
+  ).reps(3)
   val pages:List[TrainingPage] = List(
     TrainingPage(Text("Exercise 1"),
       Text("The teaching space"),
@@ -84,16 +102,16 @@ case class TrainingManual(actor:TrainerActor) {
         p("Like a slide deck or a PowerPoint presentation, it supports multiple pages."),
         TrainingControl(
           "Show me the pages",
-          () => actor ! Flash("#thumbsColumn")
+          _ => actor ! Flash("#thumbsColumn")
         ),
         p("You may choose whether your class can move freely between these."),
         TrainingControl("How do I move between pages?",
-          () => actor ! Flash("#slideControls")
+          _ => actor ! Flash("#slideControls")
         ),
         p("Only the author of the conversation can add pages."),
         TrainingControl(
           "Show me how",
-          () => {
+          _ => {
             Schedule.schedule(actor,Flash("#addSlideButton"),1000)
             actor ! Highlight("#slideControls")
           }
@@ -101,7 +119,8 @@ case class TrainingManual(actor:TrainerActor) {
         p("In the next exercise, we'll do some work on the pages"),
         TrainingControl(
           "Take me there",
-          () => actor ! pages(1)
+          _ => actor ! pages(1),
+          false
         )),
       Full(
         Call("Trainer.clearTools").cmd
@@ -110,13 +129,13 @@ case class TrainingManual(actor:TrainerActor) {
     TrainingPage(Text("Exercise 2"),
       Text("Sharing an open space"),
       List(
-        p("In this trainer you can bring virtual students into your classroom.  These students will stay with you during your training session.  Bring one in now."),
+        p("In this trainer you can bring virtual students into your classroom.  These students will stay with you during your training session."),
         makeStudent("benign"),
         p("The students you create can work anywhere, even outside of where you are currently looking."),
         p("To observe all their work, set your camera to include all content no matter where it appears."),
         TrainingControl(
           "Show me how to watch everything",
-          () => {
+          _ => {
             Schedule.schedule(actor,ShowClick("#zoomToFull"),1000)
             actor ! ShowClick("#zoomMode")
           }
@@ -124,7 +143,7 @@ case class TrainingManual(actor:TrainerActor) {
         p("If you just want to concentrate on your own work, set your camera not to move automatically."),
         TrainingControl(
           "Show me how to stop the camera moving",
-          () => {
+          _ => {
             Schedule.schedule(actor,ShowClick("#zoomToCurrent"),1000)
             actor ! ShowClick("#zoomMode")
           }
@@ -132,11 +151,13 @@ case class TrainingManual(actor:TrainerActor) {
         p("Now let's make some of your own content."),
         TrainingControl(
           "Show me the rest of the tools",
-          () => actor ! pages(2)
+          _ => actor ! pages(2),
+          false
         ),
         TrainingControl(
           "Show me exercise 1 again",
-          () => actor ! pages(0)
+          _ => actor ! pages(0),
+          false
         )
       ),
       Full(
@@ -153,7 +174,7 @@ case class TrainingManual(actor:TrainerActor) {
         p("You have control over whether your content appears to other users."),
         TrainingControl(
           "Which controls do that?",
-          () => {
+          _ => {
             actor ! Highlight("#toolsColumn")
             actor ! Flash(".permission-states")
           }
@@ -161,34 +182,37 @@ case class TrainingManual(actor:TrainerActor) {
         p("Classroom spaces, the device you're using and network speed can affect whether the whiteboard works well for you."),
         TrainingControl(
           "How can I tell if there's a problem?",
-          () => actor ! Highlight(".meters")
+          _ => actor ! Highlight(".meters")
         ),
         p("You can add several kinds of content to the space.  Your selection of Public versus Private at the time you add new content will determine whether that content is visible to others.  It is always visible to you, and you can change your mind later."),
-        TrainingControl(
-          "Show me how to add content",
-          () => {
-            actor ! Flash("#drawMode")
-            actor ! Flash("#insertText")
-            actor ! Flash("#insertMode")
-          }
-        ),
+        p("Try drawing some lines.  You can use your finger, or a stylus, or a mouse."),
+        inkTracker,
         p("Once you have added content, you may need to move it, resize it, hide or show it."),
         TrainingControl(
           "Show me how to modify existing content",
-          () => {
+          _ => {
             actor ! ShowClick("#selectMode")
           }
         ),
         TrainingControl(
           "Show me exercise 2 again",
-          () => actor ! pages(1)
+          _ => actor ! pages(1),
+          false
         )
       ),
       Full(Call("Trainer.showTools").cmd)
     )
   )
 }
-
+class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s) {
+  override def equals(other:Any):Boolean = {
+    other match {
+      case ost:StanzaTrigger => ost.actOn == actOn
+      case _ => false
+    }
+  }
+  override def hashCode = actOn.hashCode
+}
 class TrainerActor extends StronglyTypedJsonActor with Logger {
   import Dimensions._
   implicit val formats = net.liftweb.json.DefaultFormats
@@ -201,7 +225,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   protected val username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
   protected lazy val server = serverConfig.name
-  protected var triggers = List.empty[StanzaTrigger]
+  protected var triggers = ListBuffer.empty[StanzaTrigger]
 
   override lazy val functionDefinitions = List.empty[ClientSideFunction]
 
@@ -228,6 +252,10 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     case Highlight(selector) => partialUpdate(Call("Trainer.highlight",JString(selector)).cmd)
     case Flash(selector) => partialUpdate(Call("Trainer.flash",JString(selector)).cmd)
     case ShowClick(selector) => partialUpdate(Call("Trainer.showClick",JString(selector)).cmd)
+    case RefreshControls => partialUpdate(SetHtml("exerciseControls",blockMarkup))
+    case s:StanzaTrigger => {
+      triggers += s
+    }
     case p:TrainingPage => {
       currentPage = p
       reRender(true)
@@ -273,15 +301,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     }
   }
 
-  class StanzaTrigger(val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s) {
-    override def equals(other:Any):Boolean = {
-      other match {
-        case ost:StanzaTrigger => ost.actOn == actOn
-        case _ => false
-      }
-    }
-    override def hashCode = actOn.hashCode
-  }
+
 
   val humanAuthor = "public"
   def isHuman(stanza:MeTLStanza):Boolean = {humanAuthor.equals(stanza.author)}
@@ -295,7 +315,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   }
 
   private def logStanza(s: MeTLStanza, prefix:String):MeTLStanza = {
-    println(prefix + " (" + "author: " + s.author + ", " + "timestamp: " + s.timestamp + ")")
+    trace(prefix + " (" + "author: " + s.author + ", " + "timestamp: " + s.timestamp + ")")
     s
   }
 
@@ -318,26 +338,41 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
           enqueueStanza(stanza,simulatedStanzas)
         }
       }),
-      new StanzaTrigger((stanza:MeTLStanza) => {logStanza(stanza, "All")})
-    )
+      new StanzaTrigger(currentPage.receiveStanza _)
+    ).to[ListBuffer]
     serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner",
       (s:MeTLStanza) => { triggers.foreach(t => t.actOn(s))}))
 
     Schedule.schedule(this,SimulatorTick,500)
   }
 
-  def blockMarkup:NodeSeq = currentPage.blocks.map(b => {
+  def checkbox(checked:Boolean):NodeSeq = {
     val id = nextFuncName
     NodeSeq.fromSeq(List(
+      checked match {
+        case true => <input type="checkbox" id={id} disabled="true" checked="checked" />
+        case _ => <input type="checkbox" id={id} disabled="true" />
+      },
+      <label for={id}><span class="icon-txt"></span></label>))
+  }
+  def blockMarkup:NodeSeq = currentPage.blocks.map(b => {
+    NodeSeq.fromSeq(List(
       b match {
-        case c:TrainingControl => <div class="actioned">{
-          NodeSeq.fromSeq(List(
-            c.isActioned match {
-              case true => <input type="checkbox" id={id} disabled="true" checked="checked" />
-              case _ => <input type="checkbox" id={id} disabled="true" />
-            },
-            <label for={id}><span class="icon-txt"></span></label>))
-        }</div>
+        case c:TrainingControl => {
+          if(c.hurdle){
+            <div class="actioned">{
+              if(c.maxProgress > 0) {
+                Range(0,c.maxProgress).map(i => checkbox(c.progressMarker > i))
+              }
+              else {
+                checkbox(c.isActioned)
+              }
+            }</div>
+          }
+          else{
+            <span />
+          }
+        }
         case _ => <span />
       },
       <div class="control">{
@@ -345,7 +380,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
           case c:TrainingControl =>
             ajaxButton(c.label,() => {
               c.actioned
-              c.behaviour()
+              c.behaviour(c)
               SetHtml("exerciseControls",blockMarkup)
             },"class" -> "active")
           case c:TrainingInstruction => c.content

@@ -14,9 +14,10 @@ var Trainer = (function(){
         },
         flash:function(selector,complete){
             var delay = 250;
-            for(var i = 0; i < 2; i++){
+	    var max = 2;
+            for(var i = 0; i < max; i++){
                 $(selector,$("#simulation").contents()).animate({opacity:0},delay).animate({opacity:1},delay,function(){
-                    if(i == 3){
+                    if(i == max){
                         if(complete){
                             complete();
                         }
