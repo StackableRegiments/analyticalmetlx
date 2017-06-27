@@ -31,10 +31,16 @@ case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:
   var isActioned = false
   var progressMarker = 0
   var maxProgress = 0
+  var supplement:List[String] = Nil
+  var supplementOpen:Boolean = false
   def actioned = isActioned = true
   def progress = progressMarker = progressMarker + 1
   def reps(i:Int) = {
     maxProgress = i
+    this
+  }
+  def supplementary(notes:List[String]) = {
+    supplement = notes
     this
   }
 }
@@ -78,17 +84,26 @@ case class TrainingManual(actor:TrainerActor) {
   def el(label:String,content:String) = Elem.apply(null,label,scala.xml.Null,scala.xml.TopScope,Text(content))
   def p(content:String) = TrainingInstruction(el("p",content))
   def makeStudent(intent:String) = TrainingControl(
-    "Bring in some %s students".format(intent),c => {
+    "Bring in some students".format(intent),c => {
       c.progress
       actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
     }).reps(3)
+  val networkMonitor:TrainingControl = TrainingControl(
+    "How can I tell if there's a problem?",
+    _ => {
+      actor ! Flash(".meters")
+    }).supplementary(List(
+      "These three meters indicate three kinds of health.",
+      "The topmost meter watches for a healthy network connection, checking every time you do any action and also checking in the background periodically.  If the network ever fails health check completely, a red boundary will appear around these meters and remain red for the next five minutes.  This is to make you aware of a poor environment.",
+      "The center meter is about whether all of your students are with you.  This measures the number of students who are allowed to attend this session against the number of students who have joined the conversation.  This is only effective when your conversation is restricted to a particular enrolment context.  In this particular case, you are in a private conversation; only you are allowed to join, and only you are here.  One hundred percent!",
+      "The third meter measures overall activity in the room.  The green curve above the line indicates public activity, and the red curve below the line measures private activity.  This is the only interaction you are permitted to have with private content."
+    ))
   val inkTracker:TrainingControl = TrainingControl(
-    "Show me how to start inking",
+    "Draw a few strokes",
     _ => {
       actor ! new StanzaTrigger(s => {
         inkTracker.progress
         actor ! RefreshControls
-        println("Refreshing controls",inkTracker)
         s
       })
       actor ! ShowClick("#drawMode")
@@ -180,10 +195,7 @@ case class TrainingManual(actor:TrainerActor) {
           }
         ),
         p("Classroom spaces, the device you're using and network speed can affect whether the whiteboard works well for you."),
-        TrainingControl(
-          "How can I tell if there's a problem?",
-          _ => actor ! Highlight(".meters")
-        ),
+        networkMonitor,
         p("You can add several kinds of content to the space.  Your selection of Public versus Private at the time you add new content will determine whether that content is visible to others.  It is always visible to you, and you can change your mind later."),
         p("Try drawing some lines.  You can use your finger, or a stylus, or a mouse."),
         inkTracker,
@@ -377,12 +389,26 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
       },
       <div class="control">{
         b match {
-          case c:TrainingControl =>
-            ajaxButton(c.label,() => {
+          case c:TrainingControl => {
+            val supplementMarkup:NodeSeq = if(c.supplement.isEmpty) {
+              NodeSeq.Empty
+            }
+            else{
+              val toggleBehavior = () => {
+                c.supplementOpen = !c.supplementOpen
+                SetHtml("exerciseControls",blockMarkup)
+              }
+              c.supplementOpen match {
+                case true => NodeSeq.fromSeq(List(ajaxButton("Hide",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-minus-square-o"))) ++ c.supplement.map(s => <p class="supplement">{s}</p>)
+                case _ => ajaxButton("More",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-plus-square-o")
+              }
+            }
+            NodeSeq.fromSeq(List(ajaxButton(c.label,() => {
               c.actioned
               c.behaviour(c)
               SetHtml("exerciseControls",blockMarkup)
-            },"class" -> "active")
+            },"class" -> "active"))) ++ supplementMarkup
+          }
           case c:TrainingInstruction => c.content
         }
       }</div>
