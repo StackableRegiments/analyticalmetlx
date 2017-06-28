@@ -150,7 +150,7 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "Take me there",
           _ => actor ! pages(1),
-          false
+          hurdle = false
         )),
       Full(
         Call("Trainer.clearTools").cmd
@@ -183,12 +183,12 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "Show me the rest of the tools",
           _ => actor ! pages(2),
-          false
+          hurdle = false
         ),
         TrainingControl(
           "Show me exercise 1 again",
           _ => actor ! pages(0),
-          false
+          hurdle = false
         )
       ),
       Full(
@@ -226,7 +226,7 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "Show me exercise 2 again",
           _ => actor ! pages(1),
-          false
+          hurdle = false
         )
       ),
       Full(Call("Trainer.showTools").cmd),
@@ -285,7 +285,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     case SimulatorTick => {
       var furtherClaimsAllowed = true
       users = users.map {
-        case u@SimulatedUser(name,claim,focus,_,intention,_,history) if history.size >= name.size => u
+        case u@SimulatedUser(name,claim,focus,_,intention,_,history) if history.size >= name.length => u
         case u@SimulatedUser(name,claim,focus,_,intention,Watching(ticks),history) => rand.nextInt(2) match {
           case 1 if furtherClaimsAllowed => {
             val width = name.length * Alphabet.averageWidth
