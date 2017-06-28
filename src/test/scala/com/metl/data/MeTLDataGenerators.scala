@@ -110,6 +110,7 @@ trait MeTLDataGenerators {
     richTextIds <- genIdList(scala.util.Random.nextInt(30))
     imageIds <- genIdList(scala.util.Random.nextInt(30))
     videoIds <- genIdList(scala.util.Random.nextInt(30))
+    chatIds <- genIdList(scala.util.Random.nextInt(30))
     xTrans <- arbitrary[Double]
     yTrans <- arbitrary[Double]
     xOrigin <- arbitrary[Double]
@@ -119,7 +120,7 @@ trait MeTLDataGenerators {
     newPrivacy <- genPrivacy
     isDeleted <- arbitrary[Boolean]
     audiences <- genAudiences(scala.util.Random.nextInt(3))
-  } yield MeTLMoveDelta(ServerConfiguration.empty, author, timestamp, target, privacy, slide.toString, identity, xOrigin, yOrigin, inkIds, textIds, richTextIds, imageIds, videoIds, xTrans, yTrans, xScale, yScale, newPrivacy, isDeleted, audiences)
+  } yield MeTLMoveDelta(ServerConfiguration.empty, author, timestamp, target, privacy, slide.toString, identity, xOrigin, yOrigin, inkIds, textIds, richTextIds, imageIds, videoIds, chatIds, xTrans, yTrans, xScale, yScale, newPrivacy, isDeleted, audiences)
 
   def genImage = for {
     author <- genString(32)

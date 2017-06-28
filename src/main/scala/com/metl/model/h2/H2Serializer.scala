@@ -257,7 +257,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   override def fromMeTLText(i:MeTLText):H2Text = incCanvasContent(H2Text.create,i,"text").text(i.text).height(i.height).width(i.width).caret(i.caret).x(i.x).y(i.y).tag(i.tag).style(i.style).family(i.family).weight(i.weight).size(i.size).decoration(i.decoration).color(fromColor(i.color).toString)
   def toMeTLMoveDelta(i:H2MoveDelta):MeTLMoveDelta = {
     val cc = decCanvasContent(i)
-    MeTLMoveDelta(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,i.xOrigin,i.yOrigin,stringToStrings(i.inkIds.get),stringToStrings(i.textIds.get),stringToStrings(i.multiWordTextIds.get),stringToStrings(i.imageIds.get),stringToStrings(i.videoIds.get),i.xTranslate.get,i.yTranslate.get,i.xScale.get,i.yScale.get,toPrivacy(i.newPrivacy.get),i.isDeleted.get,cc.audiences)
+    MeTLMoveDelta(config,cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,i.xOrigin,i.yOrigin,stringToStrings(i.inkIds.get),stringToStrings(i.textIds.get),stringToStrings(i.multiWordTextIds.get),stringToStrings(i.imageIds.get),stringToStrings(i.videoIds.get),stringToStrings(i.charIds.get),i.xTranslate.get,i.yTranslate.get,i.xScale.get,i.yScale.get,toPrivacy(i.newPrivacy.get),i.isDeleted.get,cc.audiences)
   }
   protected def stringToStrings(s:String):Seq[String] = s match{
     case ss if ss == null => Nil

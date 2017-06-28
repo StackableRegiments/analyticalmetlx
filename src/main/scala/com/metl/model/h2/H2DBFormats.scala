@@ -192,6 +192,7 @@ class H2MoveDelta extends H2MeTLCanvasContent[H2MoveDelta]{
   object multiWordTextIds extends MappedText(this)
   object imageIds extends MappedText(this)
   object videoIds extends MappedText(this)
+  object charIds extends MappedText(this)
   object xOrigin extends MappedDouble(this)
   object yOrigin extends MappedDouble(this)
   object xTranslate extends MappedDouble(this)

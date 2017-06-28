@@ -81,7 +81,7 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
   test("add an ink and then delete it with a moveDelta") {
     forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
+      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
       h.addStanza(moveDelta)
       (h.getCanvasContents should not contain (ink))
@@ -91,7 +91,7 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
   test("add an ink and then delete it with a moveDelta and then undelete it") {
     forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
+      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
       h.addStanza(moveDelta)
       (h.getCanvasContents should not contain (ink))
@@ -109,7 +109,7 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
   test("add an ink and then delete it with a moveDelta and then undelete it and then filter the history") {
     forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
+      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
       h.addStanza(moveDelta)
       (h.getCanvasContents should not contain (ink))
@@ -130,7 +130,7 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
   test("add an ink and then delete it with a moveDelta and then undelete it and then filter the history and then merge the history") {
     forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
+      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
       h.addStanza(moveDelta)
       (h.getCanvasContents should not contain (ink))

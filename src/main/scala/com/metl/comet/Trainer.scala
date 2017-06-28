@@ -82,6 +82,7 @@ import ScanDirections._
 trait SimulatedActivity
 case class Watching(ticks:Int) extends SimulatedActivity
 case class Scribbling(what:List[Char]) extends SimulatedActivity
+case class Typing(what:List[Char]) extends SimulatedActivity
 
 case class Highlight(selector:String)
 case class Flash(selector:String)
@@ -149,7 +150,7 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "Take me there",
           _ => actor ! pages(1),
-          false
+          hurdle = false
         )),
       Full(
         Call("Trainer.clearTools").cmd
@@ -182,12 +183,12 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "Show me the rest of the tools",
           _ => actor ! pages(2),
-          false
+          hurdle = false
         ),
         TrainingControl(
           "Show me exercise 1 again",
           _ => actor ! pages(0),
-          false
+          hurdle = false
         )
       ),
       Full(
@@ -225,7 +226,7 @@ case class TrainingManual(actor:TrainerActor) {
         TrainingControl(
           "Show me exercise 2 again",
           _ => actor ! pages(1),
-          false
+          hurdle = false
         )
       ),
       Full(Call("Trainer.showTools").cmd),
@@ -269,7 +270,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     }
   }
 
-  override def lowPriority  = {
+  override def lowPriority = {
     case Highlight(selector) => partialUpdate(Call("Trainer.highlight",JString(selector)).cmd)
     case Flash(selector) => partialUpdate(Call("Trainer.flash",JString(selector)).cmd)
     case ShowClick(selector) => partialUpdate(Call("Trainer.showClick",JString(selector)).cmd)
@@ -284,7 +285,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     case SimulatorTick => {
       var furtherClaimsAllowed = true
       users = users.map {
-        case u@SimulatedUser(name,claim,focus,_,intention,_,history) if history.size >= name.size => u
+        case u@SimulatedUser(name,claim,focus,_,intention,_,history) if history.size >= name.length => u
         case u@SimulatedUser(name,claim,focus,_,intention,Watching(ticks),history) => rand.nextInt(2) match {
           case 1 if furtherClaimsAllowed => {
             val width = name.length * Alphabet.averageWidth
@@ -296,7 +297,9 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
             }
             val claim = findFreeSpace(width, direction,users.map(_.claim))
             furtherClaimsAllowed = false
+            // Kick off Typing instead of Scribbling. How to choose which?
             u.copy(activity=Scribbling(name.toLowerCase.toList), focus=Point(claim.left,claim.top,0), claim=claim, attention=direction)
+//            u.copy(activity=Typing(name.toLowerCase.toList), focus=Point(claim.left,claim.top,0), claim=claim, attention=direction)
           }
           case _ => u.copy(activity = Watching(ticks + 1))
         }
@@ -305,17 +308,35 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
         case u@SimulatedUser(name,claim,focus,_,intention,Scribbling(h :: t),history) => Alphabet.geometry(h,focus) match {
           case g => {
             currentSlide.map(slide => {
+              val room = MeTLXConfiguration.getRoom(slide, server)
+              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLInk(serverConfig, name, new java.util.Date().getTime, sum, sum,
+                geometry, intention match {
+                  case "benign" => Color(255, 255, 0, 0)
+                  case "malicious" => Color(255, 0, 0, 255)
+                  case _ => Color(255, 0, 255, 0)
+                }, 2.0, false, "presentationSpace", Privacy.PUBLIC, slide.toString, nextFuncName)))
+            })
+            u.pan(g.width).copy(activity = Scribbling(t), history = Scribbling(List(h)) :: u.history)
+          }
+        }
+        case u@SimulatedUser(name,claim,focus,_,intention,Typing(Nil),history) => u.copy(activity = Watching(0))
+        case u@SimulatedUser(name,claim,focus,_,intention,Typing(h :: t),history) if h == ' ' => u.pan(Alphabet.space.width).copy(activity = Typing(t),history = Typing(List(h)) :: u.history)
+/*
+        case u@SimulatedUser(name,claim,focus,_,intention,Typing(h :: t),history) => Alphabet.geometry(h,focus) match {
+          case g => {
+            currentSlide.map(slide => {
               val room = MeTLXConfiguration.getRoom(slide,server)
-              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLInk(serverConfig,name,new java.util.Date().getTime,sum,sum,
-                geometry,intention match {
+              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLSingleChar(serverConfig,name,new java.util.Date().getTime,"b",x,y,width,height,fontFamily,fontSize,
+                intention match {
                   case "benign" => Color(255,255,0,0)
                   case "malicious" => Color(255,0,0,255)
                   case _ => Color(255,0,255,0)
-                },2.0,false,"presentationSpace",Privacy.PUBLIC,slide.toString,nextFuncName)))
+                },2.0,nextFuncName,"presentationSpace",Privacy.PUBLIC,slide.toString)))
             })
-            u.pan(g.width).copy(activity = Scribbling(t),history = Scribbling(List(h)) :: u.history)
+            u.pan(g.width).copy(activity = Scribbling(t),history = Typing(List(h)) :: u.history)
           }
         }
+*/
       }
       partialUpdate(Call("Trainer.simulatedUsers",Extraction.decompose(users)).cmd)
       Schedule.schedule(this,SimulatorTick,1000)

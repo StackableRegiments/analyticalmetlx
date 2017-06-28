@@ -1,7 +1,18 @@
+1.16.2
+METL-649: Bugfix: Problem report fails when LiftAuthStateData does not contain expected values.
+
+1.16.1
+METL-393: Bugfix: Banned students should not be able to chat with other students.
+METL-614: Bugfix: Chat entries created by Mother are not replayed to new entrants to the conversation.
+METL-621: Bugfix: Banning fails when content from multiple students is selected.
+
 1.15.1
 METL-631: Bugfix: Extremely large text box makes other content super small.
 METL-632: Improvement: Add UserAgent string to Problem Report.
 METL-642: Improvement: Unthrottle everything but blit().
+
+1.14.2
+METL-631: Bugfix: Extremely large text box makes other content super small.
 
 1.14.1
 METL-625: Improvement: Include user email address in Problem Report email.

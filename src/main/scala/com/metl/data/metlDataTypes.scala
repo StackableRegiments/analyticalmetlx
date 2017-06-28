@@ -326,6 +326,8 @@ case class MeTLChatMessage(override val server:ServerConfiguration, override val
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLChatMessage = Stopwatch.time("MeTLChatMessage.adjustTimestamp",{
     copy(timestamp = newTime)
   })
+  def adjustAudience(newAudiences:List[Audience]):MeTLChatMessage =
+    MeTLChatMessage(server,author,timestamp,identity,contentType,content,context,newAudiences)
 }
 object MeTLChatMessage {
   def empty = MeTLChatMessage(ServerConfiguration.empty,"",0L,"","","","",Nil)
@@ -333,6 +335,9 @@ object MeTLChatMessage {
 
 case class MeTLSingleChar(override val server:ServerConfiguration,override val author:String, override val timestamp:Long, char:String,x:Double,y:Double,width:Double,height:Double,fontFamily:String,fontSize:Double,color:Color, box:String, override val identity:String,override val target:String, override val privacy:Privacy, override val slide:String, override val audiences:List[Audience] = Nil) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences,1.0,1.0){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime) = Stopwatch.time("MeTLSingleChar.adjustTimestamp",copy(timestamp = newTime))
+  override def generateDirty(dirtyTime:Long = new java.util.Date().getTime):MeTLDirtyText = Stopwatch.time("MeTLSingleChar.generateDirty",{
+    MeTLDirtyText(server,author,dirtyTime,target,privacy,slide,identity)
+  })
 }
 
 object MeTLSingleChar{
@@ -630,23 +635,25 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
   multiWordTextIds:Seq[String],
   imageIds:Seq[String],
   videoIds:Seq[String],
+  charIds:Seq[String],
   xTranslate:Double,yTranslate:Double,xScale:Double,yScale:Double,newPrivacy:Privacy,isDeleted:Boolean,override val audiences:List[Audience] = Nil) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences){
   override def matches(other:MeTLCanvasContent) = other match {
     case o:MeTLMoveDelta => super.matches(o)
     case _ => false
   }
   override def generateNewIdentity(descriptor:String):MeTLMoveDelta = copy(identity = genNewIdentity("newMeTLMoveDelta:"+descriptor))
-  def generateDirtier(newInkIds:Seq[String],newTextIds:Seq[String],newMultiWordTextIds:Seq[String],newImageIds:Seq[String],newVideoIds:Seq[String],replacementPrivacy:Privacy):MeTLMoveDelta = Stopwatch.time("MeTLMoveDelta.generateDirtier",{
+  def generateDirtier(newInkIds:Seq[String],newTextIds:Seq[String],newMultiWordTextIds:Seq[String],newImageIds:Seq[String],newVideoIds:Seq[String],newCharIds:Seq[String],replacementPrivacy:Privacy):MeTLMoveDelta = Stopwatch.time("MeTLMoveDelta.generateDirtier",{
     copy(privacy = replacementPrivacy,identity = genNewIdentity("dirtierGeneratedFrom(%s)".format(identity)),
       inkIds = newInkIds,
       textIds = newTextIds,
       multiWordTextIds = newMultiWordTextIds,
       imageIds = newImageIds,
       videoIds = newVideoIds,
+      charIds = newCharIds,
       xTranslate = 0.0,yTranslate = 0.0,xScale = 1.0,yScale = 1.0,isDeleted = true)
   })
-  def replaceIds(newInkIds:Seq[String],newTextIds:Seq[String],newMultiWordTextIds:Seq[String],newImageIds:Seq[String],newVideoIds:Seq[String],replacementPrivacy:Privacy):MeTLMoveDelta = Stopwatch.time("MeTLMoveDelta.replaceIds",{
-    copy(privacy = replacementPrivacy,identity = genNewIdentity("adjusterGeneratedFrom(%s)".format(identity)),inkIds = newInkIds,textIds = newTextIds,multiWordTextIds = newMultiWordTextIds, imageIds = newImageIds, videoIds = newVideoIds)
+  def replaceIds(newInkIds:Seq[String],newTextIds:Seq[String],newMultiWordTextIds:Seq[String],newImageIds:Seq[String],newVideoIds:Seq[String],newCharIds:Seq[String],replacementPrivacy:Privacy):MeTLMoveDelta = Stopwatch.time("MeTLMoveDelta.replaceIds",{
+    copy(privacy = replacementPrivacy,identity = genNewIdentity("adjusterGeneratedFrom(%s)".format(identity)),inkIds = newInkIds,textIds = newTextIds,multiWordTextIds = newMultiWordTextIds, imageIds = newImageIds, videoIds = newVideoIds,charIds = newCharIds)
   })
   override def adjustVisual(newXTranslate:Double,newYTranslate:Double,newXScale:Double,newYScale:Double):MeTLMoveDelta = Stopwatch.time("MeTLMoveDelta.adjustVisual",{
     copy(xOrigin = xOrigin + newXTranslate,yOrigin = yOrigin + newYTranslate,xTranslate = xTranslate + newXTranslate,yTranslate = yTranslate + newYTranslate,xScale = xScale * newXScale,yScale = yScale * newYScale,privacy = newPrivacy)
@@ -676,6 +683,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
       case t:MeTLMultiWordText if (isDirtierFor(t,shouldTestPrivacy)) => t.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
       case i:MeTLImage if (isDirtierFor(i,shouldTestPrivacy)) => i.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
       case i:MeTLVideo if (isDirtierFor(i,shouldTestPrivacy)) => i.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
+      case t:MeTLSingleChar if (isDirtierFor(t,shouldTestPrivacy)) => t.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
       case _ => cc
     }
   }
@@ -694,7 +702,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
         val privateMultiWordTextsToPublicize = privateMultiWordTexts.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val privateVideosToPublicize = privateVideos.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val privateCharsToPublicize = privateChars.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
-        val privateAuthors = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts ::: privateVideos).map(_.author).distinct
+        val privateAuthors = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts ::: privateVideos ::: privateChars).map(_.author).distinct
         val privateDirtiers = (privateAuthors.length > 0) match {
           case true => Map(privateAuthors.map(pa => (
             pa,
@@ -703,18 +711,22 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
               privateTexts.filter(_.author == pa).map(i => i.identity),
               privateMultiWordTexts.filter(_.author == pa).map(i => i.identity),
               privateImages.filter(_.author == pa).map(i => i.identity),
-              privateVideos.filter(_.author == pa).map(i => i.identity),notP)
-            ))
+              privateVideos.filter(_.author == pa).map(i => i.identity),
+              privateChars.filter(_.author == pa).map(i => i.identity),
+              notP)
+          ))
           ):_*)
           case _ => Map.empty[String,List[MeTLStanza]]
         }
-        val publicAdjuster = ((publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts ::: publicVideos).length > 0) match {
+        val publicAdjuster = ((publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts ::: publicVideos ::: publicChars).length > 0) match {
           case true => List(replaceIds(
             publicInks.map(i=>i.identity) ::: publicHighlighters.map(i => i.identity),
             publicTexts.map(i=>i.identity),
             publicMultiWordTexts.map(i=>i.identity),
             publicImages.map(i=>i.identity),
-            publicVideos.map(i=>i.identity),p))
+            publicVideos.map(i=>i.identity),
+            publicChars.map(i=>i.identity),
+            p))
           case _ => List.empty[MeTLStanza]
         }
         (publicAdjuster :::
@@ -723,7 +735,9 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
           privateTextsToPublicize :::
           privateImagesToPublicize :::
           privateVideosToPublicize :::
-          privateMultiWordTextsToPublicize, privateDirtiers)
+          privateMultiWordTextsToPublicize :::
+          privateCharsToPublicize,
+          privateDirtiers)
       }
       case p:Privacy if p == Privacy.PRIVATE => {
         val notP = Privacy.PUBLIC
@@ -733,17 +747,20 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
         val publicImagesToPrivatize = publicImages.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val publicVideosToPrivatize = publicVideos.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val publicMultiWordTextsToPrivatize = publicMultiWordTexts.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
-        val publicDirtiers = ((publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts ::: publicVideos).length > 0) match {
+        val publicCharsToPrivatize = publicChars.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
+        val publicDirtiers = ((publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts ::: publicChars ::: publicVideos).length > 0) match {
           case true => List(generateDirtier(
             publicInks.map(i => i.identity) ::: publicHighlighters.map(i => i.identity),
             publicTexts.map(i => i.identity),
             publicMultiWordTexts.map(i => i.identity),
             publicImages.map(i => i.identity),
-            publicVideos.map(i => i.identity),notP))
+            publicVideos.map(i => i.identity),
+            publicChars.map(i => i.identity),
+            notP))
           case _ => List.empty[MeTLStanza]
         }
-        val publicContent = (publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts ::: publicVideos)
-        val privateContent = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts ::: privateVideos)
+        val publicContent = (publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts ::: publicChars ::: publicVideos)
+        val privateContent = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts ::: privateChars ::: privateVideos)
         val publicAuthors = publicContent.map(_.author).distinct
         val privateAuthors = privateContent.map(_.author).distinct
         val privateAdjusters = (publicAuthors.length > 0 || privateAuthors.length > 0) match {
@@ -755,12 +772,15 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
               publicImagesToPrivatize.filter(_.author == pa) :::
               publicMultiWordTextsToPrivatize.filter(_.author == pa) :::
               publicVideosToPrivatize.filter(_.author == pa) :::
+              publicCharsToPrivatize.filter(_.author == pa) :::
               List(replaceIds(
                 privateInks.filter(_.author == pa).map(i => i.identity) ::: privateHighlighters.map(i => i.identity),
                 privateTexts.filter(_.author == pa).map(i => i.identity),
                 privateMultiWordTexts.filter(_.author == pa).map(i => i.identity),
                 privateImages.filter(_.author == pa).map(i => i.identity),
-                privateVideos.filter(_.author == pa).map(i => i.identity),p)
+                privateVideos.filter(_.author == pa).map(i => i.identity),
+                privateChars.filter(_.author == pa).map(i => i.identity),
+                p)
               ))
           ):_*)
           case _ => Map.empty[String,List[MeTLStanza]]
@@ -768,7 +788,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
         (publicDirtiers,privateAdjusters)
       }
       case _ => {
-        val privAuthors = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts ::: privateVideos).map(_.author).distinct
+        val privAuthors = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts ::: privateChars ::: privateVideos).map(_.author).distinct
         val privDeltas = (privAuthors.length > 0) match {
           case true => Map(privAuthors.map(pa => (
             pa,
@@ -777,18 +797,22 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
               privateTexts.filter(_.author == pa).map(i=>i.identity),
               privateMultiWordTexts.filter(_.author == pa).map(i=>i.identity),
               privateImages.filter(_.author == pa).map(i=>i.identity),
-              privateVideos.filter(_.author == pa).map(i=>i.identity),Privacy.PRIVATE)
+              privateVideos.filter(_.author == pa).map(i=>i.identity),
+              privateChars.filter(_.author == pa).map(i=>i.identity),
+              Privacy.PRIVATE)
             )
           )):_*)
           case _ => Map.empty[String,List[MeTLStanza]]
         }
-        val pubDelta = ((publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts ::: publicVideos).length > 0) match {
+        val pubDelta = ((publicInks ::: publicHighlighters ::: publicTexts ::: publicImages ::: publicMultiWordTexts ::: publicChars ::: publicVideos).length > 0) match {
           case true => List(replaceIds(
             publicInks.map(i=>i.identity) ::: publicHighlighters.map(i => i.identity),
             publicTexts.map(i=>i.identity),
             publicMultiWordTexts.map(i=>i.identity),
             publicImages.map(i=>i.identity),
-            publicVideos.map(i=>i.identity),Privacy.PUBLIC))
+            publicVideos.map(i=>i.identity),
+            publicChars.map(i=>i.identity),
+            Privacy.PUBLIC))
           case _ => List.empty[MeTLStanza]
         }
         (pubDelta,privDeltas)
@@ -802,11 +826,12 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
     case i:MeTLVideo => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && videoIds.contains(i.identity)
     case i:MeTLText => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && textIds.contains(i.identity)
     case i:MeTLMultiWordText => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && multiWordTextIds.contains(i.identity)
+    case i:MeTLSingleChar => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && charIds.contains(i.identity)
     case _ => false
   }
 }
 case object MeTLMoveDelta{
-  def empty = MeTLMoveDelta(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","",0.0,0.0,Nil,Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,false,Nil)
+  def empty = MeTLMoveDelta(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","",0.0,0.0,Nil,Nil,Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,false,Nil)
 }
 
 case class MeTLDirtyInk(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,override val target:String,override val privacy:Privacy,override val slide:String,override val identity:String,override val audiences:List[Audience] = Nil) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences) {
@@ -836,6 +861,7 @@ case class MeTLDirtyText(override val server:ServerConfiguration,override val au
   override def isDirtierFor(other:MeTLCanvasContent) = other match {
     case o:MeTLText => super.matches(o) && o.timestamp < timestamp
     case o:MeTLMultiWordText => super.matches(o) && o.timestamp < timestamp
+    case o:MeTLSingleChar => super.matches(o) && o.timestamp < timestamp
     case _ => false
   }
   override def alterPrivacy(newPrivacy:Privacy):MeTLDirtyText = copy(privacy=newPrivacy)

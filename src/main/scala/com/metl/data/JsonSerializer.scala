@@ -457,6 +457,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val multiWordTextIds = getListOfStringsByName(input,"multiWordTextIds")
         val imageIds = getListOfStringsByName(input,"imageIds")
         val videoIds = getListOfStringsByName(input,"videoIds")
+        val charIds = getListOfStringsByName(input,"charIds")
         val xTranslate = getDoubleByName(input,"xTranslate")
         val yTranslate = getDoubleByName(input,"yTranslate")
         val xScale = getDoubleByName(input,"xScale")
@@ -465,7 +466,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val isDeleted = getBooleanByName(input,"isDeleted")
         val xOrigin = getDoubleByName(input,"xOrigin")
         val yOrigin = getDoubleByName(input,"yOrigin")
-        MeTLMoveDelta(config,mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,xOrigin,yOrigin,inkIds,textIds,multiWordTextIds,imageIds,videoIds,xTranslate,yTranslate,xScale,yScale,newPrivacy,isDeleted,mc.audiences)
+        MeTLMoveDelta(config,mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,xOrigin,yOrigin,inkIds,textIds,multiWordTextIds,imageIds,videoIds,charIds,xTranslate,yTranslate,xScale,yScale,newPrivacy,isDeleted,mc.audiences)
       }
       case _ => MeTLMoveDelta.empty
     }

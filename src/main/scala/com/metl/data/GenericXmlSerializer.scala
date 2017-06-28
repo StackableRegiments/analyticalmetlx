@@ -201,6 +201,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val multiWordTextIds = getListOfStringsByNameWithin(input,"multiWordTextId","multiWordTextIds")
     val imageIds = getListOfStringsByNameWithin(input,"imageId","imageIds")
     val videoIds = getListOfStringsByNameWithin(input,"videoId","videoIds")
+    val charIds = getListOfStringsByNameWithin(input,"charId","charIds")
     val xTranslate = getDoubleByName(input,"xTranslate")
     val yTranslate = getDoubleByName(input,"yTranslate")
     val xScale = getDoubleByName(input,"xScale")
@@ -209,7 +210,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val isDeleted = getBooleanByName(input,"isDeleted")
     val xOrigin = getDoubleByName(input,"xOrigin")
     val yOrigin = getDoubleByName(input,"yOrigin")
-    MeTLMoveDelta(config,m.author,m.timestamp,c.target,c.privacy,c.slide,c.identity,xOrigin,yOrigin,inkIds,textIds,multiWordTextIds,imageIds,videoIds,xTranslate,yTranslate,xScale,yScale,newPrivacy,isDeleted,m.audiences)
+    MeTLMoveDelta(config,m.author,m.timestamp,c.target,c.privacy,c.slide,c.identity,xOrigin,yOrigin,inkIds,textIds,multiWordTextIds,imageIds,videoIds,charIds,xTranslate,yTranslate,xScale,yScale,newPrivacy,isDeleted,m.audiences)
   })
   override def fromMeTLMoveDelta(input:MeTLMoveDelta):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLMoveDelta", {
     canvasContentToXml("moveDelta",input, Seq(
