@@ -44,8 +44,21 @@ case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:
     this
   }
 }
-case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd]) {
-  def receiveStanza(s:MeTLStanza):MeTLStanza = s
+case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd],triggers:List[StanzaTrigger] = List.empty[StanzaTrigger]) {
+  def receiveStanza(stanza:MeTLStanza):MeTLStanza = {
+    triggers.foreach(t => t.actOn(stanza))
+    stanza
+  }
+}
+
+class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s) {
+  override def equals(other:Any):Boolean = {
+    other match {
+      case ost:StanzaTrigger => ost.actOn == actOn
+      case _ => false
+    }
+  }
+  override def hashCode = actOn.hashCode
 }
 
 case object SimulatorTick
@@ -78,6 +91,7 @@ case class ClaimedArea(left:Double,top:Double,right:Double,bottom:Double,width:D
 case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:ScanDirection,intention:String,activity:SimulatedActivity,history:List[SimulatedActivity]){
   def pan(x:Int,y:Int = 0) = copy(focus = Point(focus.x + x,focus.y + y,0))
 }
+
 case class TrainingManual(actor:TrainerActor) {
   import Dimensions._
   val namer = new DataFactory
@@ -139,7 +153,8 @@ case class TrainingManual(actor:TrainerActor) {
         )),
       Full(
         Call("Trainer.clearTools").cmd
-      )
+      ),
+      List(new StanzaTrigger((stanza:MeTLStanza) => { actor.logStanza(stanza,"Exercise 1")}))
     ),
     TrainingPage(Text("Exercise 2"),
       Text("Sharing an open space"),
@@ -181,7 +196,8 @@ case class TrainingManual(actor:TrainerActor) {
           Call("Trainer.hide",".permission-states").cmd &
           Call("Trainer.hide","#floatingToggleContainer").cmd &
           Call("Trainer.hide",".meters").cmd
-      )
+      ),
+      List(new StanzaTrigger((stanza:MeTLStanza) => { actor.logStanza(stanza,"Exercise 2")}))
     ),
     TrainingPage(Text("Exercise 3"),
       Text("Your creative space"),
@@ -212,34 +228,27 @@ case class TrainingManual(actor:TrainerActor) {
           false
         )
       ),
-      Full(Call("Trainer.showTools").cmd)
+      Full(Call("Trainer.showTools").cmd),
+      List(new StanzaTrigger((stanza:MeTLStanza) => { actor.logStanza(stanza,"Exercise 3")}))
     )
   )
 }
-class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s) {
-  override def equals(other:Any):Boolean = {
-    other match {
-      case ost:StanzaTrigger => ost.actOn == actOn
-      case _ => false
-    }
-  }
-  override def hashCode = actOn.hashCode
-}
+
 class TrainerActor extends StronglyTypedJsonActor with Logger {
   import Dimensions._
   implicit val formats = net.liftweb.json.DefaultFormats
-  var manual = new TrainingManual(this)
-  var users = List.empty[SimulatedUser]
+  var manual = TrainingManual(this)
+  var users: List[SimulatedUser] = List.empty[SimulatedUser]
   def registerWith = MeTLActorManager
-  var currentPage:TrainingPage = manual.pages(0)
+  var currentPage:TrainingPage = manual.pages.head
   protected var currentConversation:Box[Conversation] = Empty
   protected var currentSlide:Box[String] = Empty
-  protected val username = Globals.currentUser.is
-  protected lazy val serverConfig = ServerConfiguration.default
-  protected lazy val server = serverConfig.name
-  protected var triggers = ListBuffer.empty[StanzaTrigger]
+  protected val username: String = Globals.currentUser.is
+  protected lazy val serverConfig: ServerConfiguration = ServerConfiguration.default
+  protected lazy val server: String = serverConfig.name
+  protected var triggers: ListBuffer[StanzaTrigger] = ListBuffer.empty[StanzaTrigger]
 
-  override lazy val functionDefinitions = List.empty[ClientSideFunction]
+  override lazy val functionDefinitions: List[ClientSideFunction] = List.empty[ClientSideFunction]
 
   val rand = new scala.util.Random
   val sum = 0.0
@@ -313,8 +322,6 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     }
   }
 
-
-
   val humanAuthor = "public"
   def isHuman(stanza:MeTLStanza):Boolean = {humanAuthor.equals(stanza.author)}
 
@@ -322,13 +329,13 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   val simulatedStanzas = new Queue[MeTLStanza]()
   def enqueueStanza(stanza: MeTLStanza, queue: Queue[MeTLStanza]):MeTLStanza = {
     queue += stanza
-    println("Queue(" + queue.size + "): " + queue.toString)
+    trace("Queue(" + queue.size + "): " + queue.toString)
     stanza
   }
 
-  private def logStanza(s: MeTLStanza, prefix:String):MeTLStanza = {
-    trace(prefix + " (" + "author: " + s.author + ", " + "timestamp: " + s.timestamp + ")")
-    s
+  def logStanza(stanza: MeTLStanza, prefix:String):MeTLStanza = {
+    trace(prefix + " (" + "author: " + stanza.author + ", " + "timestamp: " + stanza.timestamp + ", " + stanza + ")")
+    stanza
   }
 
   override def localSetup = {
@@ -340,20 +347,38 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     currentSlide = Full(slide)
 
     triggers = List(
+      // Conversation triggers (all Stanzas)
       new StanzaTrigger((stanza:MeTLStanza) => {
-        if(isHuman(stanza)) {
-          logStanza(stanza,"Human")
-          enqueueStanza(stanza,humanStanzas)
-        }
-        else {
-          logStanza(stanza,"Simulated")
-          enqueueStanza(stanza,simulatedStanzas)
+        logStanza(stanza,"--- Conversation")
+        stanza match {
+          case _:Attendance => stanza
+          case _:MeTLCanvasContent => {
+            if(isHuman(stanza)) {
+              logStanza(stanza,"Human")
+              enqueueStanza(stanza,humanStanzas)
+            }
+    //        else {
+    //          logStanza(stanza,"Simulated")
+    //          enqueueStanza(stanza,simulatedStanzas)
+    //        }
+            stanza
+          }
+          case _ => stanza
         }
       }),
-      new StanzaTrigger(currentPage.receiveStanza _)
+      // Page triggers (only CanvasContent)
+      new StanzaTrigger((stanza:MeTLStanza) => {
+        logStanza(stanza,"--- Page")
+        stanza match {
+          case _: MeTLCanvasContent =>
+            logStanza(stanza,"CanvasContent")
+            currentPage.receiveStanza(stanza)
+          case _ => stanza
+        }
+      })
     ).to[ListBuffer]
-    serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner",
-      (s:MeTLStanza) => { triggers.foreach(t => t.actOn(s))}))
+
+    serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner", (s: MeTLStanza) => { triggers.foreach(t => t.actOn(s))}))
 
     Schedule.schedule(this,SimulatorTick,500)
   }
