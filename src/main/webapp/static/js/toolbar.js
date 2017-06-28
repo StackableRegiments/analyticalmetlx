@@ -108,10 +108,10 @@ function scaleWorldToVisual(i,visual){
     var p = proportion(boardWidth,boardHeight);
     var scale;
     if(p > 1){//Viewbox wider than board
-        scale = visual[2] / boardWidth;
+        scale = boardHeight / boardWidth;
     }
     else{//Viewbox narrower than board
-        scale = visual[3] / boardHeight;
+        scale = boardWidth / boardHeight;
     }
     return i / scale;
 }

@@ -940,7 +940,10 @@ function render(content,hq,incCanvasContext){
 }
 var blit = function(canvasContext,content){
     try {
-        render(content == undefined ? boardContent : content,false,canvasContext == undefined ? boardContext : canvasContext);
+        render(
+	    content == undefined ? boardContent : content,
+	    false,
+	    canvasContext == undefined ? boardContext : canvasContext);
     } catch(e){
         console.log("exception in render:",e);
     }
@@ -987,7 +990,7 @@ function clearBoard(incContext,rect){
 var IncludeView = (function(){
     var fitToRequested = function(incX,incY,incW,incH,notFollowable){//Include at least this much content in your view
         var shouldUpdateRequestedViewbox = false;
-	console.log("IncludeView.fitToRequested",incX,incY,incW,incH,notFollowable)
+        console.log("IncludeView.fitToRequested",incX,incY,incW,incH,notFollowable)
         var x = incX;
         if (x == undefined){
             x = requestedViewboxX;

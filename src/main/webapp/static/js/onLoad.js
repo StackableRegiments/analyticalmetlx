@@ -113,9 +113,13 @@ var Pan = {
         takeControlOfViewbox(true);
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
-        TweenController.translateViewboxRelative(xDelta * xScale, yDelta * yScale);
+	var x = xDelta * xScale;
+	var y = yDelta * yScale;
+	console.log(viewboxWidth,viewboxHeight,boardWidth,boardHeight);
+	console.log(xDelta,yDelta,x,y);
+        TweenController.translateViewboxRelative(x,y);
     }
-}
+};
 var Zoom = (function(){
     var zoomFactor = 1.2;
     var maxZoomOut = 3;
@@ -220,8 +224,7 @@ var TweenController = (function(){
         return easingAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var translateViewboxFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
-        return easingAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
-        //return instantAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
+        return instantAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var panViewboxRelativeFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
         return easingAlterViewboxFunction(xDelta + viewboxX,yDelta + viewboxY,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
@@ -249,6 +252,7 @@ var TweenController = (function(){
     };
     var throttleSpeed = 30;
     var instantAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
+        console.log("instantAlterViewboxFunction",finalX,finalY,finalWidth,finalHeight);
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
                 onComplete();
