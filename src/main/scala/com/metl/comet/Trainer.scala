@@ -329,12 +329,12 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   val simulatedStanzas = new Queue[MeTLStanza]()
   def enqueueStanza(stanza: MeTLStanza, queue: Queue[MeTLStanza]):MeTLStanza = {
     queue += stanza
-    println("Queue(" + queue.size + "): " + queue.toString)
+    trace("Queue(" + queue.size + "): " + queue.toString)
     stanza
   }
 
   def logStanza(stanza: MeTLStanza, prefix:String):MeTLStanza = {
-    println(prefix + " (" + "author: " + stanza.author + ", " + "timestamp: " + stanza.timestamp + ", " + stanza + ")")
+    trace(prefix + " (" + "author: " + stanza.author + ", " + "timestamp: " + stanza.timestamp + ", " + stanza + ")")
     stanza
   }
 
