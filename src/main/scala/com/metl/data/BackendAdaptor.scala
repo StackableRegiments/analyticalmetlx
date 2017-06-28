@@ -168,6 +168,7 @@ object MockData extends ResourceLoader {
         List(textId),
         List(imageId),
         Nil,
+        Nil,
         -50.0,
         -50.0,
         1.0,

@@ -461,6 +461,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       case i:MeTLInk => s.inkIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
       case i:MeTLText => s.textIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
       case i:MeTLMultiWordText => s.multiWordTextIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
+      case i:MeTLSingleChar => s.multiWordTextIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
       case i:MeTLImage => s.imageIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
       case i:MeTLVideo => s.videoIds.contains(i.identity) && i.timestamp < s.timestamp && i.privacy == s.privacy
     }
