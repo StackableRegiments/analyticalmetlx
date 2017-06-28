@@ -680,8 +680,10 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
     cc match {
       case i:MeTLInk if (isDirtierFor(i,shouldTestPrivacy)) => i.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
       case t:MeTLText if (isDirtierFor(t,shouldTestPrivacy)) => t.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
+      case t:MeTLMultiWordText if (isDirtierFor(t,shouldTestPrivacy)) => t.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
       case i:MeTLImage if (isDirtierFor(i,shouldTestPrivacy)) => i.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
       case i:MeTLVideo if (isDirtierFor(i,shouldTestPrivacy)) => i.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
+      case t:MeTLSingleChar if (isDirtierFor(t,shouldTestPrivacy)) => t.adjustVisual(xTranslate + offsetX,yTranslate + offsetY,xScale,yScale).adjustTimestamp(timestamp).alterPrivacy(newPrivacy)
       case _ => cc
     }
   }
@@ -700,7 +702,7 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
         val privateMultiWordTextsToPublicize = privateMultiWordTexts.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val privateVideosToPublicize = privateVideos.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
         val privateCharsToPublicize = privateChars.map(i => adjustIndividualContent(i,false).generateNewIdentity("adjustedBy(%s)".format(identity)))
-        val privateAuthors = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts ::: privateVideos).map(_.author).distinct
+        val privateAuthors = (privateInks ::: privateHighlighters ::: privateTexts ::: privateImages ::: privateMultiWordTexts ::: privateVideos ::: privateChars).map(_.author).distinct
         val privateDirtiers = (privateAuthors.length > 0) match {
           case true => Map(privateAuthors.map(pa => (
             pa,
