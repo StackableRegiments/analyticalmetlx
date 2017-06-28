@@ -665,19 +665,24 @@ class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],va
     })
     res.getWriter.println(
 """<html>
-  %s
-  <form method="post" action="%s">
     %s
-    %s
-    <input type="submit" value"login"/>
-  </form>
+    <form method="post" action="%s">
+      %s
+      %s
+      <input type="submit" value"login"/>
+    </form>
+    <script>
+    window.onload = function(){
+      document.getElementById("username").focus();
+    }
+    </script>
 </html>""".format(
       descriptiveHtml,
       getRequestRedirect(req),
-      getReqId(req).map(reqId => """<input type="hidden" name="%s" value="%s"/>""".format(reqIdParameter,reqId)).getOrElse(""), 
+      getReqId(req).map(reqId => """<input type="hidden" name="%s" value="%s"/>""".format(reqIdParameter,reqId)).getOrElse(""),
       fields.flatMap(f => {
         authSession.gensymMap.get(f).map(securedName => {
-          """<label for="%s">%s</label><input name="%s" type="text"/>""".format(securedName,f,securedName)
+          """<label for="%s">%s</label><input id="username" name="%s" type="text"/>""".format(securedName,f,securedName)
         })
       }).mkString(""))
     )

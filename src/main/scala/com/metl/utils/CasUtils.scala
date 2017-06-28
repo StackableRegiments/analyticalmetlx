@@ -5,15 +5,15 @@ import com.metl.liftAuthenticator.LiftAuthStateData
 object CasUtils {
 
   def getFirstName(liftAuthStateData: Option[LiftAuthStateData]): String = {
-    getInfoGroupDetails(liftAuthStateData, "firstname").head
+    getInfoGroupDetails(liftAuthStateData, "firstname").headOption.getOrElse("unknown")
   }
 
   def getSurname(liftAuthStateData: Option[LiftAuthStateData]): String = {
-    getInfoGroupDetails(liftAuthStateData, "surname").head
+    getInfoGroupDetails(liftAuthStateData, "surname").headOption.getOrElse("unknown")
   }
 
   def getEmailAddress(liftAuthStateData: Option[LiftAuthStateData]): String = {
-    getInfoGroupDetails(liftAuthStateData, "email").head
+    getInfoGroupDetails(liftAuthStateData, "email").headOption.getOrElse("unknown")
   }
 
   protected def getInfoGroupDetails(liftAuthStateData: Option[LiftAuthStateData], key: String): Seq[String] = {

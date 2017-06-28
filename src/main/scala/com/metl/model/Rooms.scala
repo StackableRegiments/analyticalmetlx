@@ -319,7 +319,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     case u@UpdateThumb(slide) => joinedUsers.foreach(_._3 ! u)
     case m@MotherMessage(html,audiences) => roomMetaData match {
       case sl:SlideRoom => {
-        joinedUsers.foreach(j => j._3 ! MeTLChatMessage(config,"mother",new Date().getTime,nextFuncName,"html",html.toString,sl.cd.jid.toString,audiences))
+        joinedUsers.foreach(j => j._3 ! MeTLChatMessage(config,"| mother |",new Date().getTime,nextFuncName,"html",html.toString,sl.cd.jid.toString,audiences))
       }
       case _ => None
     }
