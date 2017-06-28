@@ -438,6 +438,11 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
         if(!s.isDeleted)
           addMultiWordText(s.adjustIndividualContent(i,true,left,top).asInstanceOf[MeTLMultiWordText],false)
       }
+      case i:MeTLSingleChar if matches(s.charIds,i) => {
+        removeChar(i.generateDirty(s.timestamp),false)
+        if(!s.isDeleted)
+          addChar(s.adjustIndividualContent(i,true,left,top).asInstanceOf[MeTLSingleChar],false)
+      }
       case i:MeTLText if matches(s.textIds,i) => {
         removeText(i.generateDirty(s.timestamp),false)
         if (!s.isDeleted)
@@ -857,6 +862,28 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     this
   })
 
+  def removeChar(dirtyText:MeTLDirtyText,store:Boolean = true) = Stopwatch.time("History.removeChar",{
+    val items = getCanvasContents.filter{
+      case t:MeTLSingleChar => dirtyText.isDirtierFor(t)
+      case _ => false
+    }
+    canvasContents --= items
+    items.foreach(s => s match {
+      case t:MeTLSingleChar => {
+        calculateBoundsWithout(t.left,t.right,t.top,t.bottom)
+        if (store) {
+          outputHook(dirtyText)
+        }
+        deletedCanvasContents += t
+        update(true)
+      }
+      case _ => {}
+    })
+    if (store)
+      dirtyTexts += dirtyText
+    this
+  })
+
   protected var left:Double = 0
   protected var right:Double = 0
   protected var top:Double = 0
@@ -894,6 +921,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
       case i:MeTLVideo => growBounds(i.left,i.right,i.top,i.bottom)
       case t:MeTLText => growBounds(t.left,t.right,t.top,t.bottom)
       case t:MeTLMultiWordText => growBounds(t.left,t.right,t.top,t.bottom)
+      case t:MeTLSingleChar => growBounds(t.left,t.right,t.top,t.bottom)
     })
   })
 

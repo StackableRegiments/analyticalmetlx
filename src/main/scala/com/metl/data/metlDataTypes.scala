@@ -335,6 +335,9 @@ object MeTLChatMessage {
 
 case class MeTLSingleChar(override val server:ServerConfiguration,override val author:String, override val timestamp:Long, char:String,x:Double,y:Double,width:Double,height:Double,fontFamily:String,fontSize:Double,color:Color, box:String, override val identity:String,override val target:String, override val privacy:Privacy, override val slide:String, override val audiences:List[Audience] = Nil) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences,1.0,1.0){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime) = Stopwatch.time("MeTLSingleChar.adjustTimestamp",copy(timestamp = newTime))
+  override def generateDirty(dirtyTime:Long = new java.util.Date().getTime):MeTLDirtyText = Stopwatch.time("MeTLSingleChar.generateDirty",{
+    MeTLDirtyText(server,author,dirtyTime,target,privacy,slide,identity)
+  })
 }
 
 object MeTLSingleChar{
