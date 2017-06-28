@@ -26,7 +26,8 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
   def calculateResults(courseId: Option[String], from: Option[Date], to: Option[Date]): JObject = {
     val studentActivity = StudentActivityReportHelper.studentActivity(courseId,from,to)
     val headers = studentActivity.head
-    createJResults(courseId, (headers, studentActivity.tail))
+    val data = studentActivity.tail.filter(a => a.nonEmpty)
+    createJResults(courseId, (headers, data))
   }
 
   override def render: RenderOut = {
@@ -42,8 +43,7 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
     JObject(List(
       JField("courseId", JString(courseId.getOrElse(""))),
       JField("headers", JArray(results._1.map(h => JString(h)))),
-      JField("data", JArray(results._2.map(r => {
-        JArray(r.map(value => JString(value)))
+      JField("data", JArray(results._2.map(r => { JArray(r.map(value => JString(value)))
       })))
     ))
   }

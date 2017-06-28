@@ -20,7 +20,7 @@
         </style>
     </head>
     <script type="text/javascript">
-        var serverResponse = function(response){
+        var serverResponse = function (response) {
 //            console.log("serverResponse:",response);
         };
         var fromDatePickr;
@@ -31,19 +31,19 @@
         var refreshData = function () {
             getStudentActivity(from, to, courseId);
         };
-        var refreshOnFrom = function() {
+        var refreshOnFrom = function () {
             from = fromDatePickr.selectedDates[0].getTime();
             refreshData();
         };
-        var refreshOnTo = function() {
+        var refreshOnTo = function () {
             to = toDatePickr.selectedDates[0].getTime();
             refreshData();
         };
-        var refreshOnCourse = function(a) {
+        var refreshOnCourse = function (a) {
             courseId = a;
             refreshData();
         };
-        var updateCourses = function(c) {
+        var updateCourses = function (c) {
             $('#courses').selectize({
                 maxOptions: 20,
                 closeAfterSelect: true,
@@ -52,19 +52,21 @@
                 labelField: 'name',
                 searchField: ['name'],
                 options: c
-                });
+            });
             courseId = "";
         };
         var createTable = function (a) {
             var table = $("<table/>");
             var tr = $("<tr/>");
             table.append(tr);
+            tr.append('<th>' + '&nbsp;' + '</th>');
             _.forEach(a.headers, function (header) {
                 tr.append('<th>' + header + '</th>');
             });
             _.forEach(a.data, function (values) {
                 tr = $("<tr/>");
                 table.append(tr);
+                tr.append('<td>' + '<a class="fa fa-plus fa-sm"></a>' + '</td>');
                 _.forEach(values, function (value) {
                     tr.append('<td>' + value + '</td>');
                 });
@@ -73,7 +75,8 @@
         };
         var updateActivity = function (a) {
             var div = $("<div/>");
-            div.append($("<a href='/studentActivity?courseId=" + a.courseId + "'>Download as CSV</a>")).append(createTable(a));
+            div.append($("<a href='/studentActivity?courseId=" + a.courseId + "'>Download as CSV</a>"));
+            div.append(createTable(a));
             $('#courseActivity').html(div);
             var now = new Date();
             var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
@@ -94,14 +97,14 @@
             to = toDatePickr.selectedDates[0].getTime();
             getCourses();
         };
-        function augmentArguments(args){
+        function augmentArguments(args) {
             args[_.size(args)] = new Date().getTime();
             return args;
         }
     </script>
     <div id="masterLayout" class="flex-container-column">
         <div class="mbt">
-            <span class="lift:comet?type=StudentActivity">
+            <div class="lift:comet?type=StudentActivity">
                 <div class="indent flex-container-row">
                     <h1 class="directlyOnBackground">Course Analysis</h1>
                 </div>
@@ -128,12 +131,16 @@
                 </div>
                 <div class="indent flex-container-row">
                     <div class="directlyOnBackground">
-                        <span id="courseActivity"/>
+                        <span id="courseActivity"></span>
                     </div>
-                    <span id="timestampActivity" class="directlyOnBackground"/>
-                    <div id="loaderJs"></div>
                 </div>
-            </span>
+                <div class="indent flex-container-row">
+                    <div class="directlyOnBackground">
+                        <span id="timestampActivity"></span>
+                    </div>
+                </div>
+                <div id="loaderJs"></div>
+            </div>
         </div>
     </div>
 </div>
