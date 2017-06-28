@@ -367,52 +367,46 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
       },
       <label for={id}><span class="icon-txt"></span></label>))
   }
-  def blockMarkup:NodeSeq = currentPage.blocks.map(b => {
-    NodeSeq.fromSeq(List(
-      b match {
-        case c:TrainingControl => {
-          if(c.hurdle){
-            <div class="actioned">{
-              if(c.maxProgress > 0) {
-                Range(0,c.maxProgress).map(i => checkbox(c.progressMarker > i))
-              }
-              else {
-                checkbox(c.isActioned)
-              }
-            }</div>
+  def blockMarkup:NodeSeq = currentPage.blocks.map {
+    case c:TrainingControl => {
+      val progress = if(c.hurdle){
+        <div class="actioned">{
+          if(c.maxProgress > 0) {
+            Range(0,c.maxProgress).map(i => checkbox(c.progressMarker > i))
           }
-          else{
-            <span />
+          else {
+            checkbox(c.isActioned)
           }
+        }</div>
+      }
+      else{
+        <span />
+      }
+      val label = ajaxButton(c.label,() => {
+        c.actioned
+        c.behaviour(c)
+        SetHtml("exerciseControls",blockMarkup)
+      },"class" -> "active")
+      val supplementMarkup:NodeSeq = if(c.supplement.isEmpty) {
+        NodeSeq.Empty
+      }
+      else{
+        val toggleBehavior = () => {
+          c.supplementOpen = !c.supplementOpen
+          SetHtml("exerciseControls",blockMarkup)
         }
-        case _ => <span />
-      },
-      <div class="control">{
-        b match {
-          case c:TrainingControl => {
-            val supplementMarkup:NodeSeq = if(c.supplement.isEmpty) {
-              NodeSeq.Empty
-            }
-            else{
-              val toggleBehavior = () => {
-                c.supplementOpen = !c.supplementOpen
-                SetHtml("exerciseControls",blockMarkup)
-              }
-              c.supplementOpen match {
-                case true => NodeSeq.fromSeq(List(ajaxButton("Hide",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-minus-square-o"))) ++ c.supplement.map(s => <p class="supplement">{s}</p>)
-                case _ => ajaxButton("More",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-plus-square-o")
-              }
-            }
-            NodeSeq.fromSeq(List(ajaxButton(c.label,() => {
-              c.actioned
-              c.behaviour(c)
-              SetHtml("exerciseControls",blockMarkup)
-            },"class" -> "active"))) ++ supplementMarkup
-          }
-          case c:TrainingInstruction => c.content
+        c.supplementOpen match {
+          case true => NodeSeq.fromSeq(List(ajaxButton(" Hide",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-minus-square-o"))) ++ c.supplement.map(s => <p class="supplement">{s}</p>)
+          case _ => ajaxButton(" Show",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-plus-square-o")
         }
-      }</div>
-    ))}).reduce(_ ++ _)
+      }
+      <div class="control">
+      <div class="flex-container-row">{progress ++ label}</div>
+      <div>{supplementMarkup}</div>
+      </div>
+    }
+    case c:TrainingInstruction => <div class="control">{c.content}</div>
+  }
   override def render = "#exerciseTitle *" #> currentPage.title &
   "#exerciseBlurb *" #> currentPage.blurb &
   "#exerciseControls *" #> blockMarkup &
