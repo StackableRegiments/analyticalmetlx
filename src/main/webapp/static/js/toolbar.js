@@ -116,11 +116,10 @@ function scaleWorldToVisual(i,visual){
     return i / scale;
 }
 function worldToVisual(x,y){
-    var visual = TweenController.immediateView();
-    var screenX = scaleWorldToVisual(x - visual[0],visual);
-    var screenY = scaleWorldToVisual(y - visual[1],visual);
+    var visual = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight];
+    var screenX = scaleWorldToVisual(x - viewboxX,visual);
+    var screenY = scaleWorldToVisual(y - viewboxY,visual);
     return {x:screenX,y:screenY};
-
 }
 /*
   RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
@@ -2043,7 +2042,6 @@ var Modes = (function(){
         pan:{
             name:"pan",
             activate:function(){
-                updateStatus("PAN");
                 Modes.currentMode.deactivate();
                 setActiveMode("#panTools","#panMode");
                 Modes.currentMode = Modes.pan;

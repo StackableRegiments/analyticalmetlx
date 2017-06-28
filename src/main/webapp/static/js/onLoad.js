@@ -220,7 +220,8 @@ var TweenController = (function(){
         return easingAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var translateViewboxFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
-        return instantAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
+        return easingAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
+        //return instantAlterViewboxFunction(xDelta,yDelta,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var panViewboxRelativeFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
         return easingAlterViewboxFunction(xDelta + viewboxX,yDelta + viewboxY,viewboxWidth,viewboxHeight,onComplete,shouldAvoidUpdatingRequestedViewbox);
@@ -258,10 +259,10 @@ var TweenController = (function(){
             tween.stop();
         }
         tween = false;
-        tX = viewboxX = finalX;
-        tY = viewboxY = finalY;
-        tW = viewboxWidth = finalWidth;
-        tH = viewboxHeight = finalHeight;
+        viewboxX = finalX;
+        viewboxY = finalY;
+        viewboxWidth = finalWidth;
+        viewboxHeight = finalHeight;
         if (!shouldAvoidUpdatingRequestedViewbox){
             updateRequestedPosition();
         }

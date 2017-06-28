@@ -896,7 +896,7 @@ var renderImages = function(images,canvasContext,rendered,viewBounds){
         }
     });
 };
-function render(content,hq,incCanvasContext,incViewBounds){
+function render(content,hq,incCanvasContext){
     var bucket = Math.floor(new Date() / 1000);
     if(!renders[bucket]){
         renders[bucket] = 0;
@@ -909,7 +909,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
         if(content){
             var startMark = Date.now();
             try{
-                var viewBounds = incViewBounds || TweenController.immediateView();
+                var viewBounds = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight];
                 visibleBounds = [];
                 var rendered = [];
                 var loadedCount = 0;
@@ -987,6 +987,7 @@ function clearBoard(incContext,rect){
 var IncludeView = (function(){
     var fitToRequested = function(incX,incY,incW,incH,notFollowable){//Include at least this much content in your view
         var shouldUpdateRequestedViewbox = false;
+	console.log("IncludeView.fitToRequested",incX,incY,incW,incH,notFollowable)
         var x = incX;
         if (x == undefined){
             x = requestedViewboxX;
