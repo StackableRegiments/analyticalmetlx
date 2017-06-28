@@ -371,7 +371,7 @@ var TweenController = (function(){
         zoomAndPanViewboxRelative:zoomAndPanViewboxRelativeFunction,
         scaleAndTranslateViewboxRelative:scaleAndTranslateViewboxRelativeFunction,
         immediateView:function(){
-            return [viewboxX, viewboxY, viewboxWidth, viewboxHeight];
+            return [viewboxX, viewboxY, viewboxX + viewboxWidth, viewboxY + viewboxHeight];
         }
     }
 })();

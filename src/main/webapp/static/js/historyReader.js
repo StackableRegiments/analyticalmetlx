@@ -60,7 +60,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
                 console.log("Not usable",text);
             }
         });
-	_.each(boardContent.chars,RichText.incorporate);
+        _.each(boardContent.chars,RichText.incorporate);
         renderMultiWordMark = Date.now();
 
         boardContent.width = boardContent.maxX - boardContent.minX;
@@ -187,7 +187,7 @@ function isUsable(element){
         return isNaN(p);// || p > boardLimit || p < -boardLimit;
     }));
     if(element.type == "singleChar"){
-	boundsOk = true;
+        boundsOk = true;
     }
     var sizeOk = "size" in element? !isNaN(element.size) : true
     var textOk =  "text" in element? element.text.length > 0 : true;
