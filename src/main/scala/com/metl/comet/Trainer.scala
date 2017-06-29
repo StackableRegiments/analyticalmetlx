@@ -310,11 +310,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
             currentSlide.map(slide => {
               val room = MeTLXConfiguration.getRoom(slide, server)
               g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLInk(serverConfig, name, new java.util.Date().getTime, sum, sum,
-                geometry, intention match {
-                  case "benign" => Color(255, 255, 0, 0)
-                  case "malicious" => Color(255, 0, 0, 255)
-                  case _ => Color(255, 0, 255, 0)
-                }, 2.0, false, "presentationSpace", Privacy.PUBLIC, slide.toString, nextFuncName)))
+                geometry, getColorForIntention(intention), 2.0, false, "presentationSpace", Privacy.PUBLIC, slide.toString, nextFuncName)))
             })
             u.pan(g.width).copy(activity = Scribbling(t), history = Scribbling(List(h)) :: u.history)
           }
@@ -326,12 +322,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
           case g => {
             currentSlide.map(slide => {
               val room = MeTLXConfiguration.getRoom(slide,server)
-              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLSingleChar(serverConfig,name,new java.util.Date().getTime,"b",x,y,width,height,fontFamily,fontSize,
-                intention match {
-                  case "benign" => Color(255,255,0,0)
-                  case "malicious" => Color(255,0,0,255)
-                  case _ => Color(255,0,255,0)
-                },2.0,nextFuncName,"presentationSpace",Privacy.PUBLIC,slide.toString)))
+              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLSingleChar(serverConfig,name,new java.util.Date().getTime,"b",x,y,width,height,fontFamily,fontSize,getColorForIntention(intention),2.0,nextFuncName,"presentationSpace",Privacy.PUBLIC,slide.toString)))
             })
             u.pan(g.width).copy(activity = Scribbling(t),history = Typing(List(h)) :: u.history)
           }
@@ -343,11 +334,20 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     }
   }
 
+  protected def getColorForIntention(intention: String) = {
+    intention match {
+      case "benign" => Color(255, 255, 0, 0)
+      case "malicious" => Color(255, 0, 0, 255)
+      case _ => Color(255, 0, 255, 0)
+    }
+  }
+
   val humanAuthor = "public"
   def isHuman(stanza:MeTLStanza):Boolean = {humanAuthor.equals(stanza.author)}
 
   val humanStanzas = new Queue[MeTLStanza]()
   val simulatedStanzas = new Queue[MeTLStanza]()
+
   def enqueueStanza(stanza: MeTLStanza, queue: Queue[MeTLStanza]):MeTLStanza = {
     queue += stanza
     trace("Queue(" + queue.size + "): " + queue.toString)
@@ -362,10 +362,8 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   override def localSetup = {
     super.localSetup
     val newConversation = serverConfig.createConversation("a practice conversation",username)
-    val newSlide = newConversation.slides(0)
-    val slide = newSlide.id.toString
-    currentConversation = Full(newConversation)
-    currentSlide = Full(slide)
+    currentConversation = Full(addSampleSlides(newConversation))
+    currentSlide = Full(newConversation.slides.head.id.toString)
 
     triggers = List(
       // Conversation triggers (all Stanzas)
@@ -404,6 +402,28 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     Schedule.schedule(this,SimulatorTick,500)
   }
 
+  protected def addSampleSlides(conversation:Conversation): Conversation = {
+    var newConversation = serverConfig.addSlideAtIndexOfConversation(conversation.jid.toString, 1)
+    val slide2 = newConversation.slides(1)
+    val room2 = MeTLXConfiguration.getRoom(slide2.id.toString, server)
+    writeText(slide2, room2, "Dog")
+
+    newConversation = serverConfig.addSlideAtIndexOfConversation(newConversation.jid.toString, 2)
+    val slide3 = newConversation.slides(2)
+    val room3 = MeTLXConfiguration.getRoom(slide2.id.toString, server)
+
+    newConversation
+  }
+
+  protected def writeText(slide2:Slide, room2:MeTLRoom, text:String) = {
+    val spacing = 20
+    var x = 100
+    text.toList.foreach(c => {
+      room2 ! LocalToServerMeTLStanza(MeTLSingleChar(serverConfig, "Bob", new java.util.Date().getTime, c.toString, x, 100, 100, 100, "serif", 20, getColorForIntention("benign"), "", nextFuncName, "presentationSpace", Privacy.PUBLIC, slide2.toString))
+      x = x + spacing
+    })
+  }
+
   def checkbox(checked:Boolean):NodeSeq = {
     val id = nextFuncName
     NodeSeq.fromSeq(List(
@@ -413,6 +433,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
       },
       <label for={id}><span class="icon-txt"></span></label>))
   }
+
   def blockMarkup:NodeSeq = currentPage.blocks.map {
     case c:TrainingControl => {
       val progress = if(c.hurdle){
@@ -453,6 +474,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     }
     case c:TrainingInstruction => <div class="control">{c.content}</div>
   }
+
   override def render = "#exerciseTitle *" #> currentPage.title &
   "#exerciseBlurb *" #> currentPage.blurb &
   "#exerciseControls *" #> blockMarkup &
