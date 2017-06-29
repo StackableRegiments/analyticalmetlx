@@ -415,11 +415,11 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     newConversation
   }
 
-  protected def writeText(slide2:Slide, room2:MeTLRoom, text:String) = {
+  protected def writeText(slide:Slide, room:MeTLRoom, text:String): Unit = {
     val spacing = 20
     var x = 100
     text.toList.foreach(c => {
-      room2 ! LocalToServerMeTLStanza(MeTLSingleChar(serverConfig, "Bob", new java.util.Date().getTime, c.toString, x, 100, 100, 100, "serif", 20, getColorForIntention("benign"), "", nextFuncName, "presentationSpace", Privacy.PUBLIC, slide2.toString))
+      room ! LocalToServerMeTLStanza(MeTLSingleChar(serverConfig, "Bob", new java.util.Date().getTime, c.toString, x, 100, 100, 100, "serif", 20, getColorForIntention("benign"), "", nextFuncName, "presentationSpace", Privacy.PUBLIC, slide.toString))
       x = x + spacing
     })
   }
