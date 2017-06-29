@@ -1314,8 +1314,8 @@ var Modes = (function(){
                 Colors.getAllNamedColors().map(function(color){
                     fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
                 });
-                fontLargerSelector.on("click",scaleCurrentSelection(1.25));
-                fontSmallerSelector.click(scaleCurrentSelection(0.8));
+                fontLargerSelector.on("click",scaleCurrentSelection(3));
+                fontSmallerSelector.click(scaleCurrentSelection(-3));
                 fontBoldSelector.click(toggleFormattingProperty("bold"));
                 fontItalicSelector.click(toggleFormattingProperty("italic"));
                 fontUnderlineSelector.click(toggleFormattingProperty("underline"));
@@ -1382,7 +1382,7 @@ var Modes = (function(){
                 selector.toggleClass("active",equal);
             }
             var attributesAtCursor = {
-                fontSize:25,
+                fontSize:40,
                 fontFamily:"Arial",
                 bold:false,
                 underline:false,

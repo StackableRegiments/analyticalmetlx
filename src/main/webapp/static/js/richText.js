@@ -112,14 +112,14 @@ var RichText = (function(){
         var lineDimension;
         var chars = _.concat(box.head,box.tail);
         var char;
-	var lastInterestingBreakPoint = 0;
-	var breakPointToSync = lastInterestingBreakPoint;
-	var cursorPos = chars.length - 1;
+        var lastInterestingBreakPoint = 0;
+        var breakPointToSync = lastInterestingBreakPoint;
+        var cursorPos = chars.length - 1;
         for(var i = 0;i<chars.length;i++){
             char = chars[i];
-            if(char.identity == cursorChar.identity){
-		cursorPos = i;
-		breakPointToSync = lastInterestingBreakPoint;
+            if(cursorChar && char.identity == cursorChar.identity){
+                cursorPos = i;
+                breakPointToSync = lastInterestingBreakPoint;
             }
             char.x = cursorX;
             char.y = cursorY;
@@ -145,8 +145,8 @@ var RichText = (function(){
                 cursorX += char.width;
             }
         }
-	var res = chars.slice(breakPointToSync);
-	return res;
+        var res = chars.slice(breakPointToSync);
+        return res;
     };
     var toggleSelected = function(char){
         if(_.includes(cursor.selected,char)){
@@ -181,10 +181,15 @@ var RichText = (function(){
     }
     return {
         scaleSelection:function(factor){
+            var previous, charSize;
             _.each(cursor.selected,function(char){
-                char.fontSize = char.fontSize * factor;
+                char.fontSize = char.fontSize + factor;
+                charSize = measureChar(char,previous);
+                char.width = charSize.width;
+                char.height = charSize.height;
+                previous = char;
             });
-            wrap();
+            wrap(cursor.box);
             blit();
         },
         setAttributes:function(attributes){
@@ -223,7 +228,7 @@ var RichText = (function(){
             }
         },
         incorporate:function(char){
-	    if(_.isArray(char.color)) char.color = char.color[0];
+            if(_.isArray(char.color)) char.color = char.color[0];
             var box = boxes[char.box];
             if(!box){
                 box = addBox(char.x,char.y,char.author,char.box);
