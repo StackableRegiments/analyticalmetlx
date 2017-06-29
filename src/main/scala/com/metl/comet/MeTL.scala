@@ -194,12 +194,12 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       listing = (newConv :: listing).distinct
       serializer.fromConversation(newConv)
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS))/*,
-    ClientSideFunction("sleepAndThenAlert",List("delay","message"),(args) => {
-      val delay = getArgAsInt(args(0))
-      val message = getArgAsString(args(1))
-      Thread.sleep(delay)
-      JString(message)
-    },Full("alert"))*/
+                                              ClientSideFunction("sleepAndThenAlert",List("delay","message"),(args) => {
+                                              val delay = getArgAsInt(args(0))
+                                              val message = getArgAsString(args(1))
+                                              Thread.sleep(delay)
+                                              JString(message)
+                                              },Full("alert"))*/
   )
 
   protected var query:Option[String] = None
@@ -772,7 +772,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                   m.slide+username
                 }
                 case Privacy.PUBLIC => {
-                    m.slide
+                  m.slide
                 }
                 case other => {
                   warn("unexpected privacy found in: %s".format(m))
@@ -780,7 +780,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                 }
               }
               rooms.get((server,roomId)).foreach(targetRoom => {
-                val room = targetRoom() 
+                val room = targetRoom()
                 room.getHistory.getDeletedCanvasContents.find(dc => {
                   dc.identity == m.identity && dc.author == m.author
                 }).foreach(dc => {
@@ -790,7 +790,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
                   val newUDM = MeTLUndeletedCanvasContent(config,username,0L,dc.target,dc.privacy,dc.slide,"%s_%s_%s".format(new Date().getTime(),dc.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),dc.identity,newIdentity,Nil)
                   trace("created newUDM: %s".format(newUDM))
                   room ! LocalToServerMeTLStanza(newUDM)
-                  
+
                   room ! LocalToServerMeTLStanza(newM)
                 })
               })

@@ -75,6 +75,8 @@ class Boot extends Logger {
     LiftRules.noCometSessionCmd.default.set(() => Reload:JsCmd)
 
     def sitemap() = SiteMap(
+      Menu(Loc("training","training" :: Nil,"MeTL trainer")),
+      //
       Menu(Loc("about","about" :: Nil,"About MeTL")), // licenses and whatnot.
       Menu(Loc("releaseNotes","releaseNotes" :: Nil,"Release Notes")),
       //API catalog

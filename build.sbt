@@ -95,6 +95,7 @@ libraryDependencies ++= {
     "io.github.stackableregiments" %% "xmpp" % "3.5.+" ,
     "com.h2database" % "h2" % "1.4.192",
     "mysql" % "mysql-connector-java" % "5.1.38",
+    "org.fluttercode.datafactory" % "datafactory" % "0.8",
     //    "io.github.stackableregiments" %% "slide-renderer" % "1.3.+",
     "org.apache.shiro" % "shiro-core" % "1.2.4",
     "org.apache.shiro" % "shiro-web" % "1.2.4",
@@ -119,7 +120,7 @@ libraryDependencies ++= {
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
     //for AWS API Gateway interaction
-	  "com.amazonaws" % "aws-java-sdk-opensdk" % "1.11.72"
+    "com.amazonaws" % "aws-java-sdk-opensdk" % "1.11.72"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
