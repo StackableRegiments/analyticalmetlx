@@ -6,17 +6,27 @@ import net.liftweb.util.Helpers.TimeSpan
 import net.liftweb.util.Schedule
 
 case object Refresh
+case object Stop
 class PeriodicallyRefreshingVar[T](acceptedStaleTime:TimeSpan, valueCreationFunc:()=>T, startingValue:Option[T] = None) extends LiftActor{
-	private var lastResult:T = startingValue.getOrElse(valueCreationFunc())
+	protected var lastResult:T = startingValue.getOrElse(valueCreationFunc())
+  protected var running:Boolean = true;
+  protected def stop:Unit = {
+    running = false
+  }
 	scheduleRecheck
-	private def scheduleRecheck:Unit = Schedule.schedule(this,Refresh,acceptedStaleTime:TimeSpan)
-	private def doGet:Unit = {
+	protected def scheduleRecheck:Unit = {
+    if (running){
+      Schedule.schedule(this,Refresh,acceptedStaleTime:TimeSpan)
+    }
+  }
+	protected def doGet:Unit = {
 		lastResult = valueCreationFunc()
 		scheduleRecheck	
 	}
 	def get:T = lastResult
 	override def messageHandler = {
 		case Refresh => doGet
+    case Stop => stop
 		case _ => {}
 	}
 }
