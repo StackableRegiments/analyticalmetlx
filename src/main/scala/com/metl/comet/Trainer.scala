@@ -423,7 +423,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   protected def writeText(slide:Slide, room:MeTLRoom, text:String): Unit = {
     room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig, "simulator", new java.util.Date().getTime,
-      100, 200, 200, 100, 100, "tag", "identity", "presentationSpace", Privacy.PUBLIC, slide.toString,
+      100, 200, 200, 100, 100, "_", nextFuncName, "presentationSpace", Privacy.PUBLIC, slide.id.toString,
       List(MeTLTextWord(text, bold = false, underline = false, italic = false, "LEFT", getColorForIntention("benign"), "Arial", 12.0))
     ))
   }
