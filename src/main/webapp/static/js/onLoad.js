@@ -104,13 +104,13 @@ var WorkQueue = (function(){
 })();
 var Pan = {
     pan:function(xDelta,yDelta){
-        takeControlOfViewbox();
+        takeControlOfViewbox(true);
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         TweenController.panViewboxRelative(xDelta * xScale, yDelta * yScale);
     },
     translate:function(xDelta,yDelta){
-        takeControlOfViewbox();
+        takeControlOfViewbox(true);
         var xScale = viewboxWidth / boardWidth;
         var yScale = viewboxHeight / boardHeight;
         console.log("Translate",xDelta,yDelta,xScale,yScale);
@@ -174,7 +174,7 @@ var Zoom = (function(){
     }
     return {
         scale:function(scale,ignoreLimits){
-            takeControlOfViewbox();
+            takeControlOfViewbox(true);
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -191,7 +191,7 @@ var Zoom = (function(){
             TweenController.scaleAndTranslateViewbox(finalX,finalY,requestedWidth,requestedHeight);
         },
         zoom:function(scale,ignoreLimits,onComplete){
-            takeControlOfViewbox();
+            takeControlOfViewbox(true);
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -595,6 +595,7 @@ $(function(){
     $("#zoomToFull").click(bounceAnd(function(){ zoomToFit(); }));
     $("#zoomToPage").click(bounceAnd(function(){ zoomToPage(); }));
     $("#zoomToOriginal").click(bounceAnd(function(){ zoomToOriginal(); }));
+    $("#zoomToCurrent").click(bounceAnd(function(){ takeControlOfViewbox(true); }));
     window.currentBackstage = noActiveBackstage;
     $("#hideBackstage").click(bounceAnd(hideBackstage));
     $("#applicationMenuButton").click(function(){

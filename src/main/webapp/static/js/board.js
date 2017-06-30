@@ -279,8 +279,8 @@ function richTextReceived(t){
         WorkQueue.enqueue(function(){
             var e = Modes.text.editorFor(t);
             e.doc.load(t.words);
-	    e.doc.updateCanvas();
-	    return true;
+            e.doc.updateCanvas();
+            return true;
         });
     }
 }
@@ -998,9 +998,17 @@ function inkReceived(ink){
         }
     }
 }
-function takeControlOfViewbox(){
-    delete Progress.onBoardContentChanged.autoZooming;
-    UserSettings.setUserPref("followingTeacherViewbox",true);
+function takeControlOfViewbox(control){
+    if(control){
+        delete Progress.onBoardContentChanged.autoZooming;
+        UserSettings.setUserPref("followingTeacherViewbox",false);
+        $("#zoomToFull").removeClass("active");
+        $("#zoomToCurrent").addClass("active");
+    }
+    else{
+        $("#zoomToFull").addClass("active");
+        $("#zoomToCurrent").removeClass("active");
+    }
 }
 function measureBoardContent(includingText){
     if(includingText){
@@ -1025,6 +1033,7 @@ function measureBoardContent(includingText){
 }
 function zoomToFit(followable){
     Progress.onBoardContentChanged.autoZooming = zoomToFit;
+    takeControlOfViewbox(false);
     if(Modes.currentMode.name != "text"){
         var headerHeight = scaleScreenToWorld($("#masterHeader .heading").height());
         var s = Modes.select.handlesAtZoom();
@@ -1037,7 +1046,7 @@ function zoomToFit(followable){
     }
 }
 function zoomToOriginal(followable){
-    takeControlOfViewbox();
+    takeControlOfViewbox(true);
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;
@@ -1045,7 +1054,7 @@ function zoomToOriginal(followable){
     IncludeView.specific(0,0,boardWidth,boardHeight,followable);
 }
 function zoomToPage(followable){
-    takeControlOfViewbox();
+    takeControlOfViewbox(true);
     var oldReqVBH = requestedViewboxHeight;
     var oldReqVBW = requestedViewboxWidth;
     requestedViewboxWidth = boardWidth;
