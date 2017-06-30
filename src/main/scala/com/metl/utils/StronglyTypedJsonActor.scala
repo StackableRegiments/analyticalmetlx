@@ -27,7 +27,7 @@ object JNum{
 }
 
 abstract class StronglyTypedJsonActor extends CometActor with CometListener with Logger {
-	protected val functionDefinitions:List[ClientSideFunction]
+  protected val functionDefinitions:List[ClientSideFunction]
   case class AsyncFunctionRequest(name:String, args:List[String],serverSideFunc:List[JValue]=>JValue,returnResultFunction:Box[String],returnArguments:Boolean,params:List[JValue],bonusParams:List[JValue],start:Long){}
   object backendActor extends LiftActor {
     override def messageHandler = {
@@ -113,7 +113,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
                   case true => List(JField("arguments",JArray(params)))
                   case false => Nil
                 }
-              } ::: { 
+              } ::: {
                 returnResponse match {
                   case true => List(JField("response",response))
                   case false => Nil
@@ -132,13 +132,13 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
           JField("serverEnd",JInt(end)),
           JField("success",JBool(exceptionOrResult.isRight))
         )))
-        (for {
-          rrf <- returnResultFunction
-          res <- exceptionOrResult.right.toOption
-          if !async
-        } yield {
-          returnCall & Call(rrf,res._1)
-        }).getOrElse(returnCall)
+          (for {
+            rrf <- returnResultFunction
+            res <- exceptionOrResult.right.toOption
+            if !async
+          } yield {
+            returnCall & Call(rrf,res._1)
+          }).getOrElse(returnCall)
       } catch {
         case e:Exception => {
           val end = new java.util.Date().getTime()
@@ -154,11 +154,11 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
             )))
         }
       }
-      }))))
-	}
+    }))))
+  }
   val functions = NodeSeq.fromSeq(functionDefinitions.map(_.jsCreationFunc).toList)
-	override def render = NodeSeq.Empty
-	override def fixedRender = {
-		Stopwatch.time("StronglyTypedJsonActor.fixedRender", functions)
-	}
+  override def render = NodeSeq.Empty
+  override def fixedRender = {
+    Stopwatch.time("StronglyTypedJsonActor.fixedRender", functions)
+  }
 }
