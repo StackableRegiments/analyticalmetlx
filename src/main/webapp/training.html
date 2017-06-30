@@ -2,10 +2,11 @@
   <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
   <script src="static/js/stable/lodash.js"></script>
   <script data-lift="with-resource-id" src="static/js/trainer.js"></script>
+  <link rel='stylesheet' href="/static/assets/styles/font-awesome.min.css"></link>
   <link rel="stylesheet" href="static/css/trainer.css"></link>
   <style>
     #content{
-    width:1024px;
+    width:1366px;
     margin:auto;
     }
     #simulationPopulation span{
@@ -22,6 +23,7 @@
     font-size:x-large;
     }
     #exerciseContent{
+    background-color:white;
     flex:1;
     max-height:90vh;
     overflow-y:scroll;
@@ -34,8 +36,25 @@
     flex:2;
     }
     .control {
-    display:inline-block;
+    }
+    .actioned {
+    }
+    .simulatedUser{
+    clear:right;
+    }
+    .supplement{
+      margin-left:1em;
+    }
+    button.toggle{
+    width:8em;
+    font-size:small;
     float:right;
+    }
+    .coord{
+    font-size:xx-small;
+    }
+    #simulationPopulation{
+    background-color:white;
     }
   </style>
   <div class="lift:Metl.trainer">
@@ -50,11 +69,9 @@
       </div>
     </div>
     <div class="flex-container-row">
+      <div id="simulationPopulation"></div>
       <div id="exerciseContent" class="tools main-menu-container">
-        <div id="exerciseControls">
-          <div class="control"></div>
-        </div>
-        <div id="simulationPopulation"></div>
+        <div id="exerciseControls"></div>
       </div>
       <iframe width="1024" height="768" id="simulation"></iframe>
     </div>
