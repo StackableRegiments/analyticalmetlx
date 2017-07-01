@@ -1015,7 +1015,6 @@ var IncludeView = (function(){
             requestedViewboxHeight = h;
         }
         var dim = {width:w,height:h,x:x,y:y};
-        console.log("IncludeView",dim);
         var constrained = Zoom.constrainRequestedViewbox(dim);
         var hr = boardHeight / constrained.height;
         var wr = boardWidth / constrained.width;

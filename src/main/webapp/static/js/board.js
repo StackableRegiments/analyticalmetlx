@@ -317,10 +317,15 @@ function actOnReceivedStanza(stanza){
     try{
         if(stanza.type in stanzaHandlers){
             stanzaHandlers[stanza.type](stanza);
-            if(Progress.onBoardContentChanged.autoZooming){
-                measureBoardContent(stanza.type == "multiWordText");
+            switch(stanza.type){
+            case "command":break;
+            case "attendance":break;
+            default:
+                if(Progress.onBoardContentChanged.autoZooming){
+                    measureBoardContent(stanza.type == "multiWordText");
+                }
+                Progress.call("onBoardContentChanged");
             }
-            Progress.call("onBoardContentChanged");
         }
         else{
             console.log(sprintf("Unknown stanza: %s %s",stanza.type,stanza));
