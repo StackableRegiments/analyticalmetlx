@@ -105,16 +105,13 @@ var WorkQueue = (function(){
 var Pan = {
     pan:function(xDelta,yDelta){
         takeControlOfViewbox();
-        var xScale = viewboxWidth / boardWidth;
-        var yScale = viewboxHeight / boardHeight;
-        TweenController.panViewboxRelative(xDelta * xScale, yDelta * yScale);
+	    var s = scale();
+        TweenController.panViewboxRelative(xDelta / s, yDelta / s);
     },
-    translate:function(xDelta,yDelta){
+        translate:function(xDelta,yDelta){
         takeControlOfViewbox();
-        var xScale = viewboxWidth / boardWidth;
-        var yScale = viewboxHeight / boardHeight;
-        console.log("Translate",xDelta,yDelta,xScale,yScale);
-        TweenController.translateViewboxRelative(xDelta * xScale, yDelta * yScale);
+	    var s = scale();
+        TweenController.translateViewboxRelative(xDelta / s, yDelta / s);
     }
 }
 var Zoom = (function(){
@@ -259,10 +256,11 @@ var TweenController = (function(){
             tween.stop();
         }
         tween = false;
-        tX = viewboxX = finalX;
-        tY = viewboxY = finalY;
-        tW = viewboxWidth = finalWidth;
-        tH = viewboxHeight = finalHeight;
+        viewboxX = finalX;
+        viewboxY = finalY;
+        viewboxWidth = finalWidth;
+        viewboxHeight = finalHeight;
+	console.log("after instant translate",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
         if (!shouldAvoidUpdatingRequestedViewbox){
             updateRequestedPosition();
         }
@@ -275,7 +273,6 @@ var TweenController = (function(){
     };
     var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
-            //var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
             var ps = [x,y,w,h,Date.now(),Conversations.getCurrentSlideJid(),"autoZooming" in Progress.onBoardContentChanged];
             if(w <= 0 || h <= 0){
                 return;
