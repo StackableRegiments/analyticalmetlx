@@ -22,11 +22,13 @@ var Participants = (function(){
         var newParticipants = {};
         Analytics.word.reset();
         var ensure = function(author){
-            return newParticipants[author] || _.cloneDeep(newParticipant);
-        }
-        _.each(_.groupBy(history.attendances,"author"),function(authorAttendances){
-            var author = authorAttendances[0].author;
-            var itemToEdit = ensure(newParticipant);
+            if(!(author in newParticipants)){
+                newParticipants[author] = _.cloneDeep(newParticipant);
+            }
+            return newParticipants[author];
+        };
+        _.each(_.groupBy(history.attendances,"author"),function(authorAttendances,author){
+            var itemToEdit = ensure(author);
             itemToEdit.name = author;
             itemToEdit.attendances = authorAttendances;
             newParticipants[author] = itemToEdit;
@@ -120,9 +122,9 @@ var Participants = (function(){
         fontSizes.domain(d3.extent(_.map(data,"value")));
         $("#lang .word").remove();
         var words = themeCloud.selectAll(".word")
-                .data(data,function(d){
-                    return d.key;
-                });
+            .data(data,function(d){
+                return d.key;
+            });
         words.enter()
             .append("div")
             .attr("class","word")
@@ -186,7 +188,7 @@ var Participants = (function(){
         showBackstage("participants");
         updateFilters();
         updateParticipantsListing();
-				updateActiveMenu($("#menuParticipants"));
+        updateActiveMenu($("#menuParticipants"));
     };
     var updateButtons = function(){
         if (Conversations.shouldModifyConversation()){
@@ -199,7 +201,7 @@ var Participants = (function(){
     };
     var onDetailsReceived = function(){
         updateButtons();
-				reRenderParticipants();
+        reRenderParticipants();
     };
     var updateFilters = function(){
         _.each(contextFilters,function(val,filter){
@@ -325,9 +327,9 @@ var Participants = (function(){
     Progress.historyReceived["participants"] = onHistoryReceived;
     Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
     Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
-		$(function(){
-			reRenderParticipants();
-		});
+    $(function(){
+        reRenderParticipants();
+    });
     return {
         getCurrentParticipants:function(){
             return Conversations.shouldModifyConversation() ? currentParticipants : [];
@@ -342,6 +344,6 @@ var Participants = (function(){
         code:function(author){
             return _.keys(participants).indexOf(author);
         },
-				openMenu:openParticipantsMenuFunction
+        openMenu:openParticipantsMenuFunction
     };
 })();
