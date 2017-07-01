@@ -182,7 +182,6 @@ function richTextEditorToStanza(t){
         t.privacy = Privacy.getCurrentPrivacy();
     }
     var w = t.doc.width();
-    console.log("Constructing stanza with width",w);
     return {
         author:t.author,
         timestamp:-1,
@@ -761,8 +760,8 @@ function isInClearSpace(bounds){
     });
 }
 function screenBounds(worldBounds){
-    var screenPos = worldToVisual(worldBounds[0],worldBounds[1]);
-    var screenLimit = worldToVisual(worldBounds[2],worldBounds[3]);
+    var screenPos = worldToScreen(worldBounds[0],worldBounds[1]);
+    var screenLimit = worldToScreen(worldBounds[2],worldBounds[3]);
     var screenWidth = screenLimit.x - screenPos.x;
     var screenHeight = screenLimit.y - screenPos.y;
     return {
