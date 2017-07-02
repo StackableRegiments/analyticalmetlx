@@ -330,6 +330,8 @@ case class MeTLChatMessage(override val server:ServerConfiguration, override val
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLChatMessage = Stopwatch.time("MeTLChatMessage.adjustTimestamp",{
     copy(timestamp = newTime)
   })
+  def adjustAudience(newAudiences:List[Audience]):MeTLChatMessage =
+    MeTLChatMessage(server,author,timestamp,identity,contentType,content,context,newAudiences)
 }
 object MeTLChatMessage {
   def empty = MeTLChatMessage(ServerConfiguration.empty,"",0L,"","","","",Nil)
