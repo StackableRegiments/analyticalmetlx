@@ -1,3 +1,10 @@
+1.17.3
+METL-598: Improvement: Fix intermittently failing PeriodicallyRefreshingVarSuite.
+METL-586: Improvement: Add "As At" to /statistics.
+METL-651: Improvement: Set focus to name field in default login form.
+METL-603: Bugfix: Disconnection from server causes JSON parse error.
+METL-623: Bugfix: Banned students should not be able to stream video.
+
 1.17.2
 METL-647: Improvement: Enterprise dashboard not able to cope with load.
 
