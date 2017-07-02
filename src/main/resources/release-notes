@@ -1,3 +1,6 @@
+1.17.2
+METL-647: Improvement: Enterprise dashboard not able to cope with load.
+
 1.17.1
 METL-656: Improvement: Add Freeze zoom function, make Autofit toggle with Freeze.
 METL-657: Bugfix: Autofit mode makes zoom jump in and out.
