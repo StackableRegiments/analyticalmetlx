@@ -24,7 +24,13 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
   }
 
   def calculateResults(courseId: Option[String], from: Option[Date], to: Option[Date]): JObject = {
-    val studentActivity = StudentActivityReportHelper.studentActivity(courseId,from,to)
+    val (sortedFrom,sortedTo) = (for {
+      sf <- from
+      st <- to
+      if sf.after(st)
+    } yield (to,from)).getOrElse((from,to))
+
+    val studentActivity = StudentActivityReportHelper.studentActivity(courseId,sortedFrom,sortedTo)
     val headers = studentActivity.head
     createJResults(courseId, (headers, studentActivity.tail))
   }
