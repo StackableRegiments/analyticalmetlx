@@ -416,6 +416,7 @@ var Enterprise = (function(){
             .attr("x",35)
             .attr("y",20);
     }
+
     return {
         prime:function(){
             $.get("/fullClientHistory?source=global",function(history){

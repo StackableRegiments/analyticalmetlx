@@ -104,24 +104,6 @@ function worldToScreen(x,y){
     var screenY = scaleWorldToScreen(y - viewboxY);
     return {x:screenX,y:screenY};
 }
-function scaleWorldToVisual(i,visual){
-    var p = proportion(boardWidth,boardHeight);
-    var scale;
-    if(p > 1){//Viewbox wider than board
-        scale = visual[2] / boardWidth;
-    }
-    else{//Viewbox narrower than board
-        scale = visual[3] / boardHeight;
-    }
-    return i / scale;
-}
-function worldToVisual(x,y){
-    var visual = TweenController.immediateView();
-    var screenX = scaleWorldToVisual(x - visual[0],visual);
-    var screenY = scaleWorldToVisual(y - visual[1],visual);
-    return {x:screenX,y:screenY};
-
-}
 /*
   RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
   * */
@@ -2225,10 +2207,8 @@ var Modes = (function(){
                     Progress.call("onLayoutUpdated");
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
-                    console.log("activated insert");
                 },
                 handleDroppedSrc:function(src,x,y){
-                    console.log("handleDroppedSrc:",src,x,y);
                     var worldPos = screenToWorld(x,y);
                     var thisCurrentImage = {
                         "type":"imageDefinition",
@@ -2284,7 +2264,6 @@ var Modes = (function(){
         pan:{
             name:"pan",
             activate:function(){
-                updateStatus("PAN");
                 Modes.currentMode.deactivate();
                 setActiveMode("#panTools","#panMode");
                 Modes.currentMode = Modes.pan;
