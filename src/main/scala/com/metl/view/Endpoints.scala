@@ -226,14 +226,16 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       () => Stopwatch.time("MeTLRestHelper.history", r.param("source").flatMap(jid => StatelessHtml.history(jid)))
     case r@Req(List("mergedHistory"), _, _) =>
       () =>
-        Stopwatch.time("MeTLRestHelper.mergedHistory", for (
-          source <- r.param("source");
-          user <- r.param("username");
-          resp <- StatelessHtml.mergedHistory(source, user)) yield resp)
+      Stopwatch.time("MeTLRestHelper.mergedHistory", for (
+        source <- r.param("source");
+        user <- r.param("username");
+        resp <- StatelessHtml.mergedHistory(source, user)) yield resp)
     case r@Req(List("fullHistory"), _, _) =>
       () => Stopwatch.time("MeTLRestHelper.fullHistory", r.param("source").flatMap(jid => StatelessHtml.fullHistory(jid)))
     case r@Req(List("fullClientHistory"), _, _) =>
       () => Stopwatch.time("MeTLRestHelper.fullClientHistory", r.param("source").flatMap(jid => StatelessHtml.fullClientHistory(jid)))
+    case r@Req(List("fullJsonHistory"), _, _) =>
+      () => r.param("source").flatMap(jid => StatelessHtml.jsonHistory(jid))
     case r@Req("describeHistory" :: _, _, _) =>
       () => Stopwatch.time("MeTLRestHelper.describeHistory", r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid)))
     //yaws endpoints 1188
@@ -299,30 +301,30 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       })
     case r@Req("reportLatency" :: Nil, _, _) => {
       val start = new java.util.Date().getTime
-      () =>
-        Stopwatch.time("MeTLRestHelper.reportLatency", {
-          val latencyMetrics = for {
-            min <- r.param("minLatency")
-            max <- r.param("maxLatency")
-            mean <- r.param("meanLatency")
-            samples <- r.param("sampleCount")
-          } yield {
-            info("[%s] miliseconds clientReportedLatency".format(mean))
-            (min, max, mean, samples)
-          }
-          val now = new java.util.Date().getTime
-          Full(JsonResponse(JObject(List(
-            JField("serverWorkTime", JInt(now - start)),
-            JField("serverTime", JInt(now))
-          ) ::: latencyMetrics.map(lm => {
-            List(
-              JField("minLatency", JDouble(lm._1.toDouble)),
-              JField("maxLatency", JDouble(lm._2.toDouble)),
-              JField("meanLatency", JDouble(lm._3.toDouble)),
-              JField("sampleCount", JDouble(lm._4.toInt))
-            )
-          }).getOrElse(Nil)), 200))
-        })
+        () =>
+      Stopwatch.time("MeTLRestHelper.reportLatency", {
+        val latencyMetrics = for {
+          min <- r.param("minLatency")
+          max <- r.param("maxLatency")
+          mean <- r.param("meanLatency")
+          samples <- r.param("sampleCount")
+        } yield {
+          info("[%s] miliseconds clientReportedLatency".format(mean))
+          (min, max, mean, samples)
+        }
+        val now = new java.util.Date().getTime
+        Full(JsonResponse(JObject(List(
+          JField("serverWorkTime", JInt(now - start)),
+          JField("serverTime", JInt(now))
+        ) ::: latencyMetrics.map(lm => {
+          List(
+            JField("minLatency", JDouble(lm._1.toDouble)),
+            JField("maxLatency", JDouble(lm._2.toDouble)),
+            JField("meanLatency", JDouble(lm._3.toDouble)),
+            JField("sampleCount", JDouble(lm._4.toInt))
+          )
+        }).getOrElse(Nil)), 200))
+      })
     }
     case Req("printableImageWithPrivateFor" :: jid :: Nil, _, _) => Stopwatch.time("MeTLRestHelper.thumbnail", {
       HttpResponder.snapshotWithPrivate(jid, "print")
@@ -546,51 +548,51 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case r@Req(List("upload"), _, _) => {
       debug("Upload registered in MeTLStatefulRestHelper")
       //trace(r.body)
-      () =>
-        Stopwatch.time("MeTLStatefulRestHelper.upload", {
-          r.body.map(bytes => {
-            val filename = S.params("filename").head
-            val jid = S.params("jid").head
-            val server = ServerConfiguration.default
-            XmlResponse(<resourceUrl>{server.postResource(jid, filename, bytes)}</resourceUrl>)
-          })
+        () =>
+      Stopwatch.time("MeTLStatefulRestHelper.upload", {
+        r.body.map(bytes => {
+          val filename = S.params("filename").head
+          val jid = S.params("jid").head
+          val server = ServerConfiguration.default
+          XmlResponse(<resourceUrl>{server.postResource(jid, filename, bytes)}</resourceUrl>)
         })
+      })
     }
     case r@Req(List("uploadDataUri"), _, _) => {
       debug("UploadDataUri registered in MeTLStatefulRestHelper")
       //trace(r.body)
-      () =>
-        Stopwatch.time("MeTLStatefulRestHelper.upload", {
-          r.body.map(dataUriBytes => {
-            val dataUriString = new String(dataUriBytes)
-            val b64Bytes = dataUriString.split(",")(1)
-            val bytes = net.liftweb.util.SecurityHelpers.base64Decode(b64Bytes)
-            val filename = S.params("filename").head
-            val jid = S.params("jid").head
-            val server = ServerConfiguration.default
-            XmlResponse(<resourceUrl>{server.postResource(jid, filename, bytes)}</resourceUrl>)
-          })
+        () =>
+      Stopwatch.time("MeTLStatefulRestHelper.upload", {
+        r.body.map(dataUriBytes => {
+          val dataUriString = new String(dataUriBytes)
+          val b64Bytes = dataUriString.split(",")(1)
+          val bytes = net.liftweb.util.SecurityHelpers.base64Decode(b64Bytes)
+          val filename = S.params("filename").head
+          val jid = S.params("jid").head
+          val server = ServerConfiguration.default
+          XmlResponse(<resourceUrl>{server.postResource(jid, filename, bytes)}</resourceUrl>)
         })
+      })
     }
     case r@Req(List("uploadSvg"), _, _) => {
       debug("UploadSvg registered in MeTLStatefulRestHelper")
       //trace(r.body)
-      () =>
-        Stopwatch.time("MeTLStatefulRestHelper.uploadSvg", {
-          for {
-            svgBytes <- r.body
-            w <- r.param("width").map(_.toInt)
-            h <- r.param("height").map(_.toInt)
-            filename <- r.param("filename")
-            jid <- r.param("jid")
-          } yield {
-            val svg = new String(svgBytes)
-            var quality = r.param("quality").map(_.toFloat).getOrElse(0.4f)
-            val bytes = SvgConverter.toJpeg(svg, w, h, quality)
-            val server = ServerConfiguration.default
-            XmlResponse(<resourceUrl>{server.postResource(jid, filename, bytes)}</resourceUrl>)
-          }
-        })
+        () =>
+      Stopwatch.time("MeTLStatefulRestHelper.uploadSvg", {
+        for {
+          svgBytes <- r.body
+          w <- r.param("width").map(_.toInt)
+          h <- r.param("height").map(_.toInt)
+          filename <- r.param("filename")
+          jid <- r.param("jid")
+        } yield {
+          val svg = new String(svgBytes)
+          var quality = r.param("quality").map(_.toFloat).getOrElse(0.4f)
+          val bytes = SvgConverter.toJpeg(svg, w, h, quality)
+          val server = ServerConfiguration.default
+          XmlResponse(<resourceUrl>{server.postResource(jid, filename, bytes)}</resourceUrl>)
+        }
+      })
     }
     case r@Req(List("logDevice"), _, _) => () => {
       r.userAgent.map(ua => {
@@ -612,47 +614,44 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     })
     case r@Req(List("submitProblemReport"), _, PostRequest) =>
       () =>
-        Stopwatch.time("MeTLStatefulRestHelper.submitProblemReport", {
-          for {
-            t <- S.runTemplate(List("_problemReported"))
+      Stopwatch.time("MeTLStatefulRestHelper.submitProblemReport", {
+        for {
+          t <- S.runTemplate(List("_problemReported"))
+        } yield {
+          val reporter = r.param("reporter").getOrElse("unknown reporter")
+          val context = r.param("context").getOrElse("unknown context")
+          val report = r.param("report").getOrElse("unknown report")
+          val nextRandom = nextFuncName(new Date().getTime)
+          val reportId = nextRandom.substring(nextRandom.length - 7, nextRandom.length - 1)
+
+          val detectedState = (for {
+            s <- S.session
+            ds <- tryo({S.initIfUninitted(s){
+              (Globals.currentUser.is,Option(Globals.casState.is))
+            }})
           } yield {
-            val reporter = r.param("reporter").getOrElse("unknown reporter")
-            val context = r.param("context").getOrElse("unknown context")
-            val report = r.param("report").getOrElse("unknown report")
-            val nextRandom = nextFuncName(new Date().getTime)
-            val reportId = nextRandom.substring(nextRandom.length - 7, nextRandom.length - 1)
+            ds
+          }).getOrElse((reporter,None))
 
-            val detectedState = (for {
-              s <- S.session
-              ds <- tryo({S.initIfUninitted(s){
-                (Globals.currentUser.is,Option(Globals.casState.is))
-              }})
-            } yield {
-              ds
-            }).getOrElse((reporter,None))
+          val detectedUser = detectedState._1
+          val casState = detectedState._2.getOrElse("").toString
 
-            val detectedUser = detectedState._1
-            val liftAuthStateData = detectedState._2
-            val rawCasState = liftAuthStateData.getOrElse("").toString
-            val name = CasUtils.getFirstName(liftAuthStateData) + " " + CasUtils.getSurname(liftAuthStateData)
-            val email = CasUtils.getEmailAddress(liftAuthStateData)
-            val orgUnits = CasUtils.getOrgUnits(liftAuthStateData).mkString(", ")
+          val userAgent = r.userAgent.getOrElse("")
 
-            val userAgent = r.userAgent.getOrElse("")
-            error("Problem report from %s (#%s). Name: %s, Username: %s, Email: %s, Context: %s, Report: %s, OrgUnits: %s, UserAgent: %s, CAS State: %s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, userAgent, rawCasState))
-            if (Globals.mailer.nonEmpty) {
-              Globals.mailer.get.sendMailMessage("Problem Report from %s (#%s)".format(r.hostName, reportId),
-                "Host: %s\nReport ID: %s\nName: %s\nUsername: %s\nEmail: %s\nContext: %s\n\nReport:\n%s\n\nOrgUnits:\n%s\n\nUserAgent:\n%s\n\nCAS State:\n%s".format(r.hostName, reportId, name, detectedUser, email, context, report, orgUnits, userAgent, rawCasState))
-            }
-
-            val output = (
-              "#reporter *" #> reporter &
-                "#context *" #> context &
-                "#reportId *" #> reportId
-              ).apply(t)
-            XhtmlResponse(output.head, Empty, Nil, Nil, 200, renderInIEMode = false)
+          error("Problem report from %s (#%s). Reporter: %s, Context: %s, Report: %s, UserAgent: %s, CAS State: %s".format(r.hostName, reportId, detectedUser, context, report, userAgent, casState))
+          if (Globals.mailer.nonEmpty) {
+            Globals.mailer.get.sendMailMessage("Problem Report from %s (#%s)".format(r.hostName, reportId),
+              "Host: %s\nReport ID: %s\nReporter: %s\nContext: %s\n\nReport:\n%s\n\nUserAgent:\n%s\n\nCAS State:\n%s".format(r.hostName, reportId, detectedUser, context, report, userAgent, casState))
           }
-        })
+
+          val output = (
+            "#reporter *" #> reporter &
+              "#context *" #> context &
+              "#reportId *" #> reportId
+          ).apply(t)
+          XhtmlResponse(output.head, Empty, Nil, Nil, 200, false)
+        }
+      })
   }
 }
 object WebMeTLStatefulRestHelper extends RestHelper with Logger{
