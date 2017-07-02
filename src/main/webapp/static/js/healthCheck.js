@@ -1,5 +1,5 @@
 var HealthChecker = (function(){
-    var storeLifetime = 5 * 60 * 1000; //1 minute
+    var storeLifetime = 5 * 60 * 1000; //5 minutes
     var serverStatusInterval = 20000; //every 20 seconds
     var store = {};
     var healthChecking = true;
@@ -400,7 +400,7 @@ var HealthCheckViewer = (function(){
         }
         $(".meters").css("background-color", (function(){
             if (_.some(["latency","serverResponse"], function(category){
-                    return category in data && (data[category] == undefined || data[category].successRate < 1);
+                    return !(category in data) || (data[category] === undefined || data[category].successRate < 1);
                 })){
                 return "red";
             }
@@ -411,7 +411,7 @@ var HealthCheckViewer = (function(){
         })());
         var wasHealthy = healthy;
         healthy = _.every(["latency", "serverResponse"], function (category) {
-            return category in data && data[category] != undefined && data[category].successful;
+            return category in data && data[category] !== undefined && data[category].successful;
         });
         if( wasHealthy != healthy ) {
             blit();
