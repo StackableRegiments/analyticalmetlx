@@ -1,3 +1,13 @@
+1.17.1
+METL-656: Improvement: Add Freeze zoom function, make Autofit toggle with Freeze.
+METL-657: Bugfix: Autofit mode makes zoom jump in and out.
+METL-643: Bugfix: Repeated presses of the zoom button are sometimes ignored.
+METL-648: Bugfix: Content does not render at sufficiently high zoom levels.
+METL-658: Bugfix: Infinite loop caused by teacher fitting to their "teacherViewMoved" command stanzas.
+METL-659: Bugfix: Elements are clipped while they should still be visible.
+METL-660: Bugfix: Ink is drawing in the wrong place at non native zoom.
+METL-661: Bugfix: Zoom zooms to the wrong place.
+
 1.16.2
 METL-649: Bugfix: Problem report fails when LiftAuthStateData does not contain expected values.
 
