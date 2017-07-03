@@ -380,6 +380,7 @@ Bugfix: METL-214: Rename Poll "Display on canvas" to "Display on current page".
 0.12.7
 Bugfix: METL-262: MetlMultiWordTexts don't sort by timestamp correctly when going through fromHistory.
 Bugfix: METL-266: Rooms not being garbage collected.
+
 0.13
 Pre-release-feature: METL-243: Video conferencing.
 Pre-release-feature: METL-208: Group-activity slides.
