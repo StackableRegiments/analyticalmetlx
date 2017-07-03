@@ -1,3 +1,6 @@
+1.17.4
+METL-664: Improvement: Improve formatting of /releaseNotes page.
+
 1.17.3
 METL-598: Improvement: Fix intermittently failing PeriodicallyRefreshingVarSuite.
 METL-586: Improvement: Add "As At" to /statistics.
@@ -219,6 +222,7 @@ Story: METL-430: Teacher restricts student video.
 Story: METL-235: Add Participants and Grades buttons to the Feedback subcontrols.
 Story: METL-329: Teacher edits conversation in popup.
 Story: METL-424: Remember selected video streams after disconnnect/reconnect.
+
 Bugfix: METL-435: Plugins should only be one row tall.
 Bugfix: METL-434: First selected mode should be first in the column.
 Bugfix: METL-416: Using Group Slider position to see other groups is not retained.
@@ -226,6 +230,7 @@ Bugfix: METL-415: Default Groups is to have neither Show All or Isolate radio bu
 Bugfix: METL-444: Groups plugin radios are too high.
 Bugfix: METL-414: Error message when attempting to copy from Smart Groups.
 Bugfix: METL-401: Any canvas content (except for text) cannot be larger than 10k px and render successfully.
+
 Improvement: METL-427: Shrink large square video buttons to small rectangles.
 Improvement: METL-428: Move group name to above group members in Student view.
 Improvement: METL-353: Reduce default text font size.
