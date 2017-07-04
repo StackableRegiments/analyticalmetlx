@@ -36,7 +36,7 @@ var HealthChecker = (function(){
         $.ajax(url,{
             method:"GET",
             success:function(response){
-                if( response.includes("<html") ) {
+                if( _.includes(response,"<html") ) {
                     // Redirect to the url if it returned HTML instead of the latency, as it's likely to be the auth page.
                     window.location.href = url;
                 }
