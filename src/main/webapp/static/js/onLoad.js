@@ -874,7 +874,7 @@ $(function(){
                                     Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
                                     yOffset += Math.max(imgNode.height,50);
                                 } catch (e){
-                                    errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
+                                    errorAlert("Error dropping image","The source server you're dragging the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
                                 }
                             });
                             if (htmlElem.text().trim().length > 1){
@@ -952,7 +952,7 @@ $(function(){
                                 Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
                                 yOffset += Math.max(imgNode.height,50);
                             } catch (e){
-                                errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
+                                errorAlert("Error dropping image","The source server you're dragging the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
                             }
                         });
                         if (htmlElem.text().trim().length > 1){
