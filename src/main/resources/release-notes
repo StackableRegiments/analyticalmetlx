@@ -1,3 +1,26 @@
+1.17.4
+METL-664: Improvement: Improve formatting of /releaseNotes page.
+
+1.17.3
+METL-598: Improvement: Fix intermittently failing PeriodicallyRefreshingVarSuite.
+METL-586: Improvement: Add "As At" to /statistics.
+METL-651: Improvement: Set focus to name field in default login form.
+METL-603: Bugfix: Disconnection from server causes JSON parse error.
+METL-623: Bugfix: Banned students should not be able to stream video.
+
+1.17.2
+METL-647: Improvement: Enterprise dashboard not able to cope with load.
+
+1.17.1
+METL-656: Improvement: Add Freeze zoom function, make Autofit toggle with Freeze.
+METL-657: Bugfix: Autofit mode makes zoom jump in and out.
+METL-643: Bugfix: Repeated presses of the zoom button are sometimes ignored.
+METL-648: Bugfix: Content does not render at sufficiently high zoom levels.
+METL-658: Bugfix: Infinite loop caused by teacher fitting to their "teacherViewMoved" command stanzas.
+METL-659: Bugfix: Elements are clipped while they should still be visible.
+METL-660: Bugfix: Ink is drawing in the wrong place at non native zoom.
+METL-661: Bugfix: Zoom zooms to the wrong place.
+
 1.16.2
 METL-649: Bugfix: Problem report fails when LiftAuthStateData does not contain expected values.
 
@@ -199,7 +222,6 @@ Story: METL-430: Teacher restricts student video.
 Story: METL-235: Add Participants and Grades buttons to the Feedback subcontrols.
 Story: METL-329: Teacher edits conversation in popup.
 Story: METL-424: Remember selected video streams after disconnnect/reconnect.
-
 Bugfix: METL-435: Plugins should only be one row tall.
 Bugfix: METL-434: First selected mode should be first in the column.
 Bugfix: METL-416: Using Group Slider position to see other groups is not retained.
@@ -207,7 +229,6 @@ Bugfix: METL-415: Default Groups is to have neither Show All or Isolate radio bu
 Bugfix: METL-444: Groups plugin radios are too high.
 Bugfix: METL-414: Error message when attempting to copy from Smart Groups.
 Bugfix: METL-401: Any canvas content (except for text) cannot be larger than 10k px and render successfully.
-
 Improvement: METL-427: Shrink large square video buttons to small rectangles.
 Improvement: METL-428: Move group name to above group members in Student view.
 Improvement: METL-353: Reduce default text font size.

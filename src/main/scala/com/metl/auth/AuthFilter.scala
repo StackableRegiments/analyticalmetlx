@@ -629,10 +629,10 @@ class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[D
   }
 }
 
-class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],validateFunc:Map[String,String]=>Option[Tuple3[String,List[Tuple2[String,String]],List[Tuple2[String,String]]]],descriptiveHtml:String) extends FilterAuthenticator(sessionStore) {
+class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[(String,String)],validateFunc:Map[String,String]=>Option[Tuple3[String,List[Tuple2[String,String]],List[Tuple2[String,String]]]],descriptiveHtml:String) extends FilterAuthenticator(sessionStore) {
   case class FormInProgress(override val session:HttpSession,override val storedRequests:Map[String,HttpServletRequest],gensymMap:Map[String,String]) extends InProgressAuthSession(session,storedRequests,identifier)
   override def generateStore(authSession:AuthSession,reqs:Map[String,HttpServletRequest]):InProgressAuthSession = {
-    val securedFormNamesLookup = Map(fields.map(f => (f,nextFuncName)):_*)
+    val securedFormNamesLookup = Map(fields.map(f => (f._1,nextFuncName)):_*)
     FormInProgress(authSession.session,updatedStore(authSession,reqs),securedFormNamesLookup)
   }
   override def shouldHandle(authSession:AuthSession,req:HttpServletRequest,session:HttpSession):Boolean = authSession match {
@@ -665,19 +665,24 @@ class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],va
     })
     res.getWriter.println(
 """<html>
-  %s
-  <form method="post" action="%s">
     %s
-    %s
-    <input type="submit" value"login"/>
-  </form>
+    <form method="post" action="%s">
+      %s
+      %s
+      <input type="submit" value"login"/>
+    </form>
+    <script>
+    window.onload = function(){
+      document.getElementById("username").focus();
+    }
+    </script>
 </html>""".format(
       descriptiveHtml,
       getRequestRedirect(req),
-      getReqId(req).map(reqId => """<input type="hidden" name="%s" value="%s"/>""".format(reqIdParameter,reqId)).getOrElse(""), 
+      getReqId(req).map(reqId => """<input type="hidden" name="%s" value="%s"/>""".format(reqIdParameter,reqId)).getOrElse(""),
       fields.flatMap(f => {
-        authSession.gensymMap.get(f).map(securedName => {
-          """<label for="%s">%s</label><input name="%s" type="text"/>""".format(securedName,f,securedName)
+        authSession.gensymMap.get(f._1).map(securedName => {
+          """<label for="%s">%s</label> <input id="username" name="%s" type="text"/>""".format(securedName,f._2,securedName)
         })
       }).mkString(""))
     )
@@ -687,7 +692,7 @@ class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],va
   }
   def validateForm(authSession:FormInProgress,req:HttpServletRequest,res:HttpServletResponse):Boolean = {
     val fieldMap = Map(fields.flatMap(f => {
-      authSession.gensymMap.get(f).map(securedName => (f,req.getParameter(securedName)))
+      authSession.gensymMap.get(f._1).map(securedName => (f._1,req.getParameter(securedName)))
     }):_*)
     validateFunc(fieldMap).map(userTup => {
       sessionStore.updateSession(authSession.session,s => HealthyAuthSession(authSession.session,authSession.storedRequests,userTup._1,userTup._2,userTup._3))
@@ -698,7 +703,7 @@ class FormAuthenticator(sessionStore:LowLevelSessionStore,fields:List[String],va
   }
 }
 
-class UsernameSettingForm(sessionStore:LowLevelSessionStore,descriptiveHtml:String) extends FormAuthenticator(sessionStore,List("username"),(m:Map[String,String]) => {
+class UsernameSettingForm(sessionStore:LowLevelSessionStore,descriptiveHtml:String) extends FormAuthenticator(sessionStore,List(("username","Username")),(m:Map[String,String]) => {
   m.get("username").filterNot(s => s == null || s.trim == "").map(username => (username,Nil,Nil))
 },descriptiveHtml)
 

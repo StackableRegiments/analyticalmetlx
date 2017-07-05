@@ -1,5 +1,5 @@
 var HealthChecker = (function(){
-    var storeLifetime = 5 * 60 * 1000; //1 minute
+    var storeLifetime = 5 * 60 * 1000; //5 minutes
     var serverStatusInterval = 20000; //every 20 seconds
     var store = {};
     var healthChecking = true;
@@ -35,20 +35,26 @@ var HealthChecker = (function(){
         setLatencyIndeterminate(true);
         $.ajax(url,{
             method:"GET",
-            success:function(jsonTime){
-                setLatencyIndeterminate(false);
-                var nowTime = new Date();
-                var timeObj = JSON.parse(jsonTime);
-                var time = timeObj.serverWorkTime;
-                var serverWorkTime = parseInt(time);
-                var totalTime = new Date().getTime() - clientStart;
-                var latency = (totalTime - serverWorkTime) / 2;
+            success:function(response){
+                if( _.includes(response,"<html") ) {
+                    // Redirect to the url if it returned HTML instead of the latency, as it's likely to be the auth page.
+                    window.location.href = url;
+                }
+                else {
+                    setLatencyIndeterminate(false);
+                    var nowTime = new Date();
+                    var timeObj = JSON.parse(response);
+                    var time = timeObj.serverWorkTime;
+                    var serverWorkTime = parseInt(time);
+                    var totalTime = new Date().getTime() - clientStart;
+                    var latency = (totalTime - serverWorkTime) / 2;
 
-                var serverSideTime = timeObj.serverTime;
-                clockOffset = nowTime.getTime() - (serverSideTime + latency);
-                addMeasureFunc("serverResponse",true,serverWorkTime);
-                addMeasureFunc("latency",true,latency);
-                _.delay(check,serverStatusInterval);
+                    var serverSideTime = timeObj.serverTime;
+                    clockOffset = nowTime.getTime() - (serverSideTime + latency);
+                    addMeasureFunc("serverResponse",true,serverWorkTime);
+                    addMeasureFunc("latency",true,latency);
+                    _.delay(check,serverStatusInterval);
+                }
             },
             dataType:"text",
             error:function(){
@@ -394,7 +400,7 @@ var HealthCheckViewer = (function(){
         }
         $(".meters").css("background-color", (function(){
             if (_.some(["latency","serverResponse"], function(category){
-                    return category in data && data[category].successRate < 1;
+                    return !(category in data) || (data[category] === undefined || data[category].successRate < 1);
                 })){
                 return "red";
             }
@@ -405,7 +411,7 @@ var HealthCheckViewer = (function(){
         })());
         var wasHealthy = healthy;
         healthy = _.every(["latency", "serverResponse"], function (category) {
-            return category in data && data[category].successful;
+            return category in data && data[category] !== undefined && data[category].successful;
         });
         if( wasHealthy != healthy ) {
             blit();

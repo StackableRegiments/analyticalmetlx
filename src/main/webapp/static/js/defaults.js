@@ -130,7 +130,7 @@ var Colors = (function(){
 			var score = rawScore % 25;
 			var alpha = 255
 			var rgb = niceColours[score];
-			console.log("colorFor",seed,rawScore,score,rgb);
+			// console.log("colorFor",seed,rawScore,score,rgb);
 			return [rgb,alpha];	
 		};
     return {

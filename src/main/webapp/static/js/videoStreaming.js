@@ -6,7 +6,7 @@ var TokBox = (function(){
         //refreshAllVisualStates();
     };
     var initialized = false;
-    var sessions = {}
+    var sessions = {};
     var receiveTokBoxSessionFunc = function(desc){
         if (initialized){
             sessionsContainer.css({display:"flex"});
@@ -25,9 +25,9 @@ var TokBox = (function(){
                     session.refreshVisualState();
                 }
             }
-	    else{
-		errorAlert("Could not connect video","Please check your network connection");
-	    }
+            else{
+                errorAlert("Could not connect video","Please check your network connection");
+            }
         }
     };
     var removeSessionsFunc = function(sessionIds){
@@ -47,7 +47,7 @@ var TokBox = (function(){
     var publishingPermitted = false;
     var actOnConversationDetails = function(c){
         if (c){
-            publishingPermitted = ("permissions" in c && c.permissions.studentsMayBroadcast);
+            publishingPermitted = ("permissions" in c && c.permissions.studentsMayBroadcast && !Conversations.getIsBanned(c));
             if (teacherControls){
                 if (Conversations.shouldModifyConversation(c)){
                     teacherControls.show();
@@ -72,6 +72,8 @@ var TokBox = (function(){
     };
 
     Progress.conversationDetailsReceived["TokBox"] = actOnConversationDetails;
+    Progress.userBanned["TokBox"] = actOnConversationDetails;
+    Progress.userUnbanned["TokBox"] = actOnConversationDetails;
     return {
         getSessions:function(){return sessions;},
         initialize:function(){
@@ -148,7 +150,7 @@ var TokBoxSession = function(desc,sessionContainer){
     var refreshVisualState = function(){
         streamButton.unbind("click");
 
-        if (isConnected() && TokBox.canPublish()){
+        if (isConnected() && TokBox.canPublish() && !session.studentsMayBroadcast){
             streamContainer.show();
             if ("capabilities" in session && "publish" in session.capabilities && session.capabilities.publish == 1){
                 publishButtonContainer.show();

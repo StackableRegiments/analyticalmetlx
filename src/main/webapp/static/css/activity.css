@@ -8,3 +8,7 @@
     -webkit-justify-content: center;
     justify-content: center;
 }
+
+#courses-container {
+    width: 350px;
+}
