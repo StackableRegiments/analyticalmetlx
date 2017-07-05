@@ -621,7 +621,7 @@ $(function(){
                     height:px(size)
                 })
                 .click(bounceAnd(function(){
-                    console.log("Setting user pref",pref,size);
+                    // console.log("Setting user pref",pref,size);
                     UserSettings.setUserPref(pref,size);
                     var mode = Modes.currentMode;
                     Modes.none.activate();
@@ -830,7 +830,7 @@ $(function(){
                 files:files,
                 types:availableTypes
             };
-            console.log("newDf",newDf);
+            // console.log("newDf",newDf);
             var dataSets = _.map(availableTypes,function(type){
                 return {
                     key:type,
@@ -843,7 +843,7 @@ $(function(){
                     action(elem,df.getData(elem));
                 };
             };
-            console.log("availableTypes:",availableTypes,items,files);
+            console.log("Data transfer - availableTypes:",availableTypes,items,files);
             if (_.size(availableTypes) > 1){
                 var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
                 var rootElem = pasteDialogTemplate.clone().attr("id",rootId);
@@ -968,7 +968,7 @@ $(function(){
                     }
                 });
                 if (!handled){
-                    console.log("unknown type",df);
+                    console.log("Data transfer - unknown type",df);
                 }
             }
             ev.preventDefault();
@@ -998,7 +998,7 @@ $(function(){
             return t;
         }
     }).on("success",function(e){
-        console.log(e);
+        // console.log(e);
         alert("Link copied to clipboard");
     }).on('error', function(e) {
         console.error('Action:', e.action);
