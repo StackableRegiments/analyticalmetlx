@@ -260,7 +260,6 @@ var TweenController = (function(){
         viewboxY = finalY;
         viewboxWidth = finalWidth;
         viewboxHeight = finalHeight;
-	console.log("after instant translate",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
         if (!shouldAvoidUpdatingRequestedViewbox){
             updateRequestedPosition();
         }
