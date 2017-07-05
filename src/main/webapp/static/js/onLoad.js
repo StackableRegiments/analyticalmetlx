@@ -105,12 +105,12 @@ var WorkQueue = (function(){
 var Pan = {
     pan:function(xDelta,yDelta){
         takeControlOfViewbox(true);
-	var s = scale();
+	    var s = scale();
         TweenController.panViewboxRelative(xDelta / s, yDelta / s);
     },
-    translate:function(xDelta,yDelta){
+        translate:function(xDelta,yDelta){
         takeControlOfViewbox(true);
-	var s = scale();
+	    var s = scale();
         TweenController.translateViewboxRelative(xDelta / s, yDelta / s);
     }
 }
@@ -260,7 +260,6 @@ var TweenController = (function(){
         viewboxY = finalY;
         viewboxWidth = finalWidth;
         viewboxHeight = finalHeight;
-	console.log("after instant translate",viewboxX,viewboxY,viewboxWidth,viewboxHeight);
         if (!shouldAvoidUpdatingRequestedViewbox){
             updateRequestedPosition();
         }
@@ -622,7 +621,7 @@ $(function(){
                     height:px(size)
                 })
                 .click(bounceAnd(function(){
-                    console.log("Setting user pref",pref,size);
+                    // console.log("Setting user pref",pref,size);
                     UserSettings.setUserPref(pref,size);
                     var mode = Modes.currentMode;
                     Modes.none.activate();
@@ -831,7 +830,7 @@ $(function(){
                 files:files,
                 types:availableTypes
             };
-            console.log("newDf",newDf);
+            // console.log("newDf",newDf);
             var dataSets = _.map(availableTypes,function(type){
                 return {
                     key:type,
@@ -844,7 +843,7 @@ $(function(){
                     action(elem,df.getData(elem));
                 };
             };
-            console.log("availableTypes:",availableTypes,items,files);
+            console.log("Data transfer - availableTypes:",availableTypes,items,files);
             if (_.size(availableTypes) > 1){
                 var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
                 var rootElem = pasteDialogTemplate.clone().attr("id",rootId);
@@ -875,7 +874,7 @@ $(function(){
                                     Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
                                     yOffset += Math.max(imgNode.height,50);
                                 } catch (e){
-                                    errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
+                                    errorAlert("Error dropping image","The source server you're dragging the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
                                 }
                             });
                             if (htmlElem.text().trim().length > 1){
@@ -953,7 +952,7 @@ $(function(){
                                 Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
                                 yOffset += Math.max(imgNode.height,50);
                             } catch (e){
-                                errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
+                                errorAlert("Error dropping image","The source server you're dragging the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
                             }
                         });
                         if (htmlElem.text().trim().length > 1){
@@ -969,7 +968,7 @@ $(function(){
                     }
                 });
                 if (!handled){
-                    console.log("unknown type",df);
+                    console.log("Data transfer - unknown type",df);
                 }
             }
             ev.preventDefault();
@@ -999,7 +998,7 @@ $(function(){
             return t;
         }
     }).on("success",function(e){
-        console.log(e);
+        // console.log(e);
         alert("Link copied to clipboard");
     }).on('error', function(e) {
         console.error('Action:', e.action);

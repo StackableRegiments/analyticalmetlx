@@ -103,7 +103,6 @@ trait JsonSerializerHelper {
       }
       case _ => Nil
     })
-    //input.values(name).asInstanceOf[List[AnyRef]].map(i => i.asInstanceOf[JObject])
   }
   def getOptionalObjectByName(input:JObject,name:String) = input.obj.find(_.name == name).toList.headOption 
   def getColorByName(input:JObject,name:String) = input.values(name).asInstanceOf[List[Any]]

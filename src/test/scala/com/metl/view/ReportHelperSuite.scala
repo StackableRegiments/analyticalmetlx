@@ -11,7 +11,8 @@ class ReportHelperSuite extends FunSuite with AsyncAssertions with MustMatchers 
       RowTime(3000, present = true),
       RowTime(5000, present = false)
     ))
-    assert(result === (4,false))
+    assert(result._1 === 4)
+    assert(result._2 === false)
   }
 
   test("duration calculated for enter and exit, enter and exit") {
@@ -22,7 +23,8 @@ class ReportHelperSuite extends FunSuite with AsyncAssertions with MustMatchers 
       RowTime(10000, present = true),
       RowTime(15000, present = false)
     ))
-    assert(result === (9,false))
+    assert(result._1 === 9)
+    assert(result._2 === false)
   }
 
   test("duration calculated for enter and exit, enter") {
@@ -32,7 +34,8 @@ class ReportHelperSuite extends FunSuite with AsyncAssertions with MustMatchers 
       RowTime(5000, present = false),
       RowTime(10000, present = true)
     ))
-    assert(result === (4,true))
+    assert(result._1 === 4)
+    assert(result._2 === true)
   }
 
   test("duration calculated for enter and exit, enter, enter") {
@@ -43,7 +46,8 @@ class ReportHelperSuite extends FunSuite with AsyncAssertions with MustMatchers 
       RowTime(10000, present = true),
       RowTime(15000, present = true)
     ))
-    assert(result === (9,true))
+    assert(result._1 === 9)
+    assert(result._2 === true)
   }
 
   test("duration calculated for exit, enter, enter, exit") {
@@ -54,7 +58,8 @@ class ReportHelperSuite extends FunSuite with AsyncAssertions with MustMatchers 
       RowTime(10000, present = true),
       RowTime(15000, present = false)
     ))
-    assert(result === (7,false))
+    assert(result._1 === 7)
+    assert(result._2 === false)
   }
 
   test("duration calculated for enter, enter, enter, exit") {
@@ -64,7 +69,8 @@ class ReportHelperSuite extends FunSuite with AsyncAssertions with MustMatchers 
       RowTime(10000, present = true),
       RowTime(15000, present = false)
     ))
-    assert(result === (14,false))
+    assert(result._1 === 14)
+    assert(result._2 === false)
   }
 
   test("excessive duration calculated for enter, exit") {
@@ -72,6 +78,7 @@ class ReportHelperSuite extends FunSuite with AsyncAssertions with MustMatchers 
       RowTime(1000, present = true),
       RowTime(3000000, present = false)
     ))
-    assert(result === (300,false))
+    assert(result._1 === 300)
+    assert(result._2 === false)
   }
 }
