@@ -1,7 +1,6 @@
 package com.metl.comet
 
 import com.metl.data._
-import com.metl.utils._
 import com.metl.liftExtensions._
 import net.liftweb._
 import net.liftweb.json._
@@ -10,8 +9,6 @@ import http._
 import net.liftweb.http.js.JsCmds.SetHtml
 import util._
 import Helpers._
-import HttpHelpers._
-import actor._
 
 import scala.xml._
 import com.metl.model._
@@ -20,8 +17,6 @@ import org.fluttercode.datafactory.impl._
 import js._
 import JsCmds._
 import JE._
-import net.liftweb.http.js.jquery.JqJsCmds._
-import net.liftweb.http.js.jquery.JqJE._
 
 import scala.collection.mutable.{ListBuffer,Queue}
 
@@ -75,6 +70,12 @@ object Dimensions {
   val lineHeight = 200
   val horizontalSpace = 30
 }
+case class Intention(label:String)
+object Intentions {
+  val Benign = Intention("benign")
+  val Malicious = Intention("malicious")
+  val Other = Intention("other")
+}
 
 import ScanDirections._
 
@@ -89,7 +90,7 @@ case class Flash(selector:String)
 case class ShowClick(selector:String)
 
 case class ClaimedArea(left:Double,top:Double,right:Double,bottom:Double,width:Double)
-case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:ScanDirection,intention:String,activity:SimulatedActivity,history:List[SimulatedActivity]){
+case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:ScanDirection,intention:Intention,activity:SimulatedActivity,history:List[SimulatedActivity]){
   def pan(x:Int,y:Int = 0) = copy(focus = Point(focus.x + x,focus.y + y,0))
 }
 
@@ -98,10 +99,10 @@ case class TrainingManual(actor:TrainerActor) {
   val namer = new DataFactory
   def el(label:String,content:String) = Elem.apply(null,label,scala.xml.Null,scala.xml.TopScope,Text(content))
   def p(content:String) = TrainingInstruction(el("p",content))
-  def makeStudent(intent:String) = TrainingControl(
+  def makeStudent(intent:Intention) = TrainingControl(
     "Bring in some students".format(intent),c => {
       c.progress
-      actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
+      actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,Intentions.Benign,Watching(0),List.empty[SimulatedActivity]) :: actor.users
     }).reps(3)
   val networkMonitor:TrainingControl = TrainingControl(
     "How can I tell if there's a problem?",
@@ -161,7 +162,7 @@ case class TrainingManual(actor:TrainerActor) {
       Text("Sharing an open space"),
       List(
         p("In this trainer you can bring virtual students into your classroom.  These students will stay with you during your training session."),
-        makeStudent("benign"),
+        makeStudent(Intentions.Benign),
         p("The students you create can work anywhere, even outside of where you are currently looking."),
         p("To observe all their work, set your camera to include all content no matter where it appears."),
         TrainingControl(
@@ -297,9 +298,9 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
             }
             val claim = findFreeSpace(width, direction,users.map(_.claim))
             furtherClaimsAllowed = false
-            // Kick off Typing instead of Scribbling. How to choose which?
             u.copy(activity=Scribbling(name.toLowerCase.toList), focus=Point(claim.left,claim.top,0), claim=claim, attention=direction)
-//            u.copy(activity=Typing(name.toLowerCase.toList), focus=Point(claim.left,claim.top,0), claim=claim, attention=direction)
+            // Kick off Typing instead of Scribbling. How to choose which?
+            //            u.copy(activity=Typing(name.toLowerCase.toList), focus=Point(claim.left,claim.top,0), claim=claim, attention=direction)
           }
           case _ => u.copy(activity = Watching(ticks + 1))
         }
@@ -309,43 +310,43 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
           case g => {
             currentSlide.map(slide => {
               val room = MeTLXConfiguration.getRoom(slide, server)
-              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLInk(serverConfig, name, new java.util.Date().getTime, sum, sum,
-                geometry, getColorForIntention(intention), 2.0, false, "presentationSpace", Privacy.PUBLIC, slide.toString, nextFuncName)))
+              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLInk(serverConfig, name, new java.util.Date().getTime,
+                sum, sum, geometry, getColorForIntention(intention), 2.0, false, "presentationSpace", Privacy.PUBLIC,
+                slide.toString, nextFuncName)))
             })
             u.pan(g.width).copy(activity = Scribbling(t), history = Scribbling(List(h)) :: u.history)
           }
         }
         case u@SimulatedUser(name,claim,focus,_,intention,Typing(Nil),history) => u.copy(activity = Watching(0))
         case u@SimulatedUser(name,claim,focus,_,intention,Typing(h :: t),history) if h == ' ' => u.pan(Alphabet.space.width).copy(activity = Typing(t),history = Typing(List(h)) :: u.history)
-/*
         case u@SimulatedUser(name,claim,focus,_,intention,Typing(h :: t),history) => Alphabet.geometry(h,focus) match {
           case g => {
             currentSlide.map(slide => {
               val room = MeTLXConfiguration.getRoom(slide,server)
-              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig,name,new java.util.Date().getTime,"b",x,y,width,height,fontFamily,fontSize,
-                intention match {
-                  case "benign" => Color(255,255,0,0)
-                  case "malicious" => Color(255,0,0,255)
-                  case _ => Color(255,0,255,0)
-                },2.0,nextFuncName,"presentationSpace",Privacy.PUBLIC,slide.toString)))
-              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig,name,new java.util.Date().getTime,"b",x,y,width,height,fontFamily,fontSize,getColorForIntention(intention),2.0,nextFuncName,"presentationSpace",Privacy.PUBLIC,slide.toString)))
+              g.strokes.map(geometry => writeText(room, slide, focus, "Cat"))
             })
             u.pan(g.width).copy(activity = Scribbling(t),history = Typing(List(h)) :: u.history)
           }
         }
-*/
       }
       partialUpdate(Call("Trainer.simulatedUsers",Extraction.decompose(users)).cmd)
       Schedule.schedule(this,SimulatorTick,1000)
     }
   }
 
-  protected def getColorForIntention(intention: String) = {
+  protected def getColorForIntention(intention: Intention) = {
     intention match {
-      case "benign" => Color(255, 255, 0, 0)
-      case "malicious" => Color(255, 0, 0, 255)
-      case _ => Color(255, 0, 255, 0)
+      case Intentions.Benign => Color(255, 0, 255, 0)
+      case Intentions.Malicious => Color(255, 255, 0, 0)
+      case _ => Color(255, 0, 0, 255)
     }
+  }
+
+  protected def writeText(room:MeTLRoom, slide:String, location:Point, text:String): Unit = {
+    room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig, "simulator", new java.util.Date().getTime,
+      location.x, location.y, 200, 100, 100, "tag", "identity", "presentationSpace", Privacy.PUBLIC, slide,
+      List(MeTLTextWord(text, bold = false, underline = false, italic = false, "LEFT", getColorForIntention(Intentions.Benign), "Arial", 12.0))
+    ))
   }
 
   val humanAuthor = "public"
@@ -368,7 +369,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   override def localSetup = {
     super.localSetup
     val newConversation = serverConfig.createConversation("a practice conversation",username)
-    currentConversation = Full(addSampleSlides(newConversation))
+    currentConversation = Full(addSampleSlides(newConversation.jid.toString))
     currentSlide = Full(newConversation.slides.head.id.toString)
 
     triggers = List(
@@ -408,24 +409,24 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     Schedule.schedule(this,SimulatorTick,500)
   }
 
-  protected def addSampleSlides(conversation:Conversation): Conversation = {
-    var newConversation = serverConfig.addSlideAtIndexOfConversation(conversation.jid.toString, 1)
-    val slide2 = newConversation.slides(1)
-    val room2 = MeTLXConfiguration.getRoom(slide2.id.toString, server)
-    writeText(slide2, room2, "Dog")
+  protected def addSampleSlides(conversationId:String): Conversation = {
+    var newConversation = serverConfig.addSlideAtIndexOfConversation(conversationId, 1)
+    var slide = newConversation.findSlideByIndex(1)
+    if( slide.nonEmpty) {
+      val slideId = slide.get.id.toString
+      val room2 = MeTLXConfiguration.getRoom(slideId, server)
+      writeText(room2, slideId, new Point(100, 100, 1), "Slide2")
+    }
 
-    newConversation = serverConfig.addSlideAtIndexOfConversation(newConversation.jid.toString, 2)
-    val slide3 = newConversation.slides(2)
-    val room3 = MeTLXConfiguration.getRoom(slide2.id.toString, server)
+    newConversation = serverConfig.addSlideAtIndexOfConversation(conversationId, 2)
+    slide = newConversation.findSlideByIndex(2)
+    if( slide.nonEmpty) {
+      val slideId = slide.get.id.toString
+      val room3 = MeTLXConfiguration.getRoom(slideId, server)
+      writeText(room3, slideId, new Point(200, 200, 1), "Slide3")
+    }
 
     newConversation
-  }
-
-  protected def writeText(slide:Slide, room:MeTLRoom, text:String): Unit = {
-    room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig, "simulator", new java.util.Date().getTime,
-      100, 200, 200, 100, 100, "tag", "identity", "presentationSpace", Privacy.PUBLIC, slide.toString,
-      List(MeTLTextWord(text, bold = false, underline = false, italic = false, "LEFT", getColorForIntention("benign"), "Arial", 12.0))
-    ))
   }
 
   def checkbox(checked:Boolean):NodeSeq = {

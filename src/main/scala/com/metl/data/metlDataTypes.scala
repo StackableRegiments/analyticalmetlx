@@ -214,8 +214,17 @@ case class Conversation(override val server:ServerConfiguration,author:String,la
     val newSlides = Slide(server,author,newId,index) :: oldSlides
     replaceSlides(newSlides)
   }
-  def replaceSlides(newSlides:List[Slide]) = copy(slides=newSlides,lastAccessed = new Date().getTime)
-  def setForeignRelationship(fr:Option[ForeignRelationship]) = copy(foreignRelationship = fr,lastAccessed=new Date().getTime)
+  def addSlideAtEnd: Conversation = {
+    val newId = slides.map(s => s.id).max + 1
+    val newIndex = slides.map(s => s.index).max + 1
+    val newSlides = (Slide(server,author,newId,newIndex) :: slides.reverse).reverse
+    replaceSlides(newSlides)
+  }
+  def findSlideByIndex(index:Int):Option[Slide] = {
+    slides.find(s => s.index == index)
+  }
+  def replaceSlides(newSlides:List[Slide]): Conversation = copy(slides=newSlides,lastAccessed = new Date().getTime)
+  def setForeignRelationship(fr:Option[ForeignRelationship]): Conversation = copy(foreignRelationship = fr,lastAccessed=new Date().getTime)
 }
 object Conversation{
   def empty = Conversation(ServerConfiguration.empty,"",0L,List.empty[Slide],"","",0,"",0L,Permissions.default(ServerConfiguration.empty),Nil,Nil)
