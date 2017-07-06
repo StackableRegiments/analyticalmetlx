@@ -21,8 +21,9 @@ object VersionFacts extends Logger {
       }
     }
   }
-  val releaseNotes:List[String] = {
-    getResourceAsString("release-notes").split("\r").flatMap(_.split("\n").toList).toList.map(_.trim).filterNot(_ == "").toList
+  val releaseNotes:List[List[String]] = {
+    val sections = getResourceAsString("release-notes").split("(?m)^\\s*$")
+    sections.map(s => { s.trim.split("\r").flatMap(_.trim.split("\n").toList).toList.map(_.trim)}).toList
   }
 }
 
@@ -39,10 +40,14 @@ class VersionDescriber {
     ".version" #> {
       ".sbtVersion *" #> Text(BuildInfo.sbtVersion)
     } &
-    ".releaseNotes" #> {
-      ".releaseNotesTextItem *" #> VersionFacts.releaseNotes.map(rn => {
-        Text(rn)
+    "#releaseNotesContainer" #> VersionFacts.releaseNotes.map(s => {
+        ".releaseNotesSection *" #> <div>{
+          <p><strong>{s.head}</strong></p>
+          <ul>{
+            s.tail.map(rn => {
+            <li>{Text(rn)}</li>
+          })}</ul>
+        }</div>
       })
-    }
   }
 }

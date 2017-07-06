@@ -104,17 +104,14 @@ var WorkQueue = (function(){
 })();
 var Pan = {
     pan:function(xDelta,yDelta){
-        takeControlOfViewbox();
-        var xScale = viewboxWidth / boardWidth;
-        var yScale = viewboxHeight / boardHeight;
-        TweenController.panViewboxRelative(xDelta * xScale, yDelta * yScale);
+        takeControlOfViewbox(true);
+	    var s = scale();
+        TweenController.panViewboxRelative(xDelta / s, yDelta / s);
     },
-    translate:function(xDelta,yDelta){
-        takeControlOfViewbox();
-        var xScale = viewboxWidth / boardWidth;
-        var yScale = viewboxHeight / boardHeight;
-        console.log("Translate",xDelta,yDelta,xScale,yScale);
-        TweenController.translateViewboxRelative(xDelta * xScale, yDelta * yScale);
+        translate:function(xDelta,yDelta){
+        takeControlOfViewbox(true);
+	    var s = scale();
+        TweenController.translateViewboxRelative(xDelta / s, yDelta / s);
     }
 }
 var Zoom = (function(){
@@ -174,7 +171,7 @@ var Zoom = (function(){
     }
     return {
         scale:function(scale,ignoreLimits){
-            takeControlOfViewbox();
+            takeControlOfViewbox(true);
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -191,7 +188,7 @@ var Zoom = (function(){
             TweenController.scaleAndTranslateViewbox(finalX,finalY,requestedWidth,requestedHeight);
         },
         zoom:function(scale,ignoreLimits,onComplete){
-            takeControlOfViewbox();
+            takeControlOfViewbox(true);
             var requestedWidth = viewboxWidth * scale;
             var requestedHeight = viewboxHeight * scale;
             if(!ignoreLimits){
@@ -259,10 +256,10 @@ var TweenController = (function(){
             tween.stop();
         }
         tween = false;
-        tX = viewboxX = finalX;
-        tY = viewboxY = finalY;
-        tW = viewboxWidth = finalWidth;
-        tH = viewboxHeight = finalHeight;
+        viewboxX = finalX;
+        viewboxY = finalY;
+        viewboxWidth = finalWidth;
+        viewboxHeight = finalHeight;
         if (!shouldAvoidUpdatingRequestedViewbox){
             updateRequestedPosition();
         }
@@ -275,7 +272,6 @@ var TweenController = (function(){
     };
     var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
-            //var ps = [x,y,w,h,DeviceConfiguration.getIdentity(),Conversations.getCurrentSlideJid()];
             var ps = [x,y,w,h,Date.now(),Conversations.getCurrentSlideJid(),"autoZooming" in Progress.onBoardContentChanged];
             if(w <= 0 || h <= 0){
                 return;
@@ -297,7 +293,6 @@ var TweenController = (function(){
         }
     },300);
     var tween;
-    var tX,tY,tW,tH;/*These T variables are to hold the visual box as it is zooming, so that no element gets tricked into trying to measure against a mid-tween viewbox.  The logical state is set to what it will be after the zoom*/
     var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
@@ -310,10 +305,6 @@ var TweenController = (function(){
         var startY = viewboxY;
         var startWidth = viewboxWidth;
         var startHeight = viewboxHeight;
-        tX = startX;
-        tY = startY;
-        tW = startWidth;
-        tH = startHeight;
         var xDelta = finalX - startX;
         var yDelta = finalY - startY;
         var widthDelta = finalWidth - startWidth;
@@ -329,16 +320,16 @@ var TweenController = (function(){
             .to({x:xDelta,y:yDelta,w:widthDelta,h:heightDelta}, interval)
             .easing(TWEEN.Easing.Quadratic.Out)
             .onUpdate(function(){
-                tX = startX + this.x;
-                tY = startY + this.y;
-                tW = startWidth + this.w;
-                tH = startHeight + this.h;
+                viewboxX = startX + this.x;
+                viewboxY = startY + this.y;
+                viewboxWidth = startWidth + this.w;
+                viewboxHeight = startHeight + this.h;
             }).onComplete(function(){
                 tween = false;
-                tX = viewboxX = finalX;
-                tY = viewboxY = finalY;
-                tW = viewboxWidth = finalWidth;
-                tH = viewboxHeight = finalHeight;
+                viewboxX = finalX;
+                viewboxY = finalY;
+                viewboxWidth = finalWidth;
+                viewboxHeight = finalHeight;
                 blit();
                 if (!shouldAvoidUpdatingRequestedViewbox){
                     updateRequestedPosition();
@@ -353,7 +344,6 @@ var TweenController = (function(){
             if (tween){
                 TWEEN.update();
                 blit();
-                // console.log("Tween blit");
                 requestAnimationFrame(update);
             }
         };
@@ -378,7 +368,7 @@ var TweenController = (function(){
         zoomAndPanViewboxRelative:zoomAndPanViewboxRelativeFunction,
         scaleAndTranslateViewboxRelative:scaleAndTranslateViewboxRelativeFunction,
         immediateView:function(){
-            return [tX, tY, tW, tH];
+            return [viewboxX, viewboxY, viewboxX+viewboxWidth, viewboxY+viewboxHeight];
         }
     }
 })();
@@ -595,6 +585,7 @@ $(function(){
     $("#zoomToFull").click(bounceAnd(function(){ zoomToFit(); }));
     $("#zoomToPage").click(bounceAnd(function(){ zoomToPage(); }));
     $("#zoomToOriginal").click(bounceAnd(function(){ zoomToOriginal(); }));
+    $("#zoomToCurrent").click(bounceAnd(function(){ takeControlOfViewbox(true); }));
     window.currentBackstage = noActiveBackstage;
     $("#hideBackstage").click(bounceAnd(hideBackstage));
     $("#applicationMenuButton").click(function(){
@@ -630,7 +621,7 @@ $(function(){
                     height:px(size)
                 })
                 .click(bounceAnd(function(){
-                    console.log("Setting user pref",pref,size);
+                    // console.log("Setting user pref",pref,size);
                     UserSettings.setUserPref(pref,size);
                     var mode = Modes.currentMode;
                     Modes.none.activate();
@@ -839,7 +830,7 @@ $(function(){
                 files:files,
                 types:availableTypes
             };
-            console.log("newDf",newDf);
+            // console.log("newDf",newDf);
             var dataSets = _.map(availableTypes,function(type){
                 return {
                     key:type,
@@ -852,7 +843,7 @@ $(function(){
                     action(elem,df.getData(elem));
                 };
             };
-            console.log("availableTypes:",availableTypes,items,files);
+            console.log("Data transfer - availableTypes:",availableTypes,items,files);
             if (_.size(availableTypes) > 1){
                 var rootId = sprintf("pasteEventHandler_%s",_.uniqueId());
                 var rootElem = pasteDialogTemplate.clone().attr("id",rootId);
@@ -883,7 +874,7 @@ $(function(){
                                     Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
                                     yOffset += Math.max(imgNode.height,50);
                                 } catch (e){
-                                    errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
+                                    errorAlert("Error dropping image","The source server you're dragging the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
                                 }
                             });
                             if (htmlElem.text().trim().length > 1){
@@ -961,7 +952,7 @@ $(function(){
                                 Modes.image.handleDroppedSrc(imgNode.src,x,y + yOffset);
                                 yOffset += Math.max(imgNode.height,50);
                             } catch (e){
-                                errorAlert("Error dropping image","The source server you're draggin the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
+                                errorAlert("Error dropping image","The source server you're dragging the image from does not want to allow dragging the image directly.  You may need to download the image first and then upload it.  " + e);
                             }
                         });
                         if (htmlElem.text().trim().length > 1){
@@ -977,7 +968,7 @@ $(function(){
                     }
                 });
                 if (!handled){
-                    console.log("unknown type",df);
+                    console.log("Data transfer - unknown type",df);
                 }
             }
             ev.preventDefault();
@@ -1007,7 +998,7 @@ $(function(){
             return t;
         }
     }).on("success",function(e){
-        console.log(e);
+        // console.log(e);
         alert("Link copied to clipboard");
     }).on('error', function(e) {
         console.error('Action:', e.action);

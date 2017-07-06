@@ -889,7 +889,7 @@ var renderImages = function(images,canvasContext,rendered,viewBounds){
         }
     });
 };
-function render(content,hq,incCanvasContext,incViewBounds){
+function render(content,hq,incCanvasContext){
     var bucket = Math.floor(new Date() / 1000);
     if(!renders[bucket]){
         renders[bucket] = 0;
@@ -902,7 +902,7 @@ function render(content,hq,incCanvasContext,incViewBounds){
         if(content){
             var startMark = Date.now();
             try{
-                var viewBounds = incViewBounds || TweenController.immediateView();
+                var viewBounds = TweenController.immediateView();
                 visibleBounds = [];
                 var rendered = [];
                 var loadedCount = 0;
@@ -914,12 +914,6 @@ function render(content,hq,incCanvasContext,incViewBounds){
                 renderContentIdentification(canvasContext,rendered);
                 renderCanvasInteractables(canvasContext);
                 renderTint(canvasContext,{x:0,y:0,w:boardWidth,h:boardHeight});
-                // console.log("rendered viewbounds",
-                //             viewBounds[0],
-                //             viewBounds[1],
-                //             viewBounds[2],
-                //             viewBounds[3]
-                //            );
             }
             catch(e){
                 console.log("Render exception",e);
@@ -1015,7 +1009,6 @@ var IncludeView = (function(){
             requestedViewboxHeight = h;
         }
         var dim = {width:w,height:h,x:x,y:y};
-        console.log("IncludeView",dim);
         var constrained = Zoom.constrainRequestedViewbox(dim);
         var hr = boardHeight / constrained.height;
         var wr = boardWidth / constrained.width;

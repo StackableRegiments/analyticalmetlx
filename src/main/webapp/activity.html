@@ -1,0 +1,142 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+    <head>
+        <link rel="stylesheet" href="static/css/selectize.default.css"/>
+        <link rel="stylesheet" href="static/css/flatpickr.min.css"/>
+        <link rel="stylesheet" href="static/css/directlyOnBackground.css"/>
+        <link rel="stylesheet" href="static/css/activity.css"/>
+        <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+        <script src="static/js/stable/lodash.min.js"></script>
+        <script src="static/js/stable/moment.min.js"></script>
+        <script src="static/js/stable/d3.v4.min.js"></script>
+        <script src="static/js/stable/d3.layout.cloud.js"></script>
+        <script src="static/js/stable/typo.js"></script>
+        <script src="static/js/stable/selectize.min.js"></script>
+        <script src="static/js/stable/flatpickr.min.js"></script>
+        <style>
+            .result {
+                text-align: right;
+                font-family: 'Courier New', Monospace;
+            }
+            #from, #to {
+                width:300px;
+            }
+        </style>
+    </head>
+    <script type="text/javascript">
+        var serverResponse = function(response){
+//            console.log("serverResponse:",response);
+        };
+        var fromDatePickr;
+        var toDatePickr;
+        var from;
+        var to;
+        var courseId;
+        var refreshData = function () {
+            getStudentActivity(from, to, courseId);
+        };
+        var refreshOnFrom = function() {
+            from = fromDatePickr.selectedDates[0].getTime();
+            refreshData();
+        };
+        var refreshOnTo = function() {
+            to = toDatePickr.selectedDates[0].getTime();
+            refreshData();
+        };
+        var refreshOnCourse = function(a) {
+            courseId = a;
+            refreshData();
+        };
+        var updateCourses = function(c) {
+            $('#courses').selectize({
+                maxOptions: 20,
+                closeAfterSelect: true,
+                onChange: refreshOnCourse,
+                valueField: 'id',
+                labelField: 'name',
+                searchField: ['name'],
+                options: c
+                });
+            courseId = "";
+        };
+        var createTable = function (a) {
+            var table = $("<table/>");
+            var tr = $("<tr/>");
+            table.append(tr);
+            _.forEach(a.headers, function (header) {
+                tr.append('<th>' + header + '</th>');
+            });
+            _.forEach(a.data, function (values) {
+                tr = $("<tr/>");
+                table.append(tr);
+                _.forEach(values, function (value) {
+                    tr.append('<td>' + value + '</td>');
+                });
+            });
+            return table;
+        };
+        var updateActivity = function (a) {
+            var div = $("<div/>");
+            div.append($("<a href='/studentActivity?courseId=" + a.courseId + "'>Download as CSV</a>")).append(createTable(a));
+            $('#courseActivity').html(div);
+            var now = new Date();
+            var t = sprintf("%02d:%02d:%02d", now.getHours(), now.getMinutes(), now.getSeconds());
+            $('#timestampActivity').html('Last run: ' + t + '<br/>Results are cached for 1 minute');
+        };
+        var init = function () {
+            fromDatePickr = $('#activityFrom').flatpickr({
+                defaultDate: new Date(2016, 7, 1),
+                altInput: true,
+                onChange: refreshOnFrom
+            });
+            from = fromDatePickr.selectedDates[0].getTime();
+            toDatePickr = $('#activityTo').flatpickr({
+                defaultDate: "today",
+                altInput: true,
+                onChange: refreshOnTo
+            });
+            to = toDatePickr.selectedDates[0].getTime();
+            getCourses();
+        };
+        function augmentArguments(args){
+            args[_.size(args)] = new Date().getTime();
+            return args;
+        }
+    </script>
+    <div id="masterLayout" class="flex-container-column">
+        <div class="mbt">
+            <span class="lift:comet?type=StudentActivity">
+                <div class="indent flex-container-row">
+                    <h1 class="directlyOnBackground">Course Analysis</h1>
+                </div>
+                <div class="indent flex-container-row">
+                    <span id="from">
+                        <label for="activityFrom" class="directlyOnBackground">Dates:</label>
+                        <input type="text" id="activityFrom"/>
+                    </span>
+                    <span id="to">
+                        <label for="activityTo" class="directlyOnBackground">&nbsp;</label>
+                        <input type="text" id="activityTo"/>
+                    </span>
+                </div>
+                <div class="indent flex-container-row">
+                    <div id="selectBoxContainer" class="mbt">
+                        <span id="selectBox"></span>
+                        <div class="flex-container-row">
+                            <div id="courses-container">
+                                <label for="courses" class="directlyOnBackground">Course:</label>
+                                <select id="courses" class="demo-default"></select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="indent flex-container-row">
+                    <div class="directlyOnBackground">
+                        <span id="courseActivity"/>
+                    </div>
+                    <span id="timestampActivity" class="directlyOnBackground"/>
+                    <div id="loaderJs"></div>
+                </div>
+            </span>
+        </div>
+    </div>
+</div>

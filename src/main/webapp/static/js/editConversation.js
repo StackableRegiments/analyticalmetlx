@@ -150,7 +150,7 @@ var Conversation = (function(){
         $("#conversationTitleInput").val(conversation.title);
         $(".joinConversation").attr("href",sprintf("/board?conversationJid=%s&unique=true",conversation.jid));
 
-        console.log("usergroups",userGroups);
+        // console.log("usergroups",userGroups);
 				var standin = {"ouType":"special","name":conversation.subject};
 				if ("foreignRelationship" in conversation){
 					standin.foreignRelationship = conversation.foreignRelationship;

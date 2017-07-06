@@ -12,7 +12,7 @@ var carotaTest = (function(){
         }
         var elapsed = _.sum(samples);
         var mean = _.mean(samples);
-        console.log(sprintf("//Average %s milis over %s runs of %s in %s milis",mean,testCount,label,elapsed));
+        console.log(sprintf("//Average %s millis over %s runs of %s in %s milis",mean,testCount,label,elapsed));
     }
     var wordCount = 5000;
     var prime = function(){

@@ -104,24 +104,6 @@ function worldToScreen(x,y){
     var screenY = scaleWorldToScreen(y - viewboxY);
     return {x:screenX,y:screenY};
 }
-function scaleWorldToVisual(i,visual){
-    var p = proportion(boardWidth,boardHeight);
-    var scale;
-    if(p > 1){//Viewbox wider than board
-        scale = visual[2] / boardWidth;
-    }
-    else{//Viewbox narrower than board
-        scale = visual[3] / boardHeight;
-    }
-    return i / scale;
-}
-function worldToVisual(x,y){
-    var visual = TweenController.immediateView();
-    var screenX = scaleWorldToVisual(x - visual[0],visual);
-    var screenY = scaleWorldToVisual(y - visual[1],visual);
-    return {x:screenX,y:screenY};
-
-}
 /*
   RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
   * */
@@ -249,7 +231,7 @@ function registerPositionHandlers(contexts,down,move,up){
         };
         if (detectPointerEvents()){
             var performGesture = function(){
-                takeControlOfViewbox();
+                takeControlOfViewbox(true);
 
                 var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
                     var first = _.first(item.points);
@@ -327,11 +309,11 @@ function registerPositionHandlers(contexts,down,move,up){
                 var worldX = worldPos.x;
                 var worldY = worldPos.y;
                 if(worldX < viewboxX){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Extend.left();
                 }
                 else if(worldX >= (viewboxX + viewboxWidth)){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Extend.right();
                 }
                 else{
@@ -407,11 +389,11 @@ function registerPositionHandlers(contexts,down,move,up){
                 var worldY = worldPos.y;
                 var z = 0.5;
                 if(worldX < viewboxX){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Extend.left();
                 }
                 else if(worldX >= (viewboxX + viewboxWidth)){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Extend.right();
                 }
                 else{
@@ -499,7 +481,7 @@ function registerPositionHandlers(contexts,down,move,up){
                     var xDelta = pos.x - prevPos.x;
                     var yDelta =  pos.y - prevPos.y;
                     prevPos = pos;
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     Pan.translate(-1 * xDelta,-1 * yDelta);
                     break;
                 }
@@ -535,7 +517,7 @@ function registerPositionHandlers(contexts,down,move,up){
                 var scale = e.originalEvent.scale;
                 //Zoom.scale(previousScale / scale,true);
                 // I don't think it's right that the touch gestures of an iPad can zoom farther than the default controls.
-                takeControlOfViewbox();
+                takeControlOfViewbox(true);
                 Zoom.scale(previousScale / scale);
                 previousScale = scale;
             });
@@ -2225,10 +2207,8 @@ var Modes = (function(){
                     Progress.call("onLayoutUpdated");
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
-                    console.log("activated insert");
                 },
                 handleDroppedSrc:function(src,x,y){
-                    console.log("handleDroppedSrc:",src,x,y);
                     var worldPos = screenToWorld(x,y);
                     var thisCurrentImage = {
                         "type":"imageDefinition",
@@ -2284,14 +2264,13 @@ var Modes = (function(){
         pan:{
             name:"pan",
             activate:function(){
-                updateStatus("PAN");
                 Modes.currentMode.deactivate();
                 setActiveMode("#panTools","#panMode");
                 Modes.currentMode = Modes.pan;
                 var originX;
                 var originY;
                 var down = function(x,y,z){
-                    takeControlOfViewbox();
+                    takeControlOfViewbox(true);
                     originX = x;
                     originY = y;
                 }
@@ -2773,9 +2752,16 @@ var Modes = (function(){
                 var startWorldPos;
                 var proportion;
                 var originPoint = {x:0,y:0};
+		if(Progress.onBoardContentChanged.autoZooming){
+		    takeControlOfViewbox(false);
+		}
+		else{
+		    takeControlOfViewbox(true);
+		}
                 var down = function(x,y,z,worldPos){
                     //adding this so that using the zoom marquee results in the autofit being turned off.
-                    takeControlOfViewbox();
+
+                    takeControlOfViewbox(true);
                     proportion = boardHeight / boardWidth;
                     startX = x;
                     startY = y;

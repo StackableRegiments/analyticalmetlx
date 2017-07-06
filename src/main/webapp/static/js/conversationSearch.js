@@ -38,7 +38,7 @@ var Conversations = (function(){
                 return new Date(a) - new Date(b);
             },
             itemTemplate: function(i){
-		console.log("New date",i);
+		// console.log("New date",i);
                 return moment(i).format('MMM Do YYYY, h:mm a');
             },
             insertTemplate: function(i){return ""},
@@ -186,7 +186,7 @@ var Conversations = (function(){
 										var gfr = g.foreignRelationship;
 										return "foreignRelationship" in conv && "key" in conv.foreignRelationship && gfr != undefined && "key" in gfr && "system" in gfr && conv.foreignRelationship.key == gfr.key && conv.foreignRelationship.system == gfr.system;
 									});
-									console.log("conv:",conv,ufr);
+									// console.log("conv:",conv,ufr);
 									if ("foreignRelationship" in conv && "displayName" in conv.foreignRelationship){
 										elem.text(conv.foreignRelationship.displayName);
 									}	else if (ufr !== undefined && "foreignRelationship" in ufr && "displayName" in ufr.foreignRelationship){
@@ -341,7 +341,7 @@ var Conversations = (function(){
         });
         var newThreshold = new Date().getTime() - (30 * 60 * 1000); // last 30 minutes
 				var candidates = _.clone(_.concat(mutatedImports,_.filter(_.uniqBy(_.reverse(_.orderBy(currentSearchResults,"lastAccessed")),"jid"),shouldDisplayConversation)));
-				console.log("candidates",candidates);
+				// console.log("candidates",candidates);
         dataGridItems = _.uniqBy(_.reverse(_.orderBy(_.map(candidates,function(conv){
             if (conv.subject == "deleted"){
                 conv.lifecycle = "deleted";
@@ -352,7 +352,7 @@ var Conversations = (function(){
             }
             return conv;
         }),"lastAccessed")),"jid");
-				console.log("rendering",dataGridItems);
+				// console.log("rendering",dataGridItems);
         if (conversationsDataGrid != undefined){
             conversationsDataGrid.jsGrid("loadData");
             var sortObj = conversationsDataGrid.jsGrid("getSorting");
@@ -391,7 +391,7 @@ var Conversations = (function(){
         reRender();
     };
     var receiveSearchResultsFunc = function(results){
-        console.log("receiveSearchResults",results);
+        // console.log("receiveSearchResults",results);
         currentSearchResults = results;
         permitOneSearch();
         updateQueryParams();
@@ -412,7 +412,7 @@ var Conversations = (function(){
         reRender();
     };
     var updateQueryParams = function(){
-        console.log("updating queryparams:",getQueryFunc(),window.location);
+        // console.log("updating queryparams:",getQueryFunc(),window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
             var l = window.location;
             var q = getQueryFunc();

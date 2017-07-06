@@ -563,6 +563,14 @@ trait JArgUtils {
     case s:String => s.toInt
     case other => other.toString.toInt
   }
+  protected def getArgAsLong(input:Any):Long = input match {
+    case JInt(i) => i.toLong
+    case i:Int => i.toLong
+    case JNum(n) => n.toLong
+    case d:Double => d.toLong
+    case s:String => s.toLong
+    case other => other.toString.toLong
+  }
   protected def getArgAsJValue(input:Any):JValue = input match {
     case jv:JValue => jv
     case other => JNull
