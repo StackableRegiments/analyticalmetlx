@@ -2581,9 +2581,7 @@ var Modes = (function(){
                     var up = function(x,y,z,worldPos,modifiers){
                         WorkQueue.gracefullyResume();
                         function collectTimestamps(stanzas, prefix) {
-                            var timestamps = _.map(stanzas, function(s){
-                                return s.timestamp;
-                            });
+                            var timestamps = _.map(stanzas, 'timestamp');
                             return sprintf( prefix + " timestamps: %s", timestamps);
                         }
                         function getMostRecentStanza(stanzas,prefix) {
