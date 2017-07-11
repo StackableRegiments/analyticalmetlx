@@ -2580,18 +2580,16 @@ var Modes = (function(){
                     };
                     var up = function(x,y,z,worldPos,modifiers){
                         WorkQueue.gracefullyResume();
-                        function collectTimestamps(stanzas, prefix) {
-                            var timestamps = _.map(stanzas, 'timestamp');
-                            return sprintf( prefix + " timestamps: %s", timestamps);
-                        }
+
                         function getMostRecentStanza(stanzas,prefix) {
                             var topSelectedItem = null;
-                            console.log(collectTimestamps(stanzas, prefix));
-                            if (stanzas.length > 0) {
+                            if (_.size(stanzas) > 0) {
                                 topSelectedItem = _.reverse(_.sortBy(stanzas, 'timestamp'))[0];
                             }
-                            console.log("top " + prefix + " = " + topSelectedItem);
                             return topSelectedItem;
+                        }
+                        function hasValue(stanza) {
+                            return stanza && null !== stanza && 'undefined' !== stanza;
                         }
 
                         try{
@@ -2713,7 +2711,7 @@ var Modes = (function(){
                                 if(!intersections.any){
                                     Modes.select.clearSelection();
                                 }
-                                var status = sprintf("Intersected %s images, %s texts, %s rich texts, %s inks, %s videos ",
+                                var status = sprintf("-----\nPreviously selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
                                                      _.keys(Modes.select.selected.images).length,
                                                      _.keys(Modes.select.selected.texts).length,
                                                      _.keys(Modes.select.selected.multiWordTexts).length,
@@ -2727,44 +2725,44 @@ var Modes = (function(){
                                 // Get top canvasContent in order (top to bottom):
                                 // ink, richtext, text, highlighter, video, image
 
-                                var normalInks = _.filter(Modes.select.selected.inks, function(ink){
+                                var normalInks = _.filter(intersected.inks, function(ink){
                                     return !ink.isHighlighter;
                                 });
                                 var topNormalInk = getMostRecentStanza(normalInks,"ink");
-                                if(null != topNormalInk) {
+                                if(hasValue(topNormalInk)) {
                                     Modes.select.clearSelection();
                                     Modes.select.selected.inks[topNormalInk.id] = topNormalInk;
                                 }
                                 else {
-                                    var topMultiWordText = getMostRecentStanza(Modes.select.selected.multiWordTexts,"multiWordText");
-                                    if(null != topMultiWordText) {
+                                    var topMultiWordText = getMostRecentStanza(intersected.multiWordTexts,"multiWordText");
+                                    if(hasValue(topMultiWordText)) {
                                         Modes.select.clearSelection();
                                         Modes.select.selected.multiWordTexts[topMultiWordText.id] = topMultiWordText;
                                     }
                                     else {
-                                        var topText = getMostRecentStanza(Modes.select.selected.texts,"text");
-                                        if(null != topText) {
+                                        var topText = getMostRecentStanza(intersected.texts,"text");
+                                        if(hasValue(topText)) {
                                             Modes.select.clearSelection();
                                             Modes.select.selected.texts[topText.id] = topText;
                                         }
                                         else {
-                                            var highlighters = _.filter(Modes.select.selected.inks, function(ink){
+                                            var highlighters = _.filter(intersected.inks, function(ink){
                                                 return ink.isHighlighter;
                                             });
                                             var topHighlighter = getMostRecentStanza(highlighters,"highlighter");
-                                            if(null != topHighlighter) {
+                                            if(hasValue(topHighlighter)) {
                                                 Modes.select.clearSelection();
                                                 Modes.select.selected.inks[topHighlighter.id] = topHighlighter;
                                             }
                                             else {
-                                                var topVideo = getMostRecentStanza(Modes.select.selected.videos,"video");
-                                                if (null != topVideo) {
+                                                var topVideo = getMostRecentStanza(intersected.videos,"video");
+                                                if (hasValue(topVideo)) {
                                                     Modes.select.clearSelection();
                                                     Modes.select.selected.videos[topVideo.id] = topVideo;
                                                 }
                                                 else {
-                                                    var topImage = getMostRecentStanza(Modes.select.selected.images,"image");
-                                                    if (null != topImage) {
+                                                    var topImage = getMostRecentStanza(intersected.images,"image");
+                                                    if (hasValue(topImage)) {
                                                         Modes.select.clearSelection();
                                                         Modes.select.selected.images[topImage.id] = topImage;
                                                     }
@@ -2774,7 +2772,7 @@ var Modes = (function(){
                                     }
                                 }
 
-                                console.log(sprintf("Selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
+                                console.log(sprintf("Newly selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
                                     _.keys(Modes.select.selected.images).length,
                                     _.keys(Modes.select.selected.texts).length,
                                     _.keys(Modes.select.selected.multiWordTexts).length,
