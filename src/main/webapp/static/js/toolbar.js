@@ -2722,62 +2722,65 @@ var Modes = (function(){
                                 });
                                 console.log(status);
 
-                                // Get top canvasContent in order (top to bottom):
-                                // ink, richtext, text, highlighter, video, image
+                                // A single click generates a selectionRect of (2,2).
+                                if( selectionRect.width <= 2 && selectionRect.height <= 2) {
+                                    // Select only the top canvasContent in order (top to bottom):
+                                    // ink, richtext, text, highlighter, video, image
 
-                                var normalInks = _.filter(intersected.inks, function(ink){
-                                    return !ink.isHighlighter;
-                                });
-                                var topNormalInk = getMostRecentStanza(normalInks,"ink");
-                                if(hasValue(topNormalInk)) {
-                                    Modes.select.clearSelection();
-                                    Modes.select.selected.inks[topNormalInk.id] = topNormalInk;
-                                }
-                                else {
-                                    var topMultiWordText = getMostRecentStanza(intersected.multiWordTexts,"multiWordText");
-                                    if(hasValue(topMultiWordText)) {
+                                    var normalInks = _.filter(intersected.inks, function (ink) {
+                                        return !ink.isHighlighter;
+                                    });
+                                    var topNormalInk = getMostRecentStanza(normalInks, "ink");
+                                    if (hasValue(topNormalInk)) {
                                         Modes.select.clearSelection();
-                                        Modes.select.selected.multiWordTexts[topMultiWordText.id] = topMultiWordText;
+                                        Modes.select.selected.inks[topNormalInk.id] = topNormalInk;
                                     }
                                     else {
-                                        var topText = getMostRecentStanza(intersected.texts,"text");
-                                        if(hasValue(topText)) {
+                                        var topMultiWordText = getMostRecentStanza(intersected.multiWordTexts, "multiWordText");
+                                        if (hasValue(topMultiWordText)) {
                                             Modes.select.clearSelection();
-                                            Modes.select.selected.texts[topText.id] = topText;
+                                            Modes.select.selected.multiWordTexts[topMultiWordText.id] = topMultiWordText;
                                         }
                                         else {
-                                            var highlighters = _.filter(intersected.inks, function(ink){
-                                                return ink.isHighlighter;
-                                            });
-                                            var topHighlighter = getMostRecentStanza(highlighters,"highlighter");
-                                            if(hasValue(topHighlighter)) {
+                                            var topText = getMostRecentStanza(intersected.texts, "text");
+                                            if (hasValue(topText)) {
                                                 Modes.select.clearSelection();
-                                                Modes.select.selected.inks[topHighlighter.id] = topHighlighter;
+                                                Modes.select.selected.texts[topText.id] = topText;
                                             }
                                             else {
-                                                var topVideo = getMostRecentStanza(intersected.videos,"video");
-                                                if (hasValue(topVideo)) {
+                                                var highlighters = _.filter(intersected.inks, function (ink) {
+                                                    return ink.isHighlighter;
+                                                });
+                                                var topHighlighter = getMostRecentStanza(highlighters, "highlighter");
+                                                if (hasValue(topHighlighter)) {
                                                     Modes.select.clearSelection();
-                                                    Modes.select.selected.videos[topVideo.id] = topVideo;
+                                                    Modes.select.selected.inks[topHighlighter.id] = topHighlighter;
                                                 }
                                                 else {
-                                                    var topImage = getMostRecentStanza(intersected.images,"image");
-                                                    if (hasValue(topImage)) {
+                                                    var topVideo = getMostRecentStanza(intersected.videos, "video");
+                                                    if (hasValue(topVideo)) {
                                                         Modes.select.clearSelection();
-                                                        Modes.select.selected.images[topImage.id] = topImage;
+                                                        Modes.select.selected.videos[topVideo.id] = topVideo;
+                                                    }
+                                                    else {
+                                                        var topImage = getMostRecentStanza(intersected.images, "image");
+                                                        if (hasValue(topImage)) {
+                                                            Modes.select.clearSelection();
+                                                            Modes.select.selected.images[topImage.id] = topImage;
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                }
 
-                                console.log(sprintf("Newly selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
-                                    _.keys(Modes.select.selected.images).length,
-                                    _.keys(Modes.select.selected.texts).length,
-                                    _.keys(Modes.select.selected.multiWordTexts).length,
-                                    _.keys(Modes.select.selected.inks).length,
-                                    _.keys(Modes.select.selected.videos).length));
+                                    console.log(sprintf("Newly selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
+                                        _.keys(Modes.select.selected.images).length,
+                                        _.keys(Modes.select.selected.texts).length,
+                                        _.keys(Modes.select.selected.multiWordTexts).length,
+                                        _.keys(Modes.select.selected.inks).length,
+                                        _.keys(Modes.select.selected.videos).length));
+                                }
                                 Progress.call("onSelectionChanged",[Modes.select.selected]);
                             }
                             marquee.css(
