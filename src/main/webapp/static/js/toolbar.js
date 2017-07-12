@@ -2711,7 +2711,7 @@ var Modes = (function(){
                                 if(!intersections.any){
                                     Modes.select.clearSelection();
                                 }
-                                var status = sprintf("-----\nPreviously selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
+/*                                var status = sprintf("-----\nPreviously selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
                                                      _.keys(Modes.select.selected.images).length,
                                                      _.keys(Modes.select.selected.texts).length,
                                                      _.keys(Modes.select.selected.multiWordTexts).length,
@@ -2720,7 +2720,7 @@ var Modes = (function(){
                                 $.each(intersectAuthors,function(author,count){
                                     status += sprintf("%s:%s ",author, count);
                                 });
-                                console.log(status);
+                                console.log(status);*/
 
                                 // A single click generates a selectionRect of (2,2).
                                 if( selectionRect.width <= 2 && selectionRect.height <= 2) {
@@ -2774,12 +2774,12 @@ var Modes = (function(){
                                         }
                                     }
 
-                                    console.log(sprintf("Newly selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
+/*                                    console.log(sprintf("Newly selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
                                         _.keys(Modes.select.selected.images).length,
                                         _.keys(Modes.select.selected.texts).length,
                                         _.keys(Modes.select.selected.multiWordTexts).length,
                                         _.keys(Modes.select.selected.inks).length,
-                                        _.keys(Modes.select.selected.videos).length));
+                                        _.keys(Modes.select.selected.videos).length));*/
                                 }
                                 Progress.call("onSelectionChanged",[Modes.select.selected]);
                             }
