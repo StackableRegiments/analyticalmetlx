@@ -39,8 +39,9 @@ case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:
     this
   }
 }
-case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd],triggers:List[StanzaTrigger] = List.empty[StanzaTrigger]) {
+case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd],triggers:List[StanzaTrigger] = List.empty[StanzaTrigger]) extends Logger {
   def receiveStanza(stanza:MeTLStanza):MeTLStanza = {
+    trace("Page received stanza: ", stanza)
     triggers.foreach(t => t.actOn(stanza))
     stanza
   }
@@ -53,7 +54,7 @@ class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s)
       case _ => false
     }
   }
-  override def hashCode = actOn.hashCode
+  override def hashCode: Int = actOn.hashCode
 }
 
 case object SimulatorTick
@@ -125,10 +126,26 @@ case class TrainingManual(actor:TrainerActor) {
       actor ! ShowClick("#drawMode")
     }
   ).reps(3)
+  val imageTracker:TrainingControl = TrainingControl(
+    "Insert an image",
+    _ => {
+      actor ! new StanzaTrigger(s => {
+        imageTracker.progress
+        actor ! RefreshControls
+        s
+      })
+      actor ! ShowClick("#insertMode")
+    }
+  ).reps(1)
   val pages:List[TrainingPage] = List(
     TrainingPage(Text("Exercise 1"),
       Text("The teaching space"),
       List(
+        TrainingControl(
+          "Dev Mode: jump to page 3",
+          _ => actor ! pages(2),
+          hurdle = false
+        ),
         p("This space is a whiteboard on which you and your class can write."),
         p("Like a slide deck or a PowerPoint presentation, it supports multiple pages."),
         TrainingControl(
@@ -217,6 +234,8 @@ case class TrainingManual(actor:TrainerActor) {
         p("You can add several kinds of content to the space.  Your selection of Public versus Private at the time you add new content will determine whether that content is visible to others.  It is always visible to you, and you can change your mind later."),
         p("Try drawing some lines.  You can use your finger, or a stylus, or a mouse."),
         inkTracker,
+        p("Try inserting an image.  You can use any image stored on your device."),
+        imageTracker,
         p("Once you have added content, you may need to move it, resize it, hide or show it."),
         TrainingControl(
           "Show me how to modify existing content",
@@ -368,9 +387,9 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   override def localSetup = {
     super.localSetup
-    val conversation = serverConfig.createConversation("a practice conversation",username)
-    val newConversation = conversation.replaceSubject(username)
-    serverConfig.updateConversation(conversation.jid.toString, newConversation)
+    val newConversation = serverConfig.updateSubjectOfConversation(
+      serverConfig.createConversation("a practice conversation",username).jid.toString, username)
+    trace("Local Setup")
 
     currentConversation = Full(addSampleSlides(newConversation.jid.toString))
     currentSlide = Full(newConversation.slides.head.id.toString)
@@ -382,14 +401,15 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
         stanza match {
           case _:Attendance => stanza
           case _:MeTLCanvasContent => {
+            logStanza(stanza,"CanvasContent")
             if(isHuman(stanza)) {
               logStanza(stanza,"Human")
               enqueueStanza(stanza,humanStanzas)
             }
-    //        else {
-    //          logStanza(stanza,"Simulated")
-    //          enqueueStanza(stanza,simulatedStanzas)
-    //        }
+            else {
+              logStanza(stanza,"Simulated")
+              enqueueStanza(stanza,simulatedStanzas)
+            }
             stanza
           }
           case _ => stanza
