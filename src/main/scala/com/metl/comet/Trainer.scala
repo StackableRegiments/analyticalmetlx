@@ -368,7 +368,10 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   override def localSetup = {
     super.localSetup
-    val newConversation = serverConfig.createConversation("a practice conversation",username)
+    val conversation = serverConfig.createConversation("a practice conversation",username)
+    val newConversation = conversation.replaceSubject(username)
+    serverConfig.updateConversation(conversation.jid.toString, newConversation)
+
     currentConversation = Full(addSampleSlides(newConversation.jid.toString))
     currentSlide = Full(newConversation.slides.head.id.toString)
 
