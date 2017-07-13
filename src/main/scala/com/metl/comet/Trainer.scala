@@ -41,18 +41,10 @@ case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:
 }
 case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd],triggers:List[StanzaTrigger] = List.empty[StanzaTrigger]) extends Logger {
   def receiveStanza(stanza:MeTLStanza):MeTLStanza = {
-    debug("Page received stanza: %s".format(stanza))
     triggers.foreach(t => t.actOn(stanza))
     stanza
   }
 }
-/*case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd]) extends Logger {
-  def receiveStanza(stanza:MeTLStanza):MeTLStanza = {
-    debug("Page received stanza: %s".format(stanza))
-//    triggers.foreach(t => t.actOn(stanza))
-    stanza
-  }
-}*/
 
 class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s) {
   override def equals(other:Any):Boolean = {
@@ -126,8 +118,12 @@ case class TrainingManual(actor:TrainerActor) {
     "Draw a few strokes",
     _ => {
       actor ! new StanzaTrigger(s => {
-        inkTracker.progress
-        actor ! RefreshControls
+        s match {
+          case _: MeTLInk =>
+            inkTracker.progress
+            actor ! RefreshControls
+          case _ =>
+        }
         s
       })
       actor ! ShowClick("#drawMode")
@@ -137,8 +133,12 @@ case class TrainingManual(actor:TrainerActor) {
     "Insert an image",
     _ => {
       actor ! new StanzaTrigger(s => {
-        imageTracker.progress
-        actor ! RefreshControls
+        s match {
+          case _: MeTLImage =>
+            imageTracker.progress
+            actor ! RefreshControls
+          case _ =>
+        }
         s
       })
       actor ! ShowClick("#insertMode")
@@ -383,72 +383,63 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   def enqueueStanza(stanza: MeTLStanza, queue: Queue[MeTLStanza]):MeTLStanza = {
     queue += stanza
-    debug("Queue(" + queue.size + "): " + queue.toString)
+//    debug("Queueing (" + queue.size + "): " + queue.toString)
     stanza
   }
 
   def logStanza(stanza: MeTLStanza, prefix:String):MeTLStanza = {
-    println("Logging stanza")
-    debug(prefix + " (" + "author: " + stanza.author + ", " + "timestamp: " + stanza.timestamp + ", " + stanza + ")")
+    debug(prefix + " (" + "author: " + stanza.author + ", " + "timestamp: " + stanza.timestamp + ", " + stanza.getClass + ")")
     stanza
   }
 
-  override def localSetup = {
+  override def localSetup: Unit = {
     super.localSetup
-//    val newConversation = serverConfig.updateSubjectOfConversation(
-//      serverConfig.createConversation("a practice conversation",username).jid.toString, username)
-    val newConversation = serverConfig.createConversation("a practice conversation",username)
-    debug("Local Setup %s:".format(newConversation.jid.toString))
 
-//    currentConversation = Full(addSampleSlides(newConversation.jid.toString))
+    var newConversation = serverConfig.createConversation("a practice conversation",username)
+    newConversation = serverConfig.updateSubjectOfConversation(newConversation.jid.toString, username)
+    newConversation = addSampleSlides(newConversation.jid.toString)
+
     currentConversation = Full(newConversation)
-    currentSlide = Full(newConversation.slides.head.id.toString)
+    currentSlide = Full(newConversation.slides.minBy(s => s.index).id.toString)
 
     triggers = List(
       // Conversation triggers (all Stanzas)
-      new StanzaTrigger((stanza:MeTLStanza) => {
-        logStanza(stanza,"--- Conversation")
-        stanza match {
-          case _:Attendance => stanza
-          case _:MeTLCanvasContent => {
-            logStanza(stanza,"CanvasContent")
-            if(isHuman(stanza)) {
-              logStanza(stanza,"Human")
-              enqueueStanza(stanza,humanStanzas)
-            }
-            else {
-              logStanza(stanza,"Simulated")
-              enqueueStanza(stanza,simulatedStanzas)
-            }
-            stanza
+/*      new StanzaTrigger({
+        case stanza@(_: Attendance) => stanza
+        case stanza@(_: MeTLCanvasContent) =>
+          if (isHuman(stanza)) {
+            //              logStanza(stanza,"Queued CanvasContent (human)")
+            enqueueStanza(stanza, humanStanzas)
           }
-          case _ => stanza
-        }
-      }),
+          else {
+            //              logStanza(stanza,"Queued CanvasContent (simulated)")
+            enqueueStanza(stanza, simulatedStanzas)
+          }
+          stanza
+        case stanza => stanza
+      }),*/
       // Page triggers (only CanvasContent)
-      new StanzaTrigger((stanza:MeTLStanza) => {
-        logStanza(stanza,"--- Page")
-        stanza match {
-          case _: MeTLCanvasContent =>
-            logStanza(stanza,"CanvasContent")
-            currentPage.receiveStanza(stanza)
-          case _ => stanza
-        }
+      new StanzaTrigger({
+        case stanza@(_: MeTLCanvasContent) =>
+          //            logStanza(stanza,"Page CanvasContent")
+          currentPage.receiveStanza(stanza)
+        case stanza => stanza
       })
     ).to[ListBuffer]
 
-    debug("Conversation JID: %s".format(newConversation.jid.toString))
     serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner", (s: MeTLStanza) => {
-      logStanza(s, "Straight from the bus")
-//      currentPage.receiveStanza(s)
       triggers.foreach(t => t.actOn(s))
     }))
+
+    newConversation.slides.foreach(slide => serverConfig.getMessageBus(new MessageBusDefinition(slide.id.toString, "unicastBackToOwner", (s: MeTLStanza) => {
+      triggers.foreach(t => t.actOn(s))
+    })))
 
     Schedule.schedule(this,SimulatorTick,500)
   }
 
-  protected def addSampleSlides(conversationId:String): Conversation = {
-    var newConversation = serverConfig.addSlideAtIndexOfConversation(conversationId, 1)
+  protected def addSampleSlides(conversationJid:String): Conversation = {
+    var newConversation = serverConfig.addSlideAtIndexOfConversation(conversationJid, 1)
     var slide = newConversation.findSlideByIndex(1)
     if( slide.nonEmpty) {
       val slideId = slide.get.id.toString
@@ -456,7 +447,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
       writeText(room2, slideId, new Point(100, 100, 1), "Slide2")
     }
 
-    newConversation = serverConfig.addSlideAtIndexOfConversation(conversationId, 2)
+    newConversation = serverConfig.addSlideAtIndexOfConversation(conversationJid, 2)
     slide = newConversation.findSlideByIndex(2)
     if( slide.nonEmpty) {
       val slideId = slide.get.id.toString
