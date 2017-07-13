@@ -41,11 +41,18 @@ case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:
 }
 case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd],triggers:List[StanzaTrigger] = List.empty[StanzaTrigger]) extends Logger {
   def receiveStanza(stanza:MeTLStanza):MeTLStanza = {
-    trace("Page received stanza: ", stanza)
+    debug("Page received stanza: %s".format(stanza))
     triggers.foreach(t => t.actOn(stanza))
     stanza
   }
 }
+/*case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd]) extends Logger {
+  def receiveStanza(stanza:MeTLStanza):MeTLStanza = {
+    debug("Page received stanza: %s".format(stanza))
+//    triggers.foreach(t => t.actOn(stanza))
+    stanza
+  }
+}*/
 
 class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s) {
   override def equals(other:Any):Boolean = {
@@ -376,22 +383,25 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   def enqueueStanza(stanza: MeTLStanza, queue: Queue[MeTLStanza]):MeTLStanza = {
     queue += stanza
-    trace("Queue(" + queue.size + "): " + queue.toString)
+    debug("Queue(" + queue.size + "): " + queue.toString)
     stanza
   }
 
   def logStanza(stanza: MeTLStanza, prefix:String):MeTLStanza = {
-    trace(prefix + " (" + "author: " + stanza.author + ", " + "timestamp: " + stanza.timestamp + ", " + stanza + ")")
+    println("Logging stanza")
+    debug(prefix + " (" + "author: " + stanza.author + ", " + "timestamp: " + stanza.timestamp + ", " + stanza + ")")
     stanza
   }
 
   override def localSetup = {
     super.localSetup
-    val newConversation = serverConfig.updateSubjectOfConversation(
-      serverConfig.createConversation("a practice conversation",username).jid.toString, username)
-    trace("Local Setup")
+//    val newConversation = serverConfig.updateSubjectOfConversation(
+//      serverConfig.createConversation("a practice conversation",username).jid.toString, username)
+    val newConversation = serverConfig.createConversation("a practice conversation",username)
+    debug("Local Setup %s:".format(newConversation.jid.toString))
 
-    currentConversation = Full(addSampleSlides(newConversation.jid.toString))
+//    currentConversation = Full(addSampleSlides(newConversation.jid.toString))
+    currentConversation = Full(newConversation)
     currentSlide = Full(newConversation.slides.head.id.toString)
 
     triggers = List(
@@ -427,7 +437,12 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
       })
     ).to[ListBuffer]
 
-    serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner", (s: MeTLStanza) => { triggers.foreach(t => t.actOn(s))}))
+    debug("Conversation JID: %s".format(newConversation.jid.toString))
+    serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner", (s: MeTLStanza) => {
+      logStanza(s, "Straight from the bus")
+//      currentPage.receiveStanza(s)
+      triggers.foreach(t => t.actOn(s))
+    }))
 
     Schedule.schedule(this,SimulatorTick,500)
   }
