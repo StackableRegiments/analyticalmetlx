@@ -388,7 +388,15 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   }
 
   def logStanza(stanza: MeTLStanza, prefix:String):MeTLStanza = {
-    debug(prefix + " (" + "author: " + stanza.author + ", " + "timestamp: " + stanza.timestamp + ", " + stanza.getClass + ")")
+    var message = prefix + " (" + "author: " + stanza.author  + ", type: " + stanza.getClass.getSimpleName
+    stanza match {
+      case cc:MeTLCanvasContent =>
+        message = message.concat(", " + "slide: " + cc.slide)
+      case _ =>
+        message = message.concat(", " + "time: " + stanza.timestamp)
+    }
+    message = message.concat( ")" )
+    debug(message)
     stanza
   }
 
@@ -404,36 +412,42 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
     triggers = List(
       // Conversation triggers (all Stanzas)
-/*      new StanzaTrigger({
+      new StanzaTrigger({
         case stanza@(_: Attendance) => stanza
         case stanza@(_: MeTLCanvasContent) =>
           if (isHuman(stanza)) {
-            //              logStanza(stanza,"Queued CanvasContent (human)")
             enqueueStanza(stanza, humanStanzas)
+//            logStanza(stanza,"Queued CanvasContent (human)")
           }
           else {
-            //              logStanza(stanza,"Queued CanvasContent (simulated)")
             enqueueStanza(stanza, simulatedStanzas)
+//            logStanza(stanza,"Queued CanvasContent (simulated)")
           }
           stanza
         case stanza => stanza
-      }),*/
+      }),
       // Page triggers (only CanvasContent)
       new StanzaTrigger({
         case stanza@(_: MeTLCanvasContent) =>
           //            logStanza(stanza,"Page CanvasContent")
           currentPage.receiveStanza(stanza)
+          stanza
         case stanza => stanza
       })
     ).to[ListBuffer]
 
-    serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner", (s: MeTLStanza) => {
+    val conversationLocation = newConversation.jid.toString
+    val feedbackName = "unicastBackToOwner"
+    serverConfig.getMessageBus(new MessageBusDefinition(conversationLocation, feedbackName, (s: MeTLStanza) => {
       triggers.foreach(t => t.actOn(s))
     }))
 
-    newConversation.slides.foreach(slide => serverConfig.getMessageBus(new MessageBusDefinition(slide.id.toString, "unicastBackToOwner", (s: MeTLStanza) => {
-      triggers.foreach(t => t.actOn(s))
-    })))
+    newConversation.slides.foreach(slide => {
+      val slideLocation = slide.id.toString
+      serverConfig.getMessageBus(new MessageBusDefinition(slideLocation, feedbackName, (s: MeTLStanza) => {
+        triggers.foreach(t => t.actOn(s))
+      }))
+    })
 
     Schedule.schedule(this,SimulatorTick,500)
   }
