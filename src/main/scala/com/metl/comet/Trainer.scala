@@ -271,7 +271,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   var currentPage:TrainingPage = manual.pages.head
   protected var currentConversation:Box[Conversation] = Empty
   protected var currentSlide:Box[String] = Empty
-  protected val username: String = Globals.currentUser.is
+  protected var username = "unknown"
   protected lazy val serverConfig: ServerConfiguration = ServerConfiguration.default
   protected lazy val server: String = serverConfig.name
   protected var triggers: ListBuffer[StanzaTrigger] = ListBuffer.empty[StanzaTrigger]
@@ -403,6 +403,8 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
 
   override def localSetup: Unit = {
     super.localSetup
+
+    username = Globals.currentUser.is
 
     var newConversation = serverConfig.createConversation("a practice conversation",username)
     newConversation = serverConfig.updateSubjectOfConversation(newConversation.jid.toString, username)
