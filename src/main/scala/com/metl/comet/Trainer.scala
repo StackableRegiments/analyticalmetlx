@@ -39,6 +39,7 @@ case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:
     this
   }
 }
+case class TrainingNavigator(label:String,behaviour:TrainingNavigator=>JsCmd) extends TrainingBlock
 case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd],triggers:List[StanzaTrigger] = List.empty[StanzaTrigger]) extends Logger {
   def receiveStanza(stanza:MeTLStanza):MeTLStanza = {
     triggers.foreach(t => t.actOn(stanza))
@@ -163,10 +164,9 @@ case class TrainingManual(actor:TrainerActor) {
     TrainingPage(Text("Exercise 1"),
       Text("The teaching space"),
       List(
-        TrainingControl(
+        TrainingNavigator(
           "Dev Mode: jump to page 3",
-          _ => actor ! pages(2),
-          hurdle = false
+          _ => actor ! pages(2)
         ),
         p("This space is a whiteboard on which you and your class can write."),
         p("Like a slide deck or a PowerPoint presentation, it supports multiple pages."),
@@ -187,10 +187,9 @@ case class TrainingManual(actor:TrainerActor) {
           }
         ),
         p("In the next exercise, we'll do some work on the pages"),
-        TrainingControl(
+        TrainingNavigator(
           "Take me there",
-          _ => actor ! pages(1),
-          hurdle = false
+          _ => actor ! pages(1)
         )),
       Full(
         Call("Trainer.clearTools").cmd
@@ -220,15 +219,13 @@ case class TrainingManual(actor:TrainerActor) {
           }
         ),
         p("Now let's make some of your own content."),
-        TrainingControl(
+        TrainingNavigator(
           "Show me the rest of the tools",
-          _ => actor ! pages(2),
-          hurdle = false
+          _ => actor ! pages(2)
         ),
-        TrainingControl(
+        TrainingNavigator(
           "Show me exercise 1 again",
-          _ => actor ! pages(0),
-          hurdle = false
+          _ => actor ! pages(0)
         )
       ),
       Full(
@@ -267,10 +264,9 @@ case class TrainingManual(actor:TrainerActor) {
             actor ! ShowClick("#selectMode")
           }
         ),
-        TrainingControl(
+        TrainingNavigator(
           "Show me exercise 2 again",
-          _ => actor ! pages(1),
-          hurdle = false
+          _ => actor ! pages(1)
         )
       ),
       Full(Call("Trainer.showTools").cmd),
@@ -502,44 +498,58 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   }
 
   def blockMarkup:NodeSeq = currentPage.blocks.map {
-    case c:TrainingControl => {
-      val progress = if(c.hurdle){
-        <div class="actioned">{
-          if(c.maxProgress > 0) {
-            Range(0,c.maxProgress).map(i => checkbox(c.progressMarker > i))
-          }
-          else {
-            checkbox(c.isActioned)
-          }
-        }</div>
+    case tc: TrainingControl => {
+      val progress = if (tc.hurdle) {
+        <div class="actioned">
+          {if (tc.maxProgress > 0) {
+          Range(0, tc.maxProgress).map(i => checkbox(tc.progressMarker > i))
+        }
+        else {
+          checkbox(tc.isActioned)
+        }}
+        </div>
       }
-      else{
-        <span />
+      else {
+          <span/>
       }
-      val label = ajaxButton(c.label,() => {
-        c.actioned
-        c.behaviour(c)
+
+      val label = ajaxButton(tc.label, () => {
+        tc.actioned
+        tc.behaviour(tc)
         SetHtml("exerciseControls",blockMarkup)
-      },"class" -> "active")
-      val supplementMarkup:NodeSeq = if(c.supplement.isEmpty) {
+      }, "class" -> "active")
+
+      val supplementMarkup = if(tc.supplement.isEmpty) {
         NodeSeq.Empty
       }
       else{
         val toggleBehavior = () => {
-          c.supplementOpen = !c.supplementOpen
+          tc.supplementOpen = !tc.supplementOpen
           SetHtml("exerciseControls",blockMarkup)
         }
-        c.supplementOpen match {
-          case true => NodeSeq.fromSeq(List(ajaxButton(" Hide",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-minus-square-o"))) ++ c.supplement.map(s => <p class="supplement">{s}</p>)
+        tc.supplementOpen match {
+          case true => NodeSeq.fromSeq(List(ajaxButton(" Hide",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-minus-square-o"))) ++ tc.supplement.map(s => <p class="supplement">{s}</p>)
           case _ => ajaxButton(" Show",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-plus-square-o")
         }
       }
+
       <div class="control">
       <div class="flex-container-row">{progress ++ label}</div>
       <div>{supplementMarkup}</div>
       </div>
     }
-    case c:TrainingInstruction => <div class="control">{c.content}</div>
+    case tn:TrainingNavigator => {
+      val label = ajaxButton(tn.label, () => {
+        tn.behaviour(tn)
+        SetHtml("exerciseControls",blockMarkup)
+      }, "class" -> "navigator")
+
+      <div class="control">
+        <div class="flex-container-row">{label}</div>
+      </div>
+    }
+    case c:TrainingInstruction =>
+      <div class="control">{c.content}</div>
   }
 
   override def render = "#exerciseTitle *" #> currentPage.title &
