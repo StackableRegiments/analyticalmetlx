@@ -376,8 +376,6 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   }
 
   def isHuman(stanza:MeTLStanza):Boolean = {
-    debug("CurrentUser: " + username)
-    debug("Stanza Author: " + stanza.author)
     username.equals(stanza.author)
   }
 
