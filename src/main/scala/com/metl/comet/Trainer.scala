@@ -75,6 +75,7 @@ case class Intention(label:String)
 object Intentions {
   val Benign = Intention("benign")
   val Malicious = Intention("malicious")
+  val Neutral = Intention("neutral")
   val Other = Intention("other")
 }
 
@@ -186,6 +187,8 @@ case class TrainingManual(actor:TrainerActor) {
             actor ! Highlight("#slideControls")
           }
         ),
+        p("Classroom spaces, the device you're using and network speed can affect whether the whiteboard works well for you."),
+        networkMonitor,
         p("In the next exercise, we'll do some work on the pages"),
         TrainingNavigator(
           "Take me there",
@@ -248,8 +251,6 @@ case class TrainingManual(actor:TrainerActor) {
             actor ! Flash(".permission-states")
           }
         ),
-        p("Classroom spaces, the device you're using and network speed can affect whether the whiteboard works well for you."),
-        networkMonitor,
         p("You can add several kinds of content to the space.  Your selection of Public versus Private at the time you add new content will determine whether that content is visible to others.  It is always visible to you, and you can change your mind later."),
         p("Try drawing some lines.  You can use your finger, or a stylus, or a mouse."),
         inkTracker,
@@ -377,6 +378,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     intention match {
       case Intentions.Benign => Color(255, 0, 255, 0)
       case Intentions.Malicious => Color(255, 255, 0, 0)
+      case Intentions.Neutral => Color(0, 0, 0, 0)
       case _ => Color(255, 0, 0, 255)
     }
   }
@@ -384,7 +386,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   protected def writeText(room:MeTLRoom, slide:String, location:Point, text:String): Unit = {
     room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig, "simulator", new java.util.Date().getTime,
       location.x, location.y, 200, 100, 100, "tag", "identity", "presentationSpace", Privacy.PUBLIC, slide,
-      List(MeTLTextWord(text, bold = false, underline = false, italic = false, "LEFT", getColorForIntention(Intentions.Benign), "Arial", 12.0))
+      List(MeTLTextWord(text, bold = false, underline = false, italic = false, "LEFT", getColorForIntention(Intentions.Neutral), "Arial", 36.0))
     ))
   }
 
@@ -473,7 +475,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     if( slide.nonEmpty) {
       val slideId = slide.get.id.toString
       val room2 = MeTLXConfiguration.getRoom(slideId, server)
-      writeText(room2, slideId, new Point(100, 100, 1), "Slide2")
+      writeText(room2, slideId, new Point(100, 100, 1), "Slide 2")
     }
 
     newConversation = serverConfig.addSlideAtIndexOfConversation(conversationJid, 2)
@@ -481,7 +483,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     if( slide.nonEmpty) {
       val slideId = slide.get.id.toString
       val room3 = MeTLXConfiguration.getRoom(slideId, server)
-      writeText(room3, slideId, new Point(200, 200, 1), "Slide3")
+      writeText(room3, slideId, new Point(200, 200, 1), "Slide 3")
     }
 
     newConversation
