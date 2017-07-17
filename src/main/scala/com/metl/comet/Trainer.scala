@@ -119,7 +119,7 @@ case class TrainingManual(actor:TrainerActor) {
     _ => {
       actor ! new StanzaTrigger(s => {
         s match {
-          case _: MeTLInk =>
+          case i: MeTLInk if actor isHuman i =>
             inkTracker.progress
             actor ! RefreshControls
           case _ =>
@@ -134,7 +134,7 @@ case class TrainingManual(actor:TrainerActor) {
     _ => {
       actor ! new StanzaTrigger(s => {
         s match {
-          case _: MeTLImage =>
+          case i: MeTLImage if actor isHuman i =>
             imageTracker.progress
             actor ! RefreshControls
           case _ =>
@@ -375,8 +375,11 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     ))
   }
 
-  val humanAuthor = "public"
-  def isHuman(stanza:MeTLStanza):Boolean = {humanAuthor.equals(stanza.author)}
+  def isHuman(stanza:MeTLStanza):Boolean = {
+    debug("CurrentUser: " + username)
+    debug("Stanza Author: " + stanza.author)
+    username.equals(stanza.author)
+  }
 
   val humanStanzas = new Queue[MeTLStanza]()
   val simulatedStanzas = new Queue[MeTLStanza]()
@@ -437,14 +440,13 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     ).to[ListBuffer]
 
     val conversationLocation = newConversation.jid.toString
-    val feedbackName = "unicastBackToOwner"
-    serverConfig.getMessageBus(new MessageBusDefinition(conversationLocation, feedbackName, (s: MeTLStanza) => {
+    serverConfig.getMessageBus(new MessageBusDefinition(conversationLocation, "trainer", (s: MeTLStanza) => {
       triggers.foreach(t => t.actOn(s))
     }))
 
     newConversation.slides.foreach(slide => {
       val slideLocation = slide.id.toString
-      serverConfig.getMessageBus(new MessageBusDefinition(slideLocation, feedbackName, (s: MeTLStanza) => {
+      serverConfig.getMessageBus(new MessageBusDefinition(slideLocation, "trainer", (s: MeTLStanza) => {
         triggers.foreach(t => t.actOn(s))
       }))
     })
