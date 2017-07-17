@@ -129,6 +129,21 @@ case class TrainingManual(actor:TrainerActor) {
       actor ! ShowClick("#drawMode")
     }
   ).reps(3)
+  val textTracker:TrainingControl = TrainingControl(
+    "Write some words",
+    _ => {
+      actor ! new StanzaTrigger(s => {
+        s match {
+          case i: MeTLMultiWordText if actor isHuman i =>
+            textTracker.progress
+            actor ! RefreshControls
+          case _ =>
+        }
+        s
+      })
+      actor ! ShowClick("#insertText")
+    }
+  ).reps(1)
   val imageTracker:TrainingControl = TrainingControl(
     "Insert an image",
     _ => {
@@ -241,6 +256,8 @@ case class TrainingManual(actor:TrainerActor) {
         p("You can add several kinds of content to the space.  Your selection of Public versus Private at the time you add new content will determine whether that content is visible to others.  It is always visible to you, and you can change your mind later."),
         p("Try drawing some lines.  You can use your finger, or a stylus, or a mouse."),
         inkTracker,
+        p("Try writing some text."),
+        textTracker,
         p("Try inserting an image.  You can use any image stored on your device."),
         imageTracker,
         p("Once you have added content, you may need to move it, resize it, hide or show it."),
