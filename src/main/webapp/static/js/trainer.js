@@ -1,10 +1,10 @@
 var Trainer = (function(){
     return {
-        simulationOn:function(conversation,slide,onLoad){
+        simulationOn:function(trainerId,conversation,slide,onLoad){
             var f = function(){
                 $("#simulation").css("opacity",0).on("load",function(){
                     _.defer(onLoad);
-                }).attr("src",sprintf("/board?conversationJid=%s&slideId=%s&showTools=true&showSlides=true&unique=true",conversation,slide));
+                }).attr("src",sprintf("/board?conversationJid=%s&slideId=%s&showTools=true&showSlides=true&unique=true&trainerId=%s",conversation,slide,trainerId));
             };
             $(f);
             f();

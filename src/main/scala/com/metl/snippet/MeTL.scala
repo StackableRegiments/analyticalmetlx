@@ -78,7 +78,6 @@ class Metl extends Logger {
     "/conversationSearch?unique=true"
   }
 
-
   lazy val serverConfig = ServerConfiguration.default
   protected def generateName(showDeleted:Boolean = false):String = {
     var name = "USERNAME:%s".format(Globals.currentUser.is)
@@ -144,6 +143,9 @@ class Metl extends Logger {
     S.param("query").foreach(query => {
       name += "_QUERY:%s".format(query)
     })
+    S.param("trainerId").foreach(trainerId => {
+      name += "_TRAINERID:%s".format(trainerId)
+    })
     name
   }
   def getLtiTokenFromName(in:String):Option[String] = {
@@ -188,6 +190,9 @@ class Metl extends Logger {
         }
       }
     })
+  }
+  def getTrainerIdFromName(in:String):Option[String] = {
+    in.split("_").map(_.split(":")).find(_(0) == "TRAINERID").map(_.drop(1).mkString(":"))
   }
   def getSlideFromName(in:String):Option[Int] = {
     in.split("_").map(_.split(":")).find(_(0) == "SLIDE").map(_.drop(1).mkString(":")).flatMap(slideString => {

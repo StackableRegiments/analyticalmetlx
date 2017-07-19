@@ -16,8 +16,9 @@ import SHtml._
 import js._
 import JsCmds._
 import JE._
+import net.liftweb.actor.LiftActor
 
-import scala.collection.mutable.{ListBuffer,Queue}
+import scala.collection.mutable.{ListBuffer, Queue}
 
 trait TrainingBlock
 case class TrainingInstruction(content:NodeSeq) extends TrainingBlock
@@ -94,13 +95,22 @@ case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:Sca
   def pan(x:Int,y:Int = 0) = copy(focus = Point(focus.x + x,focus.y + y,0))
 }
 
-class TrainerActor extends StronglyTypedJsonActor with Logger {
+object AuditActorManager extends LiftActor with ListenerManager with Logger {
+  def createUpdate = HealthyWelcomeFromRoom
+  override def lowPriority = {
+    case (trainerId,action,params) => sendListenersMessage(trainerId,action,params)
+    case _ => warn("AuditActorManager")
+  }
+}
+
+class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger {
   import Dimensions._
+  protected val TrainerId: String = nextFuncName
   override def lifespan = Globals.metlActorLifespan
+  override def registerWith = AuditActorManager
   implicit val formats = net.liftweb.json.DefaultFormats
   var manual = TrainingManual(this)
   var users: List[SimulatedUser] = List.empty[SimulatedUser]
-  def registerWith = MeTLActorManager
   var currentPage:TrainingPage = manual.pages.head
   protected var currentConversation:Box[Conversation] = Empty
   protected var currentSlide:Box[String] = Empty
@@ -131,6 +141,11 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   }
 
   override def lowPriority = {
+    case (TrainerId,action,params) => {
+      // Client-side action message via fireTrainerAudit() clientSideFunc.
+      debug("TrainerActor received: " + action + " with " + params)
+    }
+    case (_trainerId,_action,_params) => {} // this message is not for us
     case Highlight(selector) => partialUpdate(Call("Trainer.highlight",JString(selector)).cmd)
     case Flash(selector) => partialUpdate(Call("Trainer.flash",JString(selector)).cmd)
     case ShowClick(selector) => partialUpdate(Call("Trainer.showClick",JString(selector)).cmd)
@@ -191,6 +206,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
       partialUpdate(Call("Trainer.simulatedUsers",Extraction.decompose(users)).cmd)
       Schedule.schedule(this,SimulatorTick,1000)
     }
+    case other => warn("TrainerActor received unknown message: %s".format(other))
   }
 
   protected def getColorForIntention(intention: Intention) = {
@@ -381,13 +397,14 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
       <div class="control">{c.content}</div>
   }
 
+
   override def render = "#exerciseTitle *" #> currentPage.title &
   "#exerciseBlurb *" #> currentPage.blurb &
   "#exerciseControls *" #> blockMarkup &
   "#scriptContainer *" #> (for {
     c <- currentConversation
     s <- currentSlide
-  } yield Script(Call("Trainer.simulationOn",c.jid,s,currentPage.onLoad.map(AnonFunc(_)).openOr(JsNull)).cmd))
+  } yield Script(Call("Trainer.simulationOn",TrainerId,c.jid,s,currentPage.onLoad.map(AnonFunc(_)).openOr(JsNull)).cmd))
 }
 
 case class Glyph(width:Int,strokes:List[List[Point]])
