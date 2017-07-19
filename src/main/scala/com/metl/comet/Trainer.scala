@@ -222,7 +222,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
 
   protected def writeText(room:MeTLRoom, slide:String, location:Point, text:String): Unit = {
     room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig, "simulator", new java.util.Date().getTime,
-      location.x, location.y, 200, 100, 100, "tag", "identity", "presentationSpace", Privacy.PUBLIC, slide,
+      location.x, location.y, 250, 100, 100, "tag", "identity", "presentationSpace", Privacy.PUBLIC, slide,
       List(MeTLTextWord(text, bold = false, underline = false, italic = false, "LEFT", getColorForIntention(Intentions.Neutral), "Arial", 36.0))
     ))
   }
@@ -333,7 +333,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     if( slide.nonEmpty) {
       val slideId = slide.get.id.toString
       val room2 = MeTLXConfiguration.getRoom(slideId, server)
-//      writeText(room2, slideId, new Point(100, 100, 1), "Slide 2")
+      writeText(room2, slideId, new Point(100, 120, 1), "Slide 2")
       addImage(room2, slideId, "SampleSlide1.png")
     }
 
@@ -342,7 +342,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     if( slide.nonEmpty) {
       val slideId = slide.get.id.toString
       val room3 = MeTLXConfiguration.getRoom(slideId, server)
-//      writeText(room3, slideId, new Point(200, 200, 1), "Slide 3")
+      writeText(room3, slideId, new Point(100, 120, 1), "Slide 3")
       addImage(room3, slideId, "SampleSlide2.png")
     }
 
@@ -351,6 +351,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     if( slide.nonEmpty) {
       val slideId = slide.get.id.toString
       val room4 = MeTLXConfiguration.getRoom(slideId, server)
+      writeText(room4, slideId, new Point(100, 120, 1), "Slide 4")
       addImage(room4, slideId, "SampleSlide3.png")
     }
 
