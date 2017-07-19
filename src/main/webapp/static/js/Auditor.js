@@ -25,7 +25,7 @@ var Auditor = (function(){
     });
     var sendMessageUpstream = function(action,params){
         if (trainerId !== undefined && action !== undefined){
-            fireTrainerAudit(trainerId,action,params);
+            fireTrainerAudit(action,params);
         }
     };
     return {
