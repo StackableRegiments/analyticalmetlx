@@ -96,6 +96,7 @@ case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:Sca
 
 class TrainerActor extends StronglyTypedJsonActor with Logger {
   import Dimensions._
+  override def lifespan = Globals.metlActorLifespan
   implicit val formats = net.liftweb.json.DefaultFormats
   var manual = TrainingManual(this)
   var users: List[SimulatedUser] = List.empty[SimulatedUser]
@@ -234,6 +235,8 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     stanza
   }
 
+  val messageBuses = new scala.collection.mutable.ListBuffer[MessageBus]()
+
   override def localSetup: Unit = {
     super.localSetup
 
@@ -273,11 +276,11 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     ).to[ListBuffer]
 
     val conversationLocation = newConversation.jid.toString
-    serverConfig.getMessageBus(new MessageBusDefinition(conversationLocation, "trainer", (s: MeTLStanza) => {
+    messageBuses += serverConfig.getMessageBus(new MessageBusDefinition(conversationLocation, "trainer", (s: MeTLStanza) => {
       triggers.foreach(t => t.actOn(s))
     }))
 
-    newConversation.slides.foreach(slide => {
+    messageBuses ++= newConversation.slides.map(slide => {
       val slideLocation = slide.id.toString
       serverConfig.getMessageBus(new MessageBusDefinition(slideLocation, "trainer", (s: MeTLStanza) => {
         triggers.foreach(t => t.actOn(s))
@@ -285,6 +288,11 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     })
 
     Schedule.schedule(this,SimulatorTick,500)
+  }
+
+  override protected def localShutdown(): Unit = {
+    messageBuses.foreach(mb => mb.release)
+    super.localShutdown
   }
 
   protected def addSampleSlides(conversationJid:String): Conversation = {
@@ -348,8 +356,9 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
           SetHtml("exerciseControls",blockMarkup)
         }
         tc.supplementOpen match {
-          case true => NodeSeq.fromSeq(List(ajaxButton(" Hide",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-minus-square-o"))) ++ tc.supplement.map(s => <p class="supplement">{s}</p>)
-          case _ => ajaxButton(" Show",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-plus-square-o")
+          case true => NodeSeq.fromSeq(List(ajaxButton(" Hide", toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-minus-square-o"))) ++
+            tc.supplement.map(s => <p class="supplement">{s}</p>)
+          case _ => ajaxButton(<span style="font-family: inherit;">Show</span>, toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-plus-square-o")
         }
       }
 
