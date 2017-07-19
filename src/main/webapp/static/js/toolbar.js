@@ -2338,25 +2338,51 @@ var Modes = (function(){
                 Modes.select.selected = {images:{},texts:{},inks:{},multiWordTexts:{},videos:{}};
                 Progress.call("onSelectionChanged",[Modes.select.selected]);
             };
+            var selectionCategories = [
+                {
+                    selCatName:"inks",
+                    boardCatName:"inks",
+                    filterFunc:function(i){return !i.isHighlighter;}
+                },
+                {
+                    selCatName:"inks",
+                    boardCatName:"highlighters",
+                    filterFunc:function(i){return i.isHighlighter;}
+                },
+                {
+                    selCatName:"images",
+                    boardCatName:"images",
+                    filterFunc:function(i){return true;}
+                },
+                {
+                    selCatName:"texts",
+                    boardCatName:"texts",
+                    filterFunc:function(i){return true;}
+                },
+                {
+                    selCatName:"multiWordTexts",
+                    boardCatName:"multiWordTexts",
+                    filterFunc:function(i){return true;}
+                },
+                {
+                    selCatName:"videos",
+                    boardCatName:"videos",
+                    filterFunc:function(i){return true;}
+                }
+            ]; // this is necessary to fix a bug which comes up in the next bit, which results in the onSelectionChanged firing repeatedly, because inks are checked twice and highlighters don't appear in inks, and inks don't appear in highlighters.
             var updateSelectionWhenBoardChanges = _.debounce(function(){
                 var changed = false;
-                _.forEach(["images","texts","inks","highlighters","multiWordTexts","videos"],function(catName){
-                    var selCatName = catName == "highlighters" ? "inks" : catName;
-                    var boardCatName = catName;
+                _.forEach(selectionCategories,function(category){
+                    var selCatName = category.selCatName;
+                    var boardCatName = category.boardCatName;
                     if (Modes && Modes.select && Modes.select.selected && selCatName in Modes.select.selected){
                         var cat = Modes.select.selected[selCatName];
                         _.forEach(cat,function(i){
-                            if (cat && boardCatName in boardContent && i && i.identity in boardContent[boardCatName]){
-                                cat[i.identity] = boardContent[boardCatName][i.identity];
-                            } else {
-                                changed = true;
-                                if (selCatName == "inks"){
-                                    if (boardCatName == "highlighters" && i.identity in cat && cat[i.identity].isHighlighter == true){
-                                        delete cat[i.identity];
-                                    } else if (boardCatName == "inks" && i.identity in cat && cat[i.identity].isHighlighter == false) {
-                                        delete cat[i.identity];
-                                    }
+                            if (category.filterFunc(i)) {
+                                if (cat && boardCatName in boardContent && i && i.identity in boardContent[boardCatName]) {
+                                    cat[i.identity] = boardContent[boardCatName][i.identity];
                                 } else {
+                                    changed = true;
                                     delete cat[i.identity];
                                 }
                             }
