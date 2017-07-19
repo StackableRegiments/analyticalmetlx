@@ -1,31 +1,31 @@
 #exerciseControls .control {
     flex:1;
 }
-#content{
+#content {
     width:1366px;
     margin:auto;
 }
-#simulationPopulation span{
+#simulationPopulation span {
     margin-right:1em;
 }
-#topRow *{
+#topRow * {
     color:white;
     background-color:black;
 }
-#scriptContainer{
+#scriptContainer {
     display:none;
 }
-#exerciseHeader *{
+#exerciseHeader * {
     font-size:x-large;
 }
-#exerciseContent{
+#exerciseContent {
     background-color:white;
     flex:1;
     max-height:90vh;
     overflow-y:scroll;
     overflow-x:hidden;
 }
-#exerciseControls{
+#exerciseControls {
     padding-left:1em;
 }
 #simulation {
@@ -43,20 +43,20 @@ input[type=checkbox].action+label {
 input[type="checkbox"]+label::before, input[type="radio"]+label::before, .checkbox-sim::before {
     margin-top: 0;
 }
-.simulatedUser{
+.simulatedUser {
     clear:right;
 }
-.supplement{
+p.supplement {
     margin-left:1em;
 }
-button.toggle{
+button.toggle {
     width:8em;
     font-size:small;
     float:right;
 }
-.coord{
+.coord {
     font-size:xx-small;
 }
-#simulationPopulation{
+#simulationPopulation {
     background-color:white;
 }
