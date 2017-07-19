@@ -17,6 +17,8 @@ import js._
 import JsCmds._
 import JE._
 import net.liftweb.actor.LiftActor
+import org.apache.commons.io.IOUtils
+import java.io.File._
 
 import scala.collection.mutable.{ListBuffer, Queue}
 
@@ -311,13 +313,28 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     super.localShutdown
   }
 
+  protected def addImage(room: MeTLRoom, slideId: String, imageName: String): Unit = {
+    val imageStream = getClass.getClassLoader.getResourceAsStream("training" + separator + imageName)
+    try {
+      val imageData: Array[Byte] = IOUtils.toByteArray(imageStream)
+      val imageId = serverConfig.postResource(slideId, nextFuncName, imageData)
+      room ! LocalToServerMeTLStanza(MeTLImage(serverConfig, "simulator", new java.util.Date().getTime,
+        "tag", Full(imageId), Empty, Empty, 1280, 720, 0, 0, "presentationSpace", Privacy.PUBLIC, slideId,
+        "identity")
+      )
+    } catch {
+      case e:NullPointerException => warn("Couldn't load image: " + imageName)
+    }
+  }
+
   protected def addSampleSlides(conversationJid:String): Conversation = {
     var newConversation = serverConfig.addSlideAtIndexOfConversation(conversationJid, 1)
     var slide = newConversation.findSlideByIndex(1)
     if( slide.nonEmpty) {
       val slideId = slide.get.id.toString
       val room2 = MeTLXConfiguration.getRoom(slideId, server)
-      writeText(room2, slideId, new Point(100, 100, 1), "Slide 2")
+//      writeText(room2, slideId, new Point(100, 100, 1), "Slide 2")
+      addImage(room2, slideId, "SampleSlide1.png")
     }
 
     newConversation = serverConfig.addSlideAtIndexOfConversation(conversationJid, 2)
@@ -325,7 +342,16 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     if( slide.nonEmpty) {
       val slideId = slide.get.id.toString
       val room3 = MeTLXConfiguration.getRoom(slideId, server)
-      writeText(room3, slideId, new Point(200, 200, 1), "Slide 3")
+//      writeText(room3, slideId, new Point(200, 200, 1), "Slide 3")
+      addImage(room3, slideId, "SampleSlide2.png")
+    }
+
+    newConversation = serverConfig.addSlideAtIndexOfConversation(conversationJid, 3)
+    slide = newConversation.findSlideByIndex(3)
+    if( slide.nonEmpty) {
+      val slideId = slide.get.id.toString
+      val room4 = MeTLXConfiguration.getRoom(slideId, server)
+      addImage(room4, slideId, "SampleSlide3.png")
     }
 
     newConversation
