@@ -61,7 +61,7 @@ class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s)
   override def hashCode: Int = actOn.hashCode
 }
 
-class AuditTrigger (val actOn:(String, String) => {} = (action:String, params:String) => None) {
+class AuditTrigger (val actOn:(String, JObject) => {} = (_:String, _:JObject) => None) {
   override def equals(other:Any):Boolean = {
     other match {
       case oat:AuditTrigger => oat.actOn == actOn
@@ -132,6 +132,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
   protected lazy val serverConfig: ServerConfiguration = ServerConfiguration.default
   protected lazy val server: String = serverConfig.name
   protected var triggers: ListBuffer[StanzaTrigger] = ListBuffer.empty[StanzaTrigger]
+  protected var auditors: ListBuffer[AuditTrigger] = ListBuffer.empty[AuditTrigger]
 
   override lazy val functionDefinitions: List[ClientSideFunction] = List.empty[ClientSideFunction]
 
@@ -162,6 +163,12 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     case (TrainerId,action,params) => {
       // Client-side action message via fireTrainerAudit() clientSideFunc.
       logAudit(action, params, "TrainerActor")
+      auditors.foreach(auditor => {
+        for {
+          actionString:String <- action if action.isInstanceOf[String]
+          paramsObject:JObject <- params if action.isInstanceOf[JObject]
+        } yield auditor.actOn(actionString, paramsObject)
+      })
     }
     case (_trainerId,_action,_params) => {} // this message is not for us
     case Highlight(selector) => partialUpdate(Call("Trainer.highlight",JString(selector)).cmd)
@@ -170,6 +177,9 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     case RefreshControls => partialUpdate(SetHtml("exerciseControls",blockMarkup))
     case s:StanzaTrigger => {
       triggers += s
+    }
+    case a:AuditTrigger => {
+      auditors += a
     }
     case p:TrainingPage => {
       currentPage = p
