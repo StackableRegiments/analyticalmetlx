@@ -2,14 +2,15 @@ package com.metl.comet
 
 import com.metl.comet.ScanDirections.Below
 import com.metl.data._
-import net.liftweb.common.Full
+import net.liftweb.common.{Full, Logger}
 import net.liftweb.http.js.JE.Call
+import net.liftweb.json.JObject
 import net.liftweb.util.Schedule
 import org.fluttercode.datafactory.impl.DataFactory
 
 import scala.xml.{Elem, Text}
 
-case class TrainingManual(actor:TrainerActor) {
+case class TrainingManual(actor:TrainerActor) extends Logger {
   import Dimensions._
   val namer = new DataFactory
   def el(label:String,content:String) = Elem.apply(null,label,scala.xml.Null,scala.xml.TopScope,Text(content))
@@ -64,19 +65,27 @@ case class TrainingManual(actor:TrainerActor) {
       actor ! ShowClick("#insertMode")
     }
   ).reps(1)
+
+  private def countSelectedInks(selection: JObject):Int = {
+    val inks = selection.values.get("inks")
+    debug("!!! Inks: " + inks)
+    inks.size
+  }
+
   val selectInkTracker:TrainingControl = TrainingControl(
     "Select an ink stroke",
     _ => {
       actor ! new AuditTrigger((action, params) => {
-        actor.logAudit(action, params, "Audit ink select")
+//        actor.logAudit(action, params, "Audit ink select")
         action match {
-          case a:String if a.equals("select") =>
+          case a:String if a.equals("select") && countSelectedInks(params) > 0 =>
             selectInkTracker.progress
             actor ! RefreshControls
           case _ =>
         }
         None
       })
+      actor ! ShowClick("#selectMode")
     }
   )
 
@@ -191,12 +200,6 @@ case class TrainingManual(actor:TrainerActor) {
       List(
         p("You can select content by clicking on it or dragging across it. " +
           "Clicking selects the top element, and dragging selects all elements that are touched by the selection box."),
-        TrainingControl(
-          "Selection is done with the arrow cursor",
-          _ => {
-            actor ! ShowClick("#selectMode")
-          }
-        ),
         p("Try selecting a line you drew earlier."),
         selectInkTracker,
         new TrainingReturnTo(3)

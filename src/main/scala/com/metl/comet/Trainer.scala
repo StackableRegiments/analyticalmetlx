@@ -160,14 +160,10 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
   }
 
   override def lowPriority: PartialFunction[Any, Unit] = {
-    case (TrainerId,action,params) => {
+    case (TrainerId,action:String,params:JObject) => {
       // Client-side action message via fireTrainerAudit() clientSideFunc.
-      logAudit(action, params, "TrainerActor")
       auditors.foreach(auditor => {
-        for {
-          actionString:String <- action if action.isInstanceOf[String]
-          paramsObject:JObject <- params if action.isInstanceOf[JObject]
-        } yield auditor.actOn(actionString, paramsObject)
+        auditor.actOn(action, params)
       })
     }
     case (_trainerId,_action,_params) => {} // this message is not for us
