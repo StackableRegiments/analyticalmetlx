@@ -1,3 +1,6 @@
+1.18.2
+METL-674: Bugfix: Reduce CPU usage by avoid JS message spam.
+
 1.18.1
 METL-588: Bugfix: Do not display Group work on the class projector.
 METL-652: Improvement: Change selection to pick off top element only.
