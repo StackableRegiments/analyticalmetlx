@@ -19,13 +19,13 @@ case class TrainingManual(actor:TrainerActor) {
       c.progress
       actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,Intentions.Benign,Watching(0),List.empty[SimulatedActivity]) :: actor.users
     }).reps(3)
-  val inkTracker:TrainingControl = TrainingControl(
+  val createInkTracker:TrainingControl = TrainingControl(
     "Draw a few strokes",
     _ => {
       actor ! new StanzaTrigger(s => {
         s match {
           case i: MeTLInk if actor isHuman i =>
-            inkTracker.progress
+            createInkTracker.progress
             actor ! RefreshControls
           case _ =>
         }
@@ -34,13 +34,13 @@ case class TrainingManual(actor:TrainerActor) {
       actor ! ShowClick("#drawMode")
     }
   ).reps(3)
-  val textTracker:TrainingControl = TrainingControl(
+  val createTextTracker:TrainingControl = TrainingControl(
     "Add a couple of text boxes",
     _ => {
       actor ! new StanzaTrigger(s => {
         s match {
           case i: MeTLMultiWordText if actor isHuman i =>
-            textTracker.progress
+            createTextTracker.progress
             actor ! RefreshControls
           case _ =>
         }
@@ -49,13 +49,13 @@ case class TrainingManual(actor:TrainerActor) {
       actor ! ShowClick("#insertText")
     }
   ).reps(2)
-  val imageTracker:TrainingControl = TrainingControl(
+  val createImageTracker:TrainingControl = TrainingControl(
     "Insert an image",
     _ => {
       actor ! new StanzaTrigger(s => {
         s match {
           case i: MeTLImage if actor isHuman i =>
-            imageTracker.progress
+            createImageTracker.progress
             actor ! RefreshControls
           case _ =>
         }
@@ -64,9 +64,24 @@ case class TrainingManual(actor:TrainerActor) {
       actor ! ShowClick("#insertMode")
     }
   ).reps(1)
+  val selectInkTracker:TrainingControl = TrainingControl(
+    "Select an ink stroke",
+    _ => {
+      actor ! new AuditTrigger((action, params) => {
+        actor.logAudit(action, params, "Audit ink select")
+        action match {
+          case a:String if a.equals("select") =>
+            selectInkTracker.progress
+            actor ! RefreshControls
+          case _ =>
+        }
+        None
+      })
+    }
+  )
 
   class TrainingReturnTo(pageNumber:Int)
-    extends TrainingNavigator("Take me back to exercise " + pageNumber, _ => actor ! pages(pageNumber - 1))
+    extends TrainingNavigator("Take me back to exercise " + pageNumber, actor, pageNumber)
 
   val pages:List[TrainingPage] = List(
     TrainingPage(Text("Exercise 1"),
@@ -102,10 +117,7 @@ case class TrainingManual(actor:TrainerActor) {
           "The third meter measures overall activity in the room.  The green curve above the line indicates public activity, and the red curve below the line measures private activity.  This is the only interaction you are permitted to have with private content."
         )),
         p("In the next exercise, we'll do some work on the pages."),
-        TrainingNavigator(
-          "Show me how to create content",
-          _ => actor ! pages(1)
-        )),
+        TrainingNavigator("Show me how to create content", actor, 2)),
       Full(
         Call("Trainer.clearTools").cmd
       ),
@@ -134,10 +146,7 @@ case class TrainingManual(actor:TrainerActor) {
           }
         ),
         p("Now let's make some of your own content."),
-        TrainingNavigator(
-          "Show me the rest of the tools",
-          _ => actor ! pages(2)
-        ),
+        TrainingNavigator("Show me the rest of the tools", actor, 3),
         new TrainingReturnTo(1)
       ),
       Full(
@@ -165,18 +174,13 @@ case class TrainingManual(actor:TrainerActor) {
         )),
         p("You can add several kinds of content to the space."),
         p("Try drawing some lines.  You can use your finger, or a stylus, or a mouse."),
-        inkTracker,
+        createInkTracker,
         p("Try writing some text."),
-        textTracker,
+        createTextTracker,
         p("Try inserting an image.  You can use any image stored on your device."),
-        imageTracker,
+        createImageTracker,
         p("Once you have added content, you may need to move it, resize it, hide or show it."),
-        TrainingControl(
-          "Show me how to modify existing content",
-          _ => {
-            actor ! ShowClick("#selectMode")
-          }
-        ),
+        TrainingNavigator("Show me how to modify existing content", actor, 4),
         new TrainingReturnTo(2)
       ),
       Full(Call("Trainer.showTools").cmd),
@@ -185,17 +189,20 @@ case class TrainingManual(actor:TrainerActor) {
     TrainingPage(Text("Exercise 4"),
       Text("Modifying your creations"),
       List(
-        p("Once you have added content, you may need to move it, resize it, hide or show it."),
+        p("You can select content by clicking on it or dragging across it. " +
+          "Clicking selects the top element, and dragging selects all elements that are touched by the selection box."),
         TrainingControl(
-          "Show me how to modify existing content",
+          "Selection is done with the arrow cursor",
           _ => {
             actor ! ShowClick("#selectMode")
           }
         ),
+        p("Try selecting a line you drew earlier."),
+        selectInkTracker,
         new TrainingReturnTo(3)
       ),
       Full(Call("Trainer.showTools").cmd),
-      List(new StanzaTrigger((stanza:MeTLStanza) => { actor.logStanza(stanza,"Exercise 3")}))
+      List(new StanzaTrigger((stanza:MeTLStanza) => { actor.logStanza(stanza,"Exercise 4")}))
     )
   )
 }

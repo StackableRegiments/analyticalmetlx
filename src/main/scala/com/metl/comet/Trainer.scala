@@ -24,7 +24,7 @@ import scala.collection.mutable.{ListBuffer, Queue}
 
 trait TrainingBlock
 case class TrainingInstruction(content:NodeSeq) extends TrainingBlock
-case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:Boolean=true) extends TrainingBlock {
+case class TrainingControl(label:String,behaviour:TrainingControl => JsCmd,hurdle:Boolean=true) extends TrainingBlock {
   var isActioned = false
   var progressMarker = 0
   var maxProgress = 0
@@ -41,7 +41,9 @@ case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:
     this
   }
 }
-case class TrainingNavigator(label:String,behaviour:TrainingNavigator=>JsCmd) extends TrainingBlock
+case class TrainingNavigator(label:String, actor:TrainerActor, pageNumber:Int) extends TrainingBlock {
+  val behaviour:TrainingNavigator => JsCmd = _ => actor.goToPage(pageNumber)
+}
 case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd],triggers:List[StanzaTrigger] = List.empty[StanzaTrigger]) extends Logger {
   def receiveStanza(stanza:MeTLStanza):MeTLStanza = {
     triggers.foreach(t => t.actOn(stanza))
@@ -53,6 +55,16 @@ class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s)
   override def equals(other:Any):Boolean = {
     other match {
       case ost:StanzaTrigger => ost.actOn == actOn
+      case _ => false
+    }
+  }
+  override def hashCode: Int = actOn.hashCode
+}
+
+class AuditTrigger (val actOn:(String, String) => {} = (action:String, params:String) => None) {
+  override def equals(other:Any):Boolean = {
+    other match {
+      case oat:AuditTrigger => oat.actOn == actOn
       case _ => false
     }
   }
@@ -94,12 +106,12 @@ case class ShowClick(selector:String)
 
 case class ClaimedArea(left:Double,top:Double,right:Double,bottom:Double,width:Double)
 case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:ScanDirection,intention:Intention,activity:SimulatedActivity,history:List[SimulatedActivity]){
-  def pan(x:Int,y:Int = 0) = copy(focus = Point(focus.x + x,focus.y + y,0))
+  def pan(x:Int,y:Int = 0): SimulatedUser = copy(focus = Point(focus.x + x,focus.y + y,0))
 }
 
 object AuditActorManager extends LiftActor with ListenerManager with Logger {
   def createUpdate = HealthyWelcomeFromRoom
-  override def lowPriority = {
+  override def lowPriority: PartialFunction[Any, Unit] = {
     case (trainerId,action,params) => sendListenersMessage(trainerId,action,params)
     case _ => warn("AuditActorManager")
   }
@@ -142,10 +154,14 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     }
   }
 
-  override def lowPriority = {
+  def goToPage(pageNumber:Int): Unit = {
+    this ! manual.pages(pageNumber - 1)
+  }
+
+  override def lowPriority: PartialFunction[Any, Unit] = {
     case (TrainerId,action,params) => {
       // Client-side action message via fireTrainerAudit() clientSideFunc.
-      debug("TrainerActor received: " + action + " with " + params)
+      logAudit(action, params, "TrainerActor")
     }
     case (_trainerId,_action,_params) => {} // this message is not for us
     case Highlight(selector) => partialUpdate(Call("Trainer.highlight",JString(selector)).cmd)
@@ -211,7 +227,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     case other => warn("TrainerActor received unknown message: %s".format(other))
   }
 
-  protected def getColorForIntention(intention: Intention) = {
+  protected def getColorForIntention(intention: Intention): Color = {
     intention match {
       case Intentions.Benign => Color(255, 0, 255, 0)
       case Intentions.Malicious => Color(255, 255, 0, 0)
@@ -240,7 +256,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     stanza
   }
 
-  def logStanza(stanza: MeTLStanza, prefix:String):MeTLStanza = {
+  def logStanza(stanza: MeTLStanza, prefix: String):MeTLStanza = {
     var message = prefix + " (" + "author: " + stanza.author  + ", type: " + stanza.getClass.getSimpleName
     stanza match {
       case cc:MeTLCanvasContent =>
@@ -251,6 +267,10 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     message = message.concat( ")" )
     debug(message)
     stanza
+  }
+
+  def logAudit(action: Any, params: Any, prefix: String) = {
+    debug(prefix + " (" + "action: " + action + ", params: " + params + ")")
   }
 
   val messageBuses = new scala.collection.mutable.ListBuffer[MessageBus]()
