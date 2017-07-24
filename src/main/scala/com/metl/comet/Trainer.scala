@@ -162,6 +162,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
   override def lowPriority: PartialFunction[Any, Unit] = {
     case (TrainerId,action:String,params:JObject) => {
       // Client-side action message via fireTrainerAudit() clientSideFunc.
+//      debug("Received audit message: '" + action + "'. Auditor count: " + auditors.size)
       auditors.foreach(auditor => {
         auditor.actOn(action, params)
       })
@@ -275,7 +276,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
     stanza
   }
 
-  def logAudit(action: Any, params: Any, prefix: String) = {
+  def logAudit(action: Any, params: Any, prefix: String): Unit = {
     debug(prefix + " (" + "action: " + action + ", params: " + params + ")")
   }
 

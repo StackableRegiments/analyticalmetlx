@@ -66,10 +66,19 @@ case class TrainingManual(actor:TrainerActor) extends Logger {
     }
   ).reps(1)
 
-  private def countSelectedInks(selection: JObject):Int = {
-    val inks = selection.values.get("inks")
-    debug("!!! Inks: " + inks)
-    inks.size
+  private def countSelectedByType(selection: JObject, valueType: String):Int = {
+    val count = selection.values.get(valueType).map {
+      case m: Map[String, Any] => m.size
+      case _ => 0
+    }.getOrElse(0)
+/*    (for {
+      typed@JObject <- selection \ valueType
+      (itemId, item) <- typed.values
+    } yield {
+      itemId
+    }).length*/
+//    debug("Selected " + valueType + ": " + count)
+    count
   }
 
   val selectInkTracker:TrainingControl = TrainingControl(
@@ -78,7 +87,7 @@ case class TrainingManual(actor:TrainerActor) extends Logger {
       actor ! new AuditTrigger((action, params) => {
 //        actor.logAudit(action, params, "Audit ink select")
         action match {
-          case a:String if a.equals("select") && countSelectedInks(params) > 0 =>
+          case a:String if a.equals("selectionChanged") && countSelectedByType(params, "inks") > 0 =>
             selectInkTracker.progress
             actor ! RefreshControls
           case _ =>
@@ -87,7 +96,7 @@ case class TrainingManual(actor:TrainerActor) extends Logger {
       })
       actor ! ShowClick("#selectMode")
     }
-  )
+  ).reps(2)
 
   class TrainingReturnTo(pageNumber:Int)
     extends TrainingNavigator("Take me back to exercise " + pageNumber, actor, pageNumber)
