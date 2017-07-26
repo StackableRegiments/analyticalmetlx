@@ -1,3 +1,6 @@
+1.18.3
+METL-675: Bugfix: Enterprise dashboard does not show conversations between Dec 2016 and Jun 2017.
+
 1.18.2
 METL-674: Bugfix: Reduce CPU usage by avoid JS message spam.
 
