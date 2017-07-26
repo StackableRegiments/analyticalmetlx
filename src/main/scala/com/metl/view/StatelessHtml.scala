@@ -352,7 +352,7 @@ object StatelessHtml extends Stemmer with Logger {
 
   def mergedHistory(jid:String,onBehalfOf:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.mergedHistory(%s)".format(jid), Full(XmlResponse(loadMergedHistory(jid,onBehalfOf))))
 
-  def describeHistory(jid:String,format:String="xml")():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeHistory(%s)".format(jid),{
+  def describeHistory(jid:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeHistory(%s)".format(jid),{
     val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
     val history = getSecureHistoryForRoom(jid,Globals.currentUser.is)
     val stanzas = history.getAll
@@ -412,9 +412,35 @@ object StatelessHtml extends Stemmer with Logger {
       Text(base64Encode(room.getThumbnail))
     }</snapshot>
     </historyDescription>
-    Full(format match {
-      case "json" => JsonResponse(json.Xml.toJson(xResponse))
-      case "xml" => XmlResponse(xResponse)
+    format.flatMap(f => f.toLowerCase().trim() match {
+      case "json" => Full(JsonResponse(json.Xml.toJson(xResponse)))
+      case "xml" => Full(XmlResponse(xResponse))
+      case _ => Empty
+    })
+  })
+  def describeConversation(jid:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversations(%s)".format(jid),{
+    val conv = Some(config.detailsOfConversation(jid)).filterNot(c => c == Conversation.empty)
+    val xResponse = <conversationDescription>{
+        conv.map(c => {
+            <conversation jid={c.jid.toString} author={c.author} created={c.created.toString} modified={c.lastAccessed.toString} slideCount={c.slides.length.toString}/>
+        }).toList
+      }</conversationDescription>
+    format.flatMap(f => f.toLowerCase().trim() match {
+      case "json" => Full(JsonResponse(json.Xml.toJson(xResponse)))
+      case "xml" => Full(XmlResponse(xResponse))
+      case _ => Empty
+    })
+  })
+  def describeConversations(query:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversations(%s)".format(query),{
+    val convs = config.searchForConversation(query)
+    val xResponse = <conversationsDescription>{
+      convs.map(c => {
+        <conversation jid={c.jid.toString} author={c.author} created={c.created.toString} modified={c.lastAccessed.toString} slideCount={c.slides.length.toString}/>
+      })}</conversationsDescription>
+    format.flatMap(f => f.toLowerCase().trim() match {
+      case "json" => Full(JsonResponse(json.Xml.toJson(xResponse)))
+      case "xml" => Full(XmlResponse(xResponse))
+      case _ => Empty
     })
   })
   def addGroupTo(onBehalfOfUser:String,conversation:String,slideId:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slideId),{

@@ -237,7 +237,11 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case r@Req(List("fullJsonHistory"), _, _) =>
       () => r.param("source").flatMap(jid => StatelessHtml.jsonHistory(jid))
     case r@Req("describeHistory" :: _, _, _) =>
-      () => Stopwatch.time("MeTLRestHelper.describeHistory", r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid)))
+      () => Stopwatch.time("MeTLRestHelper.describeHistory", r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid,r.param("format"))))
+    case r@Req("describeConversations" :: _, _, _) =>
+      () => Stopwatch.time("MeTLRestHelper.describeConversations", r.param("query").flatMap(query => StatelessHtml.describeConversations(query,r.param("format"))))
+    case r@Req("describeConversation" :: _,_,_) =>
+      () => Stopwatch.time("MeTLRestHelper.describeConversation", r.param("jid").flatMap(jid => StatelessHtml.describeConversation(jid,r.param("format"))))
     //yaws endpoints 1188
     case r@Req(List("upload_nested"), "yaws", PostRequest) => () => {
       for (
