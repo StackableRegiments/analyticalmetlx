@@ -1,7 +1,5 @@
-1.18.4
+1.19.1
 METL-676: Improvement: Update enterprise dashboard endpoint to mix in MeTLCommands.
-
-1.18.3
 METL-675: Bugfix: Enterprise dashboard does not show conversations between Dec 2016 and Jun 2017.
 
 1.18.2
