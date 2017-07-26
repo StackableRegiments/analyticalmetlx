@@ -115,7 +115,6 @@ libraryDependencies ++= {
     "com.google.apis" % "google-api-services-vision" % "v1-rev23-1.22.0",
     //    "org.scalactic" %% "scalactic" % "3.0.0",
     //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
-    "com.github.tototoshi" %% "scala-csv" % "1.3.3",
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
     //for AWS API Gateway interaction
