@@ -453,12 +453,12 @@ object StatelessHtml extends Stemmer with Logger {
     }
   }
   def describeConversations(query:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversations(%s)".format(query),{
-    describeConversation(config.searchForConversation(query),format)
+    describeConversationByList(config.searchForConversation(query),format)
   })
   def describeConversation(jid:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversation(%s)".format(jid),{
-    describeConversation(List(config.detailsOfConversation(jid)).filterNot(c => c == Conversation.empty),format)
+    describeConversationByList(List(config.detailsOfConversation(jid)).filterNot(c => c == Conversation.empty),format)
   })
-  def describeConversation(convs: => List[Conversation],format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversationByList()", {
+  def describeConversationByList(convs: => List[Conversation],format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversationByList()", {
     format.filter(f => acceptableFormats.contains(f.toLowerCase.trim)).flatMap(f => {
       val globalRoom = MeTLXConfiguration.getRoom("global", config.name)
       val commands:Map[Option[String],List[MeTLCommand]] = globalRoom.getHistory.getCommands.filter(_.command == "/UPDATE_CONVERSATION_DETAILS").groupBy(_.commandParameters.headOption)
