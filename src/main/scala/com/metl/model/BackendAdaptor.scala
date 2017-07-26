@@ -120,7 +120,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
   var configurationProvider:Option[ConfigurationProvider] = None
   val updateGlobalFunc = (c:Conversation) => {
     debug("serverSide updateGlobalFunc: %s".format(c))
-    getRoom("global",c.server.name,GlobalRoom(c.server.name)) ! ServerToLocalMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
+    getRoom("global",c.server.name,GlobalRoom(c.server.name)) ! LocalToServerMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
   def getRoomProvider(name:String,filePath:String) = {
     val idleTimeout:Option[Long] = (XML.load(filePath) \\ "caches" \\ "roomLifetime" \\ "@miliseconds").headOption.map(_.text.toLong)// Some(30L * 60L * 1000L)
