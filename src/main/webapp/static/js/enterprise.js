@@ -419,27 +419,19 @@ var Enterprise = (function(){
 
     return {
         prime:function(){
-            $.get("/describeConversations?query=&format=json",function(conversations){
-                var updates = _.flatMap(conversations.conversationsDescription.conversation,function(c){
-                    var created = parseInt(c.created);
-                    var modified = parseInt(c.modified);
-                        var results = [
-                        {
-                            timestamp:created,
+            $.get("/describeConversations?query=&format=json",function(response){
+                var updates = _.flatMap(response.conversations,function(c){
+                    var results = _.map(c.edits,function(et){
+                        return {
+                            timestamp:et,
                             author:c.author,
                             command:"/UPDATE_CONVERSATION_DETAILS",
                             parameters:[c.jid]
-                        }
-                    ];
-                    if (created !== modified){
-                        results.push({
-                            timestamp:modified,
-                            author:c.author,
-                            command:"/UPDATE_CONVERSATION_DETAILS",
-                            parameters:[c.jid]
-                        });
-                    }
-                    return results;
+                        };
+                    });
+                    var sortedResults = _.sortBy(results,"timestamp");
+                    console.log(c,_.map(sortedResults,function(r){return new Date(r.timestamp);}));
+                    return sortedResults;
                 });
                 // console.log(conversations,updates);
                 showUpdates(updates);
