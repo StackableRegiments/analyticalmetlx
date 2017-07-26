@@ -418,29 +418,55 @@ object StatelessHtml extends Stemmer with Logger {
       case _ => Empty
     })
   })
-  def describeConversation(jid:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversations(%s)".format(jid),{
-    val conv = Some(config.detailsOfConversation(jid)).filterNot(c => c == Conversation.empty)
-    val xResponse = <conversationDescription>{
-        conv.map(c => {
-            <conversation jid={c.jid.toString} author={c.author} created={c.created.toString} modified={c.lastAccessed.toString} slideCount={c.slides.length.toString}/>
-        }).toList
-      }</conversationDescription>
-    format.flatMap(f => f.toLowerCase().trim() match {
-      case "json" => Full(JsonResponse(json.Xml.toJson(xResponse)))
-      case "xml" => Full(XmlResponse(xResponse))
-      case _ => Empty
-    })
-  })
+
+  protected val acceptableFormats: Seq[String] = List("xml","json")
+  protected val rounding: Int = 5 * 1000 // 5 seconds for rounding purposes
+  def generateJson(convs:List[Conversation],commands:Map[Option[String],List[MeTLCommand]]):JObject = {
+    JObject(List(
+      JField("conversations",JArray(
+        convs.map(c => {
+          val edits = (c.created :: List(c.lastAccessed).filterNot(_ == c.created) :::
+            commands.get(Some(c.jid.toString)).toList.flatten.map(_.timestamp)).groupBy(_ / rounding).values.flatMap(_.headOption).toList.map(JInt(_))
+          JObject(List(
+            JField("jid",JInt(c.jid)),
+            JField("author",JString(c.author)),
+            JField("created",JInt(c.created)),
+            JField("edits",JArray(edits)),
+            JField("slideCount",JInt(c.slides.length))
+          ))
+        })
+      ))
+    ))
+  }
+  protected def jsonToXml(in:JValue):NodeSeq = {
+    in match {
+      case JObject(fields) => <object>{fields.map(jsonToXml)}</object>
+      case JArray(items) => <array>{items.map(i => <item>{jsonToXml(i)}</item>)}</array>
+      case JField(name,value) => Elem(null,name,Null,scala.xml.TopScope,false,jsonToXml(value).headOption.getOrElse(Text("")))
+      case JString(str) => Text(str)
+      case JInt(num) => Text(num.toString)
+      case JDouble(num) => Text(num.toString)
+      case JBool(bool) => Text(bool.toString)
+      case JNull => Text("")
+      case JNothing => Text("")
+      case _ => Text("")
+    }
+  }
   def describeConversations(query:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversations(%s)".format(query),{
-    val convs = config.searchForConversation(query)
-    val xResponse = <conversationsDescription>{
-      convs.map(c => {
-        <conversation jid={c.jid.toString} author={c.author} created={c.created.toString} modified={c.lastAccessed.toString} slideCount={c.slides.length.toString}/>
-      })}</conversationsDescription>
-    format.flatMap(f => f.toLowerCase().trim() match {
-      case "json" => Full(JsonResponse(json.Xml.toJson(xResponse)))
-      case "xml" => Full(XmlResponse(xResponse))
-      case _ => Empty
+    describeConversation(config.searchForConversation(query),format)
+  })
+  def describeConversation(jid:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversation(%s)".format(jid),{
+    describeConversation(List(config.detailsOfConversation(jid)).filterNot(c => c == Conversation.empty),format)
+  })
+  def describeConversation(convs: => List[Conversation],format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversationByList()", {
+    format.filter(f => acceptableFormats.contains(f.toLowerCase.trim)).flatMap(f => {
+      val globalRoom = MeTLXConfiguration.getRoom("global", config.name)
+      val commands:Map[Option[String],List[MeTLCommand]] = globalRoom.getHistory.getCommands.filter(_.command == "/UPDATE_CONVERSATION_DETAILS").groupBy(_.commandParameters.headOption)
+      f.trim.toLowerCase match {
+        case "json" => Full(JsonResponse(generateJson(convs,commands)))
+        case "xml" => jsonToXml(generateJson(convs,commands)).headOption.map(XmlResponse(_))
+        case _ => Empty
+      }
     })
   })
   def addGroupTo(onBehalfOfUser:String,conversation:String,slideId:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slideId),{
