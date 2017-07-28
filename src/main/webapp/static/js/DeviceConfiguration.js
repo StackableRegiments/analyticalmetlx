@@ -6,7 +6,7 @@ var DeviceConfiguration = (function(){
     var orientation = "landscape";
     var px = function(i){
         return sprintf("%spx",i);
-    }
+    };
     var returnCurrentDeviceFunction = function(){
         return currentDevice;
     };
@@ -19,7 +19,7 @@ var DeviceConfiguration = (function(){
             isInConversation = false;
         }
         return currentDevice != "projector" && isInConversation;
-    }
+    };
     var sectionsVisible = {//All false because the application's start state is the search screen.  onHistory will restore them.
         tools:false,
         slides:false,
@@ -294,7 +294,7 @@ var DeviceConfiguration = (function(){
         if (fitFunction){
             fitFunction();
         }
-    }
+    };
     var outerFit = innerFit;
     var initialized = false;
     Progress.onLayoutUpdated["DeviceConfiguration"] = outerFit;
@@ -324,8 +324,7 @@ var DeviceConfiguration = (function(){
         tryToDetermineCurrentDevice();
         actOnCurrentDevice();
         outerFit();
-    }
-
+    };
     var updateToolsToggleButton = function(){
         var button = $("#slidesToggleButton");
         if (sectionsVisible.slides){

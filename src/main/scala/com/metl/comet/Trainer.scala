@@ -1,7 +1,6 @@
 package com.metl.comet
 
 import com.metl.data._
-import com.metl.utils._
 import com.metl.liftExtensions._
 import net.liftweb._
 import net.liftweb.json._
@@ -10,24 +9,22 @@ import http._
 import net.liftweb.http.js.JsCmds.SetHtml
 import util._
 import Helpers._
-import HttpHelpers._
-import actor._
 
 import scala.xml._
 import com.metl.model._
 import SHtml._
-import org.fluttercode.datafactory.impl._
 import js._
 import JsCmds._
 import JE._
-import net.liftweb.http.js.jquery.JqJsCmds._
-import net.liftweb.http.js.jquery.JqJE._
+import net.liftweb.actor.LiftActor
+import org.apache.commons.io.IOUtils
+import java.io.File._
 
-import scala.collection.mutable.{ListBuffer,Queue}
+import scala.collection.mutable.{ListBuffer, Queue}
 
 trait TrainingBlock
 case class TrainingInstruction(content:NodeSeq) extends TrainingBlock
-case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:Boolean=true) extends TrainingBlock {
+case class TrainingControl(label:String,behaviour:TrainingControl => JsCmd,hurdle:Boolean=true) extends TrainingBlock {
   var isActioned = false
   var progressMarker = 0
   var maxProgress = 0
@@ -44,7 +41,10 @@ case class TrainingControl(label:String,behaviour:TrainingControl=>JsCmd,hurdle:
     this
   }
 }
-case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd],triggers:List[StanzaTrigger] = List.empty[StanzaTrigger]) {
+case class TrainingNavigator(label:String, actor:TrainerActor, pageNumber:Int) extends TrainingBlock {
+  val behaviour:TrainingNavigator => JsCmd = _ => actor.goToPage(pageNumber)
+}
+case class TrainingPage(title:NodeSeq,blurb:NodeSeq,blocks:Seq[TrainingBlock],onLoad:Box[JsCmd],triggers:List[StanzaTrigger] = List.empty[StanzaTrigger]) extends Logger {
   def receiveStanza(stanza:MeTLStanza):MeTLStanza = {
     triggers.foreach(t => t.actOn(stanza))
     stanza
@@ -58,7 +58,65 @@ class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s)
       case _ => false
     }
   }
-  override def hashCode = actOn.hashCode
+  override def hashCode: Int = actOn.hashCode
+}
+
+class AuditTrigger (val actOn:(String, JObject) => Unit = (_:String, _:JObject) => {}) extends Logger {
+  override def equals(other:Any):Boolean = {
+    other match {
+      case oat:AuditTrigger => oat.actOn == actOn
+      case _ => false
+    }
+  }
+  override def hashCode: Int = actOn.hashCode
+}
+case class CanvasSelection(inks:List[MeTLInk],highlighters:List[MeTLInk],images:List[MeTLImage],text:List[MeTLText],multiWordTexts:List[MeTLMultiWordText],videos:List[MeTLVideo])
+object SelectionChangedTriggerHelper {
+  val serializer = new JsonSerializer(EmptyBackendAdaptor)
+}
+class SelectionChangedTrigger(val actOnSelection:CanvasSelection=>Unit = cs => {}) extends AuditTrigger(
+  (s,o) => {
+    (s,o) match {
+      case ("selectionChanged",sel@JObject(_)) => {
+        val ser = SelectionChangedTriggerHelper.serializer
+        val itemTypes = List("inks","images","videos","multiWordTexts","texts")
+        val inks = new ListBuffer[MeTLInk]
+        val highlighters = new ListBuffer[MeTLInk]
+        val images = new ListBuffer[MeTLImage]
+        val texts = new ListBuffer[MeTLText]
+        val multiWordTexts = new ListBuffer[MeTLMultiWordText]
+        val videos = new ListBuffer[MeTLVideo]
+        for {
+          itemType <- itemTypes
+          JObject(items) = sel \ itemType
+          JField(_identity,item) <- items
+          stanza = ser.toMeTLData(item)
+        } yield {
+          stanza match {
+            case i:MeTLInk if i.isHighlighter => highlighters += i
+            case i:MeTLInk => inks += i
+            case i:MeTLImage => images += i
+            case t:MeTLText => texts += t
+            case mwt:MeTLMultiWordText => multiWordTexts += mwt
+            case v:MeTLVideo => videos += v
+            case _ => {}
+          }
+        }
+        val selection = CanvasSelection(inks.toList,highlighters.toList,images.toList,texts.toList,multiWordTexts.toList,videos.toList)
+        println("SELECTION_CHANGED: %s".format(selection))
+        actOnSelection(selection)
+      }
+      case _ => {}
+    }
+  }
+) {
+  override def equals(other:Any):Boolean = {
+    other match {
+      case oat:AuditTrigger => oat.actOn == actOn
+      case _ => false
+    }
+  }
+  override def hashCode: Int = actOn.hashCode
 }
 
 case object SimulatorTick
@@ -75,9 +133,15 @@ object Dimensions {
   val lineHeight = 200
   val horizontalSpace = 30
 }
+case class Intention(label:String)
+object Intentions {
+  val Benign = Intention("benign")
+  val Malicious = Intention("malicious")
+  val Neutral = Intention("neutral")
+  val Other = Intention("other")
+}
 
 import ScanDirections._
-
 
 trait SimulatedActivity
 case class Watching(ticks:Int) extends SimulatedActivity
@@ -89,165 +153,34 @@ case class Flash(selector:String)
 case class ShowClick(selector:String)
 
 case class ClaimedArea(left:Double,top:Double,right:Double,bottom:Double,width:Double)
-case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:ScanDirection,intention:String,activity:SimulatedActivity,history:List[SimulatedActivity]){
-  def pan(x:Int,y:Int = 0) = copy(focus = Point(focus.x + x,focus.y + y,0))
+case class SimulatedUser(name:String,claim:ClaimedArea,focus:Point,attention:ScanDirection,intention:Intention,activity:SimulatedActivity,history:List[SimulatedActivity]){
+  def pan(x:Int,y:Int = 0): SimulatedUser = copy(focus = Point(focus.x + x,focus.y + y,0))
 }
 
-case class TrainingManual(actor:TrainerActor) {
-  import Dimensions._
-  val namer = new DataFactory
-  def el(label:String,content:String) = Elem.apply(null,label,scala.xml.Null,scala.xml.TopScope,Text(content))
-  def p(content:String) = TrainingInstruction(el("p",content))
-  def makeStudent(intent:String) = TrainingControl(
-    "Bring in some students".format(intent),c => {
-      c.progress
-      actor.users = SimulatedUser("%s %s".format(namer.getFirstName, namer.getLastName),ClaimedArea(0,0,0,lineHeight,0),Point(0,0,0),Below,"benign",Watching(0),List.empty[SimulatedActivity]) :: actor.users
-    }).reps(3)
-  val networkMonitor:TrainingControl = TrainingControl(
-    "How can I tell if there's a problem?",
-    _ => {
-      actor ! Flash(".meters")
-    }).supplementary(List(
-      "These three meters indicate three kinds of health.",
-      "The topmost meter watches for a healthy network connection, checking every time you do any action and also checking in the background periodically.  If the network ever fails health check completely, a red boundary will appear around these meters and remain red for the next five minutes.  This is to make you aware of a poor environment.",
-      "The center meter is about whether all of your students are with you.  This measures the number of students who are allowed to attend this session against the number of students who have joined the conversation.  This is only effective when your conversation is restricted to a particular enrolment context.  In this particular case, you are in a private conversation; only you are allowed to join, and only you are here.  One hundred percent!",
-      "The third meter measures overall activity in the room.  The green curve above the line indicates public activity, and the red curve below the line measures private activity.  This is the only interaction you are permitted to have with private content."
-    ))
-  val inkTracker:TrainingControl = TrainingControl(
-    "Draw a few strokes",
-    _ => {
-      actor ! new StanzaTrigger(s => {
-        inkTracker.progress
-        actor ! RefreshControls
-        s
-      })
-      actor ! ShowClick("#drawMode")
-    }
-  ).reps(3)
-  val pages:List[TrainingPage] = List(
-    TrainingPage(Text("Exercise 1"),
-      Text("The teaching space"),
-      List(
-        p("This space is a whiteboard on which you and your class can write."),
-        p("Like a slide deck or a PowerPoint presentation, it supports multiple pages."),
-        TrainingControl(
-          "Show me the pages",
-          _ => actor ! Flash("#thumbsColumn")
-        ),
-        p("You may choose whether your class can move freely between these."),
-        TrainingControl("How do I move between pages?",
-          _ => actor ! Flash("#slideControls")
-        ),
-        p("Only the author of the conversation can add pages."),
-        TrainingControl(
-          "Show me how",
-          _ => {
-            Schedule.schedule(actor,Flash("#addSlideButton"),1000)
-            actor ! Highlight("#slideControls")
-          }
-        ),
-        p("In the next exercise, we'll do some work on the pages"),
-        TrainingControl(
-          "Take me there",
-          _ => actor ! pages(1),
-          hurdle = false
-        )),
-      Full(
-        Call("Trainer.clearTools").cmd
-      ),
-      List(new StanzaTrigger((stanza:MeTLStanza) => { actor.logStanza(stanza,"Exercise 1")}))
-    ),
-    TrainingPage(Text("Exercise 2"),
-      Text("Sharing an open space"),
-      List(
-        p("In this trainer you can bring virtual students into your classroom.  These students will stay with you during your training session."),
-        makeStudent("benign"),
-        p("The students you create can work anywhere, even outside of where you are currently looking."),
-        p("To observe all their work, set your camera to include all content no matter where it appears."),
-        TrainingControl(
-          "Show me how to watch everything",
-          _ => {
-            Schedule.schedule(actor,ShowClick("#zoomToFull"),1000)
-            actor ! ShowClick("#zoomMode")
-          }
-        ),
-        p("If you just want to concentrate on your own work, set your camera not to move automatically."),
-        TrainingControl(
-          "Show me how to stop the camera moving",
-          _ => {
-            Schedule.schedule(actor,ShowClick("#zoomToCurrent"),1000)
-            actor ! ShowClick("#zoomMode")
-          }
-        ),
-        p("Now let's make some of your own content."),
-        TrainingControl(
-          "Show me the rest of the tools",
-          _ => actor ! pages(2),
-          hurdle = false
-        ),
-        TrainingControl(
-          "Show me exercise 1 again",
-          _ => actor ! pages(0),
-          hurdle = false
-        )
-      ),
-      Full(
-        Call("Trainer.clearTools").cmd &
-          Call("Trainer.highlight","#toolsColumn").cmd &
-          Call("Trainer.hide",".permission-states").cmd &
-          Call("Trainer.hide","#floatingToggleContainer").cmd &
-          Call("Trainer.hide",".meters").cmd
-      ),
-      List(new StanzaTrigger((stanza:MeTLStanza) => { actor.logStanza(stanza,"Exercise 2")}))
-    ),
-    TrainingPage(Text("Exercise 3"),
-      Text("Your creative space"),
-      List(
-        p("You have control over whether your content appears to other users."),
-        TrainingControl(
-          "Which controls do that?",
-          _ => {
-            actor ! Highlight("#toolsColumn")
-            actor ! Flash(".permission-states")
-          }
-        ),
-        p("Classroom spaces, the device you're using and network speed can affect whether the whiteboard works well for you."),
-        networkMonitor,
-        p("You can add several kinds of content to the space.  Your selection of Public versus Private at the time you add new content will determine whether that content is visible to others.  It is always visible to you, and you can change your mind later."),
-        p("Try drawing some lines.  You can use your finger, or a stylus, or a mouse."),
-        inkTracker,
-        p("Once you have added content, you may need to move it, resize it, hide or show it."),
-        TrainingControl(
-          "Show me how to modify existing content",
-          _ => {
-            actor ! ShowClick("#selectMode")
-          }
-        ),
-        TrainingControl(
-          "Show me exercise 2 again",
-          _ => actor ! pages(1),
-          hurdle = false
-        )
-      ),
-      Full(Call("Trainer.showTools").cmd),
-      List(new StanzaTrigger((stanza:MeTLStanza) => { actor.logStanza(stanza,"Exercise 3")}))
-    )
-  )
+object AuditActorManager extends LiftActor with ListenerManager with Logger {
+  def createUpdate = HealthyWelcomeFromRoom
+  override def lowPriority: PartialFunction[Any, Unit] = {
+    case (trainerId,action,params) => sendListenersMessage(trainerId,action,params)
+    case _ => warn("AuditActorManager")
+  }
 }
 
-class TrainerActor extends StronglyTypedJsonActor with Logger {
+class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger {
   import Dimensions._
+  protected val TrainerId: String = nextFuncName
+  override def lifespan = Globals.metlActorLifespan
+  override def registerWith = AuditActorManager
   implicit val formats = net.liftweb.json.DefaultFormats
   var manual = TrainingManual(this)
   var users: List[SimulatedUser] = List.empty[SimulatedUser]
-  def registerWith = MeTLActorManager
   var currentPage:TrainingPage = manual.pages.head
   protected var currentConversation:Box[Conversation] = Empty
   protected var currentSlide:Box[String] = Empty
-  protected val username: String = Globals.currentUser.is
+  var username = "unknown"
   protected lazy val serverConfig: ServerConfiguration = ServerConfiguration.default
   protected lazy val server: String = serverConfig.name
   protected var triggers: ListBuffer[StanzaTrigger] = ListBuffer.empty[StanzaTrigger]
+  protected var auditors: ListBuffer[AuditTrigger] = ListBuffer.empty[AuditTrigger]
 
   override lazy val functionDefinitions: List[ClientSideFunction] = List.empty[ClientSideFunction]
 
@@ -270,13 +203,28 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
     }
   }
 
-  override def lowPriority = {
+  def goToPage(pageNumber:Int): Unit = {
+    this ! manual.pages(pageNumber - 1)
+  }
+
+  override def lowPriority: PartialFunction[Any, Unit] = {
+    case (TrainerId,action:String,params:JObject) => {
+      // Client-side action message via fireTrainerAudit() clientSideFunc.
+//      debug("Received audit message: '" + action + "'. Auditor count: " + auditors.size)
+      auditors.foreach(auditor => {
+        auditor.actOn(action, params)
+      })
+    }
+    case (_trainerId,_action,_params) => {} // this message is not for us
     case Highlight(selector) => partialUpdate(Call("Trainer.highlight",JString(selector)).cmd)
     case Flash(selector) => partialUpdate(Call("Trainer.flash",JString(selector)).cmd)
     case ShowClick(selector) => partialUpdate(Call("Trainer.showClick",JString(selector)).cmd)
     case RefreshControls => partialUpdate(SetHtml("exerciseControls",blockMarkup))
     case s:StanzaTrigger => {
       triggers += s
+    }
+    case a:AuditTrigger => {
+      auditors += a
     }
     case p:TrainingPage => {
       currentPage = p
@@ -297,9 +245,9 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
             }
             val claim = findFreeSpace(width, direction,users.map(_.claim))
             furtherClaimsAllowed = false
-            // Kick off Typing instead of Scribbling. How to choose which?
             u.copy(activity=Scribbling(name.toLowerCase.toList), focus=Point(claim.left,claim.top,0), claim=claim, attention=direction)
-//            u.copy(activity=Typing(name.toLowerCase.toList), focus=Point(claim.left,claim.top,0), claim=claim, attention=direction)
+            // Kick off Typing instead of Scribbling. How to choose which?
+            //            u.copy(activity=Typing(name.toLowerCase.toList), focus=Point(claim.left,claim.top,0), claim=claim, attention=direction)
           }
           case _ => u.copy(activity = Watching(ticks + 1))
         }
@@ -309,174 +257,246 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
           case g => {
             currentSlide.map(slide => {
               val room = MeTLXConfiguration.getRoom(slide, server)
-              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLInk(serverConfig, name, new java.util.Date().getTime, sum, sum,
-                geometry, getColorForIntention(intention), 2.0, false, "presentationSpace", Privacy.PUBLIC, slide.toString, nextFuncName)))
+              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLInk(serverConfig, name, new java.util.Date().getTime,
+                sum, sum, geometry, getColorForIntention(intention), 2.0, false, "presentationSpace", Privacy.PUBLIC,
+                slide.toString, nextFuncName)))
             })
             u.pan(g.width).copy(activity = Scribbling(t), history = Scribbling(List(h)) :: u.history)
           }
         }
         case u@SimulatedUser(name,claim,focus,_,intention,Typing(Nil),history) => u.copy(activity = Watching(0))
         case u@SimulatedUser(name,claim,focus,_,intention,Typing(h :: t),history) if h == ' ' => u.pan(Alphabet.space.width).copy(activity = Typing(t),history = Typing(List(h)) :: u.history)
-/*
         case u@SimulatedUser(name,claim,focus,_,intention,Typing(h :: t),history) => Alphabet.geometry(h,focus) match {
           case g => {
             currentSlide.map(slide => {
               val room = MeTLXConfiguration.getRoom(slide,server)
-              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig,name,new java.util.Date().getTime,"b",x,y,width,height,fontFamily,fontSize,
-                intention match {
-                  case "benign" => Color(255,255,0,0)
-                  case "malicious" => Color(255,0,0,255)
-                  case _ => Color(255,0,255,0)
-                },2.0,nextFuncName,"presentationSpace",Privacy.PUBLIC,slide.toString)))
-              g.strokes.map(geometry => room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig,name,new java.util.Date().getTime,"b",x,y,width,height,fontFamily,fontSize,getColorForIntention(intention),2.0,nextFuncName,"presentationSpace",Privacy.PUBLIC,slide.toString)))
+              g.strokes.map(geometry => writeText(room, slide, focus, "Cat"))
             })
             u.pan(g.width).copy(activity = Scribbling(t),history = Typing(List(h)) :: u.history)
           }
         }
-*/
       }
       partialUpdate(Call("Trainer.simulatedUsers",Extraction.decompose(users)).cmd)
       Schedule.schedule(this,SimulatorTick,1000)
     }
+    case other => warn("TrainerActor received unknown message: %s".format(other))
   }
 
-  protected def getColorForIntention(intention: String) = {
+  protected def getColorForIntention(intention: Intention): Color = {
     intention match {
-      case "benign" => Color(255, 255, 0, 0)
-      case "malicious" => Color(255, 0, 0, 255)
-      case _ => Color(255, 0, 255, 0)
+      case Intentions.Benign => Color(255, 0, 255, 0)
+      case Intentions.Malicious => Color(255, 255, 0, 0)
+      case Intentions.Neutral => Color(0, 0, 0, 0)
+      case _ => Color(255, 0, 0, 255)
     }
   }
 
-  val humanAuthor = "public"
-  def isHuman(stanza:MeTLStanza):Boolean = {humanAuthor.equals(stanza.author)}
+  protected def writeText(room:MeTLRoom, slide:String, location:Point, text:String): Unit = {
+    room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig, "simulator", new java.util.Date().getTime,
+      location.x, location.y, 250, 100, 100, "tag", "identity", "presentationSpace", Privacy.PUBLIC, slide,
+      List(MeTLTextWord(text, bold = false, underline = false, italic = false, "LEFT", getColorForIntention(Intentions.Neutral), "Arial", 36.0))
+    ))
+  }
+
+  def isHuman(stanza:MeTLStanza):Boolean = {
+    username.equals(stanza.author)
+  }
 
   val humanStanzas = new Queue[MeTLStanza]()
   val simulatedStanzas = new Queue[MeTLStanza]()
 
   def enqueueStanza(stanza: MeTLStanza, queue: Queue[MeTLStanza]):MeTLStanza = {
     queue += stanza
-    trace("Queue(" + queue.size + "): " + queue.toString)
+//    debug("Queueing (" + queue.size + "): " + queue.toString)
     stanza
   }
 
-  def logStanza(stanza: MeTLStanza, prefix:String):MeTLStanza = {
-    trace(prefix + " (" + "author: " + stanza.author + ", " + "timestamp: " + stanza.timestamp + ", " + stanza + ")")
+  def logStanza(stanza: MeTLStanza, prefix: String):MeTLStanza = {
+    var message = prefix + " (" + "author: " + stanza.author  + ", type: " + stanza.getClass.getSimpleName
+    stanza match {
+      case cc:MeTLCanvasContent =>
+        message = message.concat(", " + "slide: " + cc.slide)
+      case _ =>
+        message = message.concat(", " + "time: " + stanza.timestamp)
+    }
+    message = message.concat( ")" )
+    debug(message)
     stanza
   }
 
-  override def localSetup = {
+  def logAudit(action: Any, params: Any, prefix: String): Unit = {
+    debug(prefix + " (" + "action: " + action + ", params: " + params + ")")
+  }
+
+  val messageBuses = new scala.collection.mutable.ListBuffer[MessageBus]()
+
+  override def localSetup: Unit = {
     super.localSetup
-    val newConversation = serverConfig.createConversation("a practice conversation",username)
-    currentConversation = Full(addSampleSlides(newConversation))
-    currentSlide = Full(newConversation.slides.head.id.toString)
+
+    username = Globals.currentUser.is
+
+    var newConversation = serverConfig.createConversation("a practice conversation",username)
+    newConversation = serverConfig.updateSubjectOfConversation(newConversation.jid.toString, username)
+    newConversation = addSampleSlides(newConversation.jid.toString)
+
+    currentConversation = Full(newConversation)
+    currentSlide = Full(newConversation.slides.minBy(s => s.index).id.toString)
 
     triggers = List(
       // Conversation triggers (all Stanzas)
-      new StanzaTrigger((stanza:MeTLStanza) => {
-        logStanza(stanza,"--- Conversation")
-        stanza match {
-          case _:Attendance => stanza
-          case _:MeTLCanvasContent => {
-            if(isHuman(stanza)) {
-              logStanza(stanza,"Human")
-              enqueueStanza(stanza,humanStanzas)
-            }
-    //        else {
-    //          logStanza(stanza,"Simulated")
-    //          enqueueStanza(stanza,simulatedStanzas)
-    //        }
-            stanza
+      new StanzaTrigger({
+        case stanza@(_: Attendance) => stanza
+        case stanza@(_: MeTLCanvasContent) =>
+          if (isHuman(stanza)) {
+            enqueueStanza(stanza, humanStanzas)
+//            logStanza(stanza,"Queued CanvasContent (human)")
           }
-          case _ => stanza
-        }
+          else {
+            enqueueStanza(stanza, simulatedStanzas)
+//            logStanza(stanza,"Queued CanvasContent (simulated)")
+          }
+          stanza
+        case stanza => stanza
       }),
       // Page triggers (only CanvasContent)
-      new StanzaTrigger((stanza:MeTLStanza) => {
-        logStanza(stanza,"--- Page")
-        stanza match {
-          case _: MeTLCanvasContent =>
-            logStanza(stanza,"CanvasContent")
-            currentPage.receiveStanza(stanza)
-          case _ => stanza
-        }
+      new StanzaTrigger({
+        case stanza@(_: MeTLCanvasContent) =>
+          //            logStanza(stanza,"Page CanvasContent")
+          currentPage.receiveStanza(stanza)
+          stanza
+        case stanza => stanza
       })
     ).to[ListBuffer]
 
-    serverConfig.getMessageBus(new MessageBusDefinition(newConversation.jid.toString, "unicastBackToOwner", (s: MeTLStanza) => { triggers.foreach(t => t.actOn(s))}))
+    val conversationLocation = newConversation.jid.toString
+    messageBuses += serverConfig.getMessageBus(new MessageBusDefinition(conversationLocation, "trainer", (s: MeTLStanza) => {
+      triggers.foreach(t => t.actOn(s))
+    }))
+
+    messageBuses ++= newConversation.slides.map(slide => {
+      val slideLocation = slide.id.toString
+      serverConfig.getMessageBus(new MessageBusDefinition(slideLocation, "trainer", (s: MeTLStanza) => {
+        triggers.foreach(t => t.actOn(s))
+      }))
+    })
 
     Schedule.schedule(this,SimulatorTick,500)
   }
 
-  protected def addSampleSlides(conversation:Conversation): Conversation = {
-    var newConversation = serverConfig.addSlideAtIndexOfConversation(conversation.jid.toString, 1)
-    val slide2 = newConversation.slides(1)
-    val room2 = MeTLXConfiguration.getRoom(slide2.id.toString, server)
-    writeText(slide2, room2, "Dog")
-
-    newConversation = serverConfig.addSlideAtIndexOfConversation(newConversation.jid.toString, 2)
-    val slide3 = newConversation.slides(2)
-    val room3 = MeTLXConfiguration.getRoom(slide2.id.toString, server)
-
-    newConversation
+  override protected def localShutdown(): Unit = {
+    messageBuses.foreach(mb => mb.release)
+    super.localShutdown
   }
 
-  protected def writeText(slide:Slide, room:MeTLRoom, text:String): Unit = {
-    room ! LocalToServerMeTLStanza(MeTLMultiWordText(serverConfig, "simulator", new java.util.Date().getTime,
-      100, 200, 200, 100, 100, "_", nextFuncName, "presentationSpace", Privacy.PUBLIC, slide.id.toString,
-      List(MeTLTextWord(text, bold = false, underline = false, italic = false, "LEFT", getColorForIntention("benign"), "Arial", 12.0))
-    ))
+  protected def addImage(room: MeTLRoom, slideId: String, imageName: String): Unit = {
+    val imageStream = getClass.getClassLoader.getResourceAsStream("training" + separator + imageName)
+    try {
+      val imageData: Array[Byte] = IOUtils.toByteArray(imageStream)
+      val imageId = serverConfig.postResource(slideId, nextFuncName, imageData)
+      room ! LocalToServerMeTLStanza(MeTLImage(serverConfig, "simulator", new java.util.Date().getTime,
+        "tag", Full(imageId), Empty, Empty, 1280, 720, 0, 0, "presentationSpace", Privacy.PUBLIC, slideId,
+        "identity")
+      )
+    } catch {
+      case e:NullPointerException => warn("Couldn't load image: " + imageName)
+    }
+  }
+
+  protected def addSampleSlides(conversationJid:String): Conversation = {
+    var newConversation = serverConfig.addSlideAtIndexOfConversation(conversationJid, 1)
+    var slide = newConversation.findSlideByIndex(1)
+    if( slide.nonEmpty) {
+      val slideId = slide.get.id.toString
+      val room2 = MeTLXConfiguration.getRoom(slideId, server)
+      writeText(room2, slideId, new Point(100, 120, 1), "Slide 2")
+      addImage(room2, slideId, "SampleSlide1.png")
+    }
+
+    newConversation = serverConfig.addSlideAtIndexOfConversation(conversationJid, 2)
+    slide = newConversation.findSlideByIndex(2)
+    if( slide.nonEmpty) {
+      val slideId = slide.get.id.toString
+      val room3 = MeTLXConfiguration.getRoom(slideId, server)
+      writeText(room3, slideId, new Point(100, 120, 1), "Slide 3")
+      addImage(room3, slideId, "SampleSlide2.png")
+    }
+
+    newConversation = serverConfig.addSlideAtIndexOfConversation(conversationJid, 3)
+    slide = newConversation.findSlideByIndex(3)
+    if( slide.nonEmpty) {
+      val slideId = slide.get.id.toString
+      val room4 = MeTLXConfiguration.getRoom(slideId, server)
+      writeText(room4, slideId, new Point(100, 120, 1), "Slide 4")
+      addImage(room4, slideId, "SampleSlide3.png")
+    }
+
+    newConversation
   }
 
   def checkbox(checked:Boolean):NodeSeq = {
     val id = nextFuncName
     NodeSeq.fromSeq(List(
       checked match {
-        case true => <input type="checkbox" id={id} disabled="true" checked="checked" />
-        case _ => <input type="checkbox" id={id} disabled="true" />
+        case true => <input type="checkbox" class="action" id={id} disabled="true" checked="checked" />
+        case _ => <input type="checkbox" class="action" id={id} disabled="true" />
       },
       <label for={id}><span class="icon-txt"></span></label>))
   }
 
   def blockMarkup:NodeSeq = currentPage.blocks.map {
-    case c:TrainingControl => {
-      val progress = if(c.hurdle){
-        <div class="actioned">{
-          if(c.maxProgress > 0) {
-            Range(0,c.maxProgress).map(i => checkbox(c.progressMarker > i))
-          }
-          else {
-            checkbox(c.isActioned)
-          }
-        }</div>
+    case tc: TrainingControl => {
+      val progress = if (tc.hurdle) {
+        <div class="actioned">
+          {if (tc.maxProgress > 0) {
+          Range(0, tc.maxProgress).map(i => checkbox(tc.progressMarker > i))
+        }
+        else {
+          checkbox(tc.isActioned)
+        }}
+        </div>
       }
-      else{
-        <span />
+      else {
+        <span/>
       }
-      val label = ajaxButton(c.label,() => {
-        c.actioned
-        c.behaviour(c)
+
+      val label = ajaxButton(tc.label, () => {
+        tc.actioned
+        tc.behaviour(tc)
         SetHtml("exerciseControls",blockMarkup)
-      },"class" -> "active")
-      val supplementMarkup:NodeSeq = if(c.supplement.isEmpty) {
+      }, "class" -> "active")
+
+      val supplementMarkup = if(tc.supplement.isEmpty) {
         NodeSeq.Empty
       }
       else{
         val toggleBehavior = () => {
-          c.supplementOpen = !c.supplementOpen
+          tc.supplementOpen = !tc.supplementOpen
           SetHtml("exerciseControls",blockMarkup)
         }
-        c.supplementOpen match {
-          case true => NodeSeq.fromSeq(List(ajaxButton(" Hide",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-minus-square-o"))) ++ c.supplement.map(s => <p class="supplement">{s}</p>)
-          case _ => ajaxButton(" Show",toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-plus-square-o")
+        tc.supplementOpen match {
+          case true => NodeSeq.fromSeq(List(ajaxButton(" Hide", toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-minus-square-o"))) ++
+            tc.supplement.map(s => <p class="supplement">{s}</p>)
+          case _ => ajaxButton(<span style="font-family: inherit;">Show</span>, toggleBehavior, "class" -> "toggle btn-icon icon-txt fa fa-plus-square-o")
         }
       }
+
       <div class="control">
       <div class="flex-container-row">{progress ++ label}</div>
       <div>{supplementMarkup}</div>
       </div>
     }
-    case c:TrainingInstruction => <div class="control">{c.content}</div>
+    case tn:TrainingNavigator => {
+      val label = ajaxButton(tn.label, () => {
+        tn.behaviour(tn)
+        SetHtml("exerciseControls",blockMarkup)
+      }, "class" -> "navigator")
+
+      <div class="control">
+        <div class="flex-container-row">{label}</div>
+      </div>
+    }
+    case c:TrainingInstruction =>
+      <div class="control">{c.content}</div>
   }
 
   override def render = "#exerciseTitle *" #> currentPage.title &
@@ -485,7 +505,7 @@ class TrainerActor extends StronglyTypedJsonActor with Logger {
   "#scriptContainer *" #> (for {
     c <- currentConversation
     s <- currentSlide
-  } yield Script(Call("Trainer.simulationOn",c.jid,s,currentPage.onLoad.map(AnonFunc(_)).openOr(JsNull)).cmd))
+  } yield Script(Call("Trainer.simulationOn",TrainerId,c.jid,s,currentPage.onLoad.map(AnonFunc(_)).openOr(JsNull)).cmd))
 }
 
 case class Glyph(width:Int,strokes:List[List[Point]])

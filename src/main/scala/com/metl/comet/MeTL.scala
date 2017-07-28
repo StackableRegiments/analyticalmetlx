@@ -1184,7 +1184,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         JField("groupSet",groupSetJValue),
         JField("groups",groups)
       ))
-    },Full("receiveGroupsForGroupSet"))
+    },Full("receiveGroupsForGroupSet")),
+    ClientSideFunction("fireTrainerAudit",List("action","params"),(args) => {
+      trainerId.foreach(tid => {
+        val action = getArgAsString(args(0))
+        val params = getArgAsJValue(args(1))
+        AuditActorManager ! (tid,action,params)
+      })
+      JNull
+    },Empty)
   )
   private def getQuizResponsesForQuizInConversation(jid:String,quizId:String):List[MeTLQuizResponse] = {
     rooms.get((server,jid)).map(r => r().getHistory.getQuizResponses.filter(q => q.id == quizId)).map(allQuizResponses => {
@@ -1252,6 +1260,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   protected var currentConversation:Box[Conversation] = Empty
   protected var currentSlide:Box[String] = Empty
   protected var isInteractiveUser:Box[Boolean] = Empty
+  protected var trainerId:Option[String] = Empty
 
   override def localSetup = Stopwatch.time("MeTLActor.localSetup(%s,%s)".format(username,userUniqueId), {
     super.localSetup()
@@ -1273,6 +1282,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         })
       })
       isInteractiveUser = Full(com.metl.snippet.Metl.getShowToolsFromName(nameString).getOrElse(true))
+      trainerId = com.metl.snippet.Metl.getTrainerIdFromName(nameString)
     })
     debug("completedWorker: %s".format(name))
   })
