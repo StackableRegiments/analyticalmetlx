@@ -44,7 +44,10 @@ var ContentFilter = (function(){
             enabled:true
         };
     };
-    var isIsolatedFromFunction = function(stanza){
+    var isIsolatedFromFunction = function(stanza,isProjector){
+        if(isProjector && stanza.audiences.length){
+            return true;
+        }
         return audiences.length &&
             stanza.audiences &&
             stanza.audiences.length && !(_.some(stanza.audiences,function(audience){
@@ -53,8 +56,9 @@ var ContentFilter = (function(){
     };
     var applyFilters = function(stanza){
         var observed = Participants.getParticipants()[stanza.author];
+        var isProjector = !UserSettings.getIsInteractive();
         if(observed && !observed.following) return false;
-        if(isIsolatedFromFunction(stanza)){
+        if(isIsolatedFromFunction(stanza,isProjector)){
             return false;
         }
         return _.some(filters,function(filter){
@@ -186,7 +190,6 @@ var ContentFilter = (function(){
         getAudiences:getAudiencesFunction,
         setAudience:setAudienceFunction,
         clearAudiences:clearAudiencesFunction,
-        isIsolatedFrom:isIsolatedFromFunction,
-	exposes:applyFilters
+	    exposes:applyFilters
     };
 })();
