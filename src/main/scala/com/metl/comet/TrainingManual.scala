@@ -7,8 +7,45 @@ import net.liftweb.http.js.JE.Call
 import net.liftweb.json.JObject
 import net.liftweb.util.Schedule
 import org.fluttercode.datafactory.impl.DataFactory
+import net.liftweb.json.JsonAST.{JArray, JField, JString, JValue}
 
+import scala.collection.mutable.ListBuffer
 import scala.xml.{Elem, Text}
+/*
+trait SelectionHelpers extends Logger {
+  protected val Username:String
+  def getSelectedByTypeAndFilter(selection: JObject, valueType: String, filter:(JValue) => Boolean):List[JValue] = {
+    val filteredItems = ListBuffer[JValue]()
+    for {
+      item@JObject(_) <- selection \ valueType
+      itemField <- item \ valueType
+    } yield {
+      filteredItems ++= item.filter(filter)
+    }
+    filteredItems.toList
+  }
+  def countSelectedUserStanzasByType(selection: JObject, valueType: String):Int = {
+    debug("counting simulated: " + selection)
+    getSelectedByTypeAndFilter(selection,valueType,(item: JValue) => {
+      item \ "author" match {
+        case JString(Username) => true
+        case JArray(JField("author", JString(Username)) :: _) => true
+        case _ => false
+      }
+    }).length
+  }
+  def countSelectedSimulatedStanzasByType(selection: JObject, valueType: String):Int = {
+    debug("counting simulated: " + selection)
+    getSelectedByTypeAndFilter(selection,valueType,(item: JValue) => {
+      item \ "author" match {
+        case JString(author) if author != Username => true
+        case JArray(JField("author", JString(author)) :: _) if author != Username => true
+        case _ => false
+      }
+    }).length
+  }
+}
+*/
 
 case class TrainingManual(actor:TrainerActor) extends Logger {
   import Dimensions._
@@ -65,29 +102,29 @@ case class TrainingManual(actor:TrainerActor) extends Logger {
       actor ! ShowClick("#insertMode")
     }
   ).reps(1)
-
-  private def countSelectedByType(selection: JObject, valueType: String):Int = {
-    selection.values.get(valueType).map {
-      case m: Map[String, Any] => m.size
-      case _ => 0
-    }.getOrElse(0)
-  }
-
   val selectInkTracker:TrainingControl = TrainingControl(
     "Select an ink stroke",
     _ => {
-      actor ! new AuditTrigger((action, params) => {
-        action match {
-          case a:String if a.equals("selectionChanged") && countSelectedByType(params, "inks") > 0 =>
-            selectInkTracker.progress
-            actor ! RefreshControls
-          case _ =>
-        }
-        None
+      actor ! new SelectionChangedTrigger(canvasSelection => {
+        canvasSelection.inks.find(_.author == actor.username).foreach(foundInk => {
+          selectInkTracker.progress
+          actor ! RefreshControls
+        })
       })
       actor ! ShowClick("#selectMode")
-    }
-  ).reps(2)
+    }).reps(2)
+  val selectStudentInkTracker:TrainingControl = TrainingControl(
+    "Select a student ink stroke",
+    _ => {
+      actor ! new SelectionChangedTrigger(canvasSelection => {
+        canvasSelection.inks.find(_.author != actor.username).foreach(foundInk => {
+          selectStudentInkTracker.progress
+          actor ! RefreshControls
+        })
+      })
+      actor ! ShowClick("#selectMode")
+      actor ! ShowClick("#administerContent")
+    }).reps(2)
 
   class TrainingReturnTo(pageNumber:Int)
     extends TrainingNavigator("Take me back to exercise " + pageNumber, actor, pageNumber)
@@ -202,6 +239,8 @@ case class TrainingManual(actor:TrainerActor) extends Logger {
           "Clicking selects the top element, and dragging selects all elements that are touched by the selection box."),
         p("Try selecting a line you drew earlier."),
         selectInkTracker,
+        p("If a student writes something you you'd rather the class not see, you can reject it, which also bans them from adding further content."),
+        selectStudentInkTracker,
         new TrainingReturnTo(3)
       ),
       Full(Call("Trainer.showTools").cmd),

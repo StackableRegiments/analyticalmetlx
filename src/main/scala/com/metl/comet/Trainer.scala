@@ -61,7 +61,55 @@ class StanzaTrigger (val actOn:(MeTLStanza) => MeTLStanza = (s:MeTLStanza) => s)
   override def hashCode: Int = actOn.hashCode
 }
 
-class AuditTrigger (val actOn:(String, JObject) => {} = (_:String, _:JObject) => None) {
+class AuditTrigger (val actOn:(String, JObject) => Unit = (_:String, _:JObject) => {}) extends Logger {
+  override def equals(other:Any):Boolean = {
+    other match {
+      case oat:AuditTrigger => oat.actOn == actOn
+      case _ => false
+    }
+  }
+  override def hashCode: Int = actOn.hashCode
+}
+case class CanvasSelection(inks:List[MeTLInk],highlighters:List[MeTLInk],images:List[MeTLImage],text:List[MeTLText],multiWordTexts:List[MeTLMultiWordText],videos:List[MeTLVideo])
+object SelectionChangedTriggerHelper {
+  val serializer = new JsonSerializer(EmptyBackendAdaptor)
+}
+class SelectionChangedTrigger(val actOnSelection:CanvasSelection=>Unit = cs => {}) extends AuditTrigger(
+  (s,o) => {
+    (s,o) match {
+      case ("selectionChanged",sel@JObject(_)) => {
+        val ser = SelectionChangedTriggerHelper.serializer
+        val itemTypes = List("inks","images","videos","multiWordTexts","texts")
+        val inks = new ListBuffer[MeTLInk]
+        val highlighters = new ListBuffer[MeTLInk]
+        val images = new ListBuffer[MeTLImage]
+        val texts = new ListBuffer[MeTLText]
+        val multiWordTexts = new ListBuffer[MeTLMultiWordText]
+        val videos = new ListBuffer[MeTLVideo]
+        for {
+          itemType <- itemTypes
+          JObject(items) = sel \ itemType
+          JField(_identity,item) <- items
+          stanza = ser.toMeTLData(item)
+        } yield {
+          stanza match {
+            case i:MeTLInk if i.isHighlighter => highlighters += i
+            case i:MeTLInk => inks += i
+            case i:MeTLImage => images += i
+            case t:MeTLText => texts += t
+            case mwt:MeTLMultiWordText => multiWordTexts += mwt
+            case v:MeTLVideo => videos += v
+            case _ => {}
+          }
+        }
+        val selection = CanvasSelection(inks.toList,highlighters.toList,images.toList,texts.toList,multiWordTexts.toList,videos.toList)
+        println("SELECTION_CHANGED: %s".format(selection))
+        actOnSelection(selection)
+      }
+      case _ => {}
+    }
+  }
+) {
   override def equals(other:Any):Boolean = {
     other match {
       case oat:AuditTrigger => oat.actOn == actOn
@@ -128,7 +176,7 @@ class TrainerActor extends StronglyTypedJsonActor with CometListener with Logger
   var currentPage:TrainingPage = manual.pages.head
   protected var currentConversation:Box[Conversation] = Empty
   protected var currentSlide:Box[String] = Empty
-  protected var username = "unknown"
+  var username = "unknown"
   protected lazy val serverConfig: ServerConfiguration = ServerConfiguration.default
   protected lazy val server: String = serverConfig.name
   protected var triggers: ListBuffer[StanzaTrigger] = ListBuffer.empty[StanzaTrigger]
