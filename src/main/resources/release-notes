@@ -1,3 +1,6 @@
+1.20.2
+METL-684: Bugfix: Imported submission images from C# client are not loadable.
+
 1.20.1
 METL-681: Bugfix: Texts (not MultiWordTexts) are not rendered due to a JS bug.
 METL-682: Bugfix: Exported private images are not rendered in importing server.
