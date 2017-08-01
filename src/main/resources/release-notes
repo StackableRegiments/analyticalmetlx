@@ -1,3 +1,7 @@
+1.20.1
+METL-681: Bugfix: Texts (not MultiWordTexts) are not rendered due to a JS bug.
+METL-682: Bugfix: Exported private images are not rendered in importing server.
+
 1.19.1
 METL-676: Improvement: Update enterprise dashboard endpoint to mix in MeTLCommands.
 METL-675: Bugfix: Enterprise dashboard does not show conversations between Dec 2016 and Jun 2017.
