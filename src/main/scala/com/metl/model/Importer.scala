@@ -670,13 +670,15 @@ class ExportXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializ
     val c = parseCanvasContent(input)
     val title = getStringByName(input,"title")
     val imageBytes = Full(base64Decode(getStringByName(input,"imageBytes"))).map(ib => downscaleImage(ib,"submission: %s".format(c.identity)))
-    val url = imageBytes.map(ib => config.postResource(c.slide.toString,nextFuncName,ib)).getOrElse("unknown")
+    val urlBox = imageBytes.map(ib => config.postResource(c.slide.toString,nextFuncName,ib))
+    val newId = urlBox.getOrElse(c.identity)
+    val url = urlBox.getOrElse("unknown")
     val blacklist = getXmlByName(input,"blacklist").map(bl => {
       val username = getStringByName(bl,"username")
       val highlight = getColorByName(bl,"highlight")
       SubmissionBlacklistedPerson(username,highlight)
     }).toList
-    MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
+    MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,newId,m.audiences)
   })
   override def fromSubmission(input:MeTLSubmission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSubmission", {
     canvasContentToXml("screenshotSubmission",input,List(
