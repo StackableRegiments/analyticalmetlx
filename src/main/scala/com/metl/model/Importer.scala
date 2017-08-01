@@ -388,6 +388,7 @@ object Importer extends Logger {
         )
       })
     })
+    trace("Imported exported conversation: " + remoteConv.jid + ", " + remoteConv.title)
     remoteConv
   }
   def importConversation(title:String,filename:String,bytes:Array[Byte],author:String):Box[Conversation] = {
@@ -516,21 +517,25 @@ class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with L
     case RoomLeaveAcknowledged(server,room) => {}
     case CopyContent(config,oldContent,newLoc) => {
       val room = MeTLXConfiguration.getRoom(newLoc.getJid,config.name,newLoc)
+      val slideId = newLoc match {
+        case p:PrivateSlideRoom => p.slideId.toString
+        case _ => newLoc.getJid
+      }
       room ! JoinRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
       oldContent.getAll.sortWith((a,b) => a.timestamp < b.timestamp).foreach(stanza => {
         room ! ArchiveToServerMeTLStanza(stanza match {
-          case m:MeTLInk => m.copy(slide = newLoc.getJid)
-          case m:MeTLImage => m.copy(slide = newLoc.getJid)
-          case m:MeTLText => m.copy(slide = newLoc.getJid)
-          case m:MeTLVideo => m.copy(slide = newLoc.getJid)
-          case m:MeTLMultiWordText => m.copy(slide = newLoc.getJid)
-          case m:MeTLMoveDelta => m.copy(slide = newLoc.getJid)
-          case m:MeTLDirtyInk => m.copy(slide = newLoc.getJid)
-          case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
-          case m:MeTLDirtyVideo => m.copy(slide = newLoc.getJid)
-          case m:MeTLUndeletedCanvasContent => m.copy(slide = newLoc.getJid)
-          case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
-          case m:MeTLUnhandledCanvasContent => m.copy(slide = newLoc.getJid)
+          case m:MeTLInk => m.copy(slide = slideId)
+          case m:MeTLImage => m.copy(slide = slideId)
+          case m:MeTLText => m.copy(slide = slideId)
+          case m:MeTLVideo => m.copy(slide = slideId)
+          case m:MeTLMultiWordText => m.copy(slide = slideId)
+          case m:MeTLMoveDelta => m.copy(slide = slideId)
+          case m:MeTLDirtyInk => m.copy(slide = slideId)
+          case m:MeTLDirtyText => m.copy(slide = slideId)
+          case m:MeTLDirtyVideo => m.copy(slide = slideId)
+          case m:MeTLUndeletedCanvasContent => m.copy(slide = slideId)
+          case m:MeTLSubmission => tryo(slideId.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
+          case m:MeTLUnhandledCanvasContent => m.copy(slide = slideId)
           case m:MeTLQuiz => m
           case s:MeTLStanza => s
         })
