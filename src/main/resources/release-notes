@@ -1,3 +1,6 @@
+1.20.3
+METL-680: Improvement: Lock down the conversationImport endpoint.
+
 1.20.2
 METL-684: Bugfix: Imported submission images from C# client are not loadable.
 
