@@ -390,7 +390,7 @@ object Importer extends Logger {
     })
     remoteConv
   }
-  def importConversation(title:String,filename:String,bytes:Array[Byte],author:String):Box[Conversation] = {
+  def importConversationAsAuthor(title:String, filename:String, bytes:Array[Byte], author:String):Box[Conversation] = {
     val importId = nextFuncName
     onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("ready to create conversation",1,2)),None))
     try {

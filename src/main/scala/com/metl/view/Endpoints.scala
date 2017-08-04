@@ -216,32 +216,34 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   val jsonSerializer = new JsonSerializer(ServerConfiguration.default)
   serve {
-    case req@Req("logout" :: Nil, _, _) => () =>
+    case _req@Req("logout" :: Nil, _, _) => () =>
       Stopwatch.time("MeTLRestHelper.logout", {
         S.session.foreach(_.destroySession())
         //S.containerSession.foreach(s => s.terminate)
         Full(RedirectResponse(com.metl.snippet.Metl.conversationSearch()))
       })
     case r@Req(List("history"), _, _) =>
-      () => Stopwatch.time("MeTLRestHelper.history", r.param("source").flatMap(jid => StatelessHtml.history(jid)))
+      () => r.param("source").flatMap(jid => StatelessHtml.history(jid))
     case r@Req(List("mergedHistory"), _, _) =>
-      () =>
-      Stopwatch.time("MeTLRestHelper.mergedHistory", for (
-        source <- r.param("source");
-        user <- r.param("username");
-        resp <- StatelessHtml.mergedHistory(source, user)) yield resp)
+      () => {
+        for (
+          source <- r.param("source");
+          user <- r.param("username");
+          resp <- StatelessHtml.mergedHistory(source, user)
+        ) yield resp
+      }
     case r@Req(List("fullHistory"), _, _) =>
-      () => Stopwatch.time("MeTLRestHelper.fullHistory", r.param("source").flatMap(jid => StatelessHtml.fullHistory(jid)))
+      () => r.param("source").flatMap(jid => StatelessHtml.fullHistory(jid))
     case r@Req(List("fullClientHistory"), _, _) =>
-      () => Stopwatch.time("MeTLRestHelper.fullClientHistory", r.param("source").flatMap(jid => StatelessHtml.fullClientHistory(jid)))
+      () => r.param("source").flatMap(jid => StatelessHtml.fullClientHistory(jid))
     case r@Req(List("fullJsonHistory"), _, _) =>
       () => r.param("source").flatMap(jid => StatelessHtml.jsonHistory(jid))
     case r@Req("describeHistory" :: _, _, _) =>
-      () => Stopwatch.time("MeTLRestHelper.describeHistory", r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid,r.param("format"))))
+      () => r.param("source").flatMap(jid => StatelessHtml.describeHistory(jid,r.param("format")))
     case r@Req("describeConversations" :: _, _, _) =>
-      () => Stopwatch.time("MeTLRestHelper.describeConversations", r.param("query").flatMap(query => StatelessHtml.describeConversations(query,r.param("format"))))
+      () => r.param("query").flatMap(query => StatelessHtml.describeConversations(query,r.param("format")))
     case r@Req("describeConversation" :: _,_,_) =>
-      () => Stopwatch.time("MeTLRestHelper.describeConversation", r.param("jid").flatMap(jid => StatelessHtml.describeConversation(jid,r.param("format"))))
+      () => r.param("jid").flatMap(jid => StatelessHtml.describeConversation(jid,r.param("format")))
     //yaws endpoints 1188
     case r@Req(List("upload_nested"), "yaws", PostRequest) => () => {
       for (
@@ -457,64 +459,77 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }
       }
     }
-    case r@Req(List("listGroups", username), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listGroups", StatelessHtml.listGroups(username, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList))
-    case Req(List("listRooms"), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms", StatelessHtml.listRooms)
-    case Req(List("listUsersInRooms"), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms", StatelessHtml.listUsersInRooms)
-    case Req(List("listSessions"), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions", StatelessHtml.listSessions)
-    case r@Req(List("impersonate", newUsername), _, _) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.impersonate", StatelessHtml.impersonate(newUsername, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList))
-    case Req(List("deImpersonate"), _, _) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.deImpersonate", StatelessHtml.deImpersonate)
-    case Req(List("conversationExport", conversation), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation", StatelessHtml.exportConversation(Globals.currentUser.is, conversation))
-    case Req(List("conversationExportForMe", conversation), _, _) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation", StatelessHtml.exportMyConversation(Globals.currentUser.is, conversation))
-    case r@Req(List("conversationImport"), _, _) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation", StatelessHtml.importConversation(r))
-    case r@Req(List("powerpointImport"), _, _) => () => {
-      warn("powerpointImport endpoint triggered: %s".format(r));
-      Stopwatch.time("MeTLStatefulRestHelper.powerpointImport", StatelessHtml.powerpointImport(r))
-    }
-    case r@Req(List("conversationImportEndpoint"), _, _) => () => {
-      warn("conversationImportEndpoint endpoint triggered: %s".format(r));
-      Stopwatch.time("MeTLStatefulRestHelper.conversationImportEndpoint", StatelessHtml.foreignConversationImportEndpoint(r))
-    }
+    case r@Req(List("listGroups", username), _, _) if Globals.isSuperUser =>
+      () => StatelessHtml.listGroups(username, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList)
+    case Req(List("listRooms"), _, _) if Globals.isSuperUser =>
+      () => StatelessHtml.listRooms
+    case Req(List("listUsersInRooms"), _, _) if Globals.isSuperUser =>
+      () => StatelessHtml.listUsersInRooms
+    case Req(List("listSessions"), _, _) if Globals.isSuperUser =>
+      () => StatelessHtml.listSessions
 
-    case r@Req(List("powerpointImportFlexible"), _, _) => () => Stopwatch.time("MeTLStatefulRestHelper.powerpointImportFlexible", StatelessHtml.powerpointImportFlexible(r))
-    case r@Req(List("conversationImportAsMe"), _, _) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation", StatelessHtml.importConversationAsMe(r))
+    case r@Req(List("impersonate", newUsername), _, _) if Globals.isImpersonator =>
+      () => StatelessHtml.impersonate(newUsername, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList)
+    case Req(List("deImpersonate"), _, _) if Globals.isImpersonator =>
+      () => StatelessHtml.deImpersonate
+
+    case Req(List("conversationExport", conversation), _, _) if Globals.isSuperUser =>
+      () => StatelessHtml.exportConversation(Globals.currentUser.is, conversation)
+    case r@Req(List("conversationImport"), _, _) if Globals.isSuperUser =>
+      () => StatelessHtml.importExportedConversation(r)
+
+    case Req(List("conversationExportForMe", conversation), _, _) =>
+      () => StatelessHtml.exportMyConversation(Globals.currentUser.is, conversation)
+    case r@Req(List("conversationImportAsMe"), _, _) =>
+      () => {
+        warn("conversationImportAsMe (formerly foreignConversationImport) endpoint triggered: %s".format(r))
+        StatelessHtml.importConversationAsMe(r)
+      }
+
+    case r@Req(List("powerpointImport"), _, _) =>
+      () => {
+        warn("powerpointImport endpoint triggered: %s".format(r))
+        StatelessHtml.powerpointImport(r)
+      }
+
     case Req(List("createConversation", title), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.createConversation", StatelessHtml.createConversation(Globals.currentUser.is, title))
+      () => StatelessHtml.createConversation(Globals.currentUser.is, title)
     case r@Req(List("updateConversation", jid), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.updateConversation", StatelessHtml.updateConversation(Globals.currentUser.is, jid, r))
+      () => StatelessHtml.updateConversation(Globals.currentUser.is, jid, r)
     case Req(List("addSlideAtIndex", jid, index), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.addSlideAtIndex", StatelessHtml.addSlideAtIndex(Globals.currentUser.is, jid, index))
+      () => StatelessHtml.addSlideAtIndex(Globals.currentUser.is, jid, index)
 
     case Req(List("addQuizViewSlideToConversationAtIndex", jid, index, quizId), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.addQuizViewSlideToConversationAtIndex", StatelessHtml.addQuizViewSlideToConversationAtIndex(jid, index.toInt, quizId))
+      () => StatelessHtml.addQuizViewSlideToConversationAtIndex(jid, index.toInt, quizId)
     case Req(List("addQuizResultsViewSlideToConversationAtIndex", jid, index, quizId), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.addQuizResultsViewSlideToConversationAtIndex", StatelessHtml.addQuizResultsViewSlideToConversationAtIndex(jid, index.toInt, quizId))
+      () => StatelessHtml.addQuizResultsViewSlideToConversationAtIndex(jid, index.toInt, quizId)
     case Post(List("addSubmissionSlideToConversationAtIndex", jid, index), req) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.addSubmissionSlideToConversationAtIndex", StatelessHtml.addSubmissionSlideToConversationAtIndex(jid, index.toInt, req))
+      () => StatelessHtml.addSubmissionSlideToConversationAtIndex(jid, index.toInt, req)
 
     case Req(List("duplicateSlide", slide, conversation), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide", StatelessHtml.duplicateSlide(Globals.currentUser.is, slide, conversation))
+      () => StatelessHtml.duplicateSlide(Globals.currentUser.is, slide, conversation)
     case Req(List("duplicateConversation", conversation), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateConversation", StatelessHtml.duplicateConversation(Globals.currentUser.is, conversation))
+      () => StatelessHtml.duplicateConversation(Globals.currentUser.is, conversation)
     case Req(List("requestMaximumSizedGrouping", conversation, slide, groupSize), _, _) if Globals.isSuperUser =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.requestMaximumSizedGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByMaximumSize(groupSize.toInt), Nil, Nil)))
+      () => Stopwatch.time("StatelessHtml.requestMaximumSizedGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByMaximumSize(groupSize.toInt), Nil, Nil)))
     case Req(List("requestClassroomSplitGrouping", conversation, slide, numberOfGroups), _, _) if Globals.isSuperUser =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.requestClassroomSplitGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByTotalGroups(numberOfGroups.toInt), Nil, Nil)))
+      () => Stopwatch.time("StatelessHtml.requestClassroomSplitGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByTotalGroups(numberOfGroups.toInt), Nil, Nil)))
     case Req(List("proxyDataUri", slide, source), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.proxyDataUri", StatelessHtml.proxyDataUri(slide, source))
+      () => StatelessHtml.proxyDataUri(slide, source)
     case Req(List("proxy", slide, source), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.proxy", StatelessHtml.proxy(slide, source))
+      () => StatelessHtml.proxy(slide, source)
     case r@Req(List("proxyImageUrl", slide), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.proxyImageUrl", StatelessHtml.proxyImageUrl(new String(base64Decode(slide)), r.param("source").getOrElse("")))
+      () => StatelessHtml.proxyImageUrl(new String(base64Decode(slide)), r.param("source").getOrElse(""))
     case Req(List("quizProxy", conversation, identity), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.quizProxy", StatelessHtml.quizProxy(conversation, identity))
+      () => StatelessHtml.quizProxy(conversation, identity)
     case Req(List("quizResultsGraphProxy", conversation, identity, width, height), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.quizResultsGraphProxy", StatelessHtml.quizResultsGraphProxy(conversation, identity, width.toInt, height.toInt))
+      () => StatelessHtml.quizResultsGraphProxy(conversation, identity, width.toInt, height.toInt)
     case Req(List("submissionProxy", conversation, author, identity), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.submissionProxy", StatelessHtml.submissionProxy(conversation, author, identity))
-    case r@Req(List("resourceProxy", identity), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.resourceProxy", StatelessHtml.resourceProxy(Helpers.urlDecode(identity)))
-    case r@Req(List("attachmentProxy", conversationJid, identity), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.attachmentProxy", StatelessHtml.attachmentProxy(conversationJid, Helpers.urlDecode(identity)))
+      () => StatelessHtml.submissionProxy(conversation, author, identity)
+    case _r@Req(List("resourceProxy", identity), _, _) =>
+      () => StatelessHtml.resourceProxy(Helpers.urlDecode(identity))
+    case _r@Req(List("attachmentProxy", conversationJid, identity), _, _) =>
+      () => StatelessHtml.attachmentProxy(conversationJid, Helpers.urlDecode(identity))
     case r@Req("join" :: Nil, _, _) => {
       for {
         conversationJid <- r.param("conversation");
@@ -663,9 +678,9 @@ object WebMeTLStatefulRestHelper extends RestHelper with Logger{
     case Req("slide" :: jid :: size :: Nil,_,_) => () => Full(HttpResponder.snapshot(jid,size))
     case Req("quizImage" :: jid :: id :: Nil,_,_) => () => Full(HttpResponder.quizImage(jid,id))
     case Req(server :: "quizResponse" :: conversation :: quiz :: response :: Nil,_,_)
-        if (List(server,conversation,quiz,response).filter(_.length == 0).isEmpty) => () => {
-          val slide = S.param("slide").openOr("")
-          Full(QuizResponder.handleResponse(server,conversation,slide,quiz,response))
-        }
+      if List(server,conversation,quiz,response).filter(_.length == 0).isEmpty => () => {
+        val slide = S.param("slide").openOr("")
+        Full(QuizResponder.handleResponse(server,conversation,slide,quiz,response))
+      }
   }
 }

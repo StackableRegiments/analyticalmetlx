@@ -192,7 +192,7 @@ object StatelessHtml extends Stemmer with Logger {
       }).getOrElse(NotFoundResponse("image not available"))
     })
   })
-  def quizProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizProxy()".format(conversationJid,identity), {
+  def quizProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizProxy(%s, %s)".format(conversationJid,identity), {
     Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getQuizByIdentity(identity).map(quiz => {
       quiz.imageBytes.map(bytes => {
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
@@ -200,7 +200,7 @@ object StatelessHtml extends Stemmer with Logger {
       }).openOr(NotFoundResponse("quiz image bytes not available"))
     }).getOrElse(NotFoundResponse("quiz not available")))
   })
-  def quizResultsGraphProxy(conversationJid:String,identity:String,width:Int,height:Int)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizProxy()".format(conversationJid,identity), {
+  def quizResultsGraphProxy(conversationJid:String,identity:String,width:Int,height:Int)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizResultsGraphProxy(%s, %s)".format(conversationJid,identity), {
     val history = MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory
     val responses = history.getQuizResponses.filter(qr => qr.id == identity)
     Full(history.getQuizByIdentity(identity).map(quiz => {
@@ -222,7 +222,7 @@ object StatelessHtml extends Stemmer with Logger {
       InMemoryResponse(file.bytes.getOrElse(Array.empty[Byte]),headers,Nil,200)
     })
   })
-  def submissionProxy(conversationJid:String,author:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.submissionProxy()".format(conversationJid,identity), {
+  def submissionProxy(conversationJid:String,author:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.submissionProxy(%s, %s)".format(conversationJid,identity), {
     Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getSubmissionByAuthorAndIdentity(author,identity).map(sub => {
       sub.imageBytes.map(bytes => {
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
@@ -245,7 +245,7 @@ object StatelessHtml extends Stemmer with Logger {
   })
   def history(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.history(%s)".format(jid), Full(XmlResponse(loadHistory(jid))))
 
-  def jsonHistory(jid:String):Box[LiftResponse] = Full(JsonResponse(jsonSerializer.fromHistory(getSecureHistoryForRoom(jid,Globals.currentUser.is))))
+  def jsonHistory(jid:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.jsonHistory(%s)".format(jid), Full(JsonResponse(jsonSerializer.fromHistory(getSecureHistoryForRoom(jid,Globals.currentUser.is)))))
 
   protected def getSecureHistoryForRoom(jid:String,username:String):History = {
     val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
@@ -348,7 +348,7 @@ object StatelessHtml extends Stemmer with Logger {
     Full(XmlResponse(<resource url={identity}/>))
   })
 
-  def fullClientHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullHistory(%s)".format(jid), Full(XmlResponse(<history>{getSecureHistoryForRoom(jid,Globals.currentUser.is).getAll.map(s => metlClientSerializer.fromMeTLData(s))}</history>)))
+  def fullClientHistory(jid:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.fullClientHistory(%s)".format(jid), Full(XmlResponse(<history>{getSecureHistoryForRoom(jid,Globals.currentUser.is).getAll.map(s => metlClientSerializer.fromMeTLData(s))}</history>)))
 
   def mergedHistory(jid:String,onBehalfOf:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.mergedHistory(%s)".format(jid), Full(XmlResponse(loadMergedHistory(jid,onBehalfOf))))
 
@@ -493,10 +493,10 @@ object StatelessHtml extends Stemmer with Logger {
       XmlResponse(node)
     }
   })
-  def createConversation(onBehalfOfUser:String,title:String):Box[LiftResponse] = {
+  def createConversation(onBehalfOfUser:String,title:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.createConversation", {
     serializer.fromConversation(config.createConversation(title,onBehalfOfUser)).headOption.map(n => XmlResponse(n))
-  }
-  def addSlideAtIndex(onBehalfOfUser:String,jid:String,afterSlideId:String):Box[LiftResponse] = {
+  })
+  def addSlideAtIndex(onBehalfOfUser:String,jid:String,afterSlideId:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addSlideAtIndex", {
     val conv = config.detailsOfConversation(jid)
     if (onBehalfOfUser == conv.author){
       val newConv = conv.slides.find(_.id.toString == afterSlideId).map(slide => {
@@ -506,11 +506,11 @@ object StatelessHtml extends Stemmer with Logger {
     } else {
       Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
     }
-  }
+  })
   protected def shouldModifyConversation(c:Conversation):Boolean = {
     Globals.currentUser.is == c.author
   }
-  def addQuizViewSlideToConversationAtIndex(jid:String,index:Int,quizId:String):Box[LiftResponse] = {
+  def addQuizViewSlideToConversationAtIndex(jid:String,index:Int,quizId:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addQuizViewSlideToConversationAtIndex", {
     val username = Globals.currentUser.is
     val server = config.name
     val c = config.detailsOfConversation(jid)
@@ -541,7 +541,7 @@ object StatelessHtml extends Stemmer with Logger {
       case _ => c
     }).headOption.map(n => XmlResponse(n))
   }
-  def addQuizResultsViewSlideToConversationAtIndex(jid:String,index:Int,quizId:String):Box[LiftResponse] = {
+  def addQuizResultsViewSlideToConversationAtIndex(jid:String,index:Int,quizId:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addQuizResultsViewSlideToConversationAtIndex", {
     val username = Globals.currentUser.is
     val server = config.name
     val c = config.detailsOfConversation(jid)
@@ -593,7 +593,7 @@ object StatelessHtml extends Stemmer with Logger {
       case _ => c
     }).headOption.map(n => XmlResponse(n))
   }
-  def addSubmissionSlideToConversationAtIndex(jid:String,index:Int,req:Req):Box[LiftResponse] = {
+  def addSubmissionSlideToConversationAtIndex(jid:String,index:Int,req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addSubmissionSlideToConversationAtIndex", {
     val username = Globals.currentUser.is
     val server = config.name
     val c = config.detailsOfConversation(jid)
@@ -659,8 +659,7 @@ object StatelessHtml extends Stemmer with Logger {
       Empty
     }
   }
-
-  def duplicateSlide(onBehalfOfUser:String,slide:String,conversation:String):Box[LiftResponse] = {
+  def duplicateSlide(onBehalfOfUser:String,slide:String,conversation:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.duplicateSlide", {
     duplicateSlideInternal(onBehalfOfUser,slide,conversation).map(conv => {
       serializer.fromConversation(conv).headOption.map(n => XmlResponse(n)) match {
         case Some(r) => Full(r)
@@ -669,7 +668,7 @@ object StatelessHtml extends Stemmer with Logger {
     }).getOrElse({
       Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
     })
-  }
+  })
   def duplicateConversationInternal(onBehalfOfUser:String,conversation:String):Box[Conversation] = {
     val oldConv = config.detailsOfConversation(conversation)
     if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,oldConv)){
@@ -710,8 +709,7 @@ object StatelessHtml extends Stemmer with Logger {
       Full(remoteConv2)
     } else Empty
   }
-
-  def duplicateConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
+  def duplicateConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = Stopwatch.time("MeTLStatefulRestHelper.duplicateConversation", {
     duplicateConversationInternal(onBehalfOfUser,conversation).map(conv => {
       serializer.fromConversation(conv).headOption.map(n => XmlResponse(n)) match {
         case Some(r) => Full(r)
@@ -720,7 +718,7 @@ object StatelessHtml extends Stemmer with Logger {
     }).getOrElse({
       Full(ForbiddenResponse("only the author may duplicate a conversation"))
     })
-  }
+  })
   def exportMyConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
     for (
       conv <- Some(config.detailsOfConversation(conversation));
@@ -736,7 +734,7 @@ object StatelessHtml extends Stemmer with Logger {
       XmlResponse(node)
     }
   }
-  def exportConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
+  def exportConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.importExportedConversation",{
     for (
       conv <- Some(config.detailsOfConversation(conversation));
       if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,conv));
@@ -751,7 +749,7 @@ object StatelessHtml extends Stemmer with Logger {
     ) yield {
       XmlResponse(node)
     }
-  }
+  })
   protected def exportHistories(conversation:Conversation,restrictToPrivateUsers:Option[List[String]]):List[History] = {
     val cHistory = config.getHistory(conversation.jid.toString)
     val allGrades = Map(cHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp < b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
@@ -780,49 +778,38 @@ object StatelessHtml extends Stemmer with Logger {
     })
     histories
   }
-  def importConversation(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",{
-    (for (
-      xml <- req.body.map(bytes => XML.loadString(new String(bytes,"UTF-8")));
+  def importExportedConversation(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.importExportedConversation",{
+    for (
+      xml <- req.body.map(bytes => XML.loadString(new String(bytes, "UTF-8")));
       conv <- com.metl.model.Importer.importExportedConversation(xml);
       node <- serializer.fromConversation(conv).headOption
     ) yield {
       XmlResponse(node)
-    })
+    }
   })
-  def importConversationAsMe(req:Req):Box[LiftResponse] =  Stopwatch.time("MeTLStatelessHtml.importConversation",{
-    importConversation(req)
-  })
-
-  def foreignConversationImportEndpoint(r:Req):Box[LiftResponse] = {
-    (for (
-      firstFile <- r.uploadedFiles.headOption;
+  def importConversationAsMe(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.importConversationAsMe",{
+    for (
+      firstFile <- req.uploadedFiles.headOption;
       bytes = firstFile.file;
       filename = firstFile.fileName;
       author = Globals.currentUser.is;
-      title = "%s's (%s) created at %s".format(author,filename,new java.util.Date());
+      title = "%s's (%s) created at %s".format(author, filename, new java.util.Date());
 
-      remoteConv <- com.metl.model.Importer.importConversation(title,filename,bytes,author);
+      remoteConv <- com.metl.model.Importer.importConversationAsAuthor(title, filename, bytes, author);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
-    })
-  }
-  def powerpointImport(r:Req):Box[LiftResponse] = {
-    foreignConversationImport(r)
-  }
-  def powerpointImportFlexible(r:Req):Box[LiftResponse] = {
-    foreignConversationImport(r)
-  }
-
-  def foreignConversationImport(r:Req):Box[LiftResponse] = {
-    (for (
-      title <- r.param("title");
-      bytes <- r.body;
+    }
+  })
+  def powerpointImport(req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.powerpointImport",{
+    for (
+      title <- req.param("title");
+      bytes <- req.body;
       author = Globals.currentUser.is;
-      remoteConv <- com.metl.model.Importer.importConversation(title,title,bytes,author);
+      remoteConv <- com.metl.model.Importer.importConversationAsAuthor(title, title, bytes, author);
       node <- serializer.fromConversation(remoteConv).headOption
     ) yield {
       XmlResponse(node)
-    })
-  }
+    }
+  })
 }
