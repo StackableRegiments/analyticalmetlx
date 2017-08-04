@@ -131,7 +131,7 @@ class MeTL2011XmlSerializer(config:ServerConfiguration,cacheImages:Boolean = fal
 		}
   })
   override def toMeTLFile(input:NodeSeq):MeTLFile = Stopwatch.time("MeTL2011XmlSerializer.toMeTLFile",{
-		trace("quiz attempted: %s".format(input))
+		trace("file attempted: %s".format(input))
     val m = parseMeTLContent(input)
 		try {
       val name = getStringByName(input,"name")
@@ -150,7 +150,7 @@ class MeTL2011XmlSerializer(config:ServerConfiguration,cacheImages:Boolean = fal
 			MeTLFile(config,m.author,m.timestamp,name,id,url,bytes,deleted,m.audiences)
 		} catch {
 			case e:Throwable => {
-				error("failed to construct MeTLQuiz",e)
+				error("failed to construct MeTLFile",e)
         MeTLFile.empty
 			}
 		}
