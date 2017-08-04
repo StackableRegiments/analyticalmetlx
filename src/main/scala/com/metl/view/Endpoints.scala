@@ -678,7 +678,7 @@ object WebMeTLStatefulRestHelper extends RestHelper with Logger{
     case Req("slide" :: jid :: size :: Nil,_,_) => () => Full(HttpResponder.snapshot(jid,size))
     case Req("quizImage" :: jid :: id :: Nil,_,_) => () => Full(HttpResponder.quizImage(jid,id))
     case Req(server :: "quizResponse" :: conversation :: quiz :: response :: Nil,_,_)
-      if List(server,conversation,quiz,response).filter(_.length == 0).isEmpty => () => {
+      if !List(server, conversation, quiz, response).contains("") => () => {
         val slide = S.param("slide").openOr("")
         Full(QuizResponder.handleResponse(server,conversation,slide,quiz,response))
       }
