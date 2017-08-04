@@ -87,7 +87,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
     assert(result === Color(120, 240, 250, 128))
   }
 
-  test("extract non-existant color element from content") {
+  test("extract non-existent color element from content") {
     val content = <ink><elephant>african</elephant><privacy>private</privacy></ink>
     val result = XmlUtils.getColorByName(content, "color")
 
@@ -122,7 +122,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
     assert(result === "african")
   }
 
-  test("extract string value from non-existant specified element") {
+  test("extract string value from non-existent specified element") {
     val content = <ink><elephant>african</elephant><privacy>private</privacy></ink>
     val result = XmlUtils.getStringByName(content, "tree")
 
@@ -296,7 +296,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
     assert(result.toString === <attributes><coordX>345</coordX><isHighlighter>false</isHighlighter><color>blue</color></attributes>.toString)
   }
 
-  test("extract non-existant xml by name") {
+  test("extract non-existent xml by name") {
     val content = <something>some value</something>
     val result = XmlUtils.getXmlByName(content, "cat")
 
@@ -310,7 +310,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
     result should equal("true")
   }
 
-  test("extract non-existant attribute of node") {
+  test("extract non-existent attribute of node") {
     val content = <ink><color alpha="50%">black</color></ink>
     val result = XmlUtils.getAttributeOfNode(content, "color", "tip")
 

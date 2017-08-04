@@ -1,8 +1,11 @@
 package com.metl.data
 
-import com.metl.utils._
+import java.time.Instant
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 
+import com.metl.utils._
 import com.metl.model._
+
 import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
@@ -73,7 +76,7 @@ trait XmlUtils {
 case class ParsedMeTLContent(author:String,timestamp:Long,audiences:List[Audience])
 case class ParsedCanvasContent(target:String,privacy:Privacy,slide:String,identity:String)
 
-class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with XmlUtils{
+class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with XmlUtils with Logger {
   type T = NodeSeq
   val configName = config.name
 
@@ -589,7 +592,9 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <id>{input.id}</id>
     ))
   })
-  protected val dateFormat = new java.text.SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy") // this is the standard java format, which is what we've been using.
+  protected val dateFormatMeTL2011 = "[dd/MM/yyyy h:mm:ss a]" // this is the C# format, from a non-web client.
+  protected val dateFormat = "[EEE MMM dd kk:mm:ss z yyyy]" // this is the standard java format, which is what we've been using.
+  protected val dateTimeFormatter = new DateTimeFormatterBuilder().parseStrict().append(DateTimeFormatter.ofPattern(dateFormat + dateFormatMeTL2011)).toFormatter
   override def toConversation(input:NodeSeq):Conversation = Stopwatch.time("GenericXmlSerializer.toConversation",{
     val m = parseMeTLContent(input,config)
     val author = getStringByName(input,"author")
@@ -599,11 +604,19 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val tag = getStringByName(input,"tag")
     val jid = getIntByName(input,"jid")
     val title = getStringByName(input,"title")
+    val createdString = getStringByName(input,"creation")
     val created = try {
-      getLongByName(input,"creation")
+      createdString.toLong
     } catch {
       case e:Exception => {
-        dateFormat.parse(getStringByName(input,"created")).getTime
+        try {
+          Instant.from(dateTimeFormatter.parse(getStringByName(input, "created"))).toEpochMilli
+        } catch {
+          case ex:Throwable => {
+            error("failed to parse date: %s".format(createdString),ex)
+            throw ex
+          }
+        }
       }
     }
     val permissions = getXmlByName(input,"permissions").map(p => toPermissions(p)).headOption.getOrElse(Permissions.default(config))
