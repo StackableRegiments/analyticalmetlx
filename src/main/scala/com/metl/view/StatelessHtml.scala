@@ -734,7 +734,7 @@ object StatelessHtml extends Stemmer with Logger {
       XmlResponse(node)
     }
   }
-  def exportConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.importExportedConversation",{
+  def exportConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.exportConversation",{
     for (
       conv <- Some(config.detailsOfConversation(conversation));
       if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,conv));
