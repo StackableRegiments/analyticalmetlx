@@ -182,7 +182,7 @@ object Group {
 }
 
 case class Conversation(override val server:ServerConfiguration,author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:Int,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil,foreignRelationship:Option[ForeignRelationship] = None) extends MeTLData(server,audiences) with Logger{
-  def delete = copy(subject="deleted",lastAccessed=new Date().getTime)//Conversation(server,author,new Date().getTime,slides,"deleted",tag,jid,title,created,permissions,blackList,audiences)
+  def delete = copy(subject="deleted",lastAccessed=new Date().getTime)
   def rename(newTitle:String) = copy(title=newTitle,lastAccessed = new Date().getTime)
   def replacePermissions(newPermissions:Permissions) = copy(permissions = newPermissions, lastAccessed = new Date().getTime)
   def shouldDisplayFor(username:String,userGroups:List[String]):Boolean = {
@@ -247,9 +247,7 @@ abstract class MeTLData(val server:ServerConfiguration,val audiences:List[Audien
   }
 }
 object MeTLData {
-  //def apply(server:ServerConfiguration,audiences:List[Audience] = Nil) = new MeTLData(server,audiences)
   def unapply(in:MeTLData) = Some((in.server,in.audiences))
-  //def empty = MeTLData(ServerConfiguration.empty,Nil)
 }
 
 case class MeTLUnhandledData(override val server:ServerConfiguration,unhandled:String,valueType:String,override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
@@ -262,9 +260,7 @@ case class MeTLUnhandledStanza(override val server:ServerConfiguration,override 
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime) = Stopwatch.time("MeTLUnhandledStanza.adjustTimestamp",copy(timestamp = newTime))
 }
 abstract class MeTLStanza(override val server:ServerConfiguration,val author:String,val timestamp:Long,override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences){
-  def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLStanza/* = Stopwatch.time("MeTLStanza.adjustTimestamp",{
-    MeTLStanza(server,author,newTime,audiences)
-  })*/
+  def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLStanza
   def adjustAuthor(newAuthor:String):MeTLStanza
   override def equals(a:Any) = a match {
     case MeTLStanza(aServer,aAuthor,aTimestamp,aAudiences) => aServer == server && aAuthor == author && aTimestamp == timestamp && aAudiences == audiences
@@ -276,9 +272,7 @@ object MeTLUnhandledStanza {
   def empty(unhandled:String,valueType:String) = MeTLUnhandledStanza(ServerConfiguration.empty,"",0L,unhandled,valueType)
 }
 object MeTLStanza{
-  //def apply(server:ServerConfiguration,author:String,timestamp:Long,audiences:List[Audience] = Nil) = new MeTLStanza(server,author,timestamp,audiences)
   def unapply(in:MeTLStanza) = Some((in.server,in.author,in.timestamp,in.audiences))
-  //def empty = MeTLUnhandledStanza(ServerConfiguration.empty,"",0L)
 }
 object MeTLTheme {
   def empty = MeTLTheme(ServerConfiguration.empty,"",0L,"",Theme("","",""),Nil)
@@ -319,7 +313,7 @@ abstract class MeTLCanvasContent(override val server:ServerConfiguration,overrid
   def scale(xScale:Double,yScale:Double):MeTLCanvasContent
   def alterPrivacy(newPrivacy:Privacy):MeTLCanvasContent
   def adjustVisual(xTranslate:Double,yTranslate:Double,xScale:Double,yScale:Double):MeTLCanvasContent
-  def generateDirty(dirtyTime:Long):MeTLCanvasContent// = MeTLCanvasContent.empty
+  def generateDirty(dirtyTime:Long):MeTLCanvasContent
   def matches(other:MeTLCanvasContent):Boolean = other.identity == identity && other.privacy == privacy && other.slide == slide
   def isDirtiedBy(other:MeTLCanvasContent):Boolean = false
   def isDirtierFor(other:MeTLCanvasContent):Boolean = false

@@ -69,7 +69,10 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
       (h.getCanvasContents should not contain (ink))
       (h.getDeletedCanvasContents should contain (ink))
       h.getDeletedCanvasContents.foreach((undeletedInk:MeTLCanvasContent) => {
-        val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2)
+        val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2) match {
+          case i:MeTLInk => i
+          case _ => MeTLInk.empty
+        }
         val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.server,undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
         h.addStanza(newUndeletedInk)
         h.addStanza(undeleteMarker)
@@ -97,7 +100,10 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
       (h.getCanvasContents should not contain (ink))
       (h.getDeletedCanvasContents should contain (ink))
       h.getDeletedCanvasContents.foreach((undeletedInk:MeTLCanvasContent) => {
-        val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2)
+        val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2) match {
+          case i:MeTLInk => i
+          case _ => MeTLInk.empty
+        }
         val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.server,undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
         h.addStanza(newUndeletedInk)
         h.addStanza(undeleteMarker)
@@ -115,7 +121,10 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
       (h.getCanvasContents should not contain (ink))
       (h.getDeletedCanvasContents should contain (ink))
       h.getDeletedCanvasContents.foreach((undeletedInk:MeTLCanvasContent) => {
-        val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2)
+        val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2) match {
+          case i:MeTLInk => i
+          case _ => MeTLInk.empty
+        }
         val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.server,undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
         h.addStanza(newUndeletedInk)
         h.addStanza(undeleteMarker)
@@ -136,7 +145,10 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
       (h.getCanvasContents should not contain (ink))
       (h.getDeletedCanvasContents should contain (ink))
       h.getDeletedCanvasContents.foreach((undeletedInk:MeTLCanvasContent) => {
-        val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2)
+        val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2) match {
+          case i:MeTLInk => i
+          case _ => MeTLInk.empty
+        }
         val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.server,undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
         h.addStanza(newUndeletedInk)
         h.addStanza(undeleteMarker)
