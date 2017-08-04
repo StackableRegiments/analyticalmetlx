@@ -216,7 +216,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   val jsonSerializer = new JsonSerializer(ServerConfiguration.default)
   serve {
-    case _req@Req("logout" :: Nil, _, _) => () =>
+    case Req("logout" :: Nil, _, _) => () =>
       Stopwatch.time("MeTLRestHelper.logout", {
         S.session.foreach(_.destroySession())
         //S.containerSession.foreach(s => s.terminate)
@@ -519,16 +519,16 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case Req(List("proxy", slide, source), _, _) =>
       () => StatelessHtml.proxy(slide, source)
     case r@Req(List("proxyImageUrl", slide), _, _) =>
-      () => StatelessHtml.proxyImageUrl(new String(base64Decode(slide)), r.param("source").getOrElse(""))
+      () => Full(r.param("source").flatMap(source => StatelessHtml.proxyImageUrl(new String(base64Decode(slide)), source)).openOr(new NotFoundResponse("image not available")))
     case Req(List("quizProxy", conversation, identity), _, _) =>
       () => StatelessHtml.quizProxy(conversation, identity)
     case Req(List("quizResultsGraphProxy", conversation, identity, width, height), _, _) =>
       () => StatelessHtml.quizResultsGraphProxy(conversation, identity, width.toInt, height.toInt)
     case Req(List("submissionProxy", conversation, author, identity), _, _) =>
       () => StatelessHtml.submissionProxy(conversation, author, identity)
-    case _r@Req(List("resourceProxy", identity), _, _) =>
+    case Req(List("resourceProxy", identity), _, _) =>
       () => StatelessHtml.resourceProxy(Helpers.urlDecode(identity))
-    case _r@Req(List("attachmentProxy", conversationJid, identity), _, _) =>
+    case Req(List("attachmentProxy", conversationJid, identity), _, _) =>
       () => StatelessHtml.attachmentProxy(conversationJid, Helpers.urlDecode(identity))
     case r@Req("join" :: Nil, _, _) => {
       for {
