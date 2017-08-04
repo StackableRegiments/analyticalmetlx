@@ -14,7 +14,7 @@ object H2Constants{
   val fullIdentity = 2048
   val color = 9
   val url = 2048
-  val tag = 4196
+  val tag = 4196 // Why is this not a power of 2?
   val privacy = 20
   val metlType = 64
   val unhandledType = 64

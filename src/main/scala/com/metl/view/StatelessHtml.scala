@@ -781,7 +781,8 @@ object StatelessHtml extends Stemmer with Logger {
   def importExportedConversation(req:Req,rewrittenUsername:Option[String] = Empty):Box[LiftResponse] = Stopwatch.time("StatelessHtml.importExportedConversation",{
     for {
       xml <- req.body.map(bytes => XML.loadString(new String(bytes, "UTF-8")))
-      conv <- com.metl.model.Importer.importExportedConversation(xml, rewrittenUsername)
+      tag <- req.param("tag")
+      conv <- com.metl.model.Importer.importExportedConversation(xml,tag,rewrittenUsername)
       node <- serializer.fromConversation(conv).headOption
     } yield {
       XmlResponse(node)

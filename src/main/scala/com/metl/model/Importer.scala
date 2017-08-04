@@ -347,23 +347,26 @@ object Importer extends Logger {
   }
   val config = ServerConfiguration.default
   val exportSerializer = new ExportXmlSerializer(config)
-  def importExportedConversation(xml:NodeSeq,rewrittenUsername:Option[String] = Empty):Box[Conversation] = {
+  def importExportedConversation(xml:NodeSeq,tag:Box[String],rewrittenUsername:Option[String] = Empty):Box[Conversation] = {
     for (
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
         val hist = exportSerializer.toHistory(h)
         (hist.jid,hist)
       }):_*));
       conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
-      remoteConv = importExportedConversation(rewrittenUsername,conversation,historyMap)
+      remoteConv = importExportedConversation(rewrittenUsername,tag,conversation,historyMap)
     ) yield {
       remoteConv
     }
   }
-  protected def importExportedConversation(rewrittenUsername:Option[String],oldConv:Conversation,histories:Map[String,History]):Conversation = {
+  protected def importExportedConversation(rewrittenUsername:Option[String],tag:Box[String],oldConv:Conversation,histories:Map[String,History]):Conversation = {
     val newAuthor = rewrittenUsername.getOrElse(oldConv.author)
-    val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),newAuthor)
+    val now = new java.util.Date()
+    val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(now),newAuthor)
     val newConvWithOldSlides = newConv.copy(
-      lastAccessed = new java.util.Date().getTime,
+      created = oldConv.created,
+      lastAccessed = oldConv.lastAccessed,
+      tag = tag.openOr("Imported by %s @ %s".format(Globals.currentUser.is,now)),
       slides = oldConv.slides.map(s => s.copy(
         groupSet = Nil,
         id = s.id - oldConv.jid + newConv.jid,
