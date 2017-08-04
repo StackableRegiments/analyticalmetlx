@@ -347,26 +347,28 @@ object Importer extends Logger {
   }
   val config = ServerConfiguration.default
   val exportSerializer = new ExportXmlSerializer(config)
-  def importExportedConversation(xml:NodeSeq):Box[Conversation] = {
+  def importExportedConversation(xml:NodeSeq,rewrittenUsername:Option[String] = Empty):Box[Conversation] = {
     for (
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
         val hist = exportSerializer.toHistory(h)
         (hist.jid,hist)
       }):_*));
       conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
-      remoteConv = importExportedConversation(Globals.currentUser.is,conversation,historyMap)
+      remoteConv = importExportedConversation(rewrittenUsername,conversation,historyMap)
     ) yield {
       remoteConv
     }
   }
-  protected def importExportedConversation(onBehalfOfUser:String,oldConv:Conversation,histories:Map[String,History]):Conversation = {
-    val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
+  protected def importExportedConversation(rewrittenUsername:Option[String],oldConv:Conversation,histories:Map[String,History]):Conversation = {
+    val newAuthor = rewrittenUsername.getOrElse(oldConv.author)
+    val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),newAuthor)
     val newConvWithOldSlides = newConv.copy(
       lastAccessed = new java.util.Date().getTime,
       slides = oldConv.slides.map(s => s.copy(
         groupSet = Nil,
         id = s.id - oldConv.jid + newConv.jid,
-        audiences = Nil
+        audiences = Nil,
+        author = newAuthor
       ))
     )
     val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
@@ -375,15 +377,22 @@ object Importer extends Logger {
       val offset = remoteConv.jid - oldConv.jid
       val serverName = remoteConv.server.name
       val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
-        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,oldAuthor))
+        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,newAuthor))
         case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset))
         case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString))
         case _ => None
       }
       newRoom.foreach(nr => {
+        // swap this back in when the stanzas support adjustAuthor as a method
+        val newHistory = h._2/*rewrittenUsername.map(newUser => {
+          val nh = new History(h._2.jid,h._2.xScale,h._2.yScale,h._2.xOffset,h._2.yOffset)
+          h._2.getAll.foreach(stanza => nh.addStanza(stanza.adjustAuthor(newUser))
+          nh
+        }).getOrElse(h._2)
+        */
         ServerSideBackgroundWorker ! CopyContent(
           remoteConv.server,
-          h._2,
+          newHistory,
           nr
         )
       })
@@ -391,7 +400,7 @@ object Importer extends Logger {
     trace("Imported exported conversation: " + remoteConv.jid + ", " + remoteConv.title)
     remoteConv
   }
-  def importConversation(title:String,filename:String,bytes:Array[Byte],author:String):Box[Conversation] = {
+  def importConversationAsAuthor(title:String, filename:String, bytes:Array[Byte], author:String):Box[Conversation] = {
     val importId = nextFuncName
     onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("ready to create conversation",1,2)),None))
     try {
