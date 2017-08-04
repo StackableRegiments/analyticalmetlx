@@ -315,25 +315,22 @@ abstract class MeTLCanvasContent(override val server:ServerConfiguration,overrid
   def right:Double = 0.0
   def top:Double = 0.0
   def bottom:Double = 0.0
-  def scale(factor:Double):MeTLCanvasContent// = MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences,factor,factor)
-  def scale(xScale:Double,yScale:Double):MeTLCanvasContent// = MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences,xScale,yScale)
-  def alterPrivacy(newPrivacy:Privacy):MeTLCanvasContent// = MeTLCanvasContent(server,author,timestamp,target,newPrivacy,slide,identity,audiences,scaleFactorX,scaleFactorY)
-  def adjustVisual(xTranslate:Double,yTranslate:Double,xScale:Double,yScale:Double)// = MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences,scaleFactorX,scaleFactorY)
-  //override def adjustTimestamp(newTimestamp:Long) = MeTLCanvasContent(server,author,newTimestamp,target,privacy,slide,identity,audiences,scaleFactorX,scaleFactorY)
-  def generateDirty(dirtyTime:Long)// = MeTLCanvasContent.empty
+  def scale(factor:Double):MeTLCanvasContent
+  def scale(xScale:Double,yScale:Double):MeTLCanvasContent
+  def alterPrivacy(newPrivacy:Privacy):MeTLCanvasContent
+  def adjustVisual(xTranslate:Double,yTranslate:Double,xScale:Double,yScale:Double):MeTLCanvasContent
+  def generateDirty(dirtyTime:Long):MeTLCanvasContent// = MeTLCanvasContent.empty
   def matches(other:MeTLCanvasContent):Boolean = other.identity == identity && other.privacy == privacy && other.slide == slide
   def isDirtiedBy(other:MeTLCanvasContent):Boolean = false
   def isDirtierFor(other:MeTLCanvasContent):Boolean = false
-  def generateNewIdentity(descriptor:String):MeTLCanvasContent/* = MeTLCanvasContent(server,author,timestamp,target,privacy,slide,genNewIdentity("newCanvasContent:"+descriptor),audiences,scaleFactorX,scaleFactorY)*/
+  def generateNewIdentity(descriptor:String):MeTLCanvasContent
   override def equals(a:Any) = a match {
     case MeTLCanvasContent(aServer,aAuthor,aTimestamp,aTarget,aPrivacy,aSlide,aIdentity,aAudiences,aScaleFactorX,aScaleFactorY) => aServer == server && aAuthor == author && aTimestamp == timestamp && aTarget == target && aPrivacy == privacy && aSlide == slide && aIdentity == identity && aAudiences == audiences && aScaleFactorX == scaleFactorX && aScaleFactorY == scaleFactorY
     case _ => false
   }
 }
 object MeTLCanvasContent{
-  //def apply(server:ServerConfiguration,author:String,timestamp:Long,target:String,privacy:Privacy,slide:String,identity:String,audiences:List[Audience] = Nil, scaleFactorX:Double = 1.0,scaleFactorY:Double = 1.0) = new MeTLCanvasContent(server,author,timestamp,target,privacy,slide,identity,audiences,scaleFactorX,scaleFactorY)
   def unapply(in:MeTLCanvasContent) = Some((in.server,in.author,in.timestamp,in.target,in.privacy,in.slide,in.identity,in.audiences,in.scaleFactorX,in.scaleFactorY))
-  //def empty = MeTLCanvasContent(ServerConfiguration.empty,"",0L,"",Privacy.NOT_SET,"","")
 }
 object MeTLTextWord {
   def empty = MeTLTextWord("",false,false,false,"",Color.empty,"",0.0)
@@ -655,8 +652,8 @@ case class MeTLMoveDelta(override val server:ServerConfiguration, override val a
   }
 
   override def alterPrivacy(newPrivacy: Privacy) = copy(privacy = newPrivacy)
-  override def generateDirty(dirtyTime: Long): Unit = throw new Exception("cannot generate a dirty for a moveDelta element")
-  override def scale(scale: Double) = scale(scale,scale)
+  override def generateDirty(dirtyTime: Long) = throw new Exception("cannot generate a dirty for a moveDelta element")
+  override def scale(scaleFactor: Double) = scale(scaleFactor,scaleFactor)
   override def generateNewIdentity(descriptor:String):MeTLMoveDelta = copy(identity = genNewIdentity("newMeTLMoveDelta:"+descriptor))
   def generateDirtier(newInkIds:Seq[String],newTextIds:Seq[String],newMultiWordTextIds:Seq[String],newImageIds:Seq[String],newVideoIds:Seq[String],replacementPrivacy:Privacy):MeTLMoveDelta = Stopwatch.time("MeTLMoveDelta.generateDirtier",{
     copy(privacy = replacementPrivacy,identity = genNewIdentity("dirtierGeneratedFrom(%s)".format(identity)),
@@ -837,9 +834,9 @@ case class MeTLDirtyInk(override val server:ServerConfiguration,override val aut
     case _ => false
   }
 
-  override def generateDirty(dirtyTime: Long): Unit = throw new Exception("cannot generate a dirty for a dirtying element")
+  override def generateDirty(dirtyTime: Long) = throw new Exception("cannot generate a dirty for a dirtying element")
   override def scale(factor: Double): MeTLCanvasContent = this
-  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double): Unit = this
+  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double) = this
   override def scale(xScale: Double, yScale: Double): MeTLCanvasContent = this
 
   override def isDirtierFor(other:MeTLCanvasContent) = other match {
@@ -872,9 +869,9 @@ case class MeTLDirtyText(override val server:ServerConfiguration,override val au
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLDirtyText = Stopwatch.time("MeTLDirtyText.adjustTimestamp", {
     copy(timestamp=newTime)
   })
-  override def generateDirty(dirtyTime: Long): Unit = throw new Exception("cannot generate a dirty for a dirtying element")
+  override def generateDirty(dirtyTime: Long) = throw new Exception("cannot generate a dirty for a dirtying element")
   override def scale(factor: Double): MeTLCanvasContent = this
-  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double): Unit = this
+  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double) = this
   override def scale(xScale: Double, yScale: Double): MeTLCanvasContent = this
   override def generateNewIdentity(descriptor:String):MeTLDirtyText = copy(identity=genNewIdentity("newMeTLDirtyText:"+descriptor))
 }
@@ -896,9 +893,9 @@ case class MeTLDirtyImage(override val server:ServerConfiguration,override val a
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLDirtyImage = Stopwatch.time("MeTLDirtyImage.adjustTimestamp",{
     copy(timestamp=newTime)
   })
-  override def generateDirty(dirtyTime: Long): Unit = throw new Exception("cannot generate a dirty for a dirtying element")
+  override def generateDirty(dirtyTime: Long) = throw new Exception("cannot generate a dirty for a dirtying element")
   override def scale(factor: Double): MeTLCanvasContent = this
-  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double): Unit = this
+  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double) = this
   override def scale(xScale: Double, yScale: Double): MeTLCanvasContent = this
   override def generateNewIdentity(descriptor:String):MeTLDirtyImage = copy(identity=genNewIdentity("newMeTLDirtyImage:"+descriptor))
 }
@@ -920,9 +917,9 @@ case class MeTLDirtyVideo(override val server:ServerConfiguration,override val a
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLDirtyVideo = Stopwatch.time("MeTLDirtyVideo.adjustTimestamp",{
     copy(timestamp=newTime)
   })
-  override def generateDirty(dirtyTime: Long): Unit = throw new Exception("cannot generate a dirty for a dirtying element")
+  override def generateDirty(dirtyTime: Long) = throw new Exception("cannot generate a dirty for a dirtying element")
   override def scale(factor: Double): MeTLCanvasContent = this
-  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double): Unit = this
+  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double) = this
   override def scale(xScale: Double, yScale: Double): MeTLCanvasContent = this
   override def generateNewIdentity(descriptor:String):MeTLDirtyVideo = copy(identity=genNewIdentity("newMeTLDirtyVideo:"+descriptor))
 }
@@ -936,9 +933,9 @@ case class MeTLUndeletedCanvasContent(override val server:ServerConfiguration,ov
     case _ => false
   }
 
-  override def generateDirty(dirtyTime: Long): Unit = throw new Exception("cannot generate a dirty for an undelete element")
+  override def generateDirty(dirtyTime: Long) = throw new Exception("cannot generate a dirty for an undelete element")
   override def scale(factor: Double): MeTLCanvasContent = this
-  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double): Unit = this
+  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double) = this
   override def scale(xScale: Double, yScale: Double): MeTLCanvasContent = this
   override def isDirtierFor(other:MeTLCanvasContent) = false
   override def alterPrivacy(newPrivacy:Privacy):MeTLUndeletedCanvasContent = copy(privacy=newPrivacy)
@@ -998,9 +995,9 @@ case class MeTLSubmission(override val server:ServerConfiguration,override val a
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLSubmission = Stopwatch.time("MeTLSubmission.adjustTimestamp",{
     copy(timestamp = newTime)
   })
-  override def generateDirty(dirtyTime: Long): Unit = throw new Exception("cannot generate a dirty for an undelete element")
+  override def generateDirty(dirtyTime: Long) = throw new Exception("cannot generate a dirty for an undelete element")
   override def scale(factor: Double): MeTLCanvasContent = this
-  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double): Unit = this
+  override def adjustVisual(xTranslate: Double, yTranslate: Double, xScale: Double, yScale: Double): MeTLCanvasContent = this
   override def scale(xScale: Double, yScale: Double): MeTLCanvasContent = this
   override def isDirtierFor(other:MeTLCanvasContent) = false
 
