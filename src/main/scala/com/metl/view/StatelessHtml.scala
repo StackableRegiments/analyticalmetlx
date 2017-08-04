@@ -540,7 +540,7 @@ object StatelessHtml extends Stemmer with Logger {
       }
       case _ => c
     }).headOption.map(n => XmlResponse(n))
-  }
+  })
   def addQuizResultsViewSlideToConversationAtIndex(jid:String,index:Int,quizId:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addQuizResultsViewSlideToConversationAtIndex", {
     val username = Globals.currentUser.is
     val server = config.name
@@ -592,7 +592,7 @@ object StatelessHtml extends Stemmer with Logger {
       }
       case _ => c
     }).headOption.map(n => XmlResponse(n))
-  }
+  })
   def addSubmissionSlideToConversationAtIndex(jid:String,index:Int,req:Req):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addSubmissionSlideToConversationAtIndex", {
     val username = Globals.currentUser.is
     val server = config.name
@@ -630,7 +630,7 @@ object StatelessHtml extends Stemmer with Logger {
       }
       case _ => c
     }).headOption.map(n => XmlResponse(n))
-  }
+  })
   def duplicateSlideInternal(onBehalfOfUser:String,slide:String,conversation:String):Box[Conversation] = {
     val conv = config.detailsOfConversation(conversation)
     if (onBehalfOfUser == conv.author){
