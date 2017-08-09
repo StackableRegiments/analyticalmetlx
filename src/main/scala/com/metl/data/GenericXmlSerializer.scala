@@ -591,18 +591,25 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <id>{input.id}</id>
     ))
   })
-  protected val dateFormat = "EEE MMM dd kk:mm:ss z yyyy" // this is the standard java format, which is what we've been using.
-  protected val dateFormatMeTL2011us2 = "MM/dd/yyyy h:mm:ss a" // this is the C# format, from a non-web client in the US.
-  protected val dateFormatMeTL2011us1 = "MM/d/yyyy h:mm:ss a" // this is the C# format, from a non-web client in the US.
-  protected val dateFormatMeTL2011au2 = "dd/MM/yyyy h:mm:ss a" // this is the C# format, from a non-web client in Australia.
-  protected val dateFormatMeTL2011au1 = "d/MM/yyyy h:mm:ss a" // this is the C# format, from a non-web client in Australia.
   protected val usZone: ZoneId = ZoneId.of("America/New_York")
-  protected val dateTimeFormatter = new MultiFormatDateFormatter(
-    Left(dateFormat),
-    Right(dateFormatMeTL2011us2,usZone),
-    Right(dateFormatMeTL2011us1,usZone),
-    Right(dateFormatMeTL2011au2,usZone),
-    Right(dateFormatMeTL2011au1,usZone)
+  val dateTimeFormatter = new MultiFormatDateFormatter(
+    Left("EEE MMM dd kk:mm:ss z yyyy"),
+    Right("MM/dd/yyyy h:mm:ss a", usZone),
+    Right("MM/d/yyyy h:mm:ss a", usZone),
+    Right("M/dd/yyyy h:mm:ss a", usZone),
+    Right("M/d/yyyy h:mm:ss a", usZone),
+    Right("MM/dd/yyyy HH:mm:ss", usZone),
+    Right("MM/d/yyyy HH:mm:ss", usZone),
+    Right("M/dd/yyyy HH:mm:ss", usZone),
+    Right("M/d/yyyy HH:mm:ss", usZone),
+    Right("dd/MM/yyyy h:mm:ss a", usZone),
+    Right("d/MM/yyyy h:mm:ss a", usZone),
+    Right("dd/M/yyyy h:mm:ss a", usZone),
+    Right("d/M/yyyy h:mm:ss a", usZone),
+    Right("dd/MM/yyyy HH:mm:ss a", usZone),
+    Right("d/MM/yyyy HH:mm:ss a", usZone),
+    Right("dd/M/yyyy HH:mm:ss a", usZone),
+    Right("d/M/yyyy HH:mm:ss a", usZone)
   )
   override def toConversation(input:NodeSeq):Conversation = Stopwatch.time("GenericXmlSerializer.toConversation",{
     val m = parseMeTLContent(input,config)
