@@ -1,7 +1,6 @@
 package com.metl.data
 
-import java.time.Instant
-import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
+import java.time.ZoneId
 
 import com.metl.utils._
 import com.metl.model._
@@ -592,9 +591,19 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <id>{input.id}</id>
     ))
   })
-  protected val dateFormatMeTL2011 = "[dd/MM/yyyy h:mm:ss a]" // this is the C# format, from a non-web client.
-  protected val dateFormat = "[EEE MMM dd kk:mm:ss z yyyy]" // this is the standard java format, which is what we've been using.
-  protected val dateTimeFormatter = new DateTimeFormatterBuilder().parseStrict().append(DateTimeFormatter.ofPattern(dateFormat + dateFormatMeTL2011)).toFormatter
+  protected val dateFormat = "EEE MMM dd kk:mm:ss z yyyy" // this is the standard java format, which is what we've been using.
+  protected val dateFormatMeTL2011us2 = "MM/dd/yyyy h:mm:ss a" // this is the C# format, from a non-web client in the US.
+  protected val dateFormatMeTL2011us1 = "MM/d/yyyy h:mm:ss a" // this is the C# format, from a non-web client in the US.
+  protected val dateFormatMeTL2011au2 = "dd/MM/yyyy h:mm:ss a" // this is the C# format, from a non-web client in Australia.
+  protected val dateFormatMeTL2011au1 = "d/MM/yyyy h:mm:ss a" // this is the C# format, from a non-web client in Australia.
+  protected val usZone: ZoneId = ZoneId.of("America/New_York")
+  protected val dateTimeFormatter = new MultiFormatDateFormatter(
+    Left(dateFormat),
+    Right(dateFormatMeTL2011us2,usZone),
+    Right(dateFormatMeTL2011us1,usZone),
+    Right(dateFormatMeTL2011au2,usZone),
+    Right(dateFormatMeTL2011au1,usZone)
+  )
   override def toConversation(input:NodeSeq):Conversation = Stopwatch.time("GenericXmlSerializer.toConversation",{
     val m = parseMeTLContent(input,config)
     val author = getStringByName(input,"author")
@@ -604,19 +613,12 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val tag = getStringByName(input,"tag")
     val jid = getIntByName(input,"jid")
     val title = getStringByName(input,"title")
-    val createdString = getStringByName(input,"creation")
+    val creationString = getStringByName(input,"creation")
     val created = try {
-      createdString.toLong
+      creationString.toLong
     } catch {
       case e:Exception => {
-        try {
-          Instant.from(dateTimeFormatter.parse(getStringByName(input, "created"))).toEpochMilli
-        } catch {
-          case ex:Throwable => {
-            error("failed to parse date: %s".format(createdString),ex)
-            throw ex
-          }
-        }
+        dateTimeFormatter.parse(getStringByName(input, "created"))
       }
     }
     val permissions = getXmlByName(input,"permissions").map(p => toPermissions(p)).headOption.getOrElse(Permissions.default(config))

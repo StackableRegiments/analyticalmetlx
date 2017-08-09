@@ -345,15 +345,18 @@ object Importer extends Logger {
   def onUpdate(id:ImportDescription):Unit = {
     com.metl.comet.MeTLConversationSearchActorManager ! id
   }
-  val config = ServerConfiguration.default
-  val exportSerializer = new ExportXmlSerializer(config)
+  protected val config: ServerConfiguration = ServerConfiguration.default
+  protected val exportSerializer = new ExportXmlSerializer(config)
   def importExportedConversation(xml:NodeSeq,tag:Box[String],rewrittenUsername:Option[String] = Empty):Box[Conversation] = {
     for (
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
         val hist = exportSerializer.toHistory(h)
         (hist.jid,hist)
       }):_*));
-      conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
+      conversation <- (xml \ "conversation").headOption.map(c => {
+        trace("Importing exported conversation %s %s: \n%s".format(xml \\ "jid", xml \\ "created", c))
+        exportSerializer.toConversation(c)
+      });
       remoteConv = importExportedConversation(rewrittenUsername,tag,conversation,historyMap)
     ) yield {
       remoteConv
