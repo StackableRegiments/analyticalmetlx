@@ -57,7 +57,7 @@ var Blacklist = (function(){
                             _.each(submission.blacklist,function(ba){
                                 if ("username" in ba && "highlight" in ba){
                                     var authorElem = authorTemplate.clone();
-                                    authorElem.find(".blacklistAuthorName").text(ba.username);
+                                    authorElem.find(".blacklistAuthorName").text(Profiles.getUsernameFor(ba.username));
                                     var color = ba.highlight[0];
                                     var opacity = ba.highlight[1];
                                     authorElem.find(".blacklistAuthorColor").css({"background-color":color,"opacity":opacity});
@@ -147,7 +147,7 @@ var Blacklist = (function(){
             }
             blacklistAuthors.map(function(author){
                 var rootElem = blacklistAuthorTemplate.clone();
-                rootElem.find(".blacklistAuthorName").text(author);
+                rootElem.find(".blacklistAuthorName").text(Profiles.getUsernameFor(author));
                 rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
                     blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
                     changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);

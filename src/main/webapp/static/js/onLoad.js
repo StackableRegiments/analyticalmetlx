@@ -504,7 +504,7 @@ $(function(){
         p.value(value);
     };
     setLoadProgress(0);
-    heading.text(sprintf("Logged in as %s",UserSettings.getUsername()));
+    heading.text(sprintf("Logged in as %s",Profiles.getCurrentProfile().name));
     setupStatus();
     board = $("#board");
     boardContext = board[0].getContext("2d");

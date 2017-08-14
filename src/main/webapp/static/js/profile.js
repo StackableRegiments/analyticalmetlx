@@ -24,12 +24,21 @@ var Profiles = (function(){
 			}
 		}
 	};
+	var getUsernameForFunc = function(userId){
+		console.log("looking for user in profiles",userId,knownProfiles);
+		if (userId in knownProfiles){
+			return knownProfiles[userId].name;
+		} else {
+			return userId;
+		}
+	};
 	return {
 		getCurrentProfile:getCurrentProfileFunc,
 		getAllKnownProfiles:getAllKnownProfilesFunc,
 		getProfileForId:getProfileForIdFunc,
 		receiveProfile:receiveProfileFunc,
-		receiveProfiles:receiveProfilesFunc
+		receiveProfiles:receiveProfilesFunc,
+		getUsernameFor:getUsernameForFunc
 	};
 })();
 

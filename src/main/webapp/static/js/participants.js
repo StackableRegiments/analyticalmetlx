@@ -27,7 +27,8 @@ var Participants = (function(){
         _.each(_.groupBy(history.attendances,"author"),function(authorAttendances){
             var author = authorAttendances[0].author;
             var itemToEdit = ensure(newParticipant);
-            itemToEdit.name = author;
+						itemToEdit.userId = author;
+            itemToEdit.name = Profiles.getUsernameFor(author);
             itemToEdit.attendances = authorAttendances;
             newParticipants[author] = itemToEdit;
         });
@@ -76,7 +77,8 @@ var Participants = (function(){
             if(!(author in participants)){
                 console.log("Adding",author);
                 var np = _.clone(newParticipant);
-                np.name = author;
+								np.userId = author;
+                np.name = Profiles.getUsernameFor(author);
                 participants[author] = np;
             }
             var itemToEdit = participants[author];
@@ -254,9 +256,9 @@ var Participants = (function(){
                 sorting:true,
                 itemTemplate:function(username,participant){
                     var rootElem = participantFollowControl.clone();
-                    var elemId = sprintf("participant_%s",participant.name);
+                    var elemId = sprintf("participant_%s",participant.userId);
                     rootElem.find(".followValue").attr("id",elemId).prop("checked",participant.following).on("change",function(){
-                        participants[participant.name].following = $(this).is(":checked");
+                        participants[participant.userId].following = $(this).is(":checked");
                         blit();
                         updateParticipantsListing();
                     });
@@ -285,7 +287,8 @@ var Participants = (function(){
                     var sorted = _.map(_.keys(participants),function(k){
                         var v = participants[k];
                         return {
-                            name:k,
+														userId:k,
+                            name:v.name,
                             following:v.following,
                             attendances:_.size(v.attendances),
                             images:v.images,

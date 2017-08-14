@@ -10,9 +10,10 @@ var UserSettings = (function(){
     var isInteractiveUser = true;
 
     var setUsernameFunction = function(newName){
+			var profileName = Profiles.getCurrentProfile().name;
         username = newName;
-        $("#username").text(username);
-        $("#currentUsername").text(username);
+        $("#username").text(profileName);
+        $("#currentUsername").text(profileName);
     };
     var setUserGroupsFunction = function(newGroups){
         userGroups = newGroups;

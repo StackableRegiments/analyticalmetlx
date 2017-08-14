@@ -221,7 +221,7 @@ var TokBoxSession = function(desc,sessionContainer){
                 sessionContainer.find(".viewscreen").append(tokBoxVideoElemPublisher);
                 var targetResolution = sprintf("%sx%s",safeWidth(videoWidth),safeHeight(videoHeight));
                 var publisher = OT.initPublisher(publisherUniqueId, {
-                    name:UserSettings.getUsername(),
+                    name:Profiles.getCurrentProfile().name,//UserSettings.getUsername(),
                     width:videoWidth,
                     height:videoHeight,
                     resolution:"320x240",

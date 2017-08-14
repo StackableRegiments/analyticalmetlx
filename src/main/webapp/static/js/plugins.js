@@ -11,9 +11,8 @@ var Plugins = (function(){
             });
             var renderChatMessage = function(chatMessage,targetType,target,context){
                 var rootElem = cmTemplate.clone();
-                var username = UserSettings.getUsername();
                 var authorElem = rootElem.find(".chatMessageAuthor");
-                authorElem.text(chatMessage.author);
+                authorElem.text(Profiles.getUsernameFor(chatMessage.author));
                 rootElem.find(".chatMessageTimestamp").text(new Date(chatMessage.timestamp).toISOString());
                 var contentElem = rootElem.find(".chatMessageContent");
                 switch (chatMessage.contentType){
@@ -52,7 +51,7 @@ var Plugins = (function(){
                         //ignore this one, I've already got it.
                     } else {
                         chatMessages[stanza.identity] = stanza;
-                        var username = UserSettings.getUsername();
+                        var username = UserSettings.getUsername();	
                         var convGroups = _.flatten(_.flatten(_.map(Conversations.getCurrentConversation().slides,function(slide){
                             return _.map(slide.groupSets,function(groupSet){
                                 return groupSet.groups;
