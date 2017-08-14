@@ -14,4 +14,5 @@ class PersistedHistory(config:ServerConfiguration,dbInterface:PersistenceInterfa
   def getProfiles(ids:String *):List[Profile] = dbInterface.getProfiles(ids:_*)
   def createProfile(name:String,attrs:Map[String,String]):Profile = dbInterface.createProfile(name,attrs)
   def updateProfile(id:String,profile:Profile):Profile = dbInterface.updateProfile(id,profile)
+  def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = dbInterface.getProfileIds(accountName,accountProvider)
 }

@@ -154,7 +154,7 @@ abstract class AuthSession(val session:HttpSession) {
   def getStoredRequests:Map[String,HttpServletRequest] = Map.empty[String,HttpServletRequest]
 }
 
-case class HealthyAuthSession(override val session:HttpSession,storedRequests:Map[String,HttpServletRequest] = Map.empty[String,HttpServletRequest],username:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil) extends AuthSession(session){
+case class HealthyAuthSession(override val session:HttpSession,storedRequests:Map[String,HttpServletRequest] = Map.empty[String,HttpServletRequest],username:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil,accountProvider:String = "") extends AuthSession(session){
   override def getStoredRequests = storedRequests
 }
 abstract class InProgressAuthSession(override val session:HttpSession,val storedRequests:Map[String,HttpServletRequest],val authenticator:String) extends AuthSession(session){
@@ -474,15 +474,15 @@ class LoggedInFilter extends Filter with HttpReqUtils {
         }
         case Right(s) => {
           s match {
-            case has@HealthyAuthSession(Session,requests,username,groups,attrs) => { //let the request through
+            case has@HealthyAuthSession(Session,requests,username,groups,attrs,prov) => { //let the request through
               val storedReqId = getIdFromReq(httpReq)
               requests.get(storedReqId).map(storedReq => {
-                sessionStore.updateSession(Session,s => HealthyAuthSession(Session,requests - storedReqId,username,groups,attrs)) // clear the rewrite
+                sessionStore.updateSession(Session,s => HealthyAuthSession(Session,requests - storedReqId,username,groups,attrs,prov)) // clear the rewrite
                 //sessionStore.updateSession(Session,s => HealthyAuthSession(Session,Map.empty[String,HttpServletRequest],username,groups,attrs)) // clear the rewrite
-                val authedReq = completeAuthentication(storedReq,httpResp,Session,username,groups,attrs)
+                val authedReq = completeAuthentication(storedReq,httpResp,Session,username,groups,attrs,prov)
                 chain.doFilter(authedReq,httpResp)
               }).getOrElse({
-                val authedReq = completeAuthentication(httpReq,httpResp,Session,username,groups,attrs)
+                val authedReq = completeAuthentication(httpReq,httpResp,Session,username,groups,attrs,prov)
                 chain.doFilter(authedReq,httpResp)
               })
             }
@@ -498,12 +498,13 @@ class LoggedInFilter extends Filter with HttpReqUtils {
       }
     }
   }
-  protected def completeAuthentication(req:HttpServletRequest,res:HttpServletResponse,session:HttpSession,user:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil):HttpServletRequest = {
+  protected def completeAuthentication(req:HttpServletRequest,res:HttpServletResponse,session:HttpSession,user:String,groups:List[Tuple2[String,String]] = Nil,attrs:List[Tuple2[String,String]] = Nil,accountProvider:String = ""):HttpServletRequest = {
 //    req.login(user,"") // it claims this isn't available, but it's definitely in the javadoc, so I'm not yet sure what's happening here.
     session.setAttribute("authenticated",true)
     session.setAttribute("user",user)
     session.setAttribute("userGroups",groups)
     session.setAttribute("userAttributes",attrs)
+    session.setAttribute("accountProvider",accountProvider)
     //res.setHeader("REMOTE_USER",user) //I was hoping that this would drive the logger's remoteUser behaviour, but it doesn't appear to.
     val principal = MeTLPrincipal(true,user,groups,attrs)
     /*  //no, this entire block won't work.  Jetty now (didn't used to, and doesn't when embedded) correctly implements a particular JSR which specifies that all server/container libraries should be hidden from the servlet, and it does so by subtly changing the class of the outer servlet code from the libraries inside, such that the org.eclipse.jetty.server.Request is not the same type as the one given to us by the server.
@@ -595,8 +596,8 @@ class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[D
         authenticators.find(_.shouldHandle(authSession,req,session)).map(describedAuthenticator => {
           val result = describedAuthenticator.handle(authSession,req,res,session)
           sessionStore.getValidSession(session) match {
-            case Right(has@HealthyAuthSession(session,storedRequests,user,groups,attrs)) => {
-              sessionStore.updateSession(authSession.session,s => has.copy(username = "%s%s".format(describedAuthenticator.prefix,user)))
+            case Right(has@HealthyAuthSession(session,storedRequests,user,groups,attrs,prov)) => {
+              sessionStore.updateSession(authSession.session,s => has.copy(accountProvider = describedAuthenticator.prefix))//,username = "%s%s".format(describedAuthenticator.prefix,user)))
               true
             }
             case _ => result

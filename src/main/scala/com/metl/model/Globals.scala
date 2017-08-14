@@ -217,13 +217,33 @@ object Globals extends PropertyReader with Logger {
     import com.metl.liftAuthenticator._
     import net.liftweb.http.S
     private object validState extends SessionVar[Option[LiftAuthStateData]](None)
-    def is:LiftAuthStateData = {
-      validState.is.getOrElse({
-        assumeContainerSession
-      })
-    }
     private object actualUsername extends SessionVar[String]("forbidden")
     private object actuallyIsImpersonator extends SessionVar[Boolean](false)
+    private def updateUser(state:LiftAuthStateData,userAccountProvider:String):LiftAuthStateData = {
+      validState(Some(state))
+      SecurityListener.ensureSessionRecord
+      val config = ServerConfiguration.default
+      config.getProfileIds(state.username,userAccountProvider) match {
+        case (Nil,_) => {
+          val newProf = config.createProfile(state.username,Map(
+            "createdByUser" -> state.username,
+            "createdByProvider" -> userAccountProvider))
+          Globals.availableProfiles(List(newProf))
+          Globals.currentProfile(newProf)
+        }
+        case (items,defaultId) => {
+          val profiles = config.getProfiles(items:_*)
+          Globals.availableProfiles(profiles)
+          profiles.find(_.id == defaultId).map(p => {
+            Globals.currentProfile(p)
+          })
+        }
+      }
+      state
+    }
+    def is:LiftAuthStateData = {
+      validState.getOrElse(assumeContainerSession)
+    }
     def isSuperUser:Boolean = {
       is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
     }
@@ -232,21 +252,20 @@ object Globals extends PropertyReader with Logger {
     }
     def isImpersonator:Boolean = actuallyIsImpersonator.is
     def authenticatedUsername:String = actualUsername.is
-    def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = {
+    def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil,userAccountProvider:String = ""):LiftAuthStateData = {
       if (isImpersonator){
         val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,(personalAttributes.map(pa => Detail(pa._1,pa._2)) ::: userProfileProvider.toList.flatMap(_.getProfiles(newUsername).right.toOption.toList.flatten.flatMap(_.foreignRelationships.toList)).map(pa => Detail(pa._1,pa._2))))
         val groups = Globals.groupsProviders.filter(_.canRestrictConversations).flatMap(_.getGroupsFor(prelimAuthStateData))
         val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
         val impersonatedState = LiftAuthStateData(true,newUsername,groups,personalDetails)
-        validState(Some(impersonatedState))
-        SecurityListener.ensureSessionRecord
-        impersonatedState
+        updateUser(impersonatedState,userAccountProvider)
       } else {
         LiftAuthStateDataForbidden
       }
     }
     def assumeContainerSession:LiftAuthStateData = {
       S.containerSession.map(s => {
+        val accountProvider = s.attribute("userAccountProvider").asInstanceOf[String]
         val username = s.attribute("user").asInstanceOf[String]
         val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
         val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(Member(username,Nil,None)),Nil))
@@ -258,10 +277,7 @@ object Globals extends PropertyReader with Logger {
           actuallyIsImpersonator(groups.exists(g => g.ouType == "special" && g.name == "impersonator"))
           val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
           val lasd = LiftAuthStateData(true,username,groups,personalDetails)
-          validState(Some(lasd))
-          userProfileProvider.foreach(upp => {
-            upp.updateUserProfile(lasd)
-          })
+          updateUser(lasd,accountProvider)
           info("generated authState: %s".format(lasd))
           lasd
         } else {
@@ -273,11 +289,9 @@ object Globals extends PropertyReader with Logger {
 
     }
   }
-  
   object currentUser {
     def is:String = casState.is.username
   }
-  
   object availableProfiles extends SessionVar[List[Profile]](Nil)
   object currentProfile extends SessionVar[Profile](Profile.empty)
   // special roles

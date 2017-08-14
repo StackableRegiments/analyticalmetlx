@@ -88,6 +88,18 @@ class H2Profile extends H2MeTLStanza[H2Profile] {
 object H2Profile extends H2Profile with LongKeyedMetaMapper[H2Profile] {
 }
 
+class H2AccountRelationships extends LongKeyedMapper[H2AccountRelationships] with IdPK {
+  def getSingleton = H2AccountRelationships
+  object timestamp extends MappedLong(this)
+  object profileId extends MappedMeTLString(this,H2Constants.profileId)
+  object accountProvider extends MappedMeTLString(this,H2Constants.profileId)
+  object accountName extends MappedMeTLString(this,H2Constants.profileId)
+  object disabled extends MappedBoolean(this)
+  object default extends MappedBoolean(this)
+}
+object H2AccountRelationships extends H2AccountRelationships with LongKeyedMetaMapper[H2AccountRelationships] {
+}
+
 class H2Ink extends H2MeTLCanvasContent[H2Ink] {
   def getSingleton = H2Ink
   object checksum extends MappedDouble(this)

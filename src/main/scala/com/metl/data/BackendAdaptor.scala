@@ -81,6 +81,7 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile
   def getProfiles(ids:String *):List[Profile]
   def updateProfile(id:String,profile:Profile):Profile
+  def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
 
   //shutdown is a function to be called when the serverConfiguration is to be disposed
   def shutdown:Unit = {}
@@ -214,6 +215,7 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
   override def getProfiles(ids:String *):List[Profile] = Nil
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
+  override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
 }
 
 object EmptyBackendAdaptorConfigurator extends ServerConfigurator{
@@ -251,6 +253,7 @@ object FrontendSerializationAdaptor extends ServerConfiguration("frontend","fron
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
   override def getProfiles(ids:String *):List[Profile] = Nil
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
+  override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
 }
 
 object FrontendSerializationAdaptorConfigurator extends ServerConfigurator{
@@ -290,4 +293,5 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = sc.createProfile(name,attrs,audiences)
   override def getProfiles(ids:String *):List[Profile] = sc.getProfiles(ids:_*)
   override def updateProfile(id:String,profile:Profile):Profile = sc.updateProfile(id,profile)
+  override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = sc.getProfileIds(accountName,accountProvider)
 }

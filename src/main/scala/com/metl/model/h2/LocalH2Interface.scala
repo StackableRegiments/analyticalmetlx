@@ -72,7 +72,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2TextGradeValue,
         H2ChatMessage,
         H2UndeletedCanvasContent,
-        H2Profile
+        H2Profile,
+        H2AccountRelationships
       ):_*
     )
     // this starts our pool in advance
@@ -606,7 +607,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     })
   })
   def getProfiles(ids:String *):List[Profile] = Stopwatch.time("H2Interface.getProfiles",{
-    H2Profile.findAll(ByList(H2Profile.profileId,ids.toList)).groupBy(_.profileId.get).toList.map(_._2).flatMap(_.sortBy(_.timestamp.get).headOption.map(serializer.toProfile _))
+    H2Profile.findAll(ByList(H2Profile.profileId,ids.toList)).groupBy(_.profileId.get).toList.map(_._2).flatMap(_.sortBy(_.timestamp.get).reverse.headOption.map(serializer.toProfile _))
   })
   protected def createProfileId:String = nextFuncName
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = {
@@ -618,4 +619,9 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   def updateProfile(id:String,profile:Profile):Profile = {
     serializer.toProfile(serializer.fromProfile(profile.adjustTimestamp(new Date().getTime)).profileId(id).saveMe)
   }
+  def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = Stopwatch.time("H2Interface.getProfileIds",{
+    val profs = H2AccountRelationships.findAll(By(H2AccountRelationships.accountName,accountName),By(H2AccountRelationships.accountProvider,accountProvider)).groupBy(_.profileId.get).flatMap(_._2.sortBy(_.timestamp.get).reverse.headOption.filterNot(_.disabled.get))
+    val defaultProf = profs.filter(_.default.get).toList.sortBy(_.timestamp.get).reverse.headOption.map(_.profileId.get).getOrElse("")
+    (profs.map(_.profileId.get).toList,defaultProf)
+  })
 }
