@@ -2,24 +2,25 @@ package com.metl.view
 
 import com.metl.data._
 import com.metl.utils._
-
-
 import _root_.net.liftweb._
 import http._
 import common._
 import util.Helpers._
-import java.io.{ByteArrayOutputStream,ByteArrayInputStream,BufferedInputStream,FileReader,BufferedOutputStream,File}
+import java.io.{BufferedInputStream, BufferedOutputStream, ByteArrayInputStream, ByteArrayOutputStream, File, FileReader}
 import javax.imageio._
+
 import org.apache.commons.io.IOUtils
+
 import scala.xml._
-import java.util.zip.{ZipInputStream,ZipEntry}
+import java.util.zip.{ZipEntry, ZipInputStream}
+
 import scala.collection.mutable.StringBuilder
 import net.liftweb.util.Helpers._
 import bootstrap.liftweb.Boot
 import net.liftweb.json._
-import com.metl.liftAuthenticator.{LiftAuthStateData,Detail}
 import java.util.zip._
 
+import com.metl.external.{Detail, LiftAuthStateData}
 import com.metl.model._
 
 /**
@@ -103,7 +104,7 @@ object StatelessHtml extends Stemmer with Logger {
     }).mkString("\r\n")
     Full(PlainTextResponse(sessions))
   })
-  def describeUser(user:com.metl.liftAuthenticator.LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
+  def describeUser(user:LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
     Full(JsonResponse(Extraction.decompose(user),200))
   })
   def impersonate(newUsername:String,params:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.impersonate", {

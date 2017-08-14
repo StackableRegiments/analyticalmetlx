@@ -1,13 +1,13 @@
 package com.metl.data
 
 import com.metl.utils._
-
 import com.metl.model._
+
 import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
-import com.metl.liftAuthenticator.ForeignRelationship
 import Privacy._
+import com.metl.external.ForeignRelationship
 
 trait XmlUtils {
   def getPrivacyByName(content:NodeSeq,name:String):Privacy = tryo(Privacy.parse((content \\ name).text)).openOr(Privacy.PUBLIC)

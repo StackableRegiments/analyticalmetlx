@@ -1,10 +1,9 @@
 package com.metl.comet
 
-import com.metl.data._
+import com.metl.data.{GroupSet => MeTLGroupSet, _}
 import com.metl.utils._
 import com.metl.liftAuthenticator._
 import com.metl.liftExtensions._
-
 import net.liftweb._
 import common._
 import http._
@@ -12,22 +11,20 @@ import util._
 import Helpers._
 import HttpHelpers._
 import actor._
+
 import scala.xml._
 import com.metl.model._
 import SHtml._
-
 import js._
 import JsCmds._
 import JE._
 import net.liftweb.http.js.jquery.JqJsCmds._
-
 import net.liftweb.http.js.jquery.JqJE._
-
 import java.util.Date
+
+import com.metl.external._
 import com.metl.renderer.SlideRenderer
-
 import json.JsonAST._
-
 import com.metl.snippet.Metl._
 
 case class JoinThisSlide(slide:String)
@@ -1166,7 +1163,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val orgUnitJValue = getArgAsJValue(args(1))
       val orgUnit = orgUnitJValue.extract[OrgUnit]
       val groupSetJValue = getArgAsJValue(args(2))
-      val groupSet = groupSetJValue.extract[com.metl.liftAuthenticator.GroupSet]
+      val groupSet = groupSetJValue.extract[GroupSet]
       val members = for {
         cc <- currentConversation.toList
         r <- rooms.get((server,cc.jid.toString)).toList

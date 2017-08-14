@@ -1,5 +1,7 @@
 package com.metl.model
 
+import com.metl.external.LiftAuthStateData
+
 import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util._

@@ -1,21 +1,20 @@
 package com.metl.model
 
+import com.metl.TimeSpanParser
 import com.metl.liftAuthenticator._
-
 import com.metl.data._
+import com.metl.external.{Detail, ExternalGradebook, GroupsProvider, LiftAuthStateData, LiftAuthStateDataForbidden, MeTLingPotAdaptor, Member, OrgUnit}
 import com.metl.utils._
 import com.metl.view._
-
 import net.liftweb.http.SessionVar
 import net.liftweb.http.LiftRules
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
-
 import net.liftweb.util.Props
+
 import scala.xml._
 import scala.util._
 import com.metl.renderer.RenderDescription
-
 import net.liftweb.http._
 
 case class PropertyNotFoundException(key: String) extends Exception(key) {
@@ -173,7 +172,6 @@ object Globals extends PropertyReader with Logger {
   val googleAnalytics = ("stackable",readText(propFile,"googleAnalytics"))
   val clientGoogleAnalytics = ("client",readText(propFile,"clientGoogleAnalytics"))
 
-  val d2lThreadPoolMultiplier = readInt(propFile,"d2lThreadPoolMultiplier").getOrElse(5)
   val h2ThreadPoolMultiplier = readInt(propFile,"h2ThreadPoolMultiplier").getOrElse(8)
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)

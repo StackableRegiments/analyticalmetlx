@@ -117,8 +117,7 @@ libraryDependencies ++= {
     //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
-    //for AWS API Gateway interaction
-	  "com.amazonaws" % "aws-java-sdk-opensdk" % "1.11.72"
+    "io.github.stackableregiments" %% "external-data-types" % "0.0.1+"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 
