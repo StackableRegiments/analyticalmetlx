@@ -619,6 +619,14 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   def updateProfile(id:String,profile:Profile):Profile = {
     serializer.toProfile(serializer.fromProfile(profile.adjustTimestamp(new Date().getTime)).profileId(id).saveMe)
   }
+  def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {
+    if (default){
+      H2AccountRelationships.findAll(By(H2AccountRelationships.accountName,accountName),By(H2AccountRelationships.accountProvider,accountProvider)).groupBy(_.profileId.get).flatMap(_._2.sortBy(_.timestamp.get).reverse.headOption.filter(_.default.get)).foreach(old => {
+        old.default(false).save
+      })
+    }
+    H2AccountRelationships.create.timestamp(new Date().getTime).default(default).disabled(disabled).profileId(profileId).accountName(accountName).accountProvider(accountProvider).accountName(accountName).save
+  }
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = Stopwatch.time("H2Interface.getProfileIds",{
     val profs = H2AccountRelationships.findAll(By(H2AccountRelationships.accountName,accountName),By(H2AccountRelationships.accountProvider,accountProvider)).groupBy(_.profileId.get).flatMap(_._2.sortBy(_.timestamp.get).reverse.headOption.filterNot(_.disabled.get))
     val defaultProf = profs.filter(_.default.get).toList.sortBy(_.timestamp.get).reverse.headOption.map(_.profileId.get).getOrElse("")

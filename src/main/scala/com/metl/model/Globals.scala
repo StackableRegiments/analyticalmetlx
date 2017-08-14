@@ -228,6 +228,7 @@ object Globals extends PropertyReader with Logger {
           val newProf = config.createProfile(state.username,Map(
             "createdByUser" -> state.username,
             "createdByProvider" -> userAccountProvider))
+          config.updateAccountRelationship(state.username,userAccountProvider:String,newProf.id,false,true)
           Globals.availableProfiles(List(newProf))
           Globals.currentProfile(newProf)
         }
@@ -239,6 +240,7 @@ object Globals extends PropertyReader with Logger {
           })
         }
       }
+      warn("settings user to: %s".format(Globals.currentProfile.is))
       state
     }
     def is:LiftAuthStateData = {
@@ -289,9 +291,11 @@ object Globals extends PropertyReader with Logger {
 
     }
   }
+  
   object currentUser {
-    def is:String = casState.is.username
+    def is:String = currentProfile.is.id //casState.is.username
   }
+  
   object availableProfiles extends SessionVar[List[Profile]](Nil)
   object currentProfile extends SessionVar[Profile](Profile.empty)
   // special roles

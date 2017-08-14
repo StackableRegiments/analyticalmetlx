@@ -38,4 +38,5 @@ abstract class PersistenceInterface(config:ServerConfiguration) {
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile
   def updateProfile(id:String,profile:Profile):Profile
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String]
+  def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit
 }

@@ -72,6 +72,7 @@ class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,o
   override def getProfiles(ids:String *):List[Profile] = Nil
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")
+  override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {}
 }
 
 object MeTL2011BackendAdaptorConfigurator extends ServerConfigurator{
@@ -181,6 +182,7 @@ class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversation
   override def getProfiles(ids:String *):List[Profile] = Nil
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")
+  override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {}
 }
 
 object TransientMeTL2011BackendAdaptorConfigurator extends ServerConfigurator{

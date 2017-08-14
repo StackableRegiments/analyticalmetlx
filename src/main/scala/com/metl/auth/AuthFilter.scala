@@ -504,7 +504,7 @@ class LoggedInFilter extends Filter with HttpReqUtils {
     session.setAttribute("user",user)
     session.setAttribute("userGroups",groups)
     session.setAttribute("userAttributes",attrs)
-    session.setAttribute("accountProvider",accountProvider)
+    session.setAttribute("userAccountProvider",accountProvider)
     //res.setHeader("REMOTE_USER",user) //I was hoping that this would drive the logger's remoteUser behaviour, but it doesn't appear to.
     val principal = MeTLPrincipal(true,user,groups,attrs)
     /*  //no, this entire block won't work.  Jetty now (didn't used to, and doesn't when embedded) correctly implements a particular JSR which specifies that all server/container libraries should be hidden from the servlet, and it does so by subtly changing the class of the outer servlet code from the libraries inside, such that the org.eclipse.jetty.server.Request is not the same type as the one given to us by the server.
