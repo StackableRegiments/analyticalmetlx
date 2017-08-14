@@ -2,7 +2,7 @@ import com.typesafe.sbt.SbtStartScript
 import SbtStartScript.StartScriptKeys._
 import com.earldouglas.xsbtwebplugin.WebPlugin
 
-name := "analyticalmetlx"
+name := "openStackable"
 organization := "com.stackableregiments"
 version := "1.19.1"
 
