@@ -31,8 +31,8 @@
   <!--
       <logger name="com.metl.model.XmppBridgingHistoryCachingRoom" level="TRACE"/>
   -->
-  <logger name="com.metl.comet.MeTLActor" level="DEBUG"/>
-  <logger name="com.metl.comet.MeTLJsonConversationChooserActor" level="DEBUG"/>
+  <!--<logger name="com.metl.comet.MeTLActor" level="DEBUG"/>-->
+  <!--<logger name="com.metl.comet.MeTLJsonConversationChooserActor" level="DEBUG"/>-->
   <logger name="com.metl.h2.SqlInterface" level="WARN"/>
   <logger name="com.metl.data.Conversation" level="WARN"/>
   <logger name="com.metl.data.ByTotalGroups" level="TRACE"/>
@@ -50,4 +50,8 @@
   <root level="WARN">
     <appender-ref ref="STDOUT"/>
   </root>
+  <logger name="com.metl.comet.TrainingManual" level="DEBUG"/>
+  <logger name="com.metl.comet.TrainingPage" level="DEBUG"/>
+  <logger name="com.metl.comet.TrainerActor" level="DEBUG"/>
+  <logger name="com.metl.model.Importer" level="TRACE"/>
 </configuration>
