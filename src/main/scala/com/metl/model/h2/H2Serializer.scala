@@ -565,5 +565,21 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     })
     g
   })
-
+  def toProfile(i:H2Profile):Profile = Stopwatch.time("H2Serializer.toProfile",{
+    val c = decStanza(i)
+    val attrs = Map((for {
+      attr <- (scala.xml.XML.loadString(i.attrs.get) \ "attributes" \ "attribute")
+      attrName <- (attr \ "@name").headOption.map(_.text)
+      attrValue = attr.text
+    } yield {
+      (attrName,attrValue)
+    }):_*)
+    Profile(config,c.timestamp,i.profileId.get,i.name.get,attrs,c.audiences)
+  })
+  override def fromProfile(i:Profile):H2Profile = Stopwatch.time("H2Serializer.fromProfile",{
+    val attrs = <attributes>{i.attributes.toList.map(attr => {
+      <attribute name={attr._1}>{attr._2}</attribute>
+    })}</attributes>
+    incStanza(H2Profile.create,i,"profile").profileId(i.id).name(i.name).attrs(attrs.toString)
+  })
 }

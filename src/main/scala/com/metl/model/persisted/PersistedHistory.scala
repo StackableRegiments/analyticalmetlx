@@ -11,4 +11,7 @@ class PersistedHistory(config:ServerConfiguration,dbInterface:PersistenceInterfa
   def getMeTLHistory(jid:String) = Stopwatch.time("EmbeddedHistory.getMeTLHistory", {
     dbInterface.getHistory(jid)
   })
+  def getProfiles(ids:String *):List[Profile] = dbInterface.getProfiles(ids:_*)
+  def createProfile(name:String,attrs:Map[String,String]):Profile = dbInterface.createProfile(name,attrs)
+  def updateProfile(id:String,profile:Profile):Profile = dbInterface.updateProfile(id,profile)
 }

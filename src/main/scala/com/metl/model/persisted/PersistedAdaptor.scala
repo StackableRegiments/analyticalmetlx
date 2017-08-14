@@ -42,4 +42,7 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def getResource(identifier:String):Array[Byte] = resourceProvider.getResource(identifier)
   override def insertResource(data:Array[Byte]):String = resourceProvider.insertResource(data)
   override def upsertResource(identifier:String,data:Array[Byte]):String = resourceProvider.upsertResource(identifier,data)
+  override def getProfiles(ids:String *):List[Profile] = history.getProfiles(ids:_*)
+  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = history.createProfile(name,attrs)
+  override def updateProfile(id:String,profile:Profile):Profile = history.updateProfile(id,profile)
 }

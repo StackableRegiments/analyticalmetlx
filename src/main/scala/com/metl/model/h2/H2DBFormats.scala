@@ -18,12 +18,14 @@ object H2Constants{
   val privacy = 20
   val metlType = 64
   val unhandledType = 64
+  val profileName = 64
+  val profileId = 64
 }
 
-abstract class MappedMeTLString[A <: Mapper[A]](owner:A,length:Int) extends MappedPoliteString(owner,length){
+abstract class MappedMeTLString[A <: Mapper[A]](owner:A,length:Int) extends MappedPoliteString[A](owner,length){
 }
 
-abstract class H2MeTLIndexedString[A <: Mapper[A]](owner:A,length:Int) extends MappedMeTLString(owner,length) {
+abstract class H2MeTLIndexedString[A <: Mapper[A]](owner:A,length:Int) extends MappedMeTLString[A](owner,length) {
   override def dbIndexed_? = true
 }
 
@@ -75,6 +77,15 @@ class H2UnhandledContent extends H2MeTLContent[H2UnhandledContent] with H2MeTLUn
   def getSingleton = H2UnhandledContent
 }
 object H2UnhandledContent extends H2UnhandledContent with LongKeyedMetaMapper[H2UnhandledContent] {
+}
+
+class H2Profile extends H2MeTLStanza[H2Profile] {
+  def getSingleton = H2Profile
+  object name extends MappedMeTLString(this,H2Constants.profileName)
+  object profileId extends MappedMeTLString(this,H2Constants.profileId)
+  object attrs extends MappedText(this)
+}
+object H2Profile extends H2Profile with LongKeyedMetaMapper[H2Profile] {
 }
 
 class H2Ink extends H2MeTLCanvasContent[H2Ink] {

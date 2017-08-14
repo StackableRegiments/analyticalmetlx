@@ -273,9 +273,13 @@ object Globals extends PropertyReader with Logger {
 
     }
   }
+  
   object currentUser {
     def is:String = casState.is.username
   }
+  
+  object availableProfiles extends SessionVar[List[Profile]](Nil)
+  object currentProfile extends SessionVar[Profile](Profile.empty)
   // special roles
   def isSuperUser:Boolean = casState.isSuperUser
   def isImpersonator:Boolean = casState.isImpersonator

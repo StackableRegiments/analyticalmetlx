@@ -78,6 +78,9 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def getResource(identifier:String):Array[Byte] = getResource(commonLocation,identifier)
   def insertResource(data:Array[Byte]):String = insertResource(commonLocation,data)
   def upsertResource(identifier:String,data:Array[Byte]):String = upsertResource(commonLocation,identifier,data)
+  def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile
+  def getProfiles(ids:String *):List[Profile]
+  def updateProfile(id:String,profile:Profile):Profile
 
   //shutdown is a function to be called when the serverConfiguration is to be disposed
   def shutdown:Unit = {}
@@ -208,6 +211,9 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def getResource(identifier:String):Array[Byte] = Array.empty[Byte]
   override def insertResource(data:Array[Byte]):String = ""
   override def upsertResource(identifier:String,data:Array[Byte]):String = ""
+  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
+  override def getProfiles(ids:String *):List[Profile] = Nil
+  override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
 }
 
 object EmptyBackendAdaptorConfigurator extends ServerConfigurator{
@@ -242,6 +248,9 @@ object FrontendSerializationAdaptor extends ServerConfiguration("frontend","fron
   override def getResource(identifier:String):Array[Byte] = Array.empty[Byte]
   override def insertResource(data:Array[Byte]):String = ""
   override def upsertResource(identifier:String,data:Array[Byte]):String = ""
+  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
+  override def getProfiles(ids:String *):List[Profile] = Nil
+  override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
 }
 
 object FrontendSerializationAdaptorConfigurator extends ServerConfigurator{
@@ -278,4 +287,7 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def shutdown:Unit = sc.shutdown
   override def isReady:Boolean = sc.isReady
   override def getMockHistory:History = sc.getMockHistory
+  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = sc.createProfile(name,attrs,audiences)
+  override def getProfiles(ids:String *):List[Profile] = sc.getProfiles(ids:_*)
+  override def updateProfile(id:String,profile:Profile):Profile = sc.updateProfile(id,profile)
 }

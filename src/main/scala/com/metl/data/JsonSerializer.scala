@@ -1206,4 +1206,31 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("gradePrivateComment",JString(s))
     }) ::: parseMeTLContent(input))
   })
+  override def toProfile(input:JValue):Profile = Stopwatch.time("JsonSerializer.toProfile",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val name = getStringByName(j,"name")
+        val id = getStringByName(j,"id")
+        val attrs = Map((for {
+          JField(attrName,JString(attrValue)) <- j \ "attributes" 
+        } yield {
+          (attrName,attrValue)
+        }):_*)
+        Profile(config, m.timestamp, id, name, attrs, m.audiences)
+      }
+      case _ => Profile.empty
+    }
+   
+  })
+  override def fromProfile(input:Profile):JValue = Stopwatch.time("JsonSerializer.fromProfile",{
+    toJsObj("profile",List(
+      JField("name",JString(input.name)),
+      JField("id",JString(input.id)),
+      JField("attributes",JObject(input.attributes.toList.map(attr => {
+        JField(attr._1,JString(attr._2))
+      })))
+    ) ::: parseMeTLContent(input))
+  })
+  
 }

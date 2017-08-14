@@ -68,6 +68,9 @@ class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,o
 		debug("postedResource response: %s".format(responseString))
 		((XML.loadString(responseString) \\ "resource").head \ "@url").text
 	}
+  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
+  override def getProfiles(ids:String *):List[Profile] = Nil
+  override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
 }
 
 object MeTL2011BackendAdaptorConfigurator extends ServerConfigurator{
@@ -173,7 +176,9 @@ class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversation
 		debug("postedResource response: %s".format(responseString))
 		((XML.loadString(responseString) \\ "resource").head \ "@url").text
 	}
-
+  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
+  override def getProfiles(ids:String *):List[Profile] = Nil
+  override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
 }
 
 object TransientMeTL2011BackendAdaptorConfigurator extends ServerConfigurator{

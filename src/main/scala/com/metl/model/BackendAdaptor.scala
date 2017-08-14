@@ -436,6 +436,9 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def getResource(jid:String,identifier:String):Array[Byte] = Array.empty[Byte]
   override def insertResource(jid:String,data:Array[Byte]):String = ""
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
+  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
+  override def getProfiles(ids:String *):List[Profile] = Nil
+  override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
 }
 
 case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy,timeToLiveSeconds:Option[Int]=None)

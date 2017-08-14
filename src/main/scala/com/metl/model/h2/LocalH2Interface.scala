@@ -8,6 +8,8 @@ import java.util.Date
 
 import net.liftweb.mapper._
 import net.liftweb.common._
+import net.liftweb.util._
+import Helpers._
 
 import scala.compat.Platform.EOL
 import _root_.net.liftweb.mapper.{ConnectionManager, DB, DefaultConnectionIdentifier, Schemifier, StandardDBVendor}
@@ -69,7 +71,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2BooleanGradeValue,
         H2TextGradeValue,
         H2ChatMessage,
-        H2UndeletedCanvasContent
+        H2UndeletedCanvasContent,
+        H2Profile
       ):_*
     )
     // this starts our pool in advance
@@ -602,4 +605,17 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       insertResource(jid,data)
     })
   })
+  def getProfiles(ids:String *):List[Profile] = Stopwatch.time("H2Interface.getProfiles",{
+    H2Profile.findAll(ByList(H2Profile.profileId,ids.toList)).groupBy(_.profileId.get).toList.map(_._2).flatMap(_.sortBy(_.timestamp.get).headOption.map(serializer.toProfile _))
+  })
+  protected def createProfileId:String = nextFuncName
+  def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = {
+    val newP = Profile(config,new Date().getTime,createProfileId,name,attrs,Nil)
+    val hp = serializer.fromProfile(newP)
+    hp.save
+    serializer.toProfile(hp)
+  }
+  def updateProfile(id:String,profile:Profile):Profile = {
+    serializer.toProfile(serializer.fromProfile(profile.adjustTimestamp(new Date().getTime)).profileId(id).saveMe)
+  }
 }

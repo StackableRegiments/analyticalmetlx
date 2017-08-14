@@ -32,4 +32,9 @@ abstract class PersistenceInterface(config:ServerConfiguration) {
   def getResource(jid:String,identity:String):Array[Byte]
   def insertResource(jid:String,data:Array[Byte]):String
   def upsertResource(jid:String,identity:String,data:Array[Byte]):String
+
+  //profiles
+  def getProfiles(ids:String *):List[Profile]
+  def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile
+  def updateProfile(id:String,profile:Profile):Profile
 }

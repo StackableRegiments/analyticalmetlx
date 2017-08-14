@@ -92,7 +92,6 @@ object Point{
   val empty = Point(0.0,0.0,0.0)
 }
 
-case class Presentation(override val server:ServerConfiguration,conversation:Conversation,stanzas:Map[Int,List[MeTLStanza]] = Map.empty[Int,List[MeTLStanza]],metaData:List[Tuple2[String,String]] = List.empty[Tuple2[String,String]],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
 object Presentation{
   def empty = Presentation(ServerConfiguration.empty,Conversation.empty)
 }
@@ -269,6 +268,8 @@ class MeTLStanza(override val server:ServerConfiguration,val author:String,val t
     case _ => false
   }
 }
+
+case class Presentation(override val server:ServerConfiguration,conversation:Conversation,stanzas:Map[Int,List[MeTLStanza]] = Map.empty[Int,List[MeTLStanza]],metaData:List[Tuple2[String,String]] = List.empty[Tuple2[String,String]],override val audiences:List[Audience] = Nil) extends MeTLData(server,audiences)
 object MeTLUnhandledStanza {
   def empty = MeTLUnhandledStanza(ServerConfiguration.empty,"",0L,"","null")
   def empty(unhandled:String,valueType:String) = MeTLUnhandledStanza(ServerConfiguration.empty,"",0L,unhandled,valueType)
@@ -284,6 +285,13 @@ object MeTLTheme {
 case class MeTLTheme(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,location:String,theme:Theme,override val audiences:List[Audience]) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTimestamp:Long) = copy(timestamp = newTimestamp)
 }
+object Profile {
+  def empty = Profile(ServerConfiguration.empty,0L,"","",Map.empty[String,String],Nil)
+}
+case class Profile(override val server:ServerConfiguration, override val timestamp:Long, id:String, name:String, attributes:Map[String,String],override val audiences:List[Audience] = Nil) extends MeTLStanza(server,"",timestamp,audiences){
+  override def adjustTimestamp(newTimestamp:Long) = copy(timestamp = newTimestamp)
+}
+
 case class Attendance(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,location:String,present:Boolean,override val audiences:List[Audience]) extends MeTLStanza(server,author,timestamp,audiences){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime) = Stopwatch.time("Attendance.adjustTimestamp",copy(timestamp = newTime))
 }

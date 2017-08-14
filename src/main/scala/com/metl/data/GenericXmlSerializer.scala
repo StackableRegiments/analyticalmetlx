@@ -862,4 +862,26 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <gradePrivateComment>{s}</gradePrivateComment>
     }))
   })
+  override def toProfile(input:NodeSeq):Profile = Stopwatch.time("GenericXmlSerializer.toProfile",{
+    val m = parseMeTLContent(input,config)
+    val name = getStringByName(input,"name")
+    val id = getStringByName(input,"id")
+    val attrs = Map((for {
+      attr <- input \ "attributes" \ "attribute"
+      attrName <- (attr \ "@name").headOption.map(_.text)
+      attrValue = attr.text
+    } yield {
+      (attrName,attrValue)
+    }):_*)
+    Profile(config,m.timestamp,id,name,attrs,m.audiences)
+  })
+  override def fromProfile(input:Profile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromProfile",{
+    metlContentToXml("profile",input,List(
+      <name>{input.name}</name>,
+      <id>{input.id}</id>,
+      <attributes>{input.attributes.toList.map(attr => {
+        <attribute name={attr._1}>{attr._2}</attribute>
+      })}</attributes>
+    ))
+  })
 }
