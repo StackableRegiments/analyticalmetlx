@@ -1,3 +1,9 @@
+1.21.1
+
+Wrap <d2lGradebook/> in <externalLibGradebookConfigurator className="com.metl.d2l.D2LGradebookConfigurator">.
+Wrap <d2lGroupsProvider/> in <externalLibGroupProvider className="com.metl.d2l.D2LGroupsConfigurator">.
+Wrap <d2lGroupStore/> in <externalLibGroupStoreProvider className="com.metl.d2l.D2LGroupStoreConfigurator">.
+
 1.12.4
 
 New config:

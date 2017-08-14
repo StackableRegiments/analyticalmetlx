@@ -25,7 +25,7 @@ trait ReflectionUtil extends Logger {
 
 object ExternalGradebooks extends ReflectionUtil {
   def configureFromXml(in:NodeSeq):List[ExternalGradebook] = {
-    (in \\ "externalLibConfigurator").toList.flatMap(n => {
+    (in \\ "externalLibGradebookConfigurator").toList.flatMap(n => {
       for {
         className <- (n \ "@className").headOption.map(_.text).toList
         result:ExternalGradebook <- getExternalClasses[ExternalGradebook,ExternalGradebookConfigurator](className,n).right.toOption.getOrElse(Nil)
