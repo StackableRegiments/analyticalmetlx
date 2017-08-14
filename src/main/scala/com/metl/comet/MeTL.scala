@@ -30,6 +30,20 @@ import json.JsonAST._
 
 import com.metl.snippet.Metl._
 
+trait ProfileJsonHelpers {
+  val config = ServerConfiguration.default
+  def translateProfileIds(profileIds:List[String]):JObject = {
+    JObject(config.getProfiles(profileIds:_*).map(p => {
+      JField(p.id,renderProfile(p))
+    }))
+  }
+  def renderProfile(p:Profile):JObject = JObject(List(
+    JField("id",JString(p.id)),
+    JField("name",JString(p.name)),
+    JField("attributes",JObject(p.attributes.toList.map(a => JField(a._1,JString(a._2)))))
+  ))
+}
+
 case class JoinThisSlide(slide:String)
 
 object MeTLActorManager extends LiftActor with ListenerManager with Logger {
@@ -153,7 +167,7 @@ class MeTLConversationSearchActor extends MeTLConversationChooserActor {
   }
 }
 
-class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
+class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter with ProfileJsonHelpers {
   private val serializer = new JsonSerializer(ServerConfiguration.default)
 
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
@@ -167,6 +181,8 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
   private lazy val RECEIVE_QUERY = "receiveQuery"
+  private lazy val RECEIVE_USERPROFILE = "receiveProfile"
+  private lazy val RECEIVE_PROFILES = "receiveProfiles"
 
   protected implicit val formats = net.liftweb.json.DefaultFormats
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))//JObject(List(JField("type",JString(eg.ouType)),JField("value",JString(eg.name))))).toList)
@@ -221,6 +237,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   }
   override def render = OnLoad(
     Call(RECEIVE_USERNAME,JString(username)) &
+    Call(RECEIVE_USERPROFILE,renderProfile(Globals.currentProfile.is)) &
       Call(RECEIVE_USER_GROUPS,getUserGroups) &
       Call(RECEIVE_QUERY,JString(query.getOrElse(""))) &
       Call(RECEIVE_CONVERSATIONS,serializer.fromConversationList(listing.map(c => refreshForeignRelationship(c,username,Globals.getUserGroups)))) &
@@ -259,7 +276,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
 }
 
 
-abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
+abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter with ProfileJsonHelpers{
   protected def perConversationAction(conv:Conversation):CssSel
   protected def perImportAction(conv:Conversation):CssSel
   protected def aggregateConversationAction(convs:Seq[Conversation]):CssSel = {
@@ -278,6 +295,8 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
   private lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
+  private lazy val RECEIVE_USERPROFILE = "receiveProfile"
+  private lazy val RECEIVE_PROFILES = "receiveProfiles"
 
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => JObject(List(
     JField("type",JString(eg.ouType)),
@@ -293,7 +312,10 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
     ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
     ClientSideFunction("getSearchResult",List("query"),(args) => {
       serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(getArgAsString(args(0)).toLowerCase.trim)))
-    },Full(RECEIVE_CONVERSATIONS))
+    },Full(RECEIVE_CONVERSATIONS)),
+    ClientSideFunction("getProfiles",List("profileIds"),(args) => {
+      translateProfileIds(getArgAsListOfStrings(args(0)))
+    },Full(RECEIVE_PROFILES))
   )
 
   override def registerWith = MeTLConversationSearchActorManager
@@ -386,7 +408,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
   }
 }
 
-class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
+class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter with ProfileJsonHelpers{
   import com.metl.view._
   import net.liftweb.json.Extraction
   import net.liftweb.json.DefaultFormats
@@ -398,9 +420,14 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   private lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   private lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
   private lazy val RECEIVE_SHOW_LINKS = "receiveShowLinks"
+  private lazy val RECEIVE_PROFILES = "receiveProfiles"
+  private lazy val RECEIVE_USERPROFILE = "receiveProfile"
   implicit val formats = net.liftweb.json.DefaultFormats
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))
   override lazy val functionDefinitions = List(
+    ClientSideFunction("getProfiles",List("profileIds"),(args) => {
+      translateProfileIds(getArgAsListOfStrings(args(0)))
+    },Full(RECEIVE_PROFILES)),
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
@@ -521,6 +548,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   override def render = {
     OnLoad(conversation.filter(c => shouldModifyConversation(c)).map(c => {
       Call(RECEIVE_USERNAME,JString(username)) &
+      Call(RECEIVE_USERPROFILE,renderProfile(Globals.currentProfile.is)) &
       Call(RECEIVE_USER_GROUPS,getUserGroups) &
       Call(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(c,username,Globals.getUserGroups))) &
       Call(RECEIVE_SHOW_LINKS,showLinks)
@@ -592,7 +620,7 @@ trait JArgUtils {
   }
 }
 
-class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter {
+class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with ConversationFilter with ProfileJsonHelpers{
   import net.liftweb.json.Extraction
   import net.liftweb.json.DefaultFormats
   implicit val formats = net.liftweb.json.DefaultFormats
@@ -621,9 +649,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   private lazy val REMOVE_TOK_BOX_SESSIONS = "removeTokBoxSessions"
   private lazy val RECEIVE_TOK_BOX_ARCHIVES = "receiveTokBoxArchives"
   private lazy val RECEIVE_TOK_BOX_BROADCAST = "receiveTokBoxBroadcast"
+  private lazy val RECEIVE_USERPROFILE = "receiveProfile"
+  private lazy val RECEIVE_PROFILES = "receiveProfiles"
   protected var tokSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   protected var tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   override lazy val functionDefinitions = List(
+    ClientSideFunction("getProfiles",List("profileIds"),(args) => {
+      translateProfileIds(getArgAsListOfStrings(args(0)))
+    },Full(RECEIVE_PROFILES)),
     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
       JArray(for {
         tb <- Globals.tokBox.toList
@@ -1304,6 +1337,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       })
     })
     val receiveUsername:Box[JsCmd] = Full(Call(RECEIVE_USERNAME,JString(username)))
+    val receiveUserProfile:Box[JsCmd] = Full(Call(RECEIVE_USERPROFILE,renderProfile(Globals.currentProfile.is)))
     trace(receiveUsername)
     val receiveUserGroups:Box[JsCmd] = Full(Call(RECEIVE_USER_GROUPS,getUserGroups))
     trace(receiveUserGroups)
@@ -1392,7 +1426,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     } yield {
       hideLoader
     }
-    val jsCmds:List[Box[JsCmd]] = List(receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveCurrentSlide,receiveConversationDetails,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled) ::: receiveTokBoxSlideSpecificSessions ::: receiveTokBoxSessions ::: List(receiveTokBoxBroadcast,loadComplete)
+    val jsCmds:List[Box[JsCmd]] = List(receiveUserProfile,receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveCurrentSlide,receiveConversationDetails,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled) ::: receiveTokBoxSlideSpecificSessions ::: receiveTokBoxSessions ::: List(receiveTokBoxBroadcast,loadComplete)
     jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {

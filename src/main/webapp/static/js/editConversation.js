@@ -1,6 +1,10 @@
 
 var Conversation = (function(){
 	var showLinks = true;
+		var profiles = {};
+		var receiveProfilesFunc = function(newProfiles){
+			profiles = _.merge(profiles,newProfiles);
+		};
     var conversation = {};
     var userGroups = [];
     var username = "";
@@ -326,6 +330,7 @@ var Conversation = (function(){
         receiveUserGroups:receiveUserGroupsFunc,
         receiveUsername:receiveUsernameFunc,
         receiveConversationDetails:receiveConversationDetailsFunc,
+				receiveProfiles:receiveProfilesFunc,
         getConversationDetails:getConversationDetailsFunc,
         getUsername:getUsernameFunc,
         getUserGroups:getUserGroupsFunc,
@@ -356,4 +361,9 @@ function receiveNewConversationDetails(details){
 function receiveShowLinks(shouldShowLinks){
 	console.log("receivedShowLinks:",shouldShowLinks);
 	Conversation.setLinkVisibility(shouldShowLinks);
+}
+function receiveProfiles(profiles){ //invoked by Lift
+	Conversations.receiveProfiles(profiles);
+}
+function receiveProfile(profile){ //invoked by Lift
 }

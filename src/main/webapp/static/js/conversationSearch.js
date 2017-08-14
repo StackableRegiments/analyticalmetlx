@@ -6,6 +6,7 @@ var Conversations = (function(){
     var importTemplate = {};
     var importListing = undefined;
 
+		var profiles = {};
     var currentQuery = "";
     var currentSearchResults = [];
     var currentImports = [];
@@ -19,6 +20,9 @@ var Conversations = (function(){
 
     var searchPermitted = false;
 
+		var receiveProfilesFunc = function(newProfiles){
+			profiles = _.merge(profiles,newProfiles);
+		};
     $(function(){
         var DateField = function(config){
             jsGrid.Field.call(this,config);
@@ -179,7 +183,7 @@ var Conversations = (function(){
                 }},
                 { name:"title", type:"text", title:"Title", readOnly:true },
                 {name:"creation",type:"dateField",title:"Created"},
-                {name:"author",type:"text",title:"Author",readOnly:true},
+                {name:"authorName",type:"text",title:"Author",readOnly:true},
                 {name:"subject",type:"conversationSharingField",title:"Sharing",readOnly:true,itemTemplate:function(subject,conv){
 									var elem = $("<span/>");
 									var ufr = _.find(userGroups,function(g){
@@ -309,6 +313,7 @@ var Conversations = (function(){
                     importing:true,
                     title:sprintf("%s - %s - %s","import failure",cid.name,cid.a),
                     author:cid.author,
+										authorName:cid.authorName,
                     jid:cid.id,
                     newConversation:true,
                     creation:new Date().getTime(),
@@ -329,6 +334,7 @@ var Conversations = (function(){
                     importing:true,
                     title:cid.name,
                     author:cid.author,
+										authorName:cid.authorName,
                     jid:cid.id,
                     newConversation:true,
                     creation:new Date().getTime(),
@@ -459,7 +465,8 @@ var Conversations = (function(){
         search:searchFunc,
         create:createFunc,
         getUserGroups:function(){return userGroups;},
-        getUsername:function(){return username;}
+        getUsername:function(){return username;},
+				receiveProfiles:receiveProfilesFunc
     };
 })();
 
@@ -494,4 +501,9 @@ function receiveImportDescriptions(importDescs){ //invoked by Lift
 }
 function receiveQuery(query){ //invoked by Lift
     Conversations.receiveQuery(query);
+}
+function receiveProfiles(profiles){ //invoked by Lift
+	Conversations.receiveProfiles(profiles);
+}
+function receiveProfile(profile){ //invoked by Lift
 }

@@ -129,7 +129,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     List(
       JField("author",JString(input.author)),
       JField("timestamp",JInt(input.timestamp))
-    ) ::: parseAudiences(input)
+    ) ::: config.getProfiles(input.author).headOption.map(p => JField("authorName",JString(p.name))).toList ::: parseAudiences(input)
   }
   protected def parseCanvasContent(input:MeTLCanvasContent):List[JField] = {
     List(
@@ -897,7 +897,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("permissions",fromPermissions(input.permissions)),
       JField("blacklist",JArray(input.blackList.map(bli => JString(bli)).toList)),
       JField("configName",JString(input.server.name))
-    ) ::: input.foreignRelationship.toList.map(fr => {
+    ) ::: config.getProfiles(input.author).headOption.map(p => JField("authorName",JString(p.name))).toList ::: input.foreignRelationship.toList.map(fr => {
       JField("foreignRelationship",JObject(List(
         JField("system",JString(fr.system)),
         JField("key",JString(fr.key))
