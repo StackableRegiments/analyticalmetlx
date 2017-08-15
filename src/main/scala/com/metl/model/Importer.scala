@@ -303,7 +303,6 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
   }
 
   protected def importToCloudConvert(jid:String,filename:String,bytes:Array[Byte],inFormat:String,outFormat:String,server:ServerConfiguration,author:String):Either[Exception,Map[Int,History]] = {
-    ???
     //callSimpleCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
     callComplexCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
       Map({
@@ -311,7 +310,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         var offset = 1 - minSlideCount //depending on what the value of the lowest is, I need to push it to be 1, and then offset all the values by that much.
         slides.flatMap{
           case (index,imageBytes) => {
-            val slideId = (index/* + jid*/) + offset
+            val slideId = index + offset
             val identity = server.postResource(slideId.toString,nextFuncName,imageBytes) 
             val tag = "{author: '%s', privacy: '%s', id: '%s', isBackground: false, zIndex: 0, resourceIdentity: '%s', timestamp: %s}".format(author,"public",identity,identity, new java.util.Date().getTime)
             val dimensions = downscaler.getDimensionsOfImage(imageBytes) match {
@@ -361,26 +360,22 @@ object Importer extends Logger {
     }
   }
   protected def importExportedConversation(onBehalfOfUser:String,oldConv:Conversation,histories:Map[String,History]):Conversation = {
-    ???
-    /*
     val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
+    val newSlides = Map(oldConv.slides.map(s => {
+      (s.id,config.createSlide(s.author))
+    }):_*)
     val newConvWithOldSlides = newConv.copy(
       lastAccessed = new java.util.Date().getTime,
-      slides = oldConv.slides.map(s => s.copy(
-        groupSet = Nil,
-        id = s.id - oldConv.jid + newConv.jid,
-        audiences = Nil
-      ))
+      slides = oldConv.slides.flatMap(s => newSlides.get(s.id))
     )
     val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
     histories.foreach(h => {
       val oldJid = h._1
-      val offset = remoteConv.jid - oldConv.jid
       val serverName = remoteConv.server.name
       val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
-        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,oldAuthor))
-        case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset))
-        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString))
+        case PrivateSlideRoom(_sn,oldSlideJid,oldAuthor) => newSlides.get(oldSlideJid).map(newS => PrivateSlideRoom(serverName,newS.id,oldAuthor))
+        case SlideRoom(_sn,oldSlideJid) => newSlides.get(oldSlideJid).map(newS => SlideRoom(serverName,newS.id))
+        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid))
         case _ => None
       }
       newRoom.foreach(nr => {
@@ -392,7 +387,6 @@ object Importer extends Logger {
       })
     })
     remoteConv
-    */
   }
   def importConversation(title:String,filename:String,bytes:Array[Byte],author:String):Box[Conversation] = {
     val importId = nextFuncName
@@ -427,25 +421,27 @@ object Importer extends Logger {
     }
   }
   protected def foreignConversationImport(importId:String,server:ServerConfiguration,onBehalfOfUser:String,fakeConversation:Conversation,histories:Map[Int,History]):Box[Conversation] = {
-    ???
-    /*
     try {
       val finalCount = histories.keys.toList.length + 4
       onUpdate(ImportDescription(importId,fakeConversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("ready to import content",1,finalCount)),None))
       val conversation = server.createConversation(fakeConversation.title,fakeConversation.author)
+      val newSlides:Map[Int,Slide] = Map(histories.toList.map(h => (h._1,server.createSlide(onBehalfOfUser))):_*)
       val newConvWithAllSlides = conversation.copy(
         lastAccessed = new java.util.Date().getTime,
-        slides = histories.map(h => Slide(server,onBehalfOfUser,h._1 + conversation.jid, h._1 - 1)).toList
+        slides = histories.toList.flatMap(h => newSlides.get(h._1).map(s => s.copy(index = h._1 - 1))).toList
       )
       onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("slides measured",2,finalCount)),None))
       val remoteConv = server.updateConversation(conversation.jid.toString,newConvWithAllSlides)
       onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("slides created",3,finalCount)),None))
       var slideCount = 4
+
       histories.toList.foreach(tup => {
-        val newLoc = RoomMetaDataUtils.fromJid((tup._1 + conversation.jid).toString)
-        onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("queueing content for insertion for %s".format(newLoc),slideCount,finalCount)),None))
-        slideCount += 1
-        ServerSideBackgroundWorker ! CopyContent(server,tup._2,newLoc)
+        newSlides.get(tup._1).foreach(slide => {
+          val newLoc = RoomMetaDataUtils.fromJid(slide.id)
+          onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("queueing content for insertion for %s".format(newLoc),slideCount,finalCount)),None))
+          slideCount += 1
+          ServerSideBackgroundWorker ! CopyContent(server,tup._2,newLoc)
+        })
       })
       onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("all content queued for insertion",finalCount,finalCount)),None))
       Full(newConvWithAllSlides)
@@ -456,7 +452,6 @@ object Importer extends Logger {
         throw e
       }
     }
-    */
   }
   
 }
