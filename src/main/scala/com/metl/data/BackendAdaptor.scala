@@ -62,6 +62,7 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def detailsOfConversation(jid:String):Conversation
   def detailsOfSlide(jid:String):Slide
   def createConversation(title:String,author:String):Conversation
+  def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide
   def deleteConversation(jid:String):Conversation
   def renameConversation(jid:String,newTitle:String):Conversation
   def changePermissions(jid:String,newPermissions:Permissions):Conversation
@@ -193,6 +194,7 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def detailsOfConversation(jid:String) = Conversation.empty
   override def detailsOfSlide(jid:String) = Slide.empty
   override def createConversation(title:String,author:String) = Conversation.empty
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
   override def deleteConversation(jid:String):Conversation = Conversation.empty
   override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
@@ -228,6 +230,7 @@ object FrontendSerializationAdaptor extends ServerConfiguration("frontend","fron
   override def detailsOfConversation(jid:String) = Conversation.empty
   override def detailsOfSlide(jid:String) = Slide.empty
   override def createConversation(title:String,author:String) = Conversation.empty
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
   override def deleteConversation(jid:String):Conversation = Conversation.empty
   override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
@@ -262,6 +265,7 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def detailsOfConversation(jid:String) = sc.detailsOfConversation(jid)
   override def detailsOfSlide(jid:String) = sc.detailsOfSlide(jid)
   override def createConversation(title:String,author:String) = sc.createConversation(title,author)
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = sc.createSlide(author,slideType,grouping)
   override def deleteConversation(jid:String):Conversation = sc.deleteConversation(jid)
   override def renameConversation(jid:String,newTitle:String):Conversation = sc.renameConversation(jid,newTitle)
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = sc.changePermissions(jid,newPermissions)

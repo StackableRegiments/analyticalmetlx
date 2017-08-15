@@ -189,6 +189,7 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
     val local = Conversation(config,author,now.getTime,List(Slide(config,author,"%s_%s".format(jid,new java.util.Date().getTime),0)),"unrestricted","",jid,title,now.getTime,Permissions.default(config))
     pushConversationToServer(local)
   }
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
   override def deleteConversation(jid:String):Conversation = {
     val conv = detailsOf(jid)
     val now = new java.util.Date()

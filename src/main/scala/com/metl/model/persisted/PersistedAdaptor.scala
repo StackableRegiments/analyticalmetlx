@@ -26,6 +26,7 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def detailsOfSlide(jid:String) = conversations.detailsOfSlide(jid)
   override def getConversationsForSlideId(jid:String) = conversations.getConversationsForSlideId(jid)
   override def createConversation(title:String,author:String) = conversations.createConversation(title,author)
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = conversations.createSlide(author,slideType,grouping)
   override def deleteConversation(jid:String):Conversation = conversations.deleteConversation(jid)
   override def renameConversation(jid:String,newTitle:String):Conversation = conversations.renameConversation(jid,newTitle)
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = conversations.changePermissions(jid,newPermissions)

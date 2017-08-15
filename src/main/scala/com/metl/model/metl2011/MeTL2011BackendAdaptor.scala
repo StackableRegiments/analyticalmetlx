@@ -38,6 +38,7 @@ class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,o
   override def getConversationsForSlideId(jid:String) = conversations.getConversationsForSlideId(jid)
   override def detailsOfSlide(jid:String) = conversations.detailsOfSlide(jid)
   override def createConversation(title:String,author:String) = conversations.createConversation(title,author)
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = conversations.createSlide(author,slideType,grouping)
   override def deleteConversation(jid:String):Conversation = conversations.deleteConversation(jid)
   override def renameConversation(jid:String,newTitle:String):Conversation = conversations.renameConversation(jid,newTitle)
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = conversations.changePermissions(jid,newPermissions)
@@ -144,6 +145,7 @@ class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversation
   override def searchForConversationByCourse(courseId:String) = conversations.searchByCourse(courseId)
   override def detailsOfConversation(jid:String) = conversations.detailsOf(jid)
   override def createConversation(title:String,author:String) = Conversation.empty
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = conversations.createSlide(author,slideType,grouping)
   override def deleteConversation(jid:String):Conversation = Conversation.empty
   override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty

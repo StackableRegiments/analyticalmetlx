@@ -423,6 +423,7 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def detailsOfConversation(jid:String) = Conversation.empty
   override def detailsOfSlide(jid:String) = Slide.empty
   override def createConversation(title:String,author:String) = Conversation.empty
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[com.metl.data.GroupSet] = Nil):Slide = Slide.empty
   override def deleteConversation(jid:String):Conversation = Conversation.empty
   override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty

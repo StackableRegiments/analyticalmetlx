@@ -787,8 +787,8 @@ trait ConversationMatchers {
 		  )
 	  }
 
-	def jid(expectedValue: Int) =
-	  new HavePropertyMatcher[Conversation, Int] {
+	def jid(expectedValue: String) =
+	  new HavePropertyMatcher[Conversation, String] {
 		def apply(stanza: Conversation) =
 		  HavePropertyMatchResult(
 			stanza.jid == expectedValue,

@@ -11,6 +11,7 @@ class PersistedConversations(config:ServerConfiguration,dbInterface:PersistenceI
   override def detailsOf(jid:String) = dbInterface.detailsOfConversation(jid)
   override def detailsOfSlide(jid:String) = dbInterface.detailsOfSlide(jid)
   override def createConversation(title:String,author:String):Conversation = dbInterface.createConversation(title,author)
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = dbInterface.createSlide(author,slideType,grouping)
   override def deleteConversation(jid:String):Conversation = dbInterface.deleteConversation(jid)
   override def renameConversation(jid:String,newTitle:String):Conversation = dbInterface.renameConversation(jid,newTitle)
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = dbInterface.changePermissionsOfConversation(jid,newPermissions)
