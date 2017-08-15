@@ -3,7 +3,7 @@ package com.metl.model
 import com.metl.TimeSpanParser
 import com.metl.liftAuthenticator._
 import com.metl.data._
-import com.metl.external.{Detail, ExternalGradebook, GroupsProvider, LiftAuthStateData, LiftAuthStateDataForbidden, MeTLingPotAdaptor, Member, OrgUnit}
+import com.metl.external.{Detail, ExternalGradebook, GroupsProvider, LiftAuthStateData, LiftAuthStateDataForbidden, LtiIntegration, MeTLingPotAdaptor, Member, OrgUnit}
 import com.metl.utils._
 import com.metl.view._
 import net.liftweb.http.SessionVar
@@ -160,12 +160,9 @@ object Globals extends PropertyReader with Logger {
   val remotePluginConversationChooserActorLifespan = Full(readTimespan(cometConfig,"remotePluginConversationChooserActorLifespan").getOrElse(2 minutes))
   val editConversationActorLifespan = Full(readTimespan(cometConfig,"conversationEditActorLifespan").getOrElse(2 minutes))
 
-  val ltiIntegrations = readNodes(readNode(propFile,"lti"),"remotePlugin").map(remotePluginNode => (readAttribute(remotePluginNode,"key"),readAttribute(remotePluginNode,"secret")))
   var metlingPots:List[MeTLingPotAdaptor] = Nil
-  val brightSpaceValenceIntegrations = {
-    val bsvin = readNode(propFile,"brightSpaceValence")
-    (readAttribute(bsvin,"url"),readAttribute(bsvin,"appId"),readAttribute(bsvin,"appKey"))
-  }
+
+  var ltiIntegrationPlugins:List[LtiIntegration] = ExternalLtiIntegrations.configureFromXml(readNode(propFile,"externalLibLtiConfigurator")).right.toOption.getOrElse(Nil)
 
   val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey").getOrElse("")
   val themeName = readText(propFile,"themeName").getOrElse("neutral")

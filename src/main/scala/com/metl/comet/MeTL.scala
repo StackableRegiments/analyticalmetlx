@@ -84,7 +84,7 @@ trait ConversationFilter {
 }
 
 class RemotePluginConversationChooserActor extends MeTLConversationChooserActor {
-  protected val ltiIntegration:BrightSparkIntegration = RemotePluginIntegration
+  protected val ltiIntegration:Option[LtiIntegration] = Globals.ltiIntegrationPlugins.headOption
   protected var ltiToken:Option[String] = None
   protected var ltiSession:Option[RemotePluginSession] = None
   override def lifespan = Globals.remotePluginConversationChooserActorLifespan
@@ -93,7 +93,7 @@ class RemotePluginConversationChooserActor extends MeTLConversationChooserActor 
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
       ltiToken = com.metl.snippet.Metl.getLtiTokenFromName(nameString)
-      ltiSession = ltiToken.flatMap(token => ltiIntegration.sessionStore.is.get(token))
+      ltiSession = ltiToken.flatMap(token => ltiIntegration.flatMap(_.sessionStore.is.get(token)))
     })
   }
   override def perConversationAction(conv:Conversation) = {

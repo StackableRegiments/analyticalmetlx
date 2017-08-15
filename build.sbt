@@ -103,7 +103,6 @@ libraryDependencies ++= {
     //for google openId connect authentication
     "com.google.api-client" % "google-api-client" % "1.22.0",
     "io.github.stackableregiments" %% "ldap" % "0.3.+",
-    // for brightspark integration
     "commons-codec" % "commons-codec" % "1.7",
     "commons-fileupload" % "commons-fileupload" % "1.3.2",
     "com.github.tototoshi" %% "scala-csv" % "1.3.3",
@@ -117,7 +116,7 @@ libraryDependencies ++= {
     //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
-    "io.github.stackableregiments" %% "external-data-types" % "0.0.1+"
+    "io.github.stackableregiments" %% "external-data-types" % "0.0.4+"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 

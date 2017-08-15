@@ -397,8 +397,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       SecurityListener.cleanupAllSessions
     })
     setupUserProfileProvidersFromFile(Globals.configurationFileLocation)
-    LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
-    LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
+
     Globals.metlingPots.foreach(_.init)
     info(configs)
   }

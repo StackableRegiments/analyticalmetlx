@@ -1,22 +1,17 @@
 package com.metl.model
 
 import com.metl.TimeSpanParser
-import com.metl.data.{Group => MeTLGroup, GroupSet => MeTLGroupSet, _}
 import com.metl.external.{Detail, ForeignRelationship, Group, GroupSet, GroupStoreData, GroupStoreProvider, GroupStoreProviderConfigurator, GroupsProvider, GroupsProviderConfigurator, LiftAuthStateData, Member, OrgUnit, PeriodicallyRefreshingFileReadingGroupsProvider, PersonalInformation}
 import com.metl.utils._
-import com.metl.view._
-import net.liftweb.http.SessionVar
-import net.liftweb.http.LiftRules
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
-import net.liftweb.util.Props
 
 import scala.io.Source
 import scala.xml.{Group => XmlGroup, Source => XmlSource, _}
 
 object GroupsProvider extends ReflectionUtil {
   def sanityCheck(g:GroupStoreData):Boolean = {
-    g.groupsForMembers.keys.toList.length > 0
+    g.groupsForMembers.keys.toList.nonEmpty
   }
   def existsDefaultTrue[A](in:Option[A],pred:A=>Boolean):Boolean = {
     in match {
@@ -84,7 +79,7 @@ object GroupsProvider extends ReflectionUtil {
             refreshPeriod,
             diskCache.read,
             Some(g => {
-              if (sanityCheck(g)){ // don't trash the entire file if the fetch from D2L is empty
+              if (sanityCheck(g)){ // don't trash the entire file if the fetch from the external provider is empty
                 diskCache.write(g)
               }
             })
@@ -510,7 +505,6 @@ class XmlGroupStoreDataFile(storeId:String,name:String,diskStorePath:String) ext
     }
   }
 }
-
 
 // original stuff
 
