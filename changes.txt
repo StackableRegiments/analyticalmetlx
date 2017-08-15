@@ -4,6 +4,8 @@ Wrap <d2lGradebook/> in <externalLibGradebookConfigurator className="com.metl.d2
 Wrap <d2lGroupsProvider/> in <externalLibGroupProvider className="com.metl.d2l.D2LGroupsConfigurator">.
 Wrap <d2lGroupStore/> in <externalLibGroupStoreProvider className="com.metl.d2l.D2LGroupStoreConfigurator">.
 
+Provide slu-adaptor jar on classpath.
+
 1.12.4
 
 New config:
