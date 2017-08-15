@@ -19,11 +19,12 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   }
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
-  override def getConversationForSlide(slideJid:String) = conversations.conversationFor(slideJid.toInt).toString
   override def getAllConversations = conversations.getAll
   override def searchForConversation(query:String) = conversations.search(query)
   override def searchForConversationByCourse(courseId:String) = conversations.searchByCourse(courseId)
-  override def detailsOfConversation(jid:String) = conversations.detailsOf(jid.toInt)
+  override def detailsOfConversation(jid:String) = conversations.detailsOf(jid)
+  override def detailsOfSlide(jid:String) = conversations.detailsOfSlide(jid)
+  override def getConversationsForSlideId(jid:String) = conversations.getConversationsForSlideId(jid)
   override def createConversation(title:String,author:String) = conversations.createConversation(title,author)
   override def deleteConversation(jid:String):Conversation = conversations.deleteConversation(jid)
   override def renameConversation(jid:String,newTitle:String):Conversation = conversations.renameConversation(jid,newTitle)

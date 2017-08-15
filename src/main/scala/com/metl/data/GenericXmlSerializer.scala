@@ -597,7 +597,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val slides = getXmlByName(input,"slide").map(s => toSlide(s)).toList
     val subject = getStringByName(input,"subject")
     val tag = getStringByName(input,"tag")
-    val jid = getIntByName(input,"jid")
+    val jid = getStringByName(input,"jid")
     val title = getStringByName(input,"title")
     val created = try {
       getLongByName(input,"creation")
@@ -650,7 +650,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
   override def toSlide(input:NodeSeq):Slide = Stopwatch.time("GenericXmlSerializer.toSlide",{
     val m = parseMeTLContent(input,config)
     val author = getStringByName(input,"author")
-    val id = getIntByName(input,"id")
+    val id = getStringByName(input,"id")
     val index = getIntByName(input,"index")
     val defHeight = getIntByName(input,"defaultHeight")
     val defWidth = getIntByName(input,"defaultWidth")

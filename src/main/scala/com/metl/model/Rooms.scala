@@ -48,14 +48,10 @@ case class ConversationRoom(override val server:String,jid:String) extends RoomM
   def cd:Conversation = ServerConfiguration.configForName(server).detailsOfConversation(jid.toString)
   override def getJid = jid
 }
-case class SlideRoom(override val server:String,jid:String,slideId:Int) extends RoomMetaData(server,MeTLRoomType.Slide){
-  def cd:Conversation = ServerConfiguration.configForName(server).detailsOfConversation(jid.toString)
-  def s:Slide = cd.slides.find(_.id == slideId).getOrElse(Slide.empty)
-  override def getJid = slideId.toString
+case class SlideRoom(override val server:String,slideId:String) extends RoomMetaData(server,MeTLRoomType.Slide){
+  override def getJid = slideId
 }
-case class PrivateSlideRoom(override val server:String,jid:String,slideId:Int,owner:String) extends RoomMetaData(server,MeTLRoomType.PrivateSlide){
-  def cd:Conversation = ServerConfiguration.configForName(server).detailsOfConversation(jid.toString)
-  def s:Slide = cd.slides.find(_.id == slideId).getOrElse(Slide.empty)
+case class PrivateSlideRoom(override val server:String,slideId:String,owner:String) extends RoomMetaData(server,MeTLRoomType.PrivateSlide){
   override def getJid = slideId.toString + owner
 }
 case class PersonalChatRoom(override val server:String,owner:String) extends RoomMetaData(server,MeTLRoomType.PersonalChatroom){
@@ -68,25 +64,14 @@ case object UnknownRoom extends RoomMetaData(EmptyBackendAdaptor.name,MeTLRoomTy
   override def getJid = ""
 }
 object RoomMetaDataUtils {
-  protected val numerics = Range.inclusive('0','9').toList
-  protected def splitJid(in:String):Tuple2[Int,String] = {
-    val first = in.takeWhile(i => numerics.contains(i)).toString
-    val second = in.dropWhile(i => numerics.contains(i)).toString
-    val jid = try {
-      first.toInt
-    } catch {
-      case e:Exception => 0
-    }
-    (jid,second)
-  }
-  def fromJid(jid:String,server:String = ServerConfiguration.default.name):RoomMetaData = {
-    splitJid(jid) match {
-      case (0,"") => UnknownRoom
-      case (0,"global") => GlobalRoom(server)
-      case (conversationJid,"") if (conversationJid % 1000 == 0) => ConversationRoom(server,conversationJid.toString)
-      case (slideJid,"") => SlideRoom(server,(slideJid - (slideJid % 1000)).toString,slideJid)
-      case (0,user) => PersonalChatRoom(server,user)
-      case (slideJid,user) => PrivateSlideRoom(server,(slideJid - (slideJid % 1000)).toString,slideJid,user)
+  def fromJid(incJid:String,server:String = ServerConfiguration.default.name):RoomMetaData = {
+    incJid.split("_").toList match {
+      case List("global") => GlobalRoom(server)
+      case List("c",jid,"t",time) => ConversationRoom(server,incJid)
+      case List("s",jid,"t",time) => SlideRoom(server,incJid)
+      //case List("c",jid,"t",time,user) => ConversationRoom(
+      case List("s",jid,"t",time,user) => PrivateSlideRoom(server,"s_%s_t_%s_".format(jid,time),user)
+      case List("u",user) => PersonalChatRoom(server,incJid)
       case _ => UnknownRoom
     }
   }
@@ -207,7 +192,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   def getGroupSets:List[GroupSet] = {
     roomMetaData match {
       case cr:ConversationRoom => cr.cd.slides.flatMap(s => s.groupSet).toList
-      case s:SlideRoom => s.s.groupSet.toList
+      //case s:SlideRoom => s.s.groupSet.toList
       case _ => Nil
     }
   }
@@ -316,13 +301,12 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         case _ => None
       }
     }
-    case u@UpdateThumb(slide) => joinedUsers.foreach(_._3 ! u)
-    case m@MotherMessage(html,audiences) => roomMetaData match {
-      case sl:SlideRoom => {
-        joinedUsers.foreach(j => j._3 ! MeTLChatMessage(config,"| mother |",new Date().getTime,nextFuncName,"html",html.toString,sl.cd.jid.toString,audiences))
-      }
-      case _ => None
-    }
+    case u@UpdateThumb(slide) if (roomMetaData match {
+      case cr@ConversationRoom(_,_convJid) => cr.cd.slides.exists(_.id == slide)
+      case _ => false
+    }) => joinedUsers.foreach(_._3 ! u)
+    case m@MotherMessage(html,audiences) => joinedUsers.foreach(j => j._3 ! MeTLChatMessage(config,"| mother |",new Date().getTime,nextFuncName,"html",html.toString,roomMetaData.getJid,audiences))
+    case _ => None
   }
   protected def catchAll:PartialFunction[Any,Unit] = {
     case _ => warn("MeTLRoom received unknown message")
@@ -539,7 +523,9 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       roomMetaData match {
         case s:SlideRoom => {
           trace("Snapshot update")
-          MeTLXConfiguration.getRoom(s.cd.jid.toString,configName) ! UpdateThumb(history.jid)
+          config.getConversationsForSlideId(s.getJid).foreach(cJid => {
+            MeTLXConfiguration.getRoom(cJid,configName) ! UpdateThumb(history.jid)
+          })
         }
         case _ => {}
       }

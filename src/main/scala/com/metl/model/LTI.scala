@@ -204,12 +204,17 @@ class BrightSparkIntegrationDispatch extends RestHelper {
       })
     }
     case req@Req(bsce :: "getConversationChooser" :: Nil,_,_) if bsce == brightSparkContextEndpoint => {
+      ???
+      /*
       lti.handleLtiRequest(req,pluginSession => {
         val redirectUrl = com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)
         Full(RedirectResponse(redirectUrl))
       })
+      */
     }
     case req@Req(bsce :: huce :: Nil,_,_) if bsce == brightSparkContextEndpoint && huce == handleUserContextEndpoint => () => {
+      ???
+      /*
       for (
         token <- req.param("ltiToken");
         response <- lti.handleLtiRequest(req,pluginSession => {
@@ -229,6 +234,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
       ) yield {
         response
       }
+      */
     }
     case req@Req(bsce :: "remotePluginConversationChosen" :: Nil,_,_) if bsce == brightSparkContextEndpoint => () => {
       for (

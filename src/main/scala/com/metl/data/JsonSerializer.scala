@@ -847,7 +847,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val slides = getListOfObjectsByName(input,"slides").map(s => toSlide(s)).toList
         val subject = getStringByName(input,"subject")
         val tag = getStringByName(input,"tag")
-        val jid = getIntByName(input,"jid")
+        val jid = getStringByName(input,"jid")
         val title = getStringByName(input,"title")
         val created = try {
           getLongByName(input,"creation")
@@ -890,7 +890,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("slides",JArray(input.slides.map(s => fromSlide(s)).toList)),
       JField("subject",JString(input.subject)),
       JField("tag",JString(input.tag)),
-      JField("jid",JInt(input.jid)),
+      JField("jid",JString(input.jid)),
       JField("title",JString(input.title)),
       JField("created",JString(new java.util.Date(input.created).toString())),
       JField("creation",JInt(input.created)),
@@ -908,7 +908,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     i match {
       case input:JObject => {
         val author = getStringByName(input,"author")
-        val id = getIntByName(input,"id")
+        val id = getStringByName(input,"id")
         val index = getIntByName(input,"index")
         val defaultHeight = getIntByName(input,"defaultHeight")
         val defaultWidth = getIntByName(input,"defaultWidth")
@@ -922,7 +922,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
   })
   override def fromSlide(input:Slide):JValue = Stopwatch.time("JsonSerializer.fromSlide",{
     JObject(List(
-      JField("id",JInt(input.id)),
+      JField("id",JString(input.id)),
       JField("author",JString(input.author)),
       JField("index",JInt(input.index)),
       JField("defaultHeight",JInt(input.defaultHeight)),

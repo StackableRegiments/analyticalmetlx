@@ -258,8 +258,8 @@ object StatelessHtml extends Stemmer with Logger {
           (h,isT)
         }
         case s:SlideRoom => {
-          val isT = Globals.isSuperUser || config.detailsOfConversation(s.jid.toString).author == username
-          val h = MeTLXConfiguration.getRoom(s.jid.toString,config.name).getHistory
+          val isT = Globals.isSuperUser //|| config.detailsOfConversation(s.jid.toString).author == username
+          val h = MeTLXConfiguration.getRoom(s.getJid,config.name).getHistory
           (h,isT)
         }
         case _ => (History.empty,false)
@@ -428,7 +428,7 @@ object StatelessHtml extends Stemmer with Logger {
           val edits = (c.created :: List(c.lastAccessed).filterNot(_ == c.created) :::
             commands.get(Some(c.jid.toString)).toList.flatten.map(_.timestamp)).groupBy(_ / rounding).values.flatMap(_.headOption).toList.map(JInt(_))
           JObject(List(
-            JField("jid",JInt(c.jid)),
+            JField("jid",JString(c.jid)),
             JField("author",JString(c.author)),
             JField("created",JInt(c.created)),
             JField("edits",JArray(edits)),
@@ -641,14 +641,14 @@ object StatelessHtml extends Stemmer with Logger {
           val newId = newSlide.id
           ServerSideBackgroundWorker ! CopyLocation(
             config,
-            SlideRoom(conv.server.name,conversation,oldId),
-            SlideRoom(conv.server.name,conversation,newId),
+            SlideRoom(conv.server.name,oldId),
+            SlideRoom(conv.server.name,newId),
             (s:MeTLStanza) => s.author == conv.author
           )
           ServerSideBackgroundWorker ! CopyLocation(
             config,
-            PrivateSlideRoom(conv.server.name,conversation,oldId,conv.author),
-            PrivateSlideRoom(conv.server.name,conversation,newId,conv.author),
+            PrivateSlideRoom(conv.server.name,oldId,conv.author),
+            PrivateSlideRoom(conv.server.name,newId,conv.author),
             (s:MeTLStanza) => s.author == conv.author
           )
         })
@@ -671,6 +671,8 @@ object StatelessHtml extends Stemmer with Logger {
     })
   }
   def duplicateConversationInternal(onBehalfOfUser:String,conversation:String):Box[Conversation] = {
+    ???
+    /*
     val oldConv = config.detailsOfConversation(conversation)
     if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,oldConv)){
       val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
@@ -709,6 +711,7 @@ object StatelessHtml extends Stemmer with Logger {
       val remoteConv2 = config.updateConversation(remoteConv.jid.toString,remoteConv)
       Full(remoteConv2)
     } else Empty
+    */
   }
 
   def duplicateConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
