@@ -301,10 +301,13 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         case _ => None
       }
     }
-    case u@UpdateThumb(slide) if (roomMetaData match {
-      case cr@ConversationRoom(_,_convJid) => cr.cd.slides.exists(_.id == slide)
-      case _ => false
-    }) => joinedUsers.foreach(_._3 ! u)
+    case u@UpdateThumb(slide) => {
+      warn("Received thumb request: %s => %s".format(roomMetaData,slide))
+      joinedUsers.foreach(ju => {
+        warn("notifying joinedUser: %s".format(ju))
+        ju._3 ! u
+      })
+    }
     case m@MotherMessage(html,audiences) => joinedUsers.foreach(j => j._3 ! MeTLChatMessage(config,"| mother |",new Date().getTime,nextFuncName,"html",html.toString,roomMetaData.getJid,audiences))
     case _ => None
   }
@@ -523,8 +526,10 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       roomMetaData match {
         case s:SlideRoom => {
           trace("Snapshot update")
-          config.getConversationsForSlideId(s.getJid).foreach(cJid => {
-            MeTLXConfiguration.getRoom(cJid,configName) ! UpdateThumb(history.jid)
+          val relatedConversations = config.getConversationsForSlideId(s.getJid)
+          println("updating snapshot for %s to %s".format(roomMetaData,relatedConversations))
+          relatedConversations.foreach(cJid => {
+            MeTLXConfiguration.getRoom(cJid,configName,ConversationRoom(config.name,cJid)) ! UpdateThumb(history.jid)
           })
         }
         case _ => {}

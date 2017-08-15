@@ -1279,7 +1279,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     debug("completedWorker: %s".format(name))
   })
   private def joinRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.joinRoomByJid(%s)".format(jid),{
-    MeTLXConfiguration.getRoom(jid,serverName) ! JoinRoom(username,userUniqueId,this)
+    val room = MeTLXConfiguration.getRoom(jid,serverName)
+    debug("joiningRoom by Jid: %s => %s".format(jid,room.roomMetaData))
+    room ! JoinRoom(username,userUniqueId,this)
   })
   private def leaveRoomByJid(jid:String,serverName:String = server) = Stopwatch.time("MeTLActor.leaveRoomByJid(%s)".format(jid),{
     MeTLXConfiguration.getRoom(jid,serverName) ! LeaveRoom(username,userUniqueId,this)
@@ -1404,7 +1406,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     if (shouldDisplayConversation(details)){
       debug("conversation available")
       currentConversation = Full(details)
-      val conversationJid = details.jid.toString
+      val conversationJid = details.jid
       tokSessions += ((conversationJid,None))
       joinRoomByJid(conversationJid)
       /*
