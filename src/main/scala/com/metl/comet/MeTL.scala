@@ -231,7 +231,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
     warn("localSetup for ConversationSearch [%s]".format(name))
     query = Some(name.flatMap(nameString => {
       com.metl.snippet.Metl.getQueryFromName(nameString)
-    }).getOrElse(username.toLowerCase.trim))
+    }).getOrElse(Globals.currentProfile.is.name.toLowerCase.trim))
     listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q),true))
     super.localSetup
   }

@@ -7,6 +7,7 @@ var Conversations = (function(){
     var importListing = undefined;
 
 		var profiles = {};
+		var myProfile = {};
     var currentQuery = "";
     var currentSearchResults = [];
     var currentImports = [];
@@ -22,6 +23,9 @@ var Conversations = (function(){
 
 		var receiveProfilesFunc = function(newProfiles){
 			profiles = _.merge(profiles,newProfiles);
+		};
+		var receiveProfileFunc = function(profile){
+			myProfile = profile;
 		};
     $(function(){
         var DateField = function(config){
@@ -253,7 +257,7 @@ var Conversations = (function(){
         searchBox.on("keyup",searchBoxChangeFunc);
         var createConversationButton = $("#createConversationButton");
         createConversationButton.on("click",function(){
-            var title = sprintf("%s at %s",username,new Date().toString());
+            var title = sprintf("%s at %s",myProfile.name,new Date().toString());
             createFunc(title);
         });
         permitOneSearch();
@@ -466,7 +470,8 @@ var Conversations = (function(){
         create:createFunc,
         getUserGroups:function(){return userGroups;},
         getUsername:function(){return username;},
-				receiveProfiles:receiveProfilesFunc
+				receiveProfiles:receiveProfilesFunc,
+				receiveProfile:receiveProfileFunc
     };
 })();
 
@@ -506,4 +511,5 @@ function receiveProfiles(profiles){ //invoked by Lift
 	Conversations.receiveProfiles(profiles);
 }
 function receiveProfile(profile){ //invoked by Lift
+	Conversations.receiveProfile(profile);
 }
