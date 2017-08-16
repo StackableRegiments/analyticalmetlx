@@ -85,7 +85,7 @@ class MockMeTLingPotAdaptor extends MeTLingPotAdaptor {
 
 object MeTLingPot extends Logger {
   import scala.xml._
-  protected def wrapWith(in:NodeSeq,mpa:MeTLingPotAdaptor):MeTLingPotAdaptor = {
+  def wrapWith(in:NodeSeq,mpa:MeTLingPotAdaptor):MeTLingPotAdaptor = {
     List((n:NodeSeq,a:MeTLingPotAdaptor) => {
       (for {
         size <- (n \ "@burstSize").headOption.map(_.text.toInt)

@@ -1,6 +1,7 @@
 package com.metl.model
 
-import com.metl.external.{GroupStoreProviderConfigurator, GroupStoreProvider}
+import com.metl.external.{GroupStoreProvider, GroupStoreProviderConfigurator}
+import com.metl.utils.ReflectionUtil
 
 import scala.xml.NodeSeq
 

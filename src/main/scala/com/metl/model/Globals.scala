@@ -160,7 +160,7 @@ object Globals extends PropertyReader with Logger {
   val remotePluginConversationChooserActorLifespan = Full(readTimespan(cometConfig,"remotePluginConversationChooserActorLifespan").getOrElse(2 minutes))
   val editConversationActorLifespan = Full(readTimespan(cometConfig,"conversationEditActorLifespan").getOrElse(2 minutes))
 
-  var metlingPots:List[MeTLingPotAdaptor] = Nil
+  var metlingPots:List[MeTLingPotAdaptor] = ExternalMeTLingPotAdaptors.configureFromXml(readNode(propFile,"metlingPotAdaptors")).right.toOption.getOrElse(Nil)
 
   var ltiIntegrationPlugins:List[LtiIntegration] = ExternalLtiIntegrations.configureFromXml(readNode(propFile,"externalLibLtiConfigurator")).right.toOption.getOrElse(Nil)
 

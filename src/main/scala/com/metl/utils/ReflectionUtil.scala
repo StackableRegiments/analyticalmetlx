@@ -1,9 +1,8 @@
-package com.metl.model
+package com.metl.utils
 
-import com.metl.external.{ExternalGradebook, ExternalGradebookConfigurator}
 import net.liftweb.common.Logger
 
-import scala.xml._
+import scala.xml.NodeSeq
 
 trait ReflectionUtil extends Logger {
   protected def getExternalClasses[VendedClass,VendorClass <: {def configureFromXml(in:NodeSeq):Either[Exception,List[VendedClass]]}](className:String,properties:NodeSeq):Either[Exception,List[VendedClass]] = {
@@ -23,18 +22,5 @@ trait ReflectionUtil extends Logger {
         Left(e)
       }
     }
-  }
-}
-
-object ExternalGradebooks extends ReflectionUtil {
-  def configureFromXml(in:NodeSeq):List[ExternalGradebook] = {
-    (in \\ "externalLibGradebookConfigurator").toList.flatMap(n => {
-      for {
-        className <- (n \ "@className").headOption.map(_.text).toList
-        result:ExternalGradebook <- getExternalClasses[ExternalGradebook,ExternalGradebookConfigurator](className,n).right.toOption.getOrElse(Nil)
-      } yield {
-        result
-      }
-    })
   }
 }

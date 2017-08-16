@@ -391,7 +391,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
-    setupMetlingPotsFromFile(Globals.configurationFileLocation)
     LiftRules.unloadHooks.append(() => {
       Globals.metlingPots.foreach(_.shutdown)
       SecurityListener.cleanupAllSessions

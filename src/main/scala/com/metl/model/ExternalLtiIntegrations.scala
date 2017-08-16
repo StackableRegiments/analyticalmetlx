@@ -1,6 +1,7 @@
 package com.metl.model
 
 import com.metl.external.{ExternalLtiConfigurator, LtiIntegration}
+import com.metl.utils.ReflectionUtil
 
 import scala.xml.NodeSeq
 
