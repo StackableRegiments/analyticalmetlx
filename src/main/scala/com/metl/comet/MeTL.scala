@@ -185,7 +185,7 @@ class MeTLAccount extends StronglyTypedJsonActor with Logger with JArgUtils with
   protected lazy val serverConfig = ServerConfiguration.default
   override def autoIncludeJsonCode = true
   protected implicit val formats = net.liftweb.json.DefaultFormats
-  protected lazy val RECEIVE_PROFILE = "receiveProfile"
+  protected lazy val RECEIVE_ACTIVE_PROFILE = "receiveCurrentProfile"
   protected lazy val RECEIVE_PROFILES = "receiveProfiles"
   protected lazy val RECEIVE_DEFAULT_PROFILE = "receiveDefaultProfile"
   protected lazy val RECEIVE_ACCOUNT = "receiveAccount"
@@ -200,6 +200,15 @@ class MeTLAccount extends StronglyTypedJsonActor with Logger with JArgUtils with
       println("created new profile")
       JArray(allProfiles.map(renderProfile _))
     },Full(RECEIVE_PROFILES)),
+    ClientSideFunction("switchToProfile",List("profileId"),(args) => {
+      val profId = getArgAsString(args(0)).trim
+      Globals.availableProfiles.find(_.id == profId).map(profile => {
+        Globals.currentProfile(profile)
+        renderProfile(profile)
+      }).getOrElse({
+        renderProfile(Globals.currentProfile.is)
+      })
+    },Full(RECEIVE_ACTIVE_PROFILE)),
     ClientSideFunction("setDefaultProfile",List("profileId"),(args) => {
       val profId = getArgAsString(args(0)).trim
       Globals.availableProfiles.find(_.id == profId).map(profile => {
@@ -213,12 +222,13 @@ class MeTLAccount extends StronglyTypedJsonActor with Logger with JArgUtils with
   override def lifespan = Globals.searchActorLifespan
   override def localSetup = {
     warn("localSetup for MeTLAccount [%s]".format(name))
+    Globals.currentUser.is // doing this to ensure that the system has checked the authenticator already
     super.localSetup
   }
   override def render = OnLoad(
     Call(RECEIVE_ACCOUNT,JObject(List(JField("accountName",JString(Globals.currentAccount.name)),JField("accountProvider",JString(Globals.currentAccount.provider))))) &
-    Call(RECEIVE_PROFILE,renderProfile(Globals.currentProfile.is)) &
-    Call(RECEIVE_PROFILE,JArray(Globals.availableProfiles.is.map(renderProfile _))) &
+    Call(RECEIVE_ACTIVE_PROFILE,renderProfile(Globals.currentProfile.is)) &
+    Call(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _))) &
     Call(RECEIVE_DEFAULT_PROFILE,JString(serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2)) 
   )
   override def lowPriority = {

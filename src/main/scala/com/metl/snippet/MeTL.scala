@@ -213,6 +213,7 @@ class Metl extends Logger {
     output
   }
   def account(in:NodeSeq):NodeSeq = {
+    Globals.currentUser.is // have to hit this first, always - will have to look at how to fix that.
     val name = "%s_%s_%s".format(Globals.currentAccount.provider,Globals.currentAccount.name,nextFuncName)
     val clazz = "lift:comet?type=MeTLAccount&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
