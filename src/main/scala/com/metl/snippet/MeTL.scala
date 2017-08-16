@@ -206,6 +206,12 @@ class Metl extends Logger {
     val output = <span class={clazz}>{in}</span>
     output
   }
+  def profile(in:NodeSeq):NodeSeq = {
+    val name = "%s_%s".format(Globals.currentUser.is,nextFuncName)
+    val clazz = "lift:comet?type=MeTLProfile&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    output
+  }
   /*
   def remotePluginConversationChooser(in:NodeSeq):NodeSeq = {
     val name = generateName()

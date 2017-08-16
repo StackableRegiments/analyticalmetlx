@@ -52,6 +52,12 @@ object MeTLActorManager extends LiftActor with ListenerManager with Logger {
     case _ => warn("MeTLActorManager received unknown message")
   }
 }
+object MeTLProfileActorManager extends LiftActor with ListenerManager with Logger {
+  def createUpdate = HealthyWelcomeFromRoom
+  override def lowPriority = {
+    case _ => warn("MeTLProfileActorManager received unknown message")
+  }
+}
 
 object MeTLConversationSearchActorManager extends LiftActor with ListenerManager with Logger {
   def createUpdate = HealthyWelcomeFromRoom
@@ -167,6 +173,50 @@ class MeTLConversationSearchActor extends MeTLConversationChooserActor {
   }
 }
 
+class MeTLProfile extends StronglyTypedJsonActor with Logger with JArgUtils with ProfileJsonHelpers {
+  import net.liftweb.json.Extraction
+  override def registerWith = MeTLProfileActorManager
+  implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
+  protected lazy val serverConfig = ServerConfiguration.default
+  override def autoIncludeJsonCode = true
+  protected implicit val formats = net.liftweb.json.DefaultFormats
+  protected lazy val RECEIVE_PROFILE = "receiveProfile"
+  protected lazy val RECEIVE_SESSION_HISTORY = "receiveSessionHistory"
+  override lazy val functionDefinitions = List(
+    ClientSideFunction("changeProfileNickname",List("newName"),(args) => {
+      val newName = getArgAsString(args(0)).trim
+      val orig = Globals.currentProfile.is
+      val prof = serverConfig.updateProfile(orig.id,orig.copy(name = newName)) 
+      Globals.currentProfile(prof)
+      println("changed nickname: %s => %s".format(newName,prof))
+      renderProfile(prof)
+    },Full(RECEIVE_PROFILE)),
+    ClientSideFunction("changeAttribute",List("key","value"),(args) => {
+      val k = getArgAsString(args(0)).trim
+      val v = getArgAsString(args(1)).trim
+      val orig = Globals.currentProfile.is
+      val prof = serverConfig.updateProfile(orig.id,orig.copy(attributes = orig.attributes.updated(k,v)))
+      Globals.currentProfile(prof)
+      renderProfile(prof)
+    },Full(RECEIVE_PROFILE)),
+    ClientSideFunction("getProfileSessionHistory",Nil,(args) => {
+      Extraction.decompose(serverConfig.getSessionsForProfile(Globals.currentProfile.is.id))
+    },Full(RECEIVE_SESSION_HISTORY))
+  )
+  override def lifespan = Globals.searchActorLifespan
+  override def localSetup = {
+    warn("localSetup for MeTLProfile [%s]".format(name))
+    super.localSetup
+  }
+  override def render = OnLoad(
+    Call(RECEIVE_PROFILE,renderProfile(Globals.currentProfile.is)) &
+    Call(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(Globals.currentProfile.is.id)))
+  )
+  override def lowPriority = {
+    case _ => warn("MeTLConversationSearchActor received unknown message")
+  }
+}
+
 class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter with ProfileJsonHelpers {
   private val serializer = new JsonSerializer(ServerConfiguration.default)
 
@@ -224,7 +274,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
 
   override def registerWith = MeTLConversationSearchActorManager
   override def lifespan = Globals.searchActorLifespan
-  protected val username = Globals.currentUser.is
+  protected def username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
 
   override def localSetup = {
@@ -320,7 +370,7 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
 
   override def registerWith = MeTLConversationSearchActorManager
   override def lifespan = Globals.conversationChooserActorLifespan
-  protected val username = Globals.currentUser.is
+  protected def username = Globals.currentUser.is
   protected lazy val serverConfig = ServerConfiguration.default
   protected var query:Option[String] = None
   protected var listing:List[Conversation] = Nil
@@ -534,7 +584,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   override def lifespan = Globals.editConversationActorLifespan
   protected lazy val serverConfig = ServerConfiguration.default
   protected var conversation:Option[Conversation] = None
-  protected val username = Globals.currentUser.is
+  protected def username = Globals.currentUser.is
   protected var showLinks = true
   override def localSetup = {
     super.localSetup

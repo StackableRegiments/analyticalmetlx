@@ -1,7 +1,7 @@
 var Profiles = (function(){
-	console.log("created Profiles:");
 	var myProfile = {};
 	var knownProfiles = {};
+	var onProfileUpdatedFuncs = [];
 	var getCurrentProfileFunc = function(){
 		return myProfile;
 	};
@@ -14,6 +14,13 @@ var Profiles = (function(){
 	var receiveProfileFunc = function(prof){
 		myProfile = prof;
 		knownProfiles[prof.id] = prof;
+		_.forEach(onProfileUpdatedFuncs,function(f){
+			try {
+				f(prof);
+			} catch(e){
+				console.log("failed to fire func on prof",f,prof);
+			}
+		});
 	};
 	var receiveProfilesFunc = function(profs){
 		knownProfiles = _.merge(myProfile,knownProfiles,profs);
@@ -25,12 +32,14 @@ var Profiles = (function(){
 		}
 	};
 	var getUsernameForFunc = function(userId){
-		console.log("looking for user in profiles",userId,knownProfiles);
 		if (userId in knownProfiles){
 			return knownProfiles[userId].name;
 		} else {
 			return userId;
 		}
+	};
+	var attachProfileUpdatedFunc = function(newFunc){
+		onProfileUpdatedFuncs.push(newFunc);
 	};
 	return {
 		getCurrentProfile:getCurrentProfileFunc,
@@ -38,17 +47,14 @@ var Profiles = (function(){
 		getProfileForId:getProfileForIdFunc,
 		receiveProfile:receiveProfileFunc,
 		receiveProfiles:receiveProfilesFunc,
-		getUsernameFor:getUsernameForFunc
+		getUsernameFor:getUsernameForFunc,
+		attachProfileUpdated:attachProfileUpdatedFunc
 	};
 })();
 
-console.log("what the hell!");
-
 function receiveProfile(profile){ //invoked by Lift
-	console.log("receiveUserProfile",profile);
 	Profiles.receiveProfile(profile);
 };
 function receiveProfiles(profiles){ //invoked by Lift
-	console.log("receiveProfiles",profiles);
 	Profiles.receiveProfiles(profiles);
 }
