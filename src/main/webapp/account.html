@@ -79,6 +79,11 @@
 					}
 				});
 				rootElem.find(".editProfileLink").attr("href","/profile?profileId="+profId);
+				var imageSrc = prof.attributes.avatarUrl;
+				if (imageSrc === undefined || imageSrc == ""){
+					imageSrc = sprintf("http://api.adorable.io/avatars/285/%s.png",profId); 
+				}
+				rootElem.find(".profileImage").attr("src",imageSrc);
 				return rootElem;
 			}));
 		};
@@ -87,7 +92,7 @@
 			profileTemplate = profileContainer.find(".profile").clone();
 			profileContainer.empty();
 			reRenderUI();
-			$("#createProfile").bind("click",createProfile);
+			$("#createProfile").bind("click",function(){createProfile();});
 		});
 	</script>
 	<style>
@@ -102,6 +107,7 @@
 			<div class="profile">
 				<span class="profileName"></span>
 				<span class="profileId"></span>
+				<img class="profileImage"></span>
 				<input type="checkbox" class="isActive"></input>
 				<label class="isActiveLabel">active</label>
 				<input type="checkbox" class="isDefault"></span>
@@ -109,7 +115,7 @@
 				<a class="editProfileLink">edit</a>
 			</div>
 		</div>
-		<div id="createProfile"></div>
+		<input type="button" id="createProfile"></input>
 	</div>
 	<div class="lift:Metl.account"></div>
 </div>

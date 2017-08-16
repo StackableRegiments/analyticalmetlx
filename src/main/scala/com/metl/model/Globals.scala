@@ -234,7 +234,9 @@ object Globals extends PropertyReader with Logger {
         case (Nil,_) => {
           val newProf = config.createProfile(state.username,Map(
             "createdByUser" -> state.username,
-            "createdByProvider" -> userAccountProvider))
+            "createdByProvider" -> userAccountProvider,
+            "autoCreatedProfile" -> "true",
+            "avatarUrl" -> ""))
           config.updateAccountRelationship(state.username,userAccountProvider:String,newProf.id,false,true)
           Globals.availableProfiles(List(newProf))
           println("creating profile: %s".format(newProf))

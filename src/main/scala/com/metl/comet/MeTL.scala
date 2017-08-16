@@ -32,16 +32,21 @@ import com.metl.snippet.Metl._
 
 trait ProfileJsonHelpers {
   val config = ServerConfiguration.default
+  val mandatoryAttributes = List("avatarUrl","biography")
   def translateProfileIds(profileIds:List[String]):JObject = {
     JObject(config.getProfiles(profileIds:_*).map(p => {
       JField(p.id,renderProfile(p))
     }))
   }
-  def renderProfile(p:Profile):JObject = JObject(List(
-    JField("id",JString(p.id)),
-    JField("name",JString(p.name)),
-    JField("attributes",JObject(p.attributes.toList.map(a => JField(a._1,JString(a._2)))))
-  ))
+  def renderProfile(p:Profile):JObject = {
+    val providedAttrs = p.attributes.toList
+    val additionalAttrs = mandatoryAttributes.filterNot(a => providedAttrs.exists(_._1 == a)).map(a => (a,""))
+    JObject(List(
+      JField("id",JString(p.id)),
+      JField("name",JString(p.name)),
+      JField("attributes",JObject((providedAttrs ::: additionalAttrs).map(a => JField(a._1,JString(a._2)))))
+    ))
+  }
 }
 
 case class JoinThisSlide(slide:String)
@@ -195,7 +200,11 @@ class MeTLAccount extends StronglyTypedJsonActor with Logger with JArgUtils with
     ClientSideFunction("createProfile",List(),(args) => {
       val orig = Globals.currentProfile.is
       val newName = "%s_%s_%s".format(Globals.currentAccount.provider,Globals.currentAccount.name,nextFuncName)
-      val prof = serverConfig.createProfile(newName,Map())
+      val prof = serverConfig.createProfile(newName,Map(
+            "createdByUser" -> Globals.currentAccount.name,
+            "createdByProvider" -> Globals.currentAccount.provider,
+            "autocreatedProfile" -> "false",
+            "avatarUrl" -> ""))
       serverConfig.updateAccountRelationship(Globals.currentAccount.name,Globals.currentAccount.provider,prof.id,false,false)
       val allProfiles = prof :: Globals.availableProfiles.is
       Globals.availableProfiles(allProfiles)

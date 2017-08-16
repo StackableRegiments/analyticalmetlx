@@ -18,9 +18,12 @@
   <script data-lift="with-resource-id" src="static/js/profile.js"></script>
 	<script type="text/javascript">
 		var ProfileUI = (function(){
+			var lockedAttributes = ["createdByUser","createdByProvider","autocreatedProfile"]; 
 			var sessionTemplate = undefined;
 			var sessionItemTemplate = undefined;
 			var sessionItemEventTemplate = undefined;
+			var	profileAttributeContainer = undefined;
+			var profileAttributeTemplate = undefined;
 			var currentProfile = {};
 			var sessionHistory = [];
 			var profileUpdated = function(p){
@@ -61,6 +64,31 @@
 				});
 				$("#profileName").html(profileNameBox);
 				$("#profileId").text(currentProfile.id);
+				if (currentProfile !== undefined && "attributes" in currentProfile){ 
+					var imageSrc = currentProfile.attributes.avatarUrl;
+					if (imageSrc === undefined || imageSrc == ""){
+						imageSrc = sprintf("http://api.adorable.io/avatars/285/%s.png",currentProfile.id); 
+					}
+					$("#profileImage").attr("src",imageSrc);
+				}
+
+				profileAttributeContainer.html(_.map(currentProfile.attributes,function(value,key){
+					var attrElem = profileAttributeTemplate.clone();
+					attrElem.find(".profileAttributeName").text(key);
+					var valueElem = attrElem.find(".profileAttributeValue");
+					if (_.some(lockedAttributes,function(i){return i == key;})){
+						valueElem.text(value);
+					} else {
+						valueElem.append($("<input/>",{
+								type:"text",
+								val:value,
+								maxlength:200
+								}).on("blur",function(){
+									changeAttribute(key,$(this).val());
+								}));
+					}
+					return attrElem;
+				}));
 				var data = _.groupBy(sessionHistory,function(i){return i.sid;});
 				$("#profileSessionHistory").html(_.map(data,function(groupedItems,historyItemSid){
 						var start = _.minBy(groupedItems,"timestamp");
@@ -112,6 +140,9 @@
 				$("#profileSessionHistory").empty();
 				sessionTemplate.find(".sessionItems").empty();
 				sessionTemplate.find(".sessionEvents").empty();
+				profileAttributeContainer = $("#profileAttributeContainer")
+				profileAttributeTemplate = profileAttributeContainer.find(".profileAttribute").clone();
+				profileAttributeContainer.empty();
 				reRenderUI();
 			});
 			var receiveSessionHistoryFunc = function(sh){
@@ -143,6 +174,12 @@
 	<div id="profileContainer">
 		<div id="profileName"></div>
 		<div id="profileId"></div>
+		<img id="profileImage"></img>
+		<div id="profileAttributeContainer">
+			<div class="profileAttribute">
+				<span class="profileAttributeName"></span>: <span class="profileAttributeValue"></span>
+			</div>
+		</div>
 		<div id="profileSessionHistory">
 			<div class="session">
 				<div>
