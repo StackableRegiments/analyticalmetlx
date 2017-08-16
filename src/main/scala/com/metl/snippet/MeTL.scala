@@ -212,6 +212,12 @@ class Metl extends Logger {
     val output = <span class={clazz}>{in}</span>
     output
   }
+  def account(in:NodeSeq):NodeSeq = {
+    val name = "%s_%s_%s".format(Globals.currentAccount.provider,Globals.currentAccount.name,nextFuncName)
+    val clazz = "lift:comet?type=MeTLAccount&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    output
+  }
   /*
   def remotePluginConversationChooser(in:NodeSeq):NodeSeq = {
     val name = generateName()

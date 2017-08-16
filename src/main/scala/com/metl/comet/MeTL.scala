@@ -58,6 +58,12 @@ object MeTLProfileActorManager extends LiftActor with ListenerManager with Logge
     case _ => warn("MeTLProfileActorManager received unknown message")
   }
 }
+object MeTLAccountActorManager extends LiftActor with ListenerManager with Logger {
+  def createUpdate = HealthyWelcomeFromRoom
+  override def lowPriority = {
+    case _ => warn("MeTLAccountActorManager received unknown message")
+  }
+}
 
 object MeTLConversationSearchActorManager extends LiftActor with ListenerManager with Logger {
   def createUpdate = HealthyWelcomeFromRoom
@@ -172,6 +178,54 @@ class MeTLConversationSearchActor extends MeTLConversationChooserActor {
     ".importSuccess [href]" #> boardFor(conv.jid)
   }
 }
+class MeTLAccount extends StronglyTypedJsonActor with Logger with JArgUtils with ProfileJsonHelpers {
+  import net.liftweb.json.Extraction
+  override def registerWith = MeTLAccountActorManager
+  implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
+  protected lazy val serverConfig = ServerConfiguration.default
+  override def autoIncludeJsonCode = true
+  protected implicit val formats = net.liftweb.json.DefaultFormats
+  protected lazy val RECEIVE_PROFILE = "receiveProfile"
+  protected lazy val RECEIVE_PROFILES = "receiveProfiles"
+  protected lazy val RECEIVE_DEFAULT_PROFILE = "receiveDefaultProfile"
+  protected lazy val RECEIVE_ACCOUNT = "receiveAccount"
+  override lazy val functionDefinitions = List(
+    ClientSideFunction("createProfile",List(),(args) => {
+      val orig = Globals.currentProfile.is
+      val newName = "%s_%s_%s".format(Globals.currentAccount.provider,Globals.currentAccount.name,nextFuncName)
+      val prof = serverConfig.createProfile(newName,Map())
+      serverConfig.updateAccountRelationship(Globals.currentAccount.name,Globals.currentAccount.provider,prof.id,false,false)
+      val allProfiles = prof :: Globals.availableProfiles.is
+      Globals.availableProfiles(allProfiles)
+      println("created new profile")
+      JArray(allProfiles.map(renderProfile _))
+    },Full(RECEIVE_PROFILES)),
+    ClientSideFunction("setDefaultProfile",List("profileId"),(args) => {
+      val profId = getArgAsString(args(0)).trim
+      Globals.availableProfiles.find(_.id == profId).map(profile => {
+        serverConfig.updateAccountRelationship(Globals.currentAccount.name,Globals.currentAccount.provider,profile.id,false,true)
+        JString(profId)
+      }).getOrElse({
+        JString(serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2) 
+      })
+    },Full(RECEIVE_DEFAULT_PROFILE))
+  )
+  override def lifespan = Globals.searchActorLifespan
+  override def localSetup = {
+    warn("localSetup for MeTLAccount [%s]".format(name))
+    super.localSetup
+  }
+  override def render = OnLoad(
+    Call(RECEIVE_ACCOUNT,JObject(List(JField("accountName",JString(Globals.currentAccount.name)),JField("accountProvider",JString(Globals.currentAccount.provider))))) &
+    Call(RECEIVE_PROFILE,renderProfile(Globals.currentProfile.is)) &
+    Call(RECEIVE_PROFILE,JArray(Globals.availableProfiles.is.map(renderProfile _))) &
+    Call(RECEIVE_DEFAULT_PROFILE,JString(serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2)) 
+  )
+  override def lowPriority = {
+    case _ => warn("MeTLAccountActor received unknown message")
+  }
+}
+
 
 class MeTLProfile extends StronglyTypedJsonActor with Logger with JArgUtils with ProfileJsonHelpers {
   import net.liftweb.json.Extraction
