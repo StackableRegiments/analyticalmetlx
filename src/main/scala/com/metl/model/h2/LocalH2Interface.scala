@@ -10,8 +10,10 @@ import net.liftweb.mapper._
 import net.liftweb.common._
 
 import scala.compat.Platform.EOL
-import _root_.net.liftweb.mapper.{ConnectionManager, DB, DefaultConnectionIdentifier, Schemifier, StandardDBVendor}
+import _root_.net.liftweb.mapper.{DB => _, DefaultConnectionIdentifier => _, Schemifier => _, StandardDBVendor => _, _}
 import _root_.java.sql.{Connection, DriverManager}
+import java.time.format.DateTimeFormatter
+import java.time._
 
 import com.metl.model.Globals
 import com.metl.model.Globals._
@@ -184,6 +186,25 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       })
       versionNumber.intValue(7).save
       info("upgraded db to set all slides to exposed, because they were previously defaulting to false and we didn't mean that.")
+      versionNumber
+    }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 8).map(versionNumber => {
+      info("upgrading db to set all future conversation-created dates to 1/7/2016, because they were created by erroneous C# clients and are being reset to the data origin date.")
+      val defaultZoneId = ZoneId.of("America/New_York")
+      // 1 July 2016
+      val zonedDateTime = ZonedDateTime.of(LocalDate.of(2016,6,1),LocalTime.of(0,0),defaultZoneId)
+      val originCreatedString = zonedDateTime.format(DateTimeFormatter.ofPattern("EEE MMM dd kk:mm:ss z yyyy"))
+      val originCreationLong = Instant.from(zonedDateTime).toEpochMilli
+      val nowPlusADay = Instant.from(ZonedDateTime.now(defaultZoneId).plusDays(1)).toEpochMilli
+      H2Conversation.findAll.filter(_.creation > nowPlusADay).foreach(h2Conv => {
+        h2Conv.created(originCreatedString).save
+        h2Conv.creation(originCreationLong).save
+      })
+      H2Conversation.findAll.filter(_.lastAccessed > nowPlusADay).foreach(h2Conv => {
+        h2Conv.lastAccessed(originCreationLong).save
+      })
+      versionNumber.intValue(8).save
+      info("upgraded db to set all future conversation-created dates to 1/7/2016, because they were created by erroneous C# clients and are being reset to the data origin date.")
       versionNumber
     }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
     true
