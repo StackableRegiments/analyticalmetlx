@@ -6,7 +6,7 @@ Wrap <d2lGroupStore/> in <externalLibGroupStoreProvider className="com.metl.d2l.
 Wrap <remote/> and <brightSpaceValence/> in <externalLibLtiProvider className="com.metl.d2l.BrightSparkLtiConfigurator">.
 Wrap <ApiGatewayMetlingPotAdaptor/> in <externalMetlingPotProvider className="com.metl.pot.AWSMeTLingPotAdaptorConfigurator">.
 
-Provide slu-adaptor_2.11-0.0.1.jar on classpath, and (for AWS MeTLingPot only):
+Provide slu-adaptor_2.11-0.0.2.jar on classpath, and (for AWS MeTLingPot only):
 aws-java-sdk-core-1.11.72.jar
 aws-java-sdk-opensdk-1.11.72.jar
 
