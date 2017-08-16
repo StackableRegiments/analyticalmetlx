@@ -26,7 +26,7 @@ import scala.xml._
 
 object SecurityListener extends Logger {
   import java.util.Date
-  lazy val config = ServerConfiguration.default
+  def config = ServerConfiguration.default
   // this is still the right spot to run the first immediate caching behaviour of this stuff, because this is the server who'd know about this particular profile
   class AggregatedSessionRecord(val sid:String,val accountProvider:String,val accountName:String, var profileId:String = "",var ipAddress:String = "unknown",var lastActivity:Long = new Date().getTime,var userAgent:Box[String] = Empty){
     val started:Long = new Date().getTime
@@ -47,8 +47,8 @@ object SecurityListener extends Logger {
   protected def user:String = {
     Globals.currentUser.is
   }
-  def emitSessionRecord(in:AggregatedSessionRecord,action:SessionRecordAction.Value):Unit = {
-    config.updateSession(SessionRecord(
+  protected def emitSessionRecord(in:AggregatedSessionRecord,action:String):Unit = {
+    val s = SessionRecord(
       sid = in.sid,
       accountProvider = in.accountProvider,
       accountName = in.accountName,
@@ -57,13 +57,14 @@ object SecurityListener extends Logger {
       userAgent = in.userAgent.getOrElse(""),
       action = action,
       timestamp = in.lastActivity
-    ))
+    )
+    config.updateSession(s)
   }
   def ensureSessionRecord:Unit = {
+    var oldState = LocalSessionRecord.is.map(sr => (sr.profileId,sr.ipAddress,sr.userAgent))
     LocalSessionRecord.is.map(rec => {
       rec.lastActivity = now.getTime
     }).getOrElse({
-      val currentCasState = Globals.casState.is
       val newRecord = new AggregatedSessionRecord(sessionId,accountProvider,accountName)
       LocalSessionRecord(Some(newRecord))
       newRecord.userAgent = S.userAgent
@@ -75,9 +76,9 @@ object SecurityListener extends Logger {
       S.session.foreach(_.addSessionCleanup((s) => {
         SecurityListener.cleanupSession(s)
       }))
+      oldState = Some((newRecord.profileId,newRecord.ipAddress,newRecord.userAgent))
       emitSessionRecord(newRecord,SessionRecordAction.Started) 
     })
-    val oldState = LocalSessionRecord.is.map(sr => (sr.profileId,sr.ipAddress,sr.userAgent))
     LocalSessionRecord.is.map(newRecord => {
       S.request.foreach(r => {
         newRecord.ipAddress = r.remoteAddr

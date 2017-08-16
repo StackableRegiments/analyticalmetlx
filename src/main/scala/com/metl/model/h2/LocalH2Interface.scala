@@ -8,12 +8,8 @@ import java.util.Date
 
 import net.liftweb.mapper._
 import net.liftweb.common._
-<<<<<<< HEAD
 import net.liftweb.util._
 import Helpers._
-=======
-import net.liftweb.util.Helpers._
->>>>>>> 95cea8ae4b8ef3120b54a3ce4c14881b0e0a71ef
 
 import scala.compat.Platform.EOL
 import _root_.net.liftweb.mapper.{ConnectionManager, DB, DefaultConnectionIdentifier, Schemifier, StandardDBVendor}
@@ -76,12 +72,10 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2TextGradeValue,
         H2ChatMessage,
         H2UndeletedCanvasContent,
-<<<<<<< HEAD
         H2Profile,
-        H2AccountRelationships
-=======
-        H2Slide
->>>>>>> 95cea8ae4b8ef3120b54a3ce4c14881b0e0a71ef
+        H2AccountRelationships,
+        H2Slide,
+        H2SessionRecord
       ):_*
     )
     // this starts our pool in advance
@@ -636,7 +630,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   def getProfiles(ids:String *):List[Profile] = Stopwatch.time("H2Interface.getProfiles",{
     H2Profile.findAll(ByList(H2Profile.profileId,ids.toList)).groupBy(_.profileId.get).toList.map(_._2).flatMap(_.sortBy(_.timestamp.get).reverse.headOption.map(serializer.toProfile _))
   })
-  protected def createProfileId:String = nextFuncName
+  protected def createProfileId:String = "p_%s".format(nextFuncName)
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = {
     val newP = Profile(config,new Date().getTime,createProfileId,name,attrs,Nil)
     val hp = serializer.fromProfile(newP)
@@ -667,7 +661,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       profileId = in.profileId.get,
       ipAddress = in.ipAddress.get,
       userAgent = in.userAgent.get,
-      action = SessionRecordAction.parse(in.action.get),
+      action = in.action.get,
       timestamp = in.timestamp.get
     )
   }
@@ -680,7 +674,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       .accountName(sessionRecord.accountName)
       .ipAddress(sessionRecord.ipAddress)
       .userAgent(sessionRecord.userAgent)
-      .action(SessionRecordAction.serialize(sessionRecord.action))
+      .action(sessionRecord.action)
   }
   override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = {
     H2SessionRecord.findAll(By(H2SessionRecord.accountName,accountName),By(H2SessionRecord.accountProvider,accountProvider)).map(toSessionRecord _)

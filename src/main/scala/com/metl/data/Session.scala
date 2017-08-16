@@ -1,27 +1,15 @@
 package com.metl.data
 
-object SessionRecordAction extends Enumeration {
-  type SessionRecordAction = Value
-  val Started,Terminated,ChangedProfile,ChangedIP,ChangedUserAgent,Unknown = Value
-  def serialize(in:SessionRecordAction.Value):String = in match {
-    case SessionRecordAction.Started => "started"
-    case SessionRecordAction.Terminated => "terminated"
-    case SessionRecordAction.ChangedProfile => "profile_change"
-    case SessionRecordAction.ChangedIP => "ip_change"
-    case SessionRecordAction.ChangedUserAgent => "user_agent_change"
-    case SessionRecordAction.Unknown => "unknown"
-  }
-  def parse(in:String):SessionRecordAction.Value = in.toLowerCase.trim match {
-    case "started" => SessionRecordAction.Started  
-    case "terminated" => SessionRecordAction.Terminated  
-    case "profile_change" => SessionRecordAction.ChangedProfile  
-    case "ip_change" => SessionRecordAction.ChangedIP  
-    case "user_agent_change" => SessionRecordAction.ChangedUserAgent  
-    case _ => SessionRecordAction.Unknown  
-  }
+object SessionRecordAction {
+  val Started = "started"
+  val Terminated = "terminated"
+  val ChangedProfile = "profile_change"
+  val ChangedIP = "ip_change"
+  val ChangedUserAgent = "user_agent_change"
+  val Unknown = "unknown"
 }
 
-case class SessionRecord(sid:String, accountProvider:String,accountName:String,profileId:String,ipAddress:String,userAgent:String,action:SessionRecordAction.Value,timestamp:Long){
+case class SessionRecord(sid:String, accountProvider:String,accountName:String,profileId:String,ipAddress:String,userAgent:String,action:String,timestamp:Long){
   def isUpdateOf(other:SessionRecord):Boolean = {
     other.sid == sid && sid != "" && (other.profileId != profileId || other.ipAddress != ipAddress || other.userAgent != userAgent || other.action != action)
   }

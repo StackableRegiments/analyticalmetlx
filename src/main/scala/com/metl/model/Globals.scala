@@ -219,17 +219,16 @@ object Globals extends PropertyReader with Logger {
     private object validState extends SessionVar[Option[LiftAuthStateData]](None)
     private object actualUsername extends SessionVar[String]("forbidden")
     private object actuallyIsImpersonator extends SessionVar[Boolean](false)
-    private object accountName extends SessionVar[Option[String]](None)
-    private object accountProvider extends SessionVar[Option[String]](None)
+    private object AccountName extends SessionVar[Option[String]](None)
+    private object AccountProvider extends SessionVar[Option[String]](None)
     object currentAccountName {
-      def is:String = accountName.is.getOrElse(throw new Exception("no logged-in account"))
+      def is:String = AccountName.is.getOrElse(throw new Exception("no logged-in account"))
     }
     object currentAccountProvider {
-      def is:String = accountProvider.is.getOrElse(throw new Exception("no logged-in account"))
+      def is:String = AccountProvider.is.getOrElse(throw new Exception("no logged-in account"))
     }
     private def updateUser(state:LiftAuthStateData,userAccountProvider:String):LiftAuthStateData = {
       validState(Some(state))
-      SecurityListener.ensureSessionRecord
       val config = ServerConfiguration.default
       config.getProfileIds(state.username,userAccountProvider) match {
         case (Nil,_) => {
@@ -238,6 +237,7 @@ object Globals extends PropertyReader with Logger {
             "createdByProvider" -> userAccountProvider))
           config.updateAccountRelationship(state.username,userAccountProvider:String,newProf.id,false,true)
           Globals.availableProfiles(List(newProf))
+          println("creating profile: %s".format(newProf))
           Globals.currentProfile(newProf)
         }
         case (items,defaultId) => {
@@ -245,10 +245,12 @@ object Globals extends PropertyReader with Logger {
           Globals.availableProfiles(profiles)
           profiles.find(_.id == defaultId).map(p => {
             Globals.currentProfile(p)
+            println("using pre-existing profile: %s".format(p))
           })
         }
       }
       warn("settings user to: %s".format(Globals.currentProfile.is))
+      SecurityListener.ensureSessionRecord
       state
     }
     def is:LiftAuthStateData = {
@@ -283,6 +285,8 @@ object Globals extends PropertyReader with Logger {
         val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes.map(ua => Detail(ua._1,ua._2)))
         if (authenticated){
           actualUsername(username)
+          AccountName(Some(username))
+          AccountProvider(Some(accountProvider))
           val groups = Globals.groupsProviders.filter(_.canRestrictConversations).flatMap(_.getGroupsFor(prelimAuthStateData))
           actuallyIsImpersonator(groups.exists(g => g.ouType == "special" && g.name == "impersonator"))
           val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
@@ -291,9 +295,11 @@ object Globals extends PropertyReader with Logger {
           info("generated authState: %s".format(lasd))
           lasd
         } else {
+          info("authentication failed")
           LiftAuthStateDataForbidden
         }
       }).getOrElse({
+        info("not in a container session")
         LiftAuthStateDataForbidden
       })
 
@@ -301,12 +307,19 @@ object Globals extends PropertyReader with Logger {
   }
   
   object currentUser {
-    def is:String = currentProfile.is.id //casState.is.username
+    def is:String = {
+      casState.is  // ensure population of the userIdentities
+      currentProfile.is.id
+    }
   }
   
   object currentAccount {
-    def name:String = casState.currentAccountName.is
-    def provider:String = casState.currentAccountProvider.is
+    def name:String = {
+      casState.currentAccountName.is
+    }
+    def provider:String = {
+      casState.currentAccountProvider.is
+    }
   }
   object availableProfiles extends SessionVar[List[Profile]](Nil)
   object currentProfile extends SessionVar[Profile](Profile.empty)
