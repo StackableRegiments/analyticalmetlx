@@ -3,8 +3,12 @@
 Wrap <d2lGradebook/> in <externalLibGradebookConfigurator className="com.metl.d2l.D2LGradebookConfigurator">.
 Wrap <d2lGroupsProvider/> in <externalLibGroupProvider className="com.metl.d2l.D2LGroupsConfigurator">.
 Wrap <d2lGroupStore/> in <externalLibGroupStoreProvider className="com.metl.d2l.D2LGroupStoreConfigurator">.
+Wrap <remote/> and <brightSpaceValence/> in <externalLibLtiProvider className="com.metl.d2l.BrightSparkLtiConfigurator">.
+Wrap <ApiGatewayMetlingPotAdaptor/> in <externalMetlingPotProvider className="com.metl.pot.AWSMeTLingPotAdaptorConfigurator">.
 
-Provide slu-adaptor jar on classpath.
+Provide slu-adaptor_2.11-0.0.1.jar on classpath, and (for AWS MeTLingPot only):
+aws-java-sdk-core-1.11.72.jar
+aws-java-sdk-opensdk-1.11.72.jar
 
 1.12.4
 
