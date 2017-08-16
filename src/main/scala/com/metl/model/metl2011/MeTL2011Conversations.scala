@@ -22,7 +22,7 @@ class MeTL2011CachedConversations(config:ServerConfiguration, http:HttpProvider,
       precacheConversations
     }
   )
-  val conversations = scala.collection.mutable.HashMap.empty[Int,Conversation]
+  val conversations = scala.collection.mutable.HashMap.empty[String,Conversation]
 
   private def precacheConversations = Stopwatch.time("MeTL2011CachedConversations.precacheConversations", {
     try {
@@ -61,7 +61,9 @@ class MeTL2011CachedConversations(config:ServerConfiguration, http:HttpProvider,
     }
   })
   override def searchByCourse(courseId:String):List[Conversation] = Stopwatch.time("CachedConversations.searchByCourse",List.empty[Conversation])
-  override def detailsOf(conversationJid:Int) =
+  override def detailsOfSlide(jid:String):Slide = Slide.empty
+  override def getConversationsForSlideId(jid:String):List[String] = Nil
+  override def detailsOf(conversationJid:String) =
   {
     try {
       conversations(conversationJid)
@@ -93,7 +95,7 @@ class MeTL2011CachedConversations(config:ServerConfiguration, http:HttpProvider,
     m match {
       case c:MeTLCommand if c.command == "/UPDATE_CONVERSATION_DETAILS" && c.commandParameters.length == 1 => {
         try{
-          val conversation = super.detailsOf(c.commandParameters(0).toInt)
+          val conversation = super.detailsOf(c.commandParameters(0))
           //trace("updating cache: %s".format(conversation))
           conversations.put(conversation.jid,conversation)
           onConversationDetailsUpdated(conversation)
@@ -144,7 +146,7 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
     m match {
       case c:MeTLCommand if c.command == "/UPDATE_CONVERSATION_DETAILS" && c.commandParameters.length == 1 => {
         try{
-          val conversation = internalDetailsOf(c.commandParameters(0).toInt)
+          val conversation = internalDetailsOf(c.commandParameters(0))
           onConversationDetailsUpdated(conversation)
           Some(conversation)
         }
@@ -164,20 +166,14 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
   override def getAll:List[Conversation] = Stopwatch.time("Conversations.getAll",{
     (scala.xml.XML.loadString(http.getClient.get(searchBaseUrl + "search?query=")) \\ "conversation").map(c => serializer.toConversation(c)).toList
   })
+  override def detailsOfSlide(jid:String):Slide = Slide.empty
+  override def getConversationsForSlideId(jid:String):List[String] = Nil
   override def search(query:String):List[Conversation] = Stopwatch.time("Conversations.search",{
     (scala.xml.XML.loadString(http.getClient.get(searchBaseUrl + "search?query=" + Helpers.urlEncode(query))) \\ "conversation").map(c => serializer.toConversation(c)).toList
   })
   override def searchByCourse(courseId:String):List[Conversation] = Stopwatch.time("Conversations.search",List.empty[Conversation])
-  override def conversationFor(slide:Int):Int = Stopwatch.time("Conversations.conversationFor",{
-    config.name match {
-      case "reifier" => ((slide / 1000) * 1000) + 400
-      case "deified" => ((slide / 1000) * 1000) + 400
-      case "standalone" => (((slide - 400) / 1000) * 1000) + 400
-      case _ => (slide /1000) * 1000
-    }
-  })
-  override def detailsOf(jid:Int):Conversation = Stopwatch.time("Conversations.detailsOf",internalDetailsOf(jid))
-  private def internalDetailsOf(jid:Int):Conversation = Stopwatch.time("Conversations.internalDetailsOf",{
+  override def detailsOf(jid:String):Conversation = Stopwatch.time("Conversations.detailsOf",internalDetailsOf(jid))
+  private def internalDetailsOf(jid:String):Conversation = Stopwatch.time("Conversations.internalDetailsOf",{
     try{
       (scala.xml.XML.loadString(http.getClient.get("https://"+config.host+":1188/Structure/"+utils.stem(jid.toString)+"/"+jid.toString+"/details.xml")) \\ "conversation").headOption.map(c => serializer.toConversation(c)).getOrElse(Conversation.empty)
     }
@@ -190,40 +186,37 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
   override def createConversation(title:String,author:String):Conversation = {
     val jid = getNewJid
     val now = new java.util.Date()
-    val local = Conversation(config,author,now.getTime,List(Slide(config,author,jid + 1,0)),"unrestricted","",jid,title,now.getTime,Permissions.default(config))
+    val local = Conversation(config,author,now.getTime,List(Slide(config,author,"%s_%s".format(jid,new java.util.Date().getTime),0)),"unrestricted","",jid,title,now.getTime,Permissions.default(config))
     pushConversationToServer(local)
   }
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
   override def deleteConversation(jid:String):Conversation = {
-    val conv = detailsOf(jid.toInt)
+    val conv = detailsOf(jid)
     val now = new java.util.Date()
     val local = Conversation(config,conv.author,now.getTime,conv.slides,"deleted",conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def renameConversation(jid:String,newTitle:String):Conversation = {
-    val conv = detailsOf(jid.toInt)
+    val conv = detailsOf(jid)
     val now = new java.util.Date()
     val local = Conversation(config,conv.author,now.getTime,conv.slides,conv.subject,conv.tag,conv.jid,newTitle,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = {
-    val conv = detailsOf(jid.toInt)
+    val conv = detailsOf(jid)
     val now = new java.util.Date()
     val local = Conversation(config,conv.author,now.getTime,conv.slides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,newPermissions)
     pushConversationToServer(local)
   }
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = {
-    val conv = detailsOf(jid.toInt)
+    val conv = detailsOf(jid)
     val now = new java.util.Date()
     val local = Conversation(config,conv.author,now.getTime,conv.slides,newSubject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = {
-    val conv = detailsOf(jid.toInt)
+    val conv = detailsOf(jid)
     val slides = conv.slides
-    val currentMaxJid = slides.map(s => s.id) match {
-      case l:List[Int] if (l.length > 0) => l.max
-      case _ => jid.toInt
-    }
     val newSlides = slides.map(s => {
       val newIndex = s.index match {
         case i:Int if (i < index) => i
@@ -231,18 +224,14 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
       }
       Slide(config,s.author,s.id,newIndex,s.defaultHeight,s.defaultWidth,s.exposed,s.slideType)
     })
-    val newSlide = Slide(config,conv.author,currentMaxJid + 1, index)
+    val newSlide = Slide(config,conv.author,"%s_%s".format(jid,new java.util.Date().getTime), index)
     val now = new java.util.Date()
     val local = Conversation(config,conv.author,now.getTime,newSlide :: newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = {
-    val conv = detailsOf(jid.toInt)
+    val conv = detailsOf(jid)
     val slides = conv.slides
-    val currentMaxJid = slides.map(s => s.id) match {
-      case l:List[Int] if (l.length > 0) => l.max
-      case _ => jid.toInt
-    }
     val newSlides = slides.map(s => {
       val newIndex = s.index match {
         case i:Int if (i < index) => i
@@ -250,13 +239,13 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
       }
       Slide(config,s.author,s.id,newIndex,s.defaultHeight,s.defaultWidth,s.exposed,s.slideType,List(grouping))
     })
-    val newSlide = Slide(config,conv.author,currentMaxJid + 1, index)
+    val newSlide = Slide(config,conv.author,"%s_%s".format(jid,new java.util.Date().getTime), index)
     val now = new java.util.Date()
     val local = Conversation(config,conv.author,now.getTime,newSlide :: newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = {
-    val conv = detailsOf(jid.toInt)
+    val conv = detailsOf(jid)
     val now = new java.util.Date()
     val local = Conversation(config,conv.author,now.getTime,newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
@@ -284,5 +273,5 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
     trace("conversationUpdater sent message: %s".format(stanza))
     mb.sendStanzaToRoom(stanza)
   }
-  private def getNewJid:Int = http.getClient.get("https://"+config.host+":1188/primarykey.yaws").trim.toInt
+  private def getNewJid:String = http.getClient.get("https://"+config.host+":1188/primarykey.yaws").trim
 }

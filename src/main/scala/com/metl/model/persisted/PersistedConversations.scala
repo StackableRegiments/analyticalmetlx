@@ -7,9 +7,11 @@ class PersistedConversations(config:ServerConfiguration,dbInterface:PersistenceI
   override def getAll = dbInterface.getAllConversations
   override def search(query:String) = dbInterface.searchForConversation(query)
   override def searchByCourse(courseId:String) = dbInterface.searchForConversationByCourse(courseId)
-  override def conversationFor(slide:Int):Int = dbInterface.conversationFor(slide)
-  override def detailsOf(jid:Int) = dbInterface.detailsOfConversation(jid)
+  override def getConversationsForSlideId(jid:String):List[String] = dbInterface.getConversationsForSlideId(jid)
+  override def detailsOf(jid:String) = dbInterface.detailsOfConversation(jid)
+  override def detailsOfSlide(jid:String) = dbInterface.detailsOfSlide(jid)
   override def createConversation(title:String,author:String):Conversation = dbInterface.createConversation(title,author)
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = dbInterface.createSlide(author,slideType,grouping)
   override def deleteConversation(jid:String):Conversation = dbInterface.deleteConversation(jid)
   override def renameConversation(jid:String,newTitle:String):Conversation = dbInterface.renameConversation(jid,newTitle)
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = dbInterface.changePermissionsOfConversation(jid,newPermissions)

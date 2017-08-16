@@ -13,7 +13,7 @@ import net.liftweb.mapper.DB
 import net.sf.ehcache.config.MemoryUnit
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy
 
-protected case class RawRow(author: String, conversationJid: Int, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
+protected case class RawRow(author: String, conversationJid: String, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, timestamp: Long, present: Boolean, activity: Long = 0)
 
 protected case class ProcessedRow(author: String, conversationJid: String, conversationTitle: String, conversationForeignRelationship: Option[ForeignRelationship], location: String, index: Int, duration: Long, approx: Boolean, start: Long, end: Long, days: Double, visits: Int, activity: Long)
 

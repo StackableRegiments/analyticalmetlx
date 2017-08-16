@@ -434,12 +434,14 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   val messageBusProvider = new LoopbackMessageBusProvider
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = History.empty
-  override def getConversationForSlide(slideJid:String):String = ""
   override def getAllConversations = List.empty[Conversation]
+  override def getConversationsForSlideId(jid:String) = Nil
   override def searchForConversation(query:String) = List.empty[Conversation]
   override def searchForConversationByCourse(courseId:String) = List.empty[Conversation]
   override def detailsOfConversation(jid:String) = Conversation.empty
+  override def detailsOfSlide(jid:String) = Slide.empty
   override def createConversation(title:String,author:String) = Conversation.empty
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[com.metl.data.GroupSet] = Nil):Slide = Slide.empty
   override def deleteConversation(jid:String):Conversation = Conversation.empty
   override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty

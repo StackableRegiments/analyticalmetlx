@@ -263,8 +263,8 @@ object StatelessHtml extends Stemmer with Logger {
           (h,isT)
         }
         case s:SlideRoom => {
-          val isT = Globals.isSuperUser || config.detailsOfConversation(s.jid.toString).author == username
-          val h = MeTLXConfiguration.getRoom(s.jid.toString,config.name).getHistory
+          val isT = Globals.isSuperUser //|| config.detailsOfConversation(s.jid.toString).author == username
+          val h = MeTLXConfiguration.getRoom(s.getJid,config.name).getHistory
           (h,isT)
         }
         case _ => (History.empty,false)
@@ -433,7 +433,7 @@ object StatelessHtml extends Stemmer with Logger {
           val edits = (c.created :: List(c.lastAccessed).filterNot(_ == c.created) :::
             commands.get(Some(c.jid.toString)).toList.flatten.map(_.timestamp)).groupBy(_ / rounding).values.flatMap(_.headOption).toList.map(JInt(_))
           JObject(List(
-            JField("jid",JInt(c.jid)),
+            JField("jid",JString(c.jid)),
             JField("author",JString(c.author)),
             JField("created",JInt(c.created)),
             JField("edits",JArray(edits)),
@@ -646,14 +646,14 @@ object StatelessHtml extends Stemmer with Logger {
           val newId = newSlide.id
           ServerSideBackgroundWorker ! CopyLocation(
             config,
-            SlideRoom(conv.server.name,conversation,oldId),
-            SlideRoom(conv.server.name,conversation,newId),
+            SlideRoom(conv.server.name,oldId),
+            SlideRoom(conv.server.name,newId),
             (s:MeTLStanza) => s.author == conv.author
           )
           ServerSideBackgroundWorker ! CopyLocation(
             config,
-            PrivateSlideRoom(conv.server.name,conversation,oldId,conv.author),
-            PrivateSlideRoom(conv.server.name,conversation,newId,conv.author),
+            PrivateSlideRoom(conv.server.name,oldId,conv.author),
+            PrivateSlideRoom(conv.server.name,newId,conv.author),
             (s:MeTLStanza) => s.author == conv.author
           )
         })
@@ -679,36 +679,36 @@ object StatelessHtml extends Stemmer with Logger {
     val oldConv = config.detailsOfConversation(conversation)
     if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,oldConv)){
       val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
+      val newSlides = Map(oldConv.slides.map(oldSlide => {
+        val newSlide = config.createSlide(oldSlide.author,oldSlide.slideType)
+        (oldSlide.id,newSlide)
+      }):_*)
       val newConvWithOldSlides = newConv.copy(
         lastAccessed = new java.util.Date().getTime,
-        slides = oldConv.slides.map(s => s.copy(
-          groupSet = Nil,
-          id = s.id - oldConv.jid + newConv.jid,
-          audiences = Nil
-        ))
+        slides = oldConv.slides.flatMap(s => newSlides.get(s.id).map(newS => newS.copy(index = s.index)))
       )
-      val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
-      remoteConv.slides.foreach(ns => {
-        val newSlide = ns.id
-        val slide = newSlide - newConv.jid + oldConv.jid
+      val remoteConv = config.updateConversation(newConv.jid,newConvWithOldSlides)
+      newSlides.toList.foreach(sTup => {
+        val oldId = sTup._1
+        val newSlide = sTup._2
         val conv = remoteConv
         ServerSideBackgroundWorker ! CopyLocation(
           config,
-          SlideRoom(conv.server.name,conversation,slide),
-          SlideRoom(conv.server.name,remoteConv.jid.toString,newSlide),
+          SlideRoom(conv.server.name,oldId),
+          SlideRoom(conv.server.name,newSlide.id),
           (s:MeTLStanza) => s.author == conv.author
         )
         ServerSideBackgroundWorker ! CopyLocation(
           config,
-          PrivateSlideRoom(conv.server.name,conversation,slide,conv.author),
-          PrivateSlideRoom(conv.server.name,remoteConv.jid.toString,newSlide,conv.author),
+          PrivateSlideRoom(conv.server.name,oldId,conv.author),
+          PrivateSlideRoom(conv.server.name,newSlide.id,conv.author),
           (s:MeTLStanza) => s.author == conv.author
         )
       })
       ServerSideBackgroundWorker ! CopyLocation(
         config,
-        ConversationRoom(remoteConv.server.name,remoteConv.jid.toString),
-        ConversationRoom(newConv.server.name,newConv.jid.toString),
+        ConversationRoom(remoteConv.server.name,oldConv.jid),
+        ConversationRoom(newConv.server.name,remoteConv.jid),
         (s:MeTLStanza) => s.author == remoteConv.author && s.isInstanceOf[MeTLQuiz] // || s.isInstanceOf[Attachment]
       )
       val remoteConv2 = config.updateConversation(remoteConv.jid.toString,remoteConv)

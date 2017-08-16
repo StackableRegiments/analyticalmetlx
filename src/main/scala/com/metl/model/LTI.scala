@@ -205,7 +205,7 @@ class BrightSparkIntegrationDispatch extends RestHelper {
     }
     case req@Req(bsce :: "getConversationChooser" :: Nil,_,_) if bsce == brightSparkContextEndpoint => {
       lti.handleLtiRequest(req,pluginSession => {
-        val redirectUrl = com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)
+        val redirectUrl:String = com.metl.snippet.Metl.remotePluginConversationChooser(pluginSession.token)
         Full(RedirectResponse(redirectUrl))
       })
     }

@@ -12,11 +12,13 @@ abstract class PersistenceInterface(config:ServerConfiguration) {
 
   //conversations
   def getAllConversations:List[Conversation]
+  def getConversationsForSlideId(jid:String):List[String] = List.empty[String]
   def searchForConversation(query:String):List[Conversation]
   def searchForConversationByCourse(courseId:String):List[Conversation]
-  def conversationFor(slide:Int):Int
-  def detailsOfConversation(jid:Int):Conversation
+  def detailsOfConversation(jid:String):Conversation
+  def detailsOfSlide(jid:String):Slide
   def createConversation(title:String,author:String):Conversation
+  def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide
   def deleteConversation(jid:String):Conversation
   def renameConversation(jid:String,newTitle:String):Conversation
   def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation

@@ -103,7 +103,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
   val unzipper = new Unzipper
   protected val convertUrl = "https://api.cloudconvert.com/convert"
 
-  def importAnything(jid:Int,filename:String,bytes:Array[Byte],server:ServerConfiguration,author:String):Map[Int,History] = {
+  def importAnything(jid:String,filename:String,bytes:Array[Byte],server:ServerConfiguration,author:String):Map[Int,History] = {
     onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("",1,1)),None))
     try {
       val parts = filename.split('.').toList
@@ -302,7 +302,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
     }
   }
 
-  protected def importToCloudConvert(jid:Int,filename:String,bytes:Array[Byte],inFormat:String,outFormat:String,server:ServerConfiguration,author:String):Either[Exception,Map[Int,History]] = {
+  protected def importToCloudConvert(jid:String,filename:String,bytes:Array[Byte],inFormat:String,outFormat:String,server:ServerConfiguration,author:String):Either[Exception,Map[Int,History]] = {
     //callSimpleCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
     callComplexCloudConvert(filename,bytes,inFormat,outFormat).right.map(slides => {
       Map({
@@ -310,7 +310,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         var offset = 1 - minSlideCount //depending on what the value of the lowest is, I need to push it to be 1, and then offset all the values by that much.
         slides.flatMap{
           case (index,imageBytes) => {
-            val slideId = (index + jid) + offset
+            val slideId = index + offset
             val identity = server.postResource(slideId.toString,nextFuncName,imageBytes) 
             val tag = "{author: '%s', privacy: '%s', id: '%s', isBackground: false, zIndex: 0, resourceIdentity: '%s', timestamp: %s}".format(author,"public",identity,identity, new java.util.Date().getTime)
             val dimensions = downscaler.getDimensionsOfImage(imageBytes) match {
@@ -336,7 +336,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
 
 class ForeignDocumentParser(importId:String,onUpdate:ImportDescription=>Unit = (id:ImportDescription) => {}) extends Logger {
   protected val apiKey = Globals.cloudConverterApiKey
-  def importAnything(filename:String,jid:Int,in:Array[Byte],server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
+  def importAnything(filename:String,jid:String,in:Array[Byte],server:ServerConfiguration,author:String = Globals.currentUser.is,magnification:Int = 1):Map[Int,History] = {
     new CloudConvertPoweredParser(importId,apiKey,onUpdate).importAnything(jid,filename,in,server,author)
   }
 }
@@ -361,23 +361,21 @@ object Importer extends Logger {
   }
   protected def importExportedConversation(onBehalfOfUser:String,oldConv:Conversation,histories:Map[String,History]):Conversation = {
     val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
+    val newSlides = Map(oldConv.slides.map(s => {
+      (s.id,config.createSlide(s.author))
+    }):_*)
     val newConvWithOldSlides = newConv.copy(
       lastAccessed = new java.util.Date().getTime,
-      slides = oldConv.slides.map(s => s.copy(
-        groupSet = Nil,
-        id = s.id - oldConv.jid + newConv.jid,
-        audiences = Nil
-      ))
+      slides = oldConv.slides.flatMap(s => newSlides.get(s.id))
     )
     val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
     histories.foreach(h => {
       val oldJid = h._1
-      val offset = remoteConv.jid - oldConv.jid
       val serverName = remoteConv.server.name
       val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
-        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,oldAuthor))
-        case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset))
-        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString))
+        case PrivateSlideRoom(_sn,oldSlideJid,oldAuthor) => newSlides.get(oldSlideJid).map(newS => PrivateSlideRoom(serverName,newS.id,oldAuthor))
+        case SlideRoom(_sn,oldSlideJid) => newSlides.get(oldSlideJid).map(newS => SlideRoom(serverName,newS.id))
+        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid))
         case _ => None
       }
       newRoom.foreach(nr => {
@@ -395,7 +393,7 @@ object Importer extends Logger {
     onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("ready to create conversation",1,2)),None))
     try {
       val now = new java.util.Date()
-      val conv = Conversation.empty.copy(title = title, author = author,lastAccessed = now.getTime,jid = 0)  
+      val conv = Conversation.empty.copy(title = title, author = author,lastAccessed = now.getTime,jid = "")  
       onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("created conversation",2,2)),None))
       for (
         histories <- foreignConversationParse(importId,filename,conv.jid,bytes,config,author);
@@ -411,7 +409,7 @@ object Importer extends Logger {
       }
     }
   }
-  protected def foreignConversationParse(importId:String,filename:String,jid:Int,in:Array[Byte],server:ServerConfiguration,onBehalfOfUser:String):Box[Map[Int,History]] = {
+  protected def foreignConversationParse(importId:String,filename:String,jid:String,in:Array[Byte],server:ServerConfiguration,onBehalfOfUser:String):Box[Map[Int,History]] = {
     try {
       Full(new ForeignDocumentParser(importId,onUpdate _).importAnything(filename,jid,in,server,onBehalfOfUser))
     } catch {
@@ -427,19 +425,23 @@ object Importer extends Logger {
       val finalCount = histories.keys.toList.length + 4
       onUpdate(ImportDescription(importId,fakeConversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("ready to import content",1,finalCount)),None))
       val conversation = server.createConversation(fakeConversation.title,fakeConversation.author)
+      val newSlides:Map[Int,Slide] = Map(histories.toList.map(h => (h._1,server.createSlide(onBehalfOfUser))):_*)
       val newConvWithAllSlides = conversation.copy(
         lastAccessed = new java.util.Date().getTime,
-        slides = histories.map(h => Slide(server,onBehalfOfUser,h._1 + conversation.jid, h._1 - 1)).toList
+        slides = histories.toList.flatMap(h => newSlides.get(h._1).map(s => s.copy(index = h._1 - 1))).toList
       )
       onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("slides measured",2,finalCount)),None))
       val remoteConv = server.updateConversation(conversation.jid.toString,newConvWithAllSlides)
       onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("slides created",3,finalCount)),None))
       var slideCount = 4
+
       histories.toList.foreach(tup => {
-        val newLoc = RoomMetaDataUtils.fromJid((tup._1 + conversation.jid).toString)
-        onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("queueing content for insertion for %s".format(newLoc),slideCount,finalCount)),None))
-        slideCount += 1
-        ServerSideBackgroundWorker ! CopyContent(server,tup._2,newLoc)
+        newSlides.get(tup._1).foreach(slide => {
+          val newLoc = RoomMetaDataUtils.fromJid(slide.id)
+          onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("queueing content for insertion for %s".format(newLoc),slideCount,finalCount)),None))
+          slideCount += 1
+          ServerSideBackgroundWorker ! CopyContent(server,tup._2,newLoc)
+        })
       })
       onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("all content queued for insertion",finalCount,finalCount)),None))
       Full(newConvWithAllSlides)

@@ -364,6 +364,13 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   override def fromMeTLQuizResponse(i:MeTLQuizResponse):H2QuizResponse = {
     incStanza(H2QuizResponse.create,i,"quizResponse").answer(i.answer).answerer(i.answerer).quizId(i.id)
   }
+  def toSlide(i:H2Slide):Slide = {
+    val audiences = parseAudiences(i.audiences.get)
+    Slide(config,i.author.get,i.jid.get,0,i.defaultHeight.get,i.defaultWidth.get,true,i.slideType.get,Nil,audiences)
+  }
+  override def fromSlide(i:Slide):H2Slide = {
+    incMeTLContent(H2Slide.create,i,"slide").author(i.author).creation(new java.util.Date().getTime).jid(i.id).slideType(i.slideType).defaultWidth(i.defaultWidth).defaultHeight(i.defaultHeight).modified(new java.util.Date().getTime)
+  }
   def toConversation(i:H2Conversation):Conversation = {
     val fr = for {
       sys <- Some(i.foreignRelationshipSystem.get)
@@ -373,15 +380,94 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     } yield {
       ForeignRelationship(sys,key)
     }
+    val structure = Map((for {
+      structureXml <- List(i.structure.get).filterNot(s => s == null || s.trim == "").map(scala.xml.XML.loadString _)
+      sx <- (structureXml \ "slide").toList
+      sid:String <- (sx \ "@id").headOption.map(_.text)
+      exposed:Boolean <- (sx \ "@exposed").headOption.map(_.text.toBoolean)
+      index:Int <- (sx \ "@index").headOption.map(_.text.toInt)
+      groupSets:List[GroupSet] = (for {
+        gx <- (sx \ "groupSets" \ "groupSet")
+          groupSetId <- (gx \ "@id").headOption.map(_.text)
+          groupSetLoc <- (gx \ "@location").headOption.map(_.text)
+          gxs <- (gx \ "groupingStrategy").headOption
+          groupingStrategy <- (gxs \ "@strategy").headOption.map(_.text.toLowerCase.trim match {
+            case "bymaximumsize" => ByMaximumSize((gxs \ "@groupSize").headOption.map(_.text.toInt).getOrElse(5))
+            case "bytotalgroups" => ByTotalGroups((gxs \ "@groupCount").headOption.map(_.text.toInt).getOrElse(3))
+            case "complexgroups" => ComplexGroupingStrategy(Map((for {
+                gxcs <- (gxs \ "members" \ "member")
+                mn <- (gxcs \ "@name").headOption.map(_.text)
+                gid <- (gxcs \ "@groupId").headOption.map(_.text)
+              } yield {
+                (mn,gid)
+            }):_*))
+            case "onepersonpergroup" => OnePersonPerGroup
+            case "everyoneinonegroup" => EveryoneInOneGroup
+          })
+          groupSetAudiences <- (gx \ "audiences").headOption.map(_.text)
+          
+        } yield {
+          val groupXmls:List[scala.xml.NodeSeq] = (gx \ "groups" \ "group").toList
+          val groups:List[Group] = (for {
+              groupXml <- groupXmls
+              groupId <- (groupXml \ "@id").headOption.map(_.text)
+              groupLoc <- (groupXml \ "@location").headOption.map(_.text)
+              groupTimestamp <- (groupXml \ "@timestamp").headOption.map(_.text.toLong)
+              groupMembers = (for {
+                gmx <- (groupXml \ "members" \ "member")
+                memberName <- (gmx \ "@name").headOption.map(_.text)
+              } yield {
+                memberName
+              }).toList
+              groupAudiences <- (groupXml \ "audiences").headOption.map(_.text)
+            } yield {
+              Group(config,groupId,groupLoc,groupTimestamp,groupMembers,parseAudiences(groupAudiences))
+            }).toList
+          GroupSet(config,groupSetId,groupSetLoc,groupingStrategy,groups,parseAudiences(groupSetAudiences))
+        }).toList
+    } yield {
+      (sid,Slide(config,"",sid,index,0,0,exposed,"",groupSets,Nil))
+    }):_*)
+
+    val slideRecords = H2Slide.findAll(ByList(H2Slide.jid,structure.keys.toList))
+    val slides = (for {
+      sr <- slideRecords
+      slideId = sr.jid.get
+      cs <- structure.get(slideId)
+    } yield {
+      Slide(config,sr.author.get,slideId,cs.index,sr.defaultHeight.get,sr.defaultWidth.get,cs.exposed,sr.slideType.get,cs.groupSet,parseAudiences(sr.audiences.get))
+    }).toList
     val audiences = parseAudiences(i.audiences.get)
-    Conversation(config,i.author.get,i.lastAccessed.get,slidesFromString(i.slides.get),i.subject.get,i.tag.get,i.jid.get,i.title.get,i.creation.get,permissionsFromString(i.permissions.get),stringToStrings(i.blackList.get).toList,parseAudiences(i.audiences.get),fr)
+    Conversation(config,i.author.get,i.lastAccessed.get,slides,i.subject.get,i.tag.get,i.jid.get,i.title.get,i.creation.get,permissionsFromString(i.permissions.get),stringToStrings(i.blackList.get).toList,parseAudiences(i.audiences.get),fr)
   }
   override def fromConversation(i:Conversation):H2Conversation = {
-    val rec = H2Conversation.find(By(H2Conversation.jid,i.jid)) match {
-      case Full(c) => c
-      case _ => H2Conversation.create
-    }
-    incMeTLContent(rec,i,"conversation").author(i.author).lastAccessed(i.lastAccessed).subject(i.subject).tag(i.tag).jid(i.jid).title(i.title).created(new java.util.Date(i.created).toString()).creation(i.created).permissions(permissionsToString(i.permissions)).blackList(stringsToString(i.blackList)).slides(slidesToString(i.slides)).foreignRelationshipSystem(i.foreignRelationship.map(_.system).getOrElse("")).foreignRelationshipKey(i.foreignRelationship.map(_.key).getOrElse("")).audiences(incAudiences(i.audiences).toString)
+    val structure = <slides>{i.slides.map(slide => {
+      <slide id={slide.id} exposed={slide.exposed.toString} index={slide.index.toString}><groupSets>{
+        slide.groupSet.map(groupSet => {
+          <groupSet id={groupSet.id} location={groupSet.location}>{
+            groupSet.groupingStrategy match {
+              case ByMaximumSize(groupSize) => <groupingStrategy strategy="bymaximumsize" groupSize={groupSize.toString}/>
+              case ByTotalGroups(groupCount) => <groupingStrategy strategy="bytotalgroups" groupCount={groupCount.toString} />
+              case ComplexGroupingStrategy(strategyGroupMembers) => <groupingStrategy strategy="complexgroups"><members>{strategyGroupMembers.map(member => {
+                    <member name={member._1} groupId={member._2}/>
+                  })}</members></groupingStrategy>
+              case OnePersonPerGroup => <groupingStrategy strategy="onepersonpergroup"/>
+              case EveryoneInOneGroup => <groupingStrategy strategy="everyoneinonegroup"/>
+              case _ => {}
+            }
+          }<groups>{
+            groupSet.groups.map(group => {
+              <group id={group.id} location={group.location} timestamp={group.timestamp.toString} ><members>{
+                group.members.map(m => {
+                  <member name={m}/>
+                })
+              }</members>{incAudiences(group.audiences)}</group>
+            })
+          }</groups></groupSet>
+        })
+      }</groupSets>{incAudiences(slide.audiences)}</slide>
+    })}</slides>
+    incMeTLContent(H2Conversation.create,i,"conversation").author(i.author).lastAccessed(i.lastAccessed).subject(i.subject).tag(i.tag).jid(i.jid).title(i.title).created(new java.util.Date(i.created).toString()).creation(i.created).permissions(permissionsToString(i.permissions)).blackList(stringsToString(i.blackList)).structure(structure.toString).foreignRelationshipSystem(i.foreignRelationship.map(_.system).getOrElse("")).foreignRelationshipKey(i.foreignRelationship.map(_.key).getOrElse("")).audiences(incAudiences(i.audiences).toString)
   }
   def optionsToString(ls:List[QuizOption]):String = {
     val xml = <options>{ls.map(o => xmlSerializer.fromQuizOption(o))}</options>

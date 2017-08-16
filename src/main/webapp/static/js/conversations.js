@@ -443,7 +443,7 @@ var Conversations = (function(){
         }
     };
     var updateThumbnailFor = function(slideId) {
-        var slide = _.find(currentConversation.slides, ['id',parseInt(slideId)]);
+        var slide = _.find(currentConversation.slides, ['id',slideId]);
         ThumbCache.paint(slide);
     };
     var goToNextSlideFunction = function(){

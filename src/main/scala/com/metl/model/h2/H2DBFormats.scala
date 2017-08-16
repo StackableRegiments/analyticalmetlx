@@ -260,19 +260,31 @@ class H2Submission extends H2MeTLCanvasContent[H2Submission]{
 }
 object H2Submission extends H2Submission with LongKeyedMetaMapper[H2Submission]{
 }
+class H2Slide extends H2MeTLContent[H2Slide]{
+  def getSingleton = H2Slide
+  object author extends MappedMeTLString(this,H2Constants.author)
+  object creation extends MappedLong(this)
+  object modified extends MappedLong(this)
+  object jid extends H2MeTLIndexedString(this,64)
+  object slideType extends MappedMeTLString(this,64)
+  object defaultWidth extends MappedInt(this)
+  object defaultHeight extends MappedInt(this)
+}
+object H2Slide extends H2Slide with LongKeyedMetaMapper[H2Slide]{
+}
 class H2Conversation extends H2MeTLContent[H2Conversation]{
   def getSingleton = H2Conversation
   object author extends MappedMeTLString(this,H2Constants.author)
   object lastAccessed extends MappedLong(this)
   object subject extends MappedMeTLString(this,64)
   object tag extends MappedMeTLString(this,H2Constants.tag)
-  object jid extends MappedInt(this)
+  object jid extends H2MeTLIndexedString(this,64)
   object title extends MappedMeTLString(this,512)
   object created extends MappedMeTLString(this,64)
   object creation extends MappedLong(this)
   object permissions extends MappedMeTLString(this,4096)
   object blackList extends MappedText(this)
-  object slides extends MappedText(this)
+  object structure extends MappedText(this)
   object foreignRelationshipSystem extends MappedMeTLString(this,1024)
   object foreignRelationshipKey extends MappedMeTLString(this,H2Constants.url)
 }

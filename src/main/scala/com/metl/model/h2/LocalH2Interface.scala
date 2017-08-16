@@ -8,8 +8,12 @@ import java.util.Date
 
 import net.liftweb.mapper._
 import net.liftweb.common._
+<<<<<<< HEAD
 import net.liftweb.util._
 import Helpers._
+=======
+import net.liftweb.util.Helpers._
+>>>>>>> 95cea8ae4b8ef3120b54a3ce4c14881b0e0a71ef
 
 import scala.compat.Platform.EOL
 import _root_.net.liftweb.mapper.{ConnectionManager, DB, DefaultConnectionIdentifier, Schemifier, StandardDBVendor}
@@ -72,8 +76,12 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2TextGradeValue,
         H2ChatMessage,
         H2UndeletedCanvasContent,
+<<<<<<< HEAD
         H2Profile,
         H2AccountRelationships
+=======
+        H2Slide
+>>>>>>> 95cea8ae4b8ef3120b54a3ce4c14881b0e0a71ef
       ):_*
     )
     // this starts our pool in advance
@@ -181,8 +189,10 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       info("upgraded db to hold a copy of the mockdata")
       versionNumber
     }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+    /*
     DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 7).map(versionNumber => {
       info("upgrading db to set all slides to exposed, because they were previously defaulting to false and we didn't mean that.")
+      
       H2Conversation.findAll.foreach(conv => {
         conv.slides(serializer.slidesToString(serializer.slidesFromString(conv.slides.get).map(_.copy(exposed = true)))).save
       })
@@ -190,6 +200,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       info("upgraded db to set all slides to exposed, because they were previously defaulting to false and we didn't mean that.")
       versionNumber
     }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+    */
     true
   }
   type H2Object = Object
@@ -463,12 +474,23 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   //conversations table
   protected lazy val mbDef = new MessageBusDefinition("global","conversationUpdating",receiveConversationDetailsUpdated _)
   protected lazy val conversationMessageBus = config.getMessageBus(mbDef)
-  protected lazy val conversationCache = scala.collection.mutable.Map(H2Conversation.findAll.map(c => (c.jid.get,serializer.toConversation(c))):_*)
+  protected lazy val conversationCache:scala.collection.mutable.Map[String,Conversation] = scala.collection.mutable.Map(H2Conversation.findAll.groupBy(_.jid.get).toList.flatMap(c => {
+    val allForThisJid = c._2
+    val latest = allForThisJid.sortBy(_.lastAccessed.get).reverse.headOption
+    latest.map(l => (l.jid.get,serializer.toConversation(l)))
+  }):_*)
+  protected lazy val slideCache:scala.collection.mutable.Map[String,Slide] = scala.collection.mutable.Map(H2Slide.findAll.groupBy(_.jid.get).toList.flatMap(s => {
+    val allForThisJid = s._2
+    val latest = allForThisJid.sortBy(_.modified.get).reverse.headOption
+    latest.map(l => (l.jid.get,serializer.toSlide(l)))
+  }):_*)
   protected def updateConversation(c:Conversation):Boolean = {
     try {
       conversationCache.update(c.jid,c)
-      updateMaxJid
-      serializer.fromConversation(c).save
+      c.slides.foreach(s => {
+        slideCache.update(s.id,s.copy(exposed=true,groupSet=Nil,index=0))
+      })
+      serializer.fromConversation(c.copy(lastAccessed = new java.util.Date().getTime)).save
       onConversationDetailsUpdated(c)
       true
     } catch {
@@ -478,28 +500,13 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       }
     }
   }
-  protected def updateMaxJid = maxJid = try {
-    conversationCache.values.map(_.jid).max
-  } catch {
-    case _:Throwable => 0
-  }
-  protected var maxJid = 0
-  protected def getNewJid = synchronized {
-    if (maxJid == 0){
-      updateMaxJid
-    }
-    val oldMax = maxJid
-    maxJid += 1000
-    maxJid
-  }
   protected def receiveConversationDetailsUpdated(m:MeTLStanza) = {
     m match {
       case c:MeTLCommand if c.command == "/UPDATE_CONVERSATION_DETAILS" && c.commandParameters.length == 1 => {
         try{
-          val jidToUpdate = c.commandParameters(0).toInt
+          val jidToUpdate = c.commandParameters(0)
           val conversation = detailsOfConversation(jidToUpdate)
           conversationCache.update(conversation.jid,conversation)
-          updateMaxJid
           onConversationDetailsUpdated(conversation)
         } catch {
           case e:Throwable => error("exception while attempting to update conversation details",e)
@@ -509,20 +516,30 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     }
   }
   def getAllConversations:List[Conversation] = conversationCache.values.toList
+  override def getConversationsForSlideId(jid:String):List[String] = conversationCache.values.filter(_.slides.exists(_.id == jid)).map(_.jid).toList
   def searchForConversation(query:String):List[Conversation] = conversationCache.values.filter(c => c.title.toLowerCase.trim.contains(query.toLowerCase.trim) || c.author.toLowerCase.trim == query.toLowerCase.trim).toList
   def searchForConversationByCourse(courseId:String):List[Conversation] = conversationCache.values.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
-  def conversationFor(slide:Int):Int = (slide / 1000 ) * 1000
-  def detailsOfConversation(jid:Int):Conversation = conversationCache(jid)
+  def detailsOfConversation(jid:String):Conversation = conversationCache(jid)
+  def detailsOfSlide(jid:String):Slide = slideCache(jid)
+  def generateConversationJid:String = "c_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
+  def generateSlideJid:String = "s_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
+  def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = {
+    val slide = H2Slide.create.slideType(slideType).creation(new java.util.Date().getTime).author(author).jid(generateSlideJid).defaultHeight(540).defaultWidth(720).saveMe
+    val s = Slide(config,slide.author,slide.jid.get,0,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
+    slideCache.put(s.id,s.copy(exposed = true,groupSet = Nil,index = 0))
+    s
+  }
   def createConversation(title:String,author:String):Conversation = {
     val now = new Date()
-    val newJid = getNewJid
-    val details = Conversation(config,author,now.getTime,List(Slide(config,author,newJid + 1,0)),"unrestricted","",newJid,title,now.getTime,Permissions.default(config))
+    val newJid = generateConversationJid
+    val slide = createSlide(author).copy(index = 0,exposed = true) 
+    val details = Conversation(config,author,now.getTime,List(slide),"unrestricted","",newJid,title,now.getTime,Permissions.default(config))
     updateConversation(details)
     details
   }
   protected def findAndModifyConversation(jidString:String,adjustment:Conversation => Conversation):Conversation  = Stopwatch.time("H2Interface.findAndModifyConversation",{
     try {
-      val jid = jidString.toInt
+      val jid = jidString
       detailsOfConversation(jid) match {
         case c:Conversation if (c.jid == jid) => {
           val updatedConv = adjustment(c)
@@ -545,8 +562,18 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   def renameConversation(jid:String,newTitle:String):Conversation = findAndModifyConversation(jid,c => c.rename(newTitle))
   def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation = findAndModifyConversation(jid,c => c.replacePermissions(newPermissions))
   def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = findAndModifyConversation(jid,c => c.replaceSubject(newSubject))
-  def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = findAndModifyConversation(jid,c => c.addSlideAtIndex(index))
-  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = findAndModifyConversation(jid,c => c.addGroupSlideAtIndex(index,grouping))
+  def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = {
+    findAndModifyConversation(jid,c => {
+      val slide = createSlide(c.author)
+      c.addSlideAtIndex(index,slide)
+    })
+  }
+  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = {
+    findAndModifyConversation(jid,c => {
+      val slide = createSlide(c.author,"SLIDE",List(grouping))
+      c.addSlideAtIndex(index,slide)
+    })
+  }
   def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = findAndModifyConversation(jid,c => c.replaceSlides(newSlides))
   def updateConversation(jid:String,conversation:Conversation):Conversation = {
     if (jid == conversation.jid.toString){

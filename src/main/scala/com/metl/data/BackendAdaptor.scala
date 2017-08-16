@@ -55,12 +55,14 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   val onConversationDetailsUpdated:Conversation=>Unit = onConversationDetailsUpdatedFunc
   def getMessageBus(d:MessageBusDefinition):MessageBus
   def getHistory(jid:String):History
-  def getConversationForSlide(slideJid:String):String
   def getAllConversations:List[Conversation]
+  def getConversationsForSlideId(jid:String):List[String]
   def searchForConversation(query:String):List[Conversation]
   def searchForConversationByCourse(courseId:String):List[Conversation]
   def detailsOfConversation(jid:String):Conversation
+  def detailsOfSlide(jid:String):Slide
   def createConversation(title:String,author:String):Conversation
+  def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide
   def deleteConversation(jid:String):Conversation
   def renameConversation(jid:String,newTitle:String):Conversation
   def changePermissions(jid:String,newPermissions:Permissions):Conversation
@@ -197,12 +199,14 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   val serializer = new PassthroughSerializer
   override def getMessageBus(d:MessageBusDefinition) = EmptyMessageBus
   override def getHistory(jid:String) = History.empty
-  override def getConversationForSlide(slideJid:String):String = ""
   override def getAllConversations = List.empty[Conversation]
+  override def getConversationsForSlideId(jid:String):List[String] = List.empty[String]
   override def searchForConversation(query:String) = List.empty[Conversation]
   override def searchForConversationByCourse(courseId:String) = List.empty[Conversation]
   override def detailsOfConversation(jid:String) = Conversation.empty
+  override def detailsOfSlide(jid:String) = Slide.empty
   override def createConversation(title:String,author:String) = Conversation.empty
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
   override def deleteConversation(jid:String):Conversation = Conversation.empty
   override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
@@ -241,12 +245,14 @@ object FrontendSerializationAdaptor extends ServerConfiguration("frontend","fron
   val serializer = new GenericXmlSerializer(this)
   override def getMessageBus(d:MessageBusDefinition) = EmptyMessageBus
   override def getHistory(jid:String) = History.empty
-  override def getConversationForSlide(slideJid:String):String = ""
   override def getAllConversations = List.empty[Conversation]
+  override def getConversationsForSlideId(jid:String):List[String] = List.empty[String]
   override def searchForConversation(query:String) = List.empty[Conversation]
   override def searchForConversationByCourse(query:String) = List.empty[Conversation]
   override def detailsOfConversation(jid:String) = Conversation.empty
+  override def detailsOfSlide(jid:String) = Slide.empty
   override def createConversation(title:String,author:String) = Conversation.empty
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
   override def deleteConversation(jid:String):Conversation = Conversation.empty
   override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
@@ -283,12 +289,14 @@ object FrontendSerializationAdaptorConfigurator extends ServerConfigurator{
 class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.name,sc.host,sc.onConversationDetailsUpdated){
   override def getMessageBus(d:MessageBusDefinition) = sc.getMessageBus(d)
   override def getHistory(jid:String) = sc.getHistory(jid)
-  override def getConversationForSlide(slideJid:String):String = sc.getConversationForSlide(slideJid)
   override def getAllConversations = sc.getAllConversations
+  override def getConversationsForSlideId(jid:String):List[String] = sc.getConversationsForSlideId(jid)
   override def searchForConversation(query:String) = sc.searchForConversation(query)
   override def searchForConversationByCourse(courseId:String) = sc.searchForConversationByCourse(courseId)
   override def detailsOfConversation(jid:String) = sc.detailsOfConversation(jid)
+  override def detailsOfSlide(jid:String) = sc.detailsOfSlide(jid)
   override def createConversation(title:String,author:String) = sc.createConversation(title,author)
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = sc.createSlide(author,slideType,grouping)
   override def deleteConversation(jid:String):Conversation = sc.deleteConversation(jid)
   override def renameConversation(jid:String,newTitle:String):Conversation = sc.renameConversation(jid,newTitle)
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = sc.changePermissions(jid,newPermissions)

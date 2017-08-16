@@ -275,7 +275,7 @@ trait MeTLDataGenerators {
     lastAccessed <- arbitrary[Long]
     subject <- genString(32)
     tag <- genString(32)
-    jid <- arbitrary[Int]
+    jid <- genString(64)//arbitrary[Int]
     title <- genString(32)
     created <- arbitrary[Long]
     permissions <- genPermissions
@@ -284,7 +284,7 @@ trait MeTLDataGenerators {
 
   def genSlide = for {
     author <- genString(32)
-    id <- arbitrary[Int]
+    id <- genString(64)//rbitrary[Int]
     index <- arbitrary[Int]
   } yield Slide(ServerConfiguration.empty, author, id, index)
 

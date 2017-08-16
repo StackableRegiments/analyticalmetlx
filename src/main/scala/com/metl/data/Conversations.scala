@@ -15,9 +15,11 @@ abstract class ConversationRetriever(config:ServerConfiguration,onConversationDe
 	def getAll:List[Conversation]
 	def search(query:String):List[Conversation]
 	def searchByCourse(courseId:String):List[Conversation]
-	def conversationFor(slide:Int):Int
-	def detailsOf(jid:Int):Conversation 
+	def detailsOf(jid:String):Conversation 
+  def detailsOfSlide(jid:String):Slide
+  def getConversationsForSlideId(jid:String):List[String]
 	def createConversation(title:String,author:String):Conversation
+  def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide
 	def deleteConversation(jid:String):Conversation
 	def renameConversation(jid:String,newTitle:String):Conversation
 	def changePermissions(jid:String,newPermissions:Permissions):Conversation
@@ -32,9 +34,11 @@ object EmptyConversations extends ConversationRetriever(EmptyBackendAdaptor,(c) 
 	override def getAll = List.empty[Conversation]
 	override def search(query:String) = List.empty[Conversation]
 	override def searchByCourse(courseId:String) = List.empty[Conversation]
-	override def conversationFor(slide:Int):Int = 0
-	override def detailsOf(jid:Int) = Conversation.empty
+	override def detailsOf(jid:String) = Conversation.empty
+  override def detailsOfSlide(jid:String):Slide = Slide.empty
+  override def getConversationsForSlideId(jid:String):List[String] = Nil
 	override def createConversation(title:String,author:String):Conversation = Conversation.empty
+  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
 	override def deleteConversation(jid:String):Conversation = Conversation.empty	
 	override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
 	override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
