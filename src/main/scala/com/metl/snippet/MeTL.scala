@@ -85,6 +85,8 @@ class Metl extends Logger {
   }
   protected def generateName(showDeleted:Boolean = false):String = {
     var name = "USERNAME:%s".format(Globals.currentUser.is)
+    name = constructNameString(name,"ACCOUNT_PROVIDER",Globals.currentAccount.provider)
+    name = constructNameString(name,"ACCOUNT_NAME",Globals.currentAccount.name)
     S.param("conversationJid").foreach(cj => {
       try {
         name = constructNameString(name,"CONVERSATION",cj)
@@ -108,6 +110,9 @@ class Metl extends Logger {
           error("invalid argument passed in conversationJid: %s".format(cj),e)
         }
       }
+    })
+    S.param("profileId").map(profileId => {
+      name = constructNameString(name,"PROFILE",profileId)
     })
     S.param("links").map(links => {
       name = constructNameString(name,"LINKS",links.toLowerCase.trim == "false" match {
@@ -156,6 +161,7 @@ class Metl extends Logger {
   def getQueryFromName(in:String):Option[String] = extractValueByName(in,"QUERY")
   def getConversationFromName(in:String):Option[String] = extractValueByName(in,"CONVERSATION")
   def getSlideFromName(in:String):Option[String] = extractValueByName(in,"SLIDE")
+  def getProfileIdFromName(in:String):Option[String] = extractValueByName(in,"PROFILE")
   protected def extractValueByName[A](in:String,name:String,converter:String => A = (s:String) => s):Option[A] = {
     try {
         val sections = in.split('|').toList
@@ -207,14 +213,13 @@ class Metl extends Logger {
     output
   }
   def profile(in:NodeSeq):NodeSeq = {
-    val name = "%s_%s".format(Globals.currentUser.is,nextFuncName)
+    val name = generateName()
     val clazz = "lift:comet?type=MeTLProfile&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     output
   }
   def account(in:NodeSeq):NodeSeq = {
-    Globals.currentUser.is // have to hit this first, always - will have to look at how to fix that.
-    val name = "%s_%s_%s".format(Globals.currentAccount.provider,Globals.currentAccount.name,nextFuncName)
+    val name = generateName()
     val clazz = "lift:comet?type=MeTLAccount&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     output

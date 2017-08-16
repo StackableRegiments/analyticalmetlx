@@ -55,12 +55,14 @@ object MeTLActorManager extends LiftActor with ListenerManager with Logger {
 object MeTLProfileActorManager extends LiftActor with ListenerManager with Logger {
   def createUpdate = HealthyWelcomeFromRoom
   override def lowPriority = {
+    case p:Profile => sendListenersMessage(p)
     case _ => warn("MeTLProfileActorManager received unknown message")
   }
 }
 object MeTLAccountActorManager extends LiftActor with ListenerManager with Logger {
   def createUpdate = HealthyWelcomeFromRoom
   override def lowPriority = {
+    case p:Profile => sendListenersMessage(p)
     case _ => warn("MeTLAccountActorManager received unknown message")
   }
 }
@@ -222,7 +224,6 @@ class MeTLAccount extends StronglyTypedJsonActor with Logger with JArgUtils with
   override def lifespan = Globals.searchActorLifespan
   override def localSetup = {
     warn("localSetup for MeTLAccount [%s]".format(name))
-    Globals.currentUser.is // doing this to ensure that the system has checked the authenticator already
     super.localSetup
   }
   override def render = OnLoad(
@@ -232,6 +233,7 @@ class MeTLAccount extends StronglyTypedJsonActor with Logger with JArgUtils with
     Call(RECEIVE_DEFAULT_PROFILE,JString(serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2)) 
   )
   override def lowPriority = {
+    case p:Profile if Globals.availableProfiles.is.exists(_.id == p.id) => partialUpdate(Call(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _))))
     case _ => warn("MeTLAccountActor received unknown message")
   }
 }
@@ -249,35 +251,50 @@ class MeTLProfile extends StronglyTypedJsonActor with Logger with JArgUtils with
   override lazy val functionDefinitions = List(
     ClientSideFunction("changeProfileNickname",List("newName"),(args) => {
       val newName = getArgAsString(args(0)).trim
-      val orig = Globals.currentProfile.is
-      val prof = serverConfig.updateProfile(orig.id,orig.copy(name = newName)) 
-      Globals.currentProfile(prof)
-      println("changed nickname: %s => %s".format(newName,prof))
-      renderProfile(prof)
+      renderProfile(updateProfile(thisProfile.copy(name = newName)))
     },Full(RECEIVE_PROFILE)),
     ClientSideFunction("changeAttribute",List("key","value"),(args) => {
       val k = getArgAsString(args(0)).trim
       val v = getArgAsString(args(1)).trim
-      val orig = Globals.currentProfile.is
-      val prof = serverConfig.updateProfile(orig.id,orig.copy(attributes = orig.attributes.updated(k,v)))
-      Globals.currentProfile(prof)
-      renderProfile(prof)
+      val orig = thisProfile
+      renderProfile(updateProfile(thisProfile.copy(attributes = orig.attributes.updated(k,v))))
     },Full(RECEIVE_PROFILE)),
     ClientSideFunction("getProfileSessionHistory",Nil,(args) => {
-      Extraction.decompose(serverConfig.getSessionsForProfile(Globals.currentProfile.is.id))
+      Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id))
     },Full(RECEIVE_SESSION_HISTORY))
   )
+  protected var profile:Option[Profile] = None
+  protected def thisProfile = profile.getOrElse(Globals.currentProfile.is)
+  protected def updateProfile(p:Profile):Profile = {
+    val prof = serverConfig.updateProfile(p.id,p)
+    profile = profile.map(_p => prof)
+    Globals.availableProfiles(prof :: Globals.availableProfiles.is.filterNot(_.id == prof.id))
+    if (Globals.currentProfile.is.id == prof.id){
+      Globals.currentProfile(prof)
+    }
+    MeTLProfileActorManager ! p
+    MeTLAccountActorManager ! p
+    prof
+  }
   override def lifespan = Globals.searchActorLifespan
   override def localSetup = {
+    profile = name.flatMap(n => getProfileIdFromName(n)).flatMap(pid => Globals.availableProfiles.is.find(_.id == pid))
     warn("localSetup for MeTLProfile [%s]".format(name))
     super.localSetup
   }
   override def render = OnLoad(
-    Call(RECEIVE_PROFILE,renderProfile(Globals.currentProfile.is)) &
-    Call(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(Globals.currentProfile.is.id)))
+    Call(RECEIVE_PROFILE,renderProfile(thisProfile)) &
+    Call(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id)))
   )
   override def lowPriority = {
-    case _ => warn("MeTLConversationSearchActor received unknown message")
+    case p:Profile if thisProfile.id == p.id => {
+      profile = profile.map(_p => p)
+      partialUpdate(
+        Call(RECEIVE_PROFILE,renderProfile(thisProfile)) &
+        Call(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id)))
+      )
+    }
+    case _ => warn("MeTLProfileActor received unknown message")
   }
 }
 

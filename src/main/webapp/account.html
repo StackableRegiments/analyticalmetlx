@@ -25,31 +25,91 @@
 			//console.log("serverResponse:",response);
 		}
 		function receiveCurrentProfile(prof){
-			console.log("currentProfile:",prof);
+			console.log("received current: ",prof);
+			currentProfile = prof.id;
+			reRenderUI();
 		};
 		function receiveProfiles(profiles){
-			console.log("availableProfiles:",profiles);
+			availableProfiles = profiles;
+			reRenderUI();
 		};
 		function receiveDefaultProfile(profId){
-			console.log("defaultProfile:",profId);
+			console.log("received default: ",profId);
+			defaultProfile = profId;
+			reRenderUI();
 		};
-		function receiveAccount(account){
-			console.log("account:",account);
+		function receiveAccount(acc){
+			console.log("received account: ",acc);
+			account = acc;
+			reRenderUI();
 		};
+		var profileContainer = undefined;
+		var profileTemplate = undefined;
+		var availableProfiles = [];
+		var account = undefined;
+		var currentProfile = undefined;
+		var defaultProfile = undefined;
+
+		var reRenderUI = function(){
+			if (account){
+				$("#accountProvider").text(account.accountProvider);
+				$("#accountName").text(account.accountName);
+			}
+			profileContainer.html(_.map(availableProfiles,function(prof){
+				var profId = prof.id;
+				var rootElem = profileTemplate.clone();				
+				rootElem.find(".profileName").text(prof.name);
+				rootElem.find(".profileId").text(profId);
+				rootElem.find(".isDefaultLabel").attr("for",profId + "_isDefaultCheckbox");
+				rootElem.find(".isDefault").attr("id",profId + "_isDefaultCheckbox").prop("checked",profId == defaultProfile).change(function(){
+					var newValue = $(this).is(":checked");
+					if (newValue && profId != defaultProfile){
+						setDefaultProfile(profId);
+					} else {
+						reRenderUI();
+					}
+				});
+				rootElem.find(".isActiveLabel").attr("for",prof.id + "_isActiveCheckbox");
+				rootElem.find(".isActive").attr("id",profId + "_isActiveCheckbox").prop("checked",profId == currentProfile).change(function(){
+					var newValue = $(this).is(":checked");
+					if (newValue && profId != currentProfile){
+						switchToProfile(profId);
+					} else {
+						reRenderUI();
+					}
+				});
+				rootElem.find(".editProfileLink").attr("href","/profile?profileId="+profId);
+				return rootElem;
+			}));
+		};
+		$(function(){
+			profileContainer = $("#profileContainer");
+			profileTemplate = profileContainer.find(".profile").clone();
+			profileContainer.empty();
+			reRenderUI();
+			$("#createProfile").bind("click",createProfile);
+		});
 	</script>
 	<style>
-#profileContainer {
+#accountContainer {
 	background:white;
 }
 	</style>
-	<div id="accountProvider"></div>
-	<div id="accountName"></div>
-	<div id="profileContainer">
-		<div class="profile">
-			<div id="profileName"></div>
-			<div id="profileId"></div>
+	<div id="accountContainer">
+		<div id="accountProvider"></div>
+		<div id="accountName"></div>
+		<div id="profileContainer">
+			<div class="profile">
+				<span class="profileName"></span>
+				<span class="profileId"></span>
+				<input type="checkbox" class="isActive"></input>
+				<label class="isActiveLabel">active</label>
+				<input type="checkbox" class="isDefault"></span>
+				<label class="isDefaultLabel">default</label>
+				<a class="editProfileLink">edit</a>
+			</div>
 		</div>
- 	</div>
-	<div id="createProfile"></div>
+		<div id="createProfile"></div>
+	</div>
 	<div class="lift:Metl.account"></div>
 </div>
