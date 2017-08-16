@@ -191,17 +191,23 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 8).map(versionNumber => {
       info("upgrading db to set all future conversation-created dates to 1/7/2016, because they were created by erroneous C# clients and are being reset to the data origin date.")
       val defaultZoneId = ZoneId.of("America/New_York")
-      // 1 July 2016
-      val zonedDateTime = ZonedDateTime.of(LocalDate.of(2016,6,1),LocalTime.of(0,0),defaultZoneId)
-      val originCreatedString = zonedDateTime.format(DateTimeFormatter.ofPattern("EEE MMM dd kk:mm:ss z yyyy"))
-      val originCreationLong = Instant.from(zonedDateTime).toEpochMilli
+      // Origin date is 1 July 2016
+      val zonedDateTime = ZonedDateTime.of(LocalDate.of(2016,7,1),LocalTime.of(0,0),defaultZoneId)
+      val originDateString = zonedDateTime.format(DateTimeFormatter.ofPattern("EEE MMM dd kk:mm:ss z yyyy"))
+      val originDateLong = Instant.from(zonedDateTime).toEpochMilli
       val nowPlusADay = Instant.from(ZonedDateTime.now(defaultZoneId).plusDays(1)).toEpochMilli
-      H2Conversation.findAll.filter(_.creation > nowPlusADay).foreach(h2Conv => {
-        h2Conv.created(originCreatedString).save
-        h2Conv.creation(originCreationLong).save
+      val futureConversationCreateds = H2Conversation.findAll.filter(_.creation > nowPlusADay)
+      trace("found %s future conversation createds".format(futureConversationCreateds.length))
+      futureConversationCreateds.foreach(h2Conv => {
+        trace("updating %s created to %s".format(h2Conv.jid,originDateString))
+        h2Conv.created(originDateString).save
+        h2Conv.creation(originDateLong).save
       })
-      H2Conversation.findAll.filter(_.lastAccessed > nowPlusADay).foreach(h2Conv => {
-        h2Conv.lastAccessed(originCreationLong).save
+      val futureConversationLastAccesseds = H2Conversation.findAll.filter(_.lastAccessed > nowPlusADay)
+      trace("found %s future conversation last accesseds".format(futureConversationLastAccesseds.length))
+      futureConversationLastAccesseds.foreach(h2Conv => {
+        trace("updating %s last accessed to %s".format(h2Conv.jid,originDateString))
+        h2Conv.lastAccessed(originDateLong).save
       })
       versionNumber.intValue(8).save
       info("upgraded db to set all future conversation-created dates to 1/7/2016, because they were created by erroneous C# clients and are being reset to the data origin date.")
