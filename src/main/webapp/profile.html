@@ -1,0 +1,170 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+  <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
+  <script src="static/js/stable/clipboard.min.js"></script>
+  <script src="static/js/stable/lodash.js"></script>
+  <script src="static/js/stable/jquery.ui.widget.js"></script>
+  <script src="static/js/stable/jquery.iframe-transport.js"></script>
+  <script src="static/js/stable/jquery.fileupload.js"></script>
+  <script src="static/js/stable/d3.v4.min.js"></script>
+  <script src="static/js/stable/d3.layout.cloud.js"></script>
+  <link rel="stylesheet" href="static/css/jAlert.css"></link>
+  <script src="static/js/stable/jAlert.min.js"></script>
+  <script src="static/js/stable/jAlert-functions.min.js"></script>
+  <script src="static/js/stable/jsgrid.min.js" data-lift="with-resource-id"></script>
+  <link rel="stylesheet" href="static/css/jsgrid.min.css"></link>
+  <link rel="stylesheet" href="static/css/jsgrid-theme.min.css"></link>
+  <script data-lift="with-resource-id" src="static/js/stable/moment.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/collections.js"></script>
+  <script data-lift="with-resource-id" src="static/js/profile.js"></script>
+	<script type="text/javascript">
+		var ProfileUI = (function(){
+			var sessionTemplate = undefined;
+			var sessionItemTemplate = undefined;
+			var sessionItemEventTemplate = undefined;
+			var currentProfile = {};
+			var sessionHistory = [];
+			var profileUpdated = function(p){
+				console.log("received profile update",p);
+				currentProfile = p;
+				reRenderUI();
+			};
+			var humanPeriod = function(t){
+				var s = "";
+				var seconds = t / 1000;
+				if (seconds >= 1){
+					s = (seconds % 60) + " seconds " + s;
+					var minutes = Math.floor(seconds / 60);
+					if (minutes >= 1){
+						s = (minutes % 60) + " minutes, " + s;
+						var hours = Math.floor(minutes / 60);
+						if (hours >= 1){
+							s = (hours % 24) + " hours, " + s;
+							var days = Math.floor(hours / 24);
+							if (days >= 1){
+								s = (days % 7) + " days, " + s;
+								var weeks = Math.floor(days / 7);
+								if (weeks >= 1){
+									s = weeks + " weeks, " + s;
+								}
+							}	
+						}
+					}
+				}
+				return s.trim();
+			};
+			var reRenderUI = function(){
+				var profileNameBox = $("<input/>",{
+					type:"text",
+					val:currentProfile.name
+				}).on("blur",function(){
+					changeProfileNickname($(this).val());
+				});
+				$("#profileName").html(profileNameBox);
+				$("#profileId").text(currentProfile.id);
+				var data = _.groupBy(sessionHistory,function(i){return i.sid;});
+				$("#profileSessionHistory").html(_.map(data,function(groupedItems,historyItemSid){
+						var start = _.minBy(groupedItems,"timestamp");
+						var end = _.maxBy(groupedItems,"timestamp");
+						var startTime = start.timestamp;
+						var endTime = end.timestamp;
+						var duration = humanPeriod(endTime - startTime);
+						var rootElem = sessionTemplate.clone();
+						rootElem.find(".sessionId").text(historyItemSid);
+						var items = [
+							{key:"start",value:new Date(startTime)},
+							{key:"duration",value:duration},
+							{key:"ipAddress",value:start.ipAddress},
+							{key:"userAgent",value:start.userAgent}
+						];
+						rootElem.find(".sessionItems").html(_.map(items,function(item){
+							var itemRoot = sessionItemTemplate.clone();
+							itemRoot.find(".itemKey").text(item.key);
+							itemRoot.find(".itemValue").text(item.value);
+							return itemRoot;
+						}));
+						rootElem.find(".sessionEvents").html(_.map(_.drop(groupedItems,1),function(sessionChange){
+								var sessionEventChange = sessionItemEventTemplate.clone();
+								var sessionChangeParameter = "";
+								switch (sessionChange.action){
+									case "ip_change":
+										sessionChangeParameter = sessionChange.ipAddress;
+									break;
+									case "user_agent_change":
+										sessionChangeParameter = sessionChange.userAgent;
+									break;
+									case "profile_change":
+										sessionChangeParameter = sessionChange.profileId;
+									break;
+								}
+								sessionEventChange.find(".sessionEventAction").text(sessionChange.action);
+								sessionEventChange.find(".sessionEventActionDetail").text(sessionChangeParameter);
+								sessionEventChange.find(".sessionEventTime").text(new Date(sessionChange.timestamp));
+								return sessionEventChange;
+						}));
+						return rootElem;
+				}));
+			};
+			Profiles.attachProfileUpdated(profileUpdated);
+			$(function(){
+				sessionTemplate = $("#profileSessionHistory").find(".session").clone();
+				sessionItemTemplate = sessionTemplate.find(".sessionItems").find(".sessionItem").clone();
+				sessionItemEventTemplate = sessionTemplate.find(".sessionEvents").find(".sessionEvent").clone();	
+				$("#profileSessionHistory").empty();
+				sessionTemplate.find(".sessionItems").empty();
+				sessionTemplate.find(".sessionEvents").empty();
+				reRenderUI();
+			});
+			var receiveSessionHistoryFunc = function(sh){
+				sessionHistory = sh;
+				reRenderUI();
+			};
+			return {
+				receiveSessionHistory:receiveSessionHistoryFunc,
+				getProfile:function(){return currentProfile;},
+				getSessionHistory:function(){return sessionHistory;}
+			};
+		})();
+		var receiveSessionHistory = function(sh){
+			ProfileUI.receiveSessionHistory(sh);
+		};
+		function augmentArguments(args){
+			args[_.size(args)] = new Date().getTime();
+			return args;
+		}
+		function serverResponse(response){
+			//console.log("serverResponse:",response);
+		}
+	</script>
+	<style>
+#profileContainer {
+	background:white;
+}
+	</style>
+	<div id="profileContainer">
+		<div id="profileName"></div>
+		<div id="profileId"></div>
+		<div id="profileSessionHistory">
+			<div class="session">
+				<div>
+					<span class="itemHeader">Session: </span>
+					<span class="sessionId"></span>
+				</div>
+				<div class="sessionItems">
+					<div class="sessionItem">
+						<span class="itemKey"></span><span class="itemValue"></span>
+					</div>
+				</div>
+				<div class="sessionEvents">
+					<div class="sessionEvent">
+						<span class="sessionEventAction"></span>
+						<span class="sessionEventActionDetail"></span>
+						<span> @ </span>
+						<span class="sessionEventTime"></span>
+					</span>
+				</div>
+			</div>
+		</div>
+ 	</div>
+	<div class="lift:Metl.profile"></div>
+</div>
+
