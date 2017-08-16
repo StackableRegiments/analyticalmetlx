@@ -95,13 +95,18 @@ object StatelessHtml extends Stemmer with Logger {
   def listSessions:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listSessions", {
     val now = new java.util.Date().getTime
     val sessions = SecurityListener.activeSessions.map(s => (s,(now - s.lastActivity).toDouble / 1000)).sortBy(_._2).map(s => {
-      if (s._1.authenticatedUser == s._1.username){
-        "%s (%s) : %s => %s (%.3fs ago)".format(s._1.authenticatedUser,s._1.ipAddress,s._1.started,s._1.lastActivity,s._2)
-      } else {
-        "%s impersonating %s (%s) : %s => %s (%.3fs ago)".format(s._1.authenticatedUser,s._1.username,s._1.ipAddress,s._1.started,s._1.lastActivity,s._2)
-      }
+      "%s@%s as %s (%s) : %s => %s (%.3fs ago)".format(s._1.accountName,s._1.accountProvider,s._1.profileId,s._1.ipAddress,s._1.started,s._1.lastActivity,s._2)
     }).mkString("\r\n")
     Full(PlainTextResponse(sessions))
+  })
+  def listSessionsForProfile(profileId:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.listSessionsForProfile", {
+    Full(JsonResponse(Extraction.decompose(config.getSessionsForProfile(profileId)),200))
+  })
+  def listSessionsForAccount(accountProvider:String,accountName:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.listProfilesForAccount",{
+    Full(JsonResponse(Extraction.decompose(config.getSessionsForAccount(accountName,accountProvider)),200))
+  })
+  def listAllSessions:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listAllSessions",{
+    Full(JsonResponse(Extraction.decompose(config.getCurrentSessions),200))
   })
   def describeUser(user:com.metl.liftAuthenticator.LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
     Full(JsonResponse(Extraction.decompose(user),200))

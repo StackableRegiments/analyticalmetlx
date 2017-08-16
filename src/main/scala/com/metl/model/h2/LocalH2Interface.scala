@@ -632,4 +632,39 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     val defaultProf = profs.filter(_.default.get).toList.sortBy(_.timestamp.get).reverse.headOption.map(_.profileId.get).getOrElse("")
     (profs.map(_.profileId.get).toList,defaultProf)
   })
+  protected def toSessionRecord(in:H2SessionRecord):SessionRecord = {
+    SessionRecord(
+      sid = in.sessionId.get,
+      accountProvider = in.accountProvider.get,
+      accountName = in.accountName.get,
+      profileId = in.profileId.get,
+      ipAddress = in.ipAddress.get,
+      userAgent = in.userAgent.get,
+      action = SessionRecordAction.parse(in.action.get),
+      timestamp = in.timestamp.get
+    )
+  }
+  protected def fromSessionRecord(sessionRecord:SessionRecord,onto:H2SessionRecord = H2SessionRecord.create):H2SessionRecord = {
+    onto
+      .timestamp(sessionRecord.timestamp)
+      .sessionId(sessionRecord.sid)
+      .profileId(sessionRecord.profileId)
+      .accountProvider(sessionRecord.accountProvider)
+      .accountName(sessionRecord.accountName)
+      .ipAddress(sessionRecord.ipAddress)
+      .userAgent(sessionRecord.userAgent)
+      .action(SessionRecordAction.serialize(sessionRecord.action))
+  }
+  override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = {
+    H2SessionRecord.findAll(By(H2SessionRecord.accountName,accountName),By(H2SessionRecord.accountProvider,accountProvider)).map(toSessionRecord _)
+  }
+  override def getSessionsForProfile(profileId:String):List[SessionRecord] = {
+    H2SessionRecord.findAll(By(H2SessionRecord.profileId,profileId)).map(toSessionRecord _)
+  }
+  override def updateSession(sessionRecord:SessionRecord):SessionRecord = {
+    val newS = fromSessionRecord(sessionRecord).saveMe
+    warn("writing to sessionTable: %s => %s".format(sessionRecord,newS))
+    sessionRecord
+  }
+  override def getCurrentSessions:List[SessionRecord] = H2SessionRecord.findAll().map(toSessionRecord _) // naive - this'll get big, but it's not going to be a normal user action, so perhaps it won't matter?! 
 }

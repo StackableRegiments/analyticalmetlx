@@ -26,31 +26,48 @@ import scala.xml._
 
 object SecurityListener extends Logger {
   import java.util.Date
-  class SessionRecord(val sid:String,val authenticatedUser:String, var username:String = "",var ipAddress:String = "unknown",var lastActivity:Long = new Date().getTime,var userAgent:Box[String] = Empty){
+  lazy val config = ServerConfiguration.default
+  // this is still the right spot to run the first immediate caching behaviour of this stuff, because this is the server who'd know about this particular profile
+  class AggregatedSessionRecord(val sid:String,val accountProvider:String,val accountName:String, var profileId:String = "",var ipAddress:String = "unknown",var lastActivity:Long = new Date().getTime,var userAgent:Box[String] = Empty){
     val started:Long = new Date().getTime
   }
-  val ipAddresses = new scala.collection.mutable.HashMap[String,SessionRecord]()
+  val ipAddresses = new scala.collection.mutable.HashMap[String,AggregatedSessionRecord]()
   object SafeSessionIdentifier extends SessionVar[String](nextFuncName)
-  object SessionRecord extends SessionVar[Option[SessionRecord]](None)
+  object LocalSessionRecord extends SessionVar[Option[AggregatedSessionRecord]](None)
   def activeSessions = ipAddresses.values.toList
   protected def sessionId:String = {
     SafeSessionIdentifier.is
   }
-  protected def authenticatedUser:String = {
-    Globals.casState.authenticatedUsername
+  protected def accountProvider:String = {
+    Globals.currentAccount.provider
+  }
+  protected def accountName:String = {
+    Globals.currentAccount.name
   }
   protected def user:String = {
     Globals.currentUser.is
   }
+  def emitSessionRecord(in:AggregatedSessionRecord,action:SessionRecordAction.Value):Unit = {
+    config.updateSession(SessionRecord(
+      sid = in.sid,
+      accountProvider = in.accountProvider,
+      accountName = in.accountName,
+      profileId = in.profileId,
+      ipAddress = in.ipAddress,
+      userAgent = in.userAgent.getOrElse(""),
+      action = action,
+      timestamp = in.lastActivity
+    ))
+  }
   def ensureSessionRecord:Unit = {
-    SessionRecord.is.map(rec => {
+    LocalSessionRecord.is.map(rec => {
       rec.lastActivity = now.getTime
     }).getOrElse({
       val currentCasState = Globals.casState.is
-      val newRecord = new SessionRecord(sessionId,authenticatedUser)
-      SessionRecord(Some(newRecord))
+      val newRecord = new AggregatedSessionRecord(sessionId,accountProvider,accountName)
+      LocalSessionRecord(Some(newRecord))
       newRecord.userAgent = S.userAgent
-      newRecord.username = user
+      newRecord.profileId = user
       S.request.foreach(r => {
         newRecord.ipAddress = r.remoteAddr
       })
@@ -58,40 +75,41 @@ object SecurityListener extends Logger {
       S.session.foreach(_.addSessionCleanup((s) => {
         SecurityListener.cleanupSession(s)
       }))
-      info("%s :: %s logged in, ipAddress %s, userAgent: %s".format(newRecord.sid,newRecord.authenticatedUser,newRecord.ipAddress,newRecord.userAgent))
+      emitSessionRecord(newRecord,SessionRecordAction.Started) 
     })
-    val oldState = SessionRecord.is.map(sr => (sr.username,sr.ipAddress,sr.userAgent))
-    SessionRecord.is.map(newRecord => {
+    val oldState = LocalSessionRecord.is.map(sr => (sr.profileId,sr.ipAddress,sr.userAgent))
+    LocalSessionRecord.is.map(newRecord => {
       S.request.foreach(r => {
         newRecord.ipAddress = r.remoteAddr
       })
       newRecord.userAgent = S.userAgent
-      newRecord.username = user
-      if (oldState.map(_._1).getOrElse("") != newRecord.username){
-        info("%s :: %s changed username %s => %s".format(sessionId,authenticatedUser,oldState.map(_._1),newRecord.username))
+      newRecord.profileId = user
+
+      if (oldState.map(_._1).getOrElse("") != newRecord.profileId){
+        emitSessionRecord(newRecord,SessionRecordAction.ChangedProfile) 
       }
       if (oldState.map(_._2).getOrElse("") != newRecord.ipAddress){
-        info("%s :: %s changed IP address %s => %s".format(sessionId,authenticatedUser,oldState.map(_._2),newRecord.ipAddress))
+        emitSessionRecord(newRecord,SessionRecordAction.ChangedIP)
       }
       if (oldState.map(_._3).getOrElse("") != newRecord.userAgent){
-        info("%s :: %s changed userAgent %s => %s".format(sessionId,authenticatedUser,oldState.map(_._3),newRecord.userAgent))
+        emitSessionRecord(newRecord,SessionRecordAction.ChangedUserAgent)
       }
     })
   }
   def cleanupAllSessions:Unit = {
     ipAddresses.values.foreach(rec => {
-      if (rec.username != "forbidden"){
-        info("%s :: %s user session terminated by shutdown, user %s ipAddress %s, userAgent: %s".format(rec.sid,rec.authenticatedUser,rec.username,Some(rec.ipAddress),rec.userAgent))
+      if (rec.profileId != "forbidden"){
+        emitSessionRecord(rec,SessionRecordAction.Terminated)
       }
     })
     ipAddresses.clear
   }
   def cleanupSession(in:LiftSession):Unit = {
-    SessionRecord(None)
+    LocalSessionRecord(None)
     val thisSessionId = sessionId
     ipAddresses.remove(thisSessionId).foreach(rec => {
-      if (rec.username != "forbidden"){
-          info("%s :: %s user session expired, user %s, ipAddress %s, userAgent: %s".format(thisSessionId,rec.authenticatedUser,rec.username,Some(rec.ipAddress),rec.userAgent))
+      if (rec.profileId != "forbidden"){
+        emitSessionRecord(rec,SessionRecordAction.Terminated)
       }
     })
   }
@@ -441,6 +459,10 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")
   override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {}
+  override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = Nil
+  override def getSessionsForProfile(profileId:String):List[SessionRecord] = Nil
+  override def updateSession(sessionRecord:SessionRecord):SessionRecord = SessionRecord.empty
+  override def getCurrentSessions:List[SessionRecord] = Nil
 }
 
 case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy,timeToLiveSeconds:Option[Int]=None)

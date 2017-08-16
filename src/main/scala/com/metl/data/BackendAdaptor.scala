@@ -78,11 +78,18 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def getResource(identifier:String):Array[Byte] = getResource(commonLocation,identifier)
   def insertResource(data:Array[Byte]):String = insertResource(commonLocation,data)
   def upsertResource(identifier:String,data:Array[Byte]):String = upsertResource(commonLocation,identifier,data)
+  //profile information
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile
   def getProfiles(ids:String *):List[Profile]
   def updateProfile(id:String,profile:Profile):Profile
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
   def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {}
+
+  //session handling
+  def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord]
+  def getSessionsForProfile(profileId:String):List[SessionRecord]
+  def updateSession(sessionRecord:SessionRecord):SessionRecord
+  def getCurrentSessions:List[SessionRecord]
 
   //shutdown is a function to be called when the serverConfiguration is to be disposed
   def shutdown:Unit = {}
@@ -218,6 +225,11 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
   override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {}
+
+  override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = Nil
+  override def getSessionsForProfile(profileId:String):List[SessionRecord] = Nil
+  override def updateSession(sessionRecord:SessionRecord):SessionRecord = SessionRecord.empty
+  override def getCurrentSessions:List[SessionRecord] = Nil
 }
 
 object EmptyBackendAdaptorConfigurator extends ServerConfigurator{
@@ -257,6 +269,10 @@ object FrontendSerializationAdaptor extends ServerConfiguration("frontend","fron
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
   override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {}
+  override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = Nil
+  override def getSessionsForProfile(profileId:String):List[SessionRecord] = Nil
+  override def updateSession(sessionRecord:SessionRecord):SessionRecord = SessionRecord.empty
+  override def getCurrentSessions:List[SessionRecord] = Nil
 }
 
 object FrontendSerializationAdaptorConfigurator extends ServerConfigurator{
@@ -298,4 +314,8 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def updateProfile(id:String,profile:Profile):Profile = sc.updateProfile(id,profile)
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = sc.getProfileIds(accountName,accountProvider)
   override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = sc.updateAccountRelationship(accountName,accountProvider,profileId,disabled,default)
+  override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = sc.getSessionsForAccount(accountName,accountProvider)
+  override def getSessionsForProfile(profileId:String):List[SessionRecord] = sc.getSessionsForProfile(profileId)
+  override def updateSession(sessionRecord:SessionRecord):SessionRecord = sc.updateSession(sessionRecord)
+  override def getCurrentSessions:List[SessionRecord] = sc.getCurrentSessions
 }

@@ -73,6 +73,10 @@ class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,o
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")
   override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {}
+  override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = Nil
+  override def getSessionsForProfile(profileId:String):List[SessionRecord] = Nil
+  override def updateSession(sessionRecord:SessionRecord):SessionRecord = SessionRecord.empty
+  override def getCurrentSessions:List[SessionRecord] = Nil
 }
 
 object MeTL2011BackendAdaptorConfigurator extends ServerConfigurator{
@@ -183,6 +187,10 @@ class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversation
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")
   override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {}
+  override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = Nil
+  override def getSessionsForProfile(profileId:String):List[SessionRecord] = Nil
+  override def updateSession(sessionRecord:SessionRecord):SessionRecord = SessionRecord.empty
+  override def getCurrentSessions:List[SessionRecord] = Nil
 }
 
 object TransientMeTL2011BackendAdaptorConfigurator extends ServerConfigurator{

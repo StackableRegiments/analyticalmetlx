@@ -47,4 +47,8 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def updateProfile(id:String,profile:Profile):Profile = history.updateProfile(id,profile)
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = history.getProfileIds(accountName,accountProvider)
   override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = history.updateAccountRelationship(accountName,accountProvider,profileId,disabled,default)
+  override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = dbInterface.getSessionsForAccount(accountName,accountProvider)
+  override def getSessionsForProfile(profileId:String):List[SessionRecord] = dbInterface.getSessionsForProfile(profileId)
+  override def updateSession(sessionRecord:SessionRecord):SessionRecord = dbInterface.updateSession(sessionRecord)
+  override def getCurrentSessions:List[SessionRecord] = dbInterface.getCurrentSessions
 }

@@ -100,6 +100,20 @@ class H2AccountRelationships extends LongKeyedMapper[H2AccountRelationships] wit
 object H2AccountRelationships extends H2AccountRelationships with LongKeyedMetaMapper[H2AccountRelationships] {
 }
 
+class H2SessionRecord extends Mapper[H2SessionRecord] {
+  def getSingleton = H2SessionRecord
+  object timestamp extends MappedLong(this)
+  object sessionId extends MappedMeTLString(this,H2Constants.profileId)
+  object profileId extends H2MeTLIndexedString(this,H2Constants.profileId)
+  object accountProvider extends H2MeTLIndexedString(this,H2Constants.profileId)
+  object accountName extends H2MeTLIndexedString(this,H2Constants.profileId)
+  object ipAddress extends MappedMeTLString(this,32)
+  object userAgent extends MappedMeTLString(this,256)
+  object action extends MappedMeTLString(this,32)
+}
+object H2SessionRecord extends H2SessionRecord with MetaMapper[H2SessionRecord] {
+}
+
 class H2Ink extends H2MeTLCanvasContent[H2Ink] {
   def getSingleton = H2Ink
   object checksum extends MappedDouble(this)

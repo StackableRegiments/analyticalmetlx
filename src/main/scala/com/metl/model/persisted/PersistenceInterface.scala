@@ -39,4 +39,8 @@ abstract class PersistenceInterface(config:ServerConfiguration) {
   def updateProfile(id:String,profile:Profile):Profile
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String]
   def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit
+  def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord]
+  def getSessionsForProfile(profileId:String):List[SessionRecord]
+  def updateSession(sessionRecord:SessionRecord):SessionRecord
+  def getCurrentSessions:List[SessionRecord]
 }

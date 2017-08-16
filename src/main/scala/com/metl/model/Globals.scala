@@ -219,6 +219,14 @@ object Globals extends PropertyReader with Logger {
     private object validState extends SessionVar[Option[LiftAuthStateData]](None)
     private object actualUsername extends SessionVar[String]("forbidden")
     private object actuallyIsImpersonator extends SessionVar[Boolean](false)
+    private object accountName extends SessionVar[Option[String]](None)
+    private object accountProvider extends SessionVar[Option[String]](None)
+    object currentAccountName {
+      def is:String = accountName.is.getOrElse(throw new Exception("no logged-in account"))
+    }
+    object currentAccountProvider {
+      def is:String = accountProvider.is.getOrElse(throw new Exception("no logged-in account"))
+    }
     private def updateUser(state:LiftAuthStateData,userAccountProvider:String):LiftAuthStateData = {
       validState(Some(state))
       SecurityListener.ensureSessionRecord
@@ -296,6 +304,10 @@ object Globals extends PropertyReader with Logger {
     def is:String = currentProfile.is.id //casState.is.username
   }
   
+  object currentAccount {
+    def name:String = casState.currentAccountName.is
+    def provider:String = casState.currentAccountProvider.is
+  }
   object availableProfiles extends SessionVar[List[Profile]](Nil)
   object currentProfile extends SessionVar[Profile](Profile.empty)
   // special roles
