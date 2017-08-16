@@ -2,7 +2,6 @@ package com.metl.comet
 
 import com.metl.data.{GroupSet => MeTLGroupSet, _}
 import com.metl.utils._
-import com.metl.liftAuthenticator._
 import com.metl.liftExtensions._
 import net.liftweb._
 import common._

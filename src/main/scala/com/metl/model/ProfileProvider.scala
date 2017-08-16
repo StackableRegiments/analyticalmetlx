@@ -4,9 +4,7 @@ import com.metl.external.LiftAuthStateData
 
 import scala.xml._
 import net.liftweb.common._
-import net.liftweb.util._
 import net.liftweb.util.Helpers._
-import com.metl.liftAuthenticator._
 
 case class UserProfile(username:String,foreignRelationships:Map[String,String],firstName:Option[String] = None,surname:Option[String] = None,emailAddress:Option[String] = None)
 

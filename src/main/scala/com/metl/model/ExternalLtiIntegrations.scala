@@ -7,7 +7,7 @@ import scala.xml.NodeSeq
 
 object ExternalLtiIntegrations extends ReflectionUtil {
   def configureFromXml(in:NodeSeq):Either[Exception,List[LtiIntegration]] = {
-    Right((in \\ "externalLibLtiConfigurator").toList.flatMap(n => {
+    Right((in \\ "externalLibLtiProvider").toList.flatMap(n => {
       for {
         className <- (n \ "@className").headOption.map(_.text).toList
         result:LtiIntegration <- constructExternalClasses[LtiIntegration,ExternalLtiConfigurator](className,configurator => {

@@ -371,24 +371,6 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer with E
     case Req("thumbnailWithPrivateFor" :: jid :: Nil, _, _) => Stopwatch.time("MeTLRestHelper.thumbnail", {
       HttpResponder.snapshotWithPrivate(jid, "thumbnail")
     })
-    case Req("saveToOneNote" :: conversation :: _, _, _) => Stopwatch.time("MeTLRestHelper.saveToOneNote", {
-      RedirectResponse(
-        (for (
-          token <- Globals.oneNoteAuthToken.get;
-          odata <- OneNote.export(conversation, token);
-          href <- (parse(odata) \\ "oneNoteWebUrl" \ "href").extractOpt[String]
-        ) yield href).getOrElse(OneNote.authUrl))
-    })
-    case Req("permitOneNote" :: Nil, _, _) => Stopwatch.time("MeTLRestHelper.permitOneNote", {
-      for (
-        token <- S.param("code");
-        referer <- S.referer
-      ) yield {
-        Globals.oneNoteAuthToken(Full(OneNote.claimToken(token)))
-        info("permitOneNote: %s -> %s".format(token, referer))
-        RedirectResponse(referer)
-      }
-    })
     //gradebook integration
     case Req("getExternalGradebooks" :: Nil, _, _) => () => Full(JsonResponse(JArray(Globals.getGradebookProviders.map(gb => JObject(List(JField("name", JString(gb.name)), JField("id", JString(gb.id)))))), 200))
     case Req("getExternalGradebookOrgUnits" :: externalGradebookId :: Nil, _, _) => {

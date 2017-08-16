@@ -1,15 +1,15 @@
 package com.metl.model
 
 import com.metl.TimeSpanParser
-import com.metl.external.{Detail, ForeignRelationship, Group, GroupSet, GroupStoreData, GroupStoreProvider, GroupStoreProviderConfigurator, GroupsProvider, GroupsProviderConfigurator, LiftAuthStateData, Member, OrgUnit, PeriodicallyRefreshingFileReadingGroupsProvider, PersonalInformation}
+import com.metl.external.{Detail, ExternalGroupStoreProviderConfigurator, ExternalGroupsProviderConfigurator, ForeignRelationship, Group, GroupSet, GroupStoreData, GroupStoreProvider, GroupsProvider, LiftAuthStateData, Member, OrgUnit, PeriodicallyRefreshingFileReadingGroupsProvider, PersonalInformation}
 import com.metl.utils._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 
 import scala.io.Source
-import scala.xml.{Group => XmlGroup, Source => XmlSource, _}
+import scala.xml.NodeSeq
 
-object GroupsProvider extends ReflectionUtil {
+object GroupsProviderConfigurator extends ReflectionUtil {
   def sanityCheck(g:GroupStoreData):Boolean = {
     g.groupsForMembers.keys.toList.nonEmpty
   }
@@ -40,11 +40,11 @@ object GroupsProvider extends ReflectionUtil {
     } yield {
       val groupsFilter = (g:OrgUnit) => allDefaultTrue(blacklistedGroups,(bg:Tuple6[Option[String],Option[String],Option[String],Option[String],Option[String],Option[String]]) => {
         !(
-          existsDefaultTrue(bg._1,(kp:String) => g.ouType.startsWith(kp)) && 
-          existsDefaultTrue(bg._2,(ks:String) => g.ouType.endsWith(ks)) && 
-          existsDefaultTrue(bg._3,(vp:String) => g.name.startsWith(vp)) && 
-          existsDefaultTrue(bg._4,(vs:String) => g.name.endsWith(vs)) && 
-          existsDefaultTrue(bg._5,(k:String) => g.ouType.startsWith(k)) && 
+          existsDefaultTrue(bg._1,(kp:String) => g.ouType.startsWith(kp)) &&
+          existsDefaultTrue(bg._2,(ks:String) => g.ouType.endsWith(ks)) &&
+          existsDefaultTrue(bg._3,(vp:String) => g.name.startsWith(vp)) &&
+          existsDefaultTrue(bg._4,(vs:String) => g.name.endsWith(vs)) &&
+          existsDefaultTrue(bg._5,(k:String) => g.ouType.startsWith(k)) &&
           existsDefaultTrue(bg._6,(v:String) => g.name.startsWith(v))
         )
       })
@@ -55,7 +55,7 @@ object GroupsProvider extends ReflectionUtil {
     (for {
       x <- (outerNodes \\ "externalLibGroupProvider")
       className <- (x \ "@className").headOption.map(_.text).toList
-      result:GroupsProvider <- getExternalClasses[GroupsProvider,GroupsProviderConfigurator](className,x).right.toOption.getOrElse(Nil)
+      result:GroupsProvider <- getExternalClasses[GroupsProvider,ExternalGroupsProviderConfigurator](className,x).right.toOption.getOrElse(Nil)
     } yield {
       possiblyFilter(x,result)
     }).toList :::
@@ -63,7 +63,7 @@ object GroupsProvider extends ReflectionUtil {
         in <- (outerNodes \\ "externalLibGroupStoreProvider")
         name = (in \\ "@name").headOption.map(_.text)
         className <- (in \ "@className").headOption.map(_.text).toList
-        possibleGroupStoreProviders:Option[List[GroupStoreProvider]] = getExternalClasses[GroupStoreProvider,GroupStoreProviderConfigurator](className,in).right.toOption
+        possibleGroupStoreProviders:Option[List[GroupStoreProvider]] = getExternalClasses[GroupStoreProvider,ExternalGroupStoreProviderConfigurator](className,in).right.toOption
         groupStoreProviders:List[GroupStoreProvider] <- possibleGroupStoreProviders
         diskStore <- (in \\ "@diskStore").headOption.map(_.text)
         overrideUsername = (in \\ "@overrideUsername").headOption.map(_.text)
@@ -94,7 +94,7 @@ object GroupsProvider extends ReflectionUtil {
       val n = name.getOrElse("selfGroups")
       val id = (in \ "@id").headOption.map(_.text).getOrElse(n)
       new SelfGroupsProvider(id,n)
-    }).toList ::: 
+    }).toList :::
     (for {
       in <- (outerNodes \\ "flatFileGroups")
       } yield {
@@ -192,7 +192,7 @@ class StoreBackedGroupsProvider(override val storeId:String,override val name:St
   override val canQuery:Boolean = gs.canQuery
   protected def resolveUser(userData:LiftAuthStateData):String = usernameOverride.flatMap(uo => userData.informationGroups.find(_.key == uo).map(_.value)).getOrElse(userData.username)
   override def getGroupsFor(userData:LiftAuthStateData):List[OrgUnit] = gs.getGroups.get(resolveUser(userData)).getOrElse(Nil)
-  
+
   override def getMembersFor(orgUnit:OrgUnit):List[Member] = gs.getMembersFor(orgUnit)
   override def getGroupSetsFor(orgUnit:OrgUnit,members:List[Member] = Nil):List[GroupSet] = gs.getGroupSetsFor(orgUnit,members)
   override def getMembersFor(orgUnit:OrgUnit,groupSet:GroupSet):List[Member] = gs.getMembersFor(orgUnit,groupSet)
@@ -211,7 +211,7 @@ class PassThroughGroupStoreProvider(gp:GroupStoreProvider) extends GroupStorePro
 }
 
 class CachingGroupStoreProvider(gp:GroupStoreProvider) extends PassThroughGroupStoreProvider(gp) {
-  def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
+  def sanityCheck(g:GroupStoreData):Boolean = GroupsProviderConfigurator.sanityCheck(g)
   val startingValue:Option[GroupStoreData] = None
   val startingLastUpdated = 0L
   protected var lastUpdated = startingLastUpdated
@@ -275,7 +275,7 @@ trait GroupStoreDataSerializers {
     val baos = new ByteArrayOutputStream()
     val writer = CSVWriter.open(baos)
     writer.writeAll(
-      List(memberName,attributeValue,groupTypeName,groupName) :: 
+      List(memberName,attributeValue,groupTypeName,groupName) ::
       c.groupsForMembers.toList.flatMap(mi => mi._2.map(g => g.members.map(m => (m,m,g.ouType,g.name)))) :::
       c.detailsForMembers.toList.flatMap(mi => mi._2.map(g => List(mi._1,g.value,PersonalInformation.personalInformation,g.key)))
     )
@@ -296,7 +296,7 @@ trait GroupStoreDataSerializers {
         (Member(member,Nil,None),attr,groupType,group)
       }
     }).partition(_._3 != PersonalInformation.personalInformation)
-      
+
     val groupsForMembers = groupData.groupBy(_._1).map(t => (t._1.name,t._2.map(i => OrgUnit(i._3,i._4,List(i._1)))))
     val membersForGroups = groupData.groupBy(_._4).map(t => (t._1,t._2.map(_._1)))
     val infoForMembers = information.groupBy(_._1).map(t => (t._1.name,t._2.map(i => Detail(i._4,i._2))))
@@ -360,7 +360,7 @@ trait GroupStoreDataSerializers {
 
     val orgUnits = (xml \\ "orgUnit").flatMap(orgUnitNode => {
       for {
-        ouName <- (orgUnitNode \ "@name").headOption.map(_.text) 
+        ouName <- (orgUnitNode \ "@name").headOption.map(_.text)
         ouType <- (orgUnitNode \ "@type").headOption.map(_.text)
       } yield {
         val ouMembers = (orgUnitNode \ "member").map(_.text).map(gm => Member(gm,Nil,Some(ForeignRelationship(storeId,gm)))).toList
@@ -399,7 +399,7 @@ trait GroupStoreDataSerializers {
     } yield {
       intermediaryMemberGrouping += ((member,ou :: intermediaryMemberGrouping.get(member).getOrElse(Nil)))
     }
-    val groupsForMembers = intermediaryMemberGrouping.map(t => (t._1.name,t._2)).toMap 
+    val groupsForMembers = intermediaryMemberGrouping.map(t => (t._1.name,t._2)).toMap
   /*
     val members = orgUnits.flatMap(_.members).distinct
     val groupsForMembers = Map(members.map(m => {
@@ -448,15 +448,15 @@ class FileWatchingCachingGroupStoreProvider(gp:GroupStoreProvider,path:String) e
   override def shouldRefreshCache = lastUpdated < getFileLastModified
 }
 
-class PeriodicallyRefreshingGroupStoreProvider(gp:GroupStoreProvider,refreshPeriod:TimeSpan,startingValue:Option[GroupStoreData] = None,storeFunc:Option[GroupStoreData=>Unit] = None) extends GroupStoreProvider { 
+class PeriodicallyRefreshingGroupStoreProvider(gp:GroupStoreProvider,refreshPeriod:TimeSpan,startingValue:Option[GroupStoreData] = None,storeFunc:Option[GroupStoreData=>Unit] = None) extends GroupStoreProvider {
   override val canQuery:Boolean = gp.canQuery
-  def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
+  def sanityCheck(g:GroupStoreData):Boolean = GroupsProviderConfigurator.sanityCheck(g)
   protected var lastCache:GroupStoreData = startingValue.getOrElse(GroupStoreData())
   protected var cache = new PeriodicallyRefreshingVar[Unit](refreshPeriod,() => {
     val newCheck = new java.util.Date().getTime()
     val newData = gp.getData
     if (sanityCheck(newData)){
-      lastCache = newData 
+      lastCache = newData
       storeFunc.foreach(sf => sf(lastCache))
     }
   },startingValue.map(sv => {}))
@@ -465,7 +465,7 @@ class PeriodicallyRefreshingGroupStoreProvider(gp:GroupStoreProvider,refreshPeri
 
 class GroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializers {
   import java.io._
-  def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
+  def sanityCheck(g:GroupStoreData):Boolean = GroupsProviderConfigurator.sanityCheck(g)
 
   def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
   def write(c:GroupStoreData):Unit = {
@@ -487,7 +487,7 @@ class GroupStoreDataFile(diskStorePath:String) extends GroupStoreDataSerializers
 
 class XmlGroupStoreDataFile(storeId:String,name:String,diskStorePath:String) extends GroupStoreDataSerializers {
   import scala.xml._
-  def sanityCheck(g:GroupStoreData):Boolean = GroupsProvider.sanityCheck(g)
+  def sanityCheck(g:GroupStoreData):Boolean = GroupsProviderConfigurator.sanityCheck(g)
   def getLastUpdated:Long = new java.io.File(diskStorePath).lastModified()
   def write(c:GroupStoreData):Unit = {
     if (sanityCheck(c)){

@@ -1,22 +1,16 @@
 package com.metl.snippet
 
 import com.metl.data._
-import com.metl.utils._
-import com.metl.liftAuthenticator._
 import net.liftweb._
 import http._
-import SHtml._
 import common._
 import util._
 import Helpers._
 
 import scala.xml._
-import com.metl.comet._
 import com.metl.model._
-import Globals._
 import com.metl.ReadOnlyMetlInterface
 import com.metl.external.OrgUnit
-import net.liftweb.http.js._
 import net.liftweb.http.js.JE._
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.json.JsonAST._
