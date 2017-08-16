@@ -62,12 +62,12 @@ class Metl extends Logger {
   def printSlideWithPrivateFor(conversationJid:String,slideId:String):String = {
     "/printableImageWithPrivateFor/%s".format(slideId.toString)
   }
-/*  def remotePluginConversationChooser(ltiToken:String):String = {
+  def remotePluginConversationChooser(ltiToken:String):String = {
     "/remotePluginConversationChooser?ltiToken=%s".format(ltiToken)
   }
   def remotePluginChoseConversation(ltiToken:String,conversationJid:Int):String = {
     "/brightSpark/remotePluginConversationChosen?ltiToken=%s&conversationJid=%s".format(ltiToken,conversationJid.toString)
-  }*/
+  }
   def noBoard:String = {
     conversationSearch()
   }
@@ -80,11 +80,14 @@ class Metl extends Logger {
 
 
   lazy val serverConfig = ServerConfiguration.default
+  protected def constructNameString(nameString:String,newKey:String,newValue:String):String = {
+    "%s|%s:%s".format(nameString,newKey,newValue)
+  }
   protected def generateName(showDeleted:Boolean = false):String = {
     var name = "USERNAME:%s".format(Globals.currentUser.is)
     S.param("conversationJid").foreach(cj => {
       try {
-        name += "|CONVERSATION:%s".format(cj)
+        name = constructNameString(name,"CONVERSATION",cj)
         val conversation = serverConfig.detailsOfConversation(cj)
         if (!shouldDisplayConversation(conversation,showDeleted)){
           warn("snippet.Metl is kicking the user from this conversation")
@@ -92,7 +95,7 @@ class Metl extends Logger {
         }
         S.param("slideId").foreach(sid => {
           try {
-            name += "|SLIDE:%s".format(sid)
+            name = constructNameString(name,"SLIDE",sid)
           } catch {
             case e:Exception => {
               error("invalid argument passed in slideId: %s".format(sid),e)
@@ -107,17 +110,17 @@ class Metl extends Logger {
       }
     })
     S.param("links").map(links => {
-      name += "|LINKS:%s".format(links.toLowerCase.trim == "false" match {
+      name = constructNameString(name,"LINKS",links.toLowerCase.trim == "false" match {
         case true => "false"
         case false => "true"
       })
     }).getOrElse({
-      name += "|LINKS:true"
+      name = constructNameString(name,"LINKS","true")
     })
     S.param("unique").foreach(uniq => {
       try {
         if (uniq.toLowerCase.trim == "true"){
-          name += "|UNIQUE:%s".format(nextFuncName)
+          name = constructNameString(name,"UNIQUE",nextFuncName)
         }
       } catch {
         case e:Exception => {
@@ -128,9 +131,9 @@ class Metl extends Logger {
     S.param("showTools").foreach(tools => {
       try {
         if (tools.toLowerCase.trim == "true"){
-          name += "|SHOWTOOLS:%s".format(true)
+          name = constructNameString(name,"SHOWTOOLS","true")
         } else {
-          name += "|SHOWTOOLS:%s".format(false)
+          name = constructNameString(name,"SHOWTOOLS","false")
         }
       } catch {
         case e:Exception => {
@@ -138,17 +141,15 @@ class Metl extends Logger {
         }
       }
     })
-/*    S.param("ltiToken").foreach(ltiToken => {
-      name += "|LTITOKEN:%s".format(ltiToken)
-    })*/
+    S.param("ltiToken").foreach(ltiToken => {
+      name = constructNameString(name,"LTITOKEN",ltiToken)
+    })
     S.param("query").foreach(query => {
-      name += "|QUERY:%s".format(query)
+      name = constructNameString(name,"QUERY",query)
     })
     name
   }
-/*  def getLtiTokenFromName(in:String):Option[String] = {
-    in.split("|").map(_.split(":")).find(_(0) == "LTITOKEN").map(_.drop(1).mkString(":"))
-  }*/
+  def getLtiTokenFromName(in:String):Option[String] = extractValueByName(in,"LTITOKEN")
   def getUserFromName(in:String):Option[String] = extractValueByName(in,"USERNAME")
   def getShowToolsFromName(in:String):Option[Boolean] = extractValueByName(in,"SHOWTOOLS",_.toBoolean)
   def getLinksFromName(in:String):Option[Boolean] = extractValueByName(in,"LINKS",_.toBoolean)
@@ -205,13 +206,15 @@ class Metl extends Logger {
     val output = <span class={clazz}>{in}</span>
     output
   }
-/*  def remotePluginConversationChooser(in:NodeSeq):NodeSeq = {
+  /*
+  def remotePluginConversationChooser(in:NodeSeq):NodeSeq = {
     val name = generateName()
     val clazz = "lift:comet?type=RemotePluginConversationChooserActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     //warn("generating comet html: %s".format(output))
     output
-  }*/
+  }
+  */
   def getPagesFromPageRange(pageRange:String,conversation:Conversation):List[Slide] = {
     pageRange.toLowerCase.trim match {
       case "all" => conversation.slides.sortWith((a,b) => a.index < b.index)
