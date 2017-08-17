@@ -178,7 +178,6 @@ var serverResponse = function(responseObj){
 var HealthCheckViewer = (function(){
     var viewing = false;
     var healthCheckContainer = {};
-    $("#healthCheckListing");
     var healthCheckItemTemplate = {};
     var charts = {};
     var min = 0;
@@ -480,6 +479,20 @@ var HealthCheckViewer = (function(){
     var healthyFunc = function(){
       return healthy;
     };
+		$(function(){
+			var healthCheckButton = $("#healthCheck");
+			var healthCheckDisplay = $("#healthCheckDropdown");
+			healthCheckButton.bind("click",function(){
+				console.log("click!",viewing);
+				if (!viewing){
+					healthCheckDisplay.show();
+					resumeFunc();
+				} else {
+					pauseFunc();
+					healthCheckDisplay.hide();
+				}
+			});
+		});
     return {
         resume:resumeFunc,
         pause:pauseFunc,

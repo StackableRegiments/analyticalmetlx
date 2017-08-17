@@ -352,7 +352,7 @@ var subcategoryMapping = {
 };
 var categoryMapping = _.fromPairs(_.flatMap({
     metaToolbar:"integrations print recycleBin help",
-    optsToolbar:"settings healthCheck",
+    optsToolbar:"settings",
     roomToolbar:"grades blacklist submissions attachments participants groups quizzes contentFilter"
 },function(v,k){
     return _.map(v.split(" "),function(backstage){
@@ -744,13 +744,6 @@ $(function(){
     $('#menuHelp').click(function(){
         showBackstage("help");
         updateActiveMenu(this);
-    });
-    $("#menuHealthCheck").click(function(){
-        showBackstage("healthCheck");
-        updateActiveMenu(this);
-        if ("HealthCheckViewer" in window){
-            HealthCheckViewer.resume();
-        }
     });
     $("#conversations").click(function(){
         window.location.href = "/conversationSearch";
