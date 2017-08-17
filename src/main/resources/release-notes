@@ -1,3 +1,6 @@
+1.20.6
+METL-718: Improvement: Don't allow future conversation created dates.
+
 1.20.4
 METL-688: Bugfix: Imported C# dates are parsed incorrectly.
 
