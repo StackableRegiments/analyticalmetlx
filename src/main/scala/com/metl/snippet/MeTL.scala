@@ -78,7 +78,6 @@ class Metl extends Logger {
     "/conversationSearch?unique=true"
   }
 
-
   lazy val serverConfig = ServerConfiguration.default
   protected def constructNameString(nameString:String,newKey:String,newValue:String):String = {
     "%s|%s:%s".format(nameString,newKey,newValue)
@@ -336,5 +335,46 @@ class Metl extends Logger {
     }).getOrElse({
       ".pagesContainer *" #> Text("conversation and/or pageRange not specified")
     })
+  }
+  def header = {
+    println("URI: [%s]".format(S.uri))
+    val locations:List[Tuple2[String,NodeSeq]] = S.uri.split("/").toList.map(_.trim).filterNot(_ == "") match {
+      case "board" :: _args => List(
+        (conversationSearch(),Text("conversationSearch")) 
+      ) :::
+      S.param("conversationJid").map(cj => {
+        (S.param("slideId").map(sj => boardFor(cj,sj)).getOrElse(boardFor(cj)),Text("board"))
+      }).toList
+      case "conversationSearch" :: _args => List(
+        (conversationSearch(),Text("conversationSearch"))
+      )
+      case "profile" :: _args => List(
+        (S.param("profileId").map(profileId => "/profile?profileId=%s".format(profileId)).getOrElse("/profile"),Text("Profile"))
+      )
+      case "account" :: _args => List(
+        ("/account",Text("Account"))
+      )
+      case "editConversation" :: _args => List(
+        (conversationSearch(),Text("conversationSearch")) 
+      ) :::
+      S.param("conversationJid").map(cj => (editConversation(cj),Text("editConversation"))).toList
+      case _ => Nil
+    }
+    /*
+    val locations:List[Tuple2[String,NodeSeq]] = S.location match {
+      case Full(loc) => {
+        (loc :: loc.breadCrumbs).map(l => {
+          (l.calcDefaultHref,l.title)
+        })
+      }
+      case _ => Nil
+    }
+    */
+    "#breadcrumbs" #> {
+      ".breadcrumbItem *" #> locations.map(l => {
+        ".breadcrumbLink [href]" #> Text(l._1) &
+        ".breadcrumbVisual *" #> l._2
+      })
+    }
   }
 }

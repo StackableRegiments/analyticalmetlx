@@ -1,0 +1,102 @@
+<div>
+	<style>
+
+/* Style The Dropdown Button */
+.dropbtn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 0px 16px;
+    font-size: 12px;
+    border: none;
+    cursor: pointer;
+}
+
+/* The container <div> - needed to position the dropdown content */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Dropdown Content (Hidden by Default) */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {background-color: #f1f1f1}
+
+/* Show the dropdown menu on hover */
+.dropdown:hover .dropdown-content {
+    display: block;
+		z-index: 1000;
+}
+
+/* Change the background color of the dropdown button when the dropdown content is shown */
+.dropdown:hover .dropbtn {
+    background-color: #3e8e41;
+}
+
+#userMenu #helpMenu #healthCheck{
+	float:right;
+}
+.breadcrumbItem {
+	background:white;
+}
+#metlHeader {
+	background:white;
+	font:black;
+}
+.headerRHS {
+	float:right;
+}
+#healthCheckImage img{
+	height:20px;
+}
+	</style>
+	<div id="metlHeader" class="lift:Metl.header">
+		<span id="home">
+			<span class="breadcrumbItem">
+				<a class="breadcrumbLink" href="/"><span class="breadcrumbVisual">MeTL</span></a>
+			</span>
+		</span>
+		<span id="breadcrumbs">
+			<span class="breadcrumbItem">
+				<a class="breadcrumbLink"><span class="breadcrumbVisual"></span></a>
+			</span>
+		</span>
+		<span class="headerRHS">
+			<span class="dropdown" id="userMenu">
+				<button id="userMenuButton" class="dropbtn">User</button>
+				<div class="dropdown-content" id="userMenuItems">
+					<a href="/account">My Account</a>
+					<a href="/profile">My Profile</a>
+					<a href="/logout">Logout</a>
+				</div>
+			</span>
+			<span class="dropdown" id="helpMenu">
+				<button id="helpMenuButton" class="dropbtn">Help</button>
+				<div class="dropdown-content" id="helpMenuItems">
+					<a href="/reportProblem">Submit a bug report</a>
+					<a href="/about">About MeTL</a>
+					<a href="/releaseNotes">Release Notes</a>
+				</div>
+			</span>
+			<span id="healthCheckImage">
+				<img src="/static/images/spinner.gif"></img>
+			</span>
+		</span>
+	</div>
+</div>
