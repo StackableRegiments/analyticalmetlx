@@ -93,6 +93,13 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def updateSession(sessionRecord:SessionRecord):SessionRecord
   def getCurrentSessions:List[SessionRecord]
 
+  def getThemesByAuthor(author:String):List[Theme]
+  def getSlidesByThemeKeyword(theme:String):List[String]
+  def getConversationsByTheme(theme:String):List[String]
+  def getAttendancesByAuthor(author:String):List[Attendance]
+  def getConversationsByAuthor(author:String):List[Conversation]
+  def getAuthorsByTheme(theme:String):List[String]
+
   //shutdown is a function to be called when the serverConfiguration is to be disposed
   def shutdown:Unit = {}
   def isReady:Boolean = true
@@ -234,6 +241,13 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def getSessionsForProfile(profileId:String):List[SessionRecord] = Nil
   override def updateSession(sessionRecord:SessionRecord):SessionRecord = SessionRecord.empty
   override def getCurrentSessions:List[SessionRecord] = Nil
+
+  override def getThemesByAuthor(author:String):List[Theme] = Nil
+  override def getSlidesByThemeKeyword(theme:String):List[String] = Nil
+  override def getConversationsByTheme(theme:String):List[String] = Nil
+  override def getAttendancesByAuthor(author:String):List[Attendance] = Nil
+  override def getConversationsByAuthor(author:String):List[Conversation] = Nil
+  override def getAuthorsByTheme(theme:String):List[String] = Nil
 }
 
 object EmptyBackendAdaptorConfigurator extends ServerConfigurator{
@@ -279,6 +293,13 @@ object FrontendSerializationAdaptor extends ServerConfiguration("frontend","fron
   override def getSessionsForProfile(profileId:String):List[SessionRecord] = Nil
   override def updateSession(sessionRecord:SessionRecord):SessionRecord = SessionRecord.empty
   override def getCurrentSessions:List[SessionRecord] = Nil
+
+  override def getThemesByAuthor(author:String):List[Theme] = Nil
+  override def getSlidesByThemeKeyword(theme:String):List[String] = Nil
+  override def getConversationsByTheme(theme:String):List[String] = Nil
+  override def getAttendancesByAuthor(author:String):List[Attendance] = Nil
+  override def getConversationsByAuthor(author:String):List[Conversation] = Nil
+  override def getAuthorsByTheme(theme:String):List[String] = Nil
 }
 
 object FrontendSerializationAdaptorConfigurator extends ServerConfigurator{
@@ -326,4 +347,11 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def getSessionsForProfile(profileId:String):List[SessionRecord] = sc.getSessionsForProfile(profileId)
   override def updateSession(sessionRecord:SessionRecord):SessionRecord = sc.updateSession(sessionRecord)
   override def getCurrentSessions:List[SessionRecord] = sc.getCurrentSessions
+
+  override def getThemesByAuthor(author:String):List[Theme] = sc.getThemesByAuthor(author)
+  override def getSlidesByThemeKeyword(theme:String):List[String] = sc.getSlidesByThemeKeyword(theme)
+  override def getConversationsByTheme(theme:String):List[String] = sc.getConversationsByTheme(theme)
+  override def getAttendancesByAuthor(author:String):List[Attendance] = sc.getAttendancesByAuthor(author)
+  override def getConversationsByAuthor(author:String):List[Conversation] = sc.getConversationsByAuthor(author)
+  override def getAuthorsByTheme(theme:String):List[String] = sc.getAuthorsByTheme(theme)
 }

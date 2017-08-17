@@ -304,6 +304,7 @@ object H2File extends H2File with LongKeyedMetaMapper[H2File]{
 class H2Theme extends H2MeTLStanza[H2Theme]{
   def getSingleton = H2Theme
   object text extends MappedText(this)
+  //object text extends H2MeTLIndexedString(this,H2Constants.identity)
   object location extends MappedMeTLString(this,4096)
   object origin extends MappedMeTLString(this,64)
 }

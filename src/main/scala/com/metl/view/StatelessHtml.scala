@@ -121,6 +121,25 @@ object StatelessHtml extends Stemmer with Logger {
     <conversations>{config.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
   })
 
+  def getThemesByAuthor(author:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getThemesByAuthor",{
+    Full(JsonResponse(JArray(config.getThemesByAuthor(author).map(t => Extraction.decompose(t))),200))
+  })
+  def getConversationsByAuthor(author:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getConversationsByAuthor",{
+    Full(JsonResponse(JArray(config.getConversationsByAuthor(author).map(c => jsonSerializer.fromConversation(c))),200))
+  })
+  def getConversationsByTheme(theme:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getConversationsByTheme",{
+    Full(JsonResponse(JArray(config.getConversationsByTheme(theme).map(JString(_))),200))
+  })
+  def getConversationsByQuery(query:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getConversationsByQuery",{
+    Full(JsonResponse(JArray(config.searchForConversation(query).map(c => jsonSerializer.fromConversation(c))),200))
+  })
+  def getAuthorsByTheme(theme:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getAuthorsByTheme",{
+    Full(JsonResponse(JArray(config.getAuthorsByTheme(theme).map(JString(_))),200))
+  })
+  def getSlidesByTheme(theme:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getSlidesByTheme",{
+    Full(JsonResponse(JArray(config.getSlidesByThemeKeyword(theme).map(JString(_))),200))
+  })
+
   def search(req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.search", {
     req.param("query").map(q=>XmlResponse(loadSearch(q)))
   })

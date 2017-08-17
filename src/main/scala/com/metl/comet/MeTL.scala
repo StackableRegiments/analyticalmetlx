@@ -254,9 +254,13 @@ class MeTLProfile extends StronglyTypedJsonActor with Logger with JArgUtils with
   implicit def jeToJsCmd(in:JsExp):JsCmd = in.cmd
   protected lazy val serverConfig = ServerConfiguration.default
   override def autoIncludeJsonCode = true
+  private lazy val serializer = new JsonSerializer(serverConfig)
   protected implicit val formats = net.liftweb.json.DefaultFormats
   protected lazy val RECEIVE_PROFILE = "receiveProfile"
   protected lazy val RECEIVE_SESSION_HISTORY = "receiveSessionHistory"
+  protected lazy val RECEIVE_THEMES = "receiveThemes"
+  protected lazy val RECEIVE_ATTENDANCES = "receiveAttendances"
+  protected lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
   override lazy val functionDefinitions = List(
     ClientSideFunction("changeProfileNickname",List("newName"),(args) => {
       val newName = getArgAsString(args(0)).trim
@@ -270,7 +274,16 @@ class MeTLProfile extends StronglyTypedJsonActor with Logger with JArgUtils with
     },Full(RECEIVE_PROFILE)),
     ClientSideFunction("getProfileSessionHistory",Nil,(args) => {
       Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id))
-    },Full(RECEIVE_SESSION_HISTORY))
+    },Full(RECEIVE_SESSION_HISTORY)),
+    ClientSideFunction("getAttendances",Nil,(args) => {
+      JArray(serverConfig.getAttendancesByAuthor(thisProfile.id).map(serializer.fromMeTLAttendance _))
+    },Full(RECEIVE_ATTENDANCES)),
+    ClientSideFunction("getThemes",Nil,(args) => {
+      JArray(serverConfig.getThemesByAuthor(thisProfile.id).map(t => Extraction.decompose(t)))
+    },Full(RECEIVE_THEMES)),
+    ClientSideFunction("getConversations",Nil,(args) => {
+      JArray(serverConfig.getConversationsByAuthor(thisProfile.id).map(serializer.fromConversation _))
+    },Full(RECEIVE_CONVERSATIONS))
   )
   protected var profile:Option[Profile] = None
   protected def thisProfile = profile.getOrElse(Globals.currentProfile.is)
@@ -293,7 +306,10 @@ class MeTLProfile extends StronglyTypedJsonActor with Logger with JArgUtils with
   }
   override def render = OnLoad(
     Call(RECEIVE_PROFILE,renderProfile(thisProfile)) &
-    Call(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id)))
+    Call("getProfileSessionHistory") &
+    Call("getConversations") &
+    Call("getAttendances") &
+    Call("getThemes")
   )
   override def lowPriority = {
     case p:Profile if thisProfile.id == p.id => {

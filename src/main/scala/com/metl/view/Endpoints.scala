@@ -242,6 +242,13 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       () => Stopwatch.time("MeTLRestHelper.describeConversations", r.param("query").flatMap(query => StatelessHtml.describeConversations(query,r.param("format"))))
     case r@Req("describeConversation" :: _,_,_) =>
       () => Stopwatch.time("MeTLRestHelper.describeConversation", r.param("jid").flatMap(jid => StatelessHtml.describeConversation(jid,r.param("format"))))
+    case r@Req(List("themes","author",author),_,_) if Globals.isSuperUser => StatelessHtml.getThemesByAuthor(author)
+    case r@Req(List("conversations","author",author),_,_) if Globals.isSuperUser => StatelessHtml.getConversationsByAuthor(author)
+    case r@Req(List("conversations","theme",theme),_,_) if Globals.isSuperUser => StatelessHtml.getConversationsByTheme(theme)
+    case r@Req(List("conversations","query",query),_,_) if Globals.isSuperUser => StatelessHtml.getConversationsByQuery(query)
+    case r@Req(List("authors","theme",theme),_,_) if Globals.isSuperUser => StatelessHtml.getAuthorsByTheme(theme)
+    case r@Req(List("slides","theme",theme),_,_) if Globals.isSuperUser => StatelessHtml.getSlidesByTheme(theme)
+
     //yaws endpoints 1188
     case r@Req(List("upload_nested"), "yaws", PostRequest) => () => {
       for (

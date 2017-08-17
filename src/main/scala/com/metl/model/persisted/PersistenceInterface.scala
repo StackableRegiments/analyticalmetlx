@@ -45,4 +45,11 @@ abstract class PersistenceInterface(config:ServerConfiguration) {
   def getSessionsForProfile(profileId:String):List[SessionRecord]
   def updateSession(sessionRecord:SessionRecord):SessionRecord
   def getCurrentSessions:List[SessionRecord]
+
+  def getThemesByAuthor(author:String):List[Theme]
+  def getSlidesByThemeKeyword(theme:String):List[String]
+  def getConversationsByTheme(theme:String):List[String]
+  def getAttendancesByAuthor(author:String):List[Attendance]
+  def getConversationsByAuthor(author:String):List[Conversation]
+  def getAuthorsByTheme(theme:String):List[String]
 }

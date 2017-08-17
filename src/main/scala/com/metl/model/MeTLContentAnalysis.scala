@@ -15,8 +15,6 @@ import net.liftweb.util.SecurityHelpers._
 import com.metl.renderer._
 import net.liftweb.util.Helpers.nextFuncName
 
-case class Theme(author:String,text:String,origin:String)
-
 case class Chunked(timeThreshold:Int, distanceThreshold:Int, chunksets:Seq[Chunkset])
 case class Chunkset(author:String,chunks:List[Chunk]){
   val start = chunks.map(_.start).min

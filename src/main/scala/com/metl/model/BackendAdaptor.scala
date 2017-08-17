@@ -466,6 +466,12 @@ class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Co
   override def getSessionsForProfile(profileId:String):List[SessionRecord] = Nil
   override def updateSession(sessionRecord:SessionRecord):SessionRecord = SessionRecord.empty
   override def getCurrentSessions:List[SessionRecord] = Nil
+  override def getThemesByAuthor(author:String):List[Theme] = Nil
+  override def getSlidesByThemeKeyword(theme:String):List[String] = Nil
+  override def getConversationsByTheme(theme:String):List[String] = Nil
+  override def getAttendancesByAuthor(author:String):List[Attendance] = Nil
+  override def getConversationsByAuthor(author:String):List[Conversation] = Nil
+  override def getAuthorsByTheme(theme:String):List[String] = Nil
 }
 
 case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,memoryEvictionPolicy:net.sf.ehcache.store.MemoryStoreEvictionPolicy,timeToLiveSeconds:Option[Int]=None)

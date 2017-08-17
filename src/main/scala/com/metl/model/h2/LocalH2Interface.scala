@@ -688,4 +688,20 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     sessionRecord
   }
   override def getCurrentSessions:List[SessionRecord] = H2SessionRecord.findAll().map(toSessionRecord _) // naive - this'll get big, but it's not going to be a normal user action, so perhaps it won't matter?! 
+  override def getThemesByAuthor(author:String):List[Theme] = H2Theme.findAll(By(H2Theme.author,author)).map(t => serializer.toTheme(t).theme)
+  override def getSlidesByThemeKeyword(theme:String):List[String] = H2Theme.findAllFields(List(H2Theme.location),BySql("%s LIKE ?".format(H2Theme.text.dbColumnName),IHaveValidatedThisSQL("Dave","20170817"),"%"+theme+"%")).map(_.location.get)
+  override def getConversationsByTheme(theme:String):List[String] = {
+    for {
+      conv <- getAllConversations
+      relevant <- getSlidesByThemeKeyword(theme)
+      slide <- conv.slides
+      if (slide.id == relevant)
+    } yield {
+      conv.jid
+    }
+  }
+  override def getAttendancesByAuthor(author:String):List[Attendance] = H2Attendance.findAll(By(H2Attendance.author,author)).map(serializer.toMeTLAttendance)
+  override def getConversationsByAuthor(author:String):List[Conversation] = getAllConversations.filter(_.author == author)
+  override def getAuthorsByTheme(theme:String):List[String] = H2Theme.findAllFields(List(H2Theme.author),BySql("%s LIKE ?".format(H2Theme.text.dbColumnName),IHaveValidatedThisSQL("Dave","20170817"),"%"+theme+"%")).map(_.author.get)
+
 }

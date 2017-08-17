@@ -53,4 +53,11 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def getSessionsForProfile(profileId:String):List[SessionRecord] = dbInterface.getSessionsForProfile(profileId)
   override def updateSession(sessionRecord:SessionRecord):SessionRecord = dbInterface.updateSession(sessionRecord)
   override def getCurrentSessions:List[SessionRecord] = dbInterface.getCurrentSessions
+
+  override def getThemesByAuthor(author:String):List[Theme] = dbInterface.getThemesByAuthor(author)
+  override def getSlidesByThemeKeyword(theme:String):List[String] = dbInterface.getSlidesByThemeKeyword(theme)
+  override def getConversationsByTheme(theme:String):List[String] = dbInterface.getConversationsByTheme(theme)
+  override def getAttendancesByAuthor(author:String):List[Attendance] = dbInterface.getAttendancesByAuthor(author)
+  override def getConversationsByAuthor(author:String):List[Conversation] = dbInterface.getConversationsByAuthor(author)
+  override def getAuthorsByTheme(theme:String):List[String] = dbInterface.getAuthorsByTheme(theme)
 }

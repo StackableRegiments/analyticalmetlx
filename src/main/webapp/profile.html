@@ -155,6 +155,15 @@
 				getSessionHistory:function(){return sessionHistory;}
 			};
 		})();
+		var receiveThemes = function(themes){
+			console.log("themes:",themes);
+		};
+		var receiveAttendances = function(attendances){
+			console.log("attendances:",attendances);
+		};
+		var receiveConversations = function(conversations){
+			console.log("conversations:",conversations);
+		};
 		var receiveSessionHistory = function(sh){
 			ProfileUI.receiveSessionHistory(sh);
 		};
