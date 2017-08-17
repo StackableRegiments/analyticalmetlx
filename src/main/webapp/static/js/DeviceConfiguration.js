@@ -51,7 +51,7 @@ var DeviceConfiguration = (function(){
     };
     var setDefaultOptions = function(){
         tryToDetermineCurrentDevice();
-        $("#absoluteCloseButton").removeClass("closeButton").text("").click(bounceAnd(function(){}));
+        $("#absoluteCloseButton").removeClass("closeButton").text("").click(function(){});
         $("#applicationMenuButton").show();
         fitFunction = defaultFitFunction;
         try {
@@ -84,10 +84,10 @@ var DeviceConfiguration = (function(){
         setSectionVisibility("footer",false);
         fitFunction = projectorFitFunction;
         zoomToFit(true);
-        $("#absoluteCloseButton").addClass("closeButton").text("X").click(bounceAnd(function(){
+        $("#absoluteCloseButton").addClass("closeButton").text("X").click(function(){
             UserSettings.setIsInteractive(true);
             setDefaultOptions();
-        }));
+        });
         $("#applicationMenuButton").hide();
         Modes.none.activate();
         fitFunction();
@@ -349,16 +349,16 @@ var DeviceConfiguration = (function(){
             w.on("orientationchange",outerFit);
         }
         w.resize(outerFit);
-        $("#toolsToggleButton").on("click",bounceAnd(function(){
+        $("#toolsToggleButton").on("click",function(){
             setSectionVisibility("tools",!sectionsVisible.tools);
             updateToolsToggleButton();
             outerFit();
-        }));
-        $("#slidesToggleButton").on("click",bounceAnd(function(){
+        });
+        $("#slidesToggleButton").on("click",function(){
             setSectionVisibility("slides",!sectionsVisible.slides);
             updateSlidesToggleButton();
             outerFit();
-        }));
+        });
         var originalSize = DeviceConfiguration.preferredSizes.handles;
         $("#thumbColumnWidth")
             .val(DeviceConfiguration.preferredSizes.thumbColumn.width)

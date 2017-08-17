@@ -44,64 +44,7 @@ function updateActiveMenu(menuItem) {
     $(".activeBackstageTab").removeClass("activeBackstageTab active");
     $(menuItem).addClass("activeBackstageTab active");
 }
-var WorkQueue = (function(){
-    var isAbleToWork = true;
-    var work = [];
-    var blitNeeded = false;
-    var popState = function(){
-        var f = work.pop();
-        if(f){
-            blitNeeded = blitNeeded || f();
-            popState();
-        }
-        else{
-            if(blitNeeded){
-                blit();
-                blitNeeded = false;
-            }
-        }
-    };
-    var pauseFunction = function(){
-        stopResume();
-        canWorkFunction(false);
-        Progress.call("afterWorkQueuePause");
-    };
-    var canWorkFunction = function(state){
-        isAbleToWork = state;
-        if(state){
-            popState();
-        }
-    };
-    var stopResume = function(){
-        if (gracefullyResumeTimeout){
-            window.clearTimeout(gracefullyResumeTimeout);
-            gracefullyResumeTimeout = undefined;
-        }
-    }
-    var gracefullyResumeDelay = 1000;
-    var gracefullyResumeTimeout = undefined;
-    var gracefullyResumeFunction = function(){
-        stopResume();
-        gracefullyResumeTimeout = setTimeout(function(){canWorkFunction(true);},gracefullyResumeDelay);
-        Progress.call("beforeWorkQueueResume");
-    };
-    return {
-        pause:pauseFunction,
-        gracefullyResume:gracefullyResumeFunction,
-        enqueue:function(func){//A function returning a bool, blit needed or not.
-            if(isAbleToWork){
-                if(func()){
-                    blit();
-                };
-            }
-            else{
-                work.push(function(){
-                    return func();
-                });
-            }
-        }
-    };
-})();
+Progress.blit["onLoad"] = blit;
 var Pan = {
     pan:function(xDelta,yDelta){
         takeControlOfViewbox(true);
