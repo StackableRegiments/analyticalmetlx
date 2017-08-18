@@ -100,8 +100,8 @@ trait MeTLSubmissionMatchers extends MeTLStanzaMatchers with MeTLCanvasContentMa
 		  )
 	  }
 
-	def slideJid(expectedValue: Int) =
-	  new HavePropertyMatcher[MeTLSubmission, Int] {
+	def slideJid(expectedValue: String) =
+	  new HavePropertyMatcher[MeTLSubmission, String] {
 		def apply(stanza: MeTLSubmission) =
 		  HavePropertyMatchResult(
 			stanza.slideJid == expectedValue,

@@ -236,7 +236,7 @@ trait MeTLDataGenerators {
     author <- genString(32)
     timestamp <- validTimestamp
     title <- genString(32)
-    slideJid <- arbitrary[Int]
+    slideJid <- genString(32)//arbitrary[Int]
     url <- genString(32)
     privacy <- genPrivacy
     boxOfBytes <- genBoxOfBytes

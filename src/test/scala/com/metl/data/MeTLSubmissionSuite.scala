@@ -52,7 +52,7 @@ class MeTLSubmissionExtractorSuite extends FunSuite with GeneratorDrivenProperty
 			title ("blah"),
 			privacy (Privacy.PUBLIC),
 			identity ("screenshotSubmission"),
-			slideJid (3003034),
+			slideJid ("3003034"),
 			url ("http://test.metl.com/test/submission/metlImage03.png"),
 			imageBytes (Full(Array.empty[Byte])),
 			blacklist (List(SubmissionBlacklistedPerson("eecrole", Color(0xff, 0xff, 0xff, 0xff)), SubmissionBlacklistedPerson("jasonp", Color(0xff, 0xff, 0xff, 0x00)))),
@@ -68,7 +68,7 @@ class MeTLSubmissionExtractorSuite extends FunSuite with GeneratorDrivenProperty
             genSubmission should have (
                 server (ServerConfiguration.empty),
                 author (queryXml[String]("author")),
-                slideJid (queryXml[Int]("slide")),
+                slideJid (queryXml[String]("slide")),
                 title (queryXml[String]("title")),
                 target (queryXml[String]("target")),
                 privacy (queryXml[Privacy]("privacy")),
