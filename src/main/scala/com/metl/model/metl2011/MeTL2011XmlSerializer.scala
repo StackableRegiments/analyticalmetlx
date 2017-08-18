@@ -98,7 +98,7 @@ class MeTL2011XmlSerializer(config:ServerConfiguration,cacheImages:Boolean = fal
       val highlight = getColorByName(bl,"highlight")
       SubmissionBlacklistedPerson(username,highlight)
     }).toList
-    MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
+    MeTLSubmission(config,m.author,m.timestamp,title,c.slide,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
   })
   override def toMeTLQuiz(input:NodeSeq):MeTLQuiz = Stopwatch.time("MeTL2011XmlSerializer.toMeTLQuiz",{
 		trace("quiz attempted: %s".format(input))

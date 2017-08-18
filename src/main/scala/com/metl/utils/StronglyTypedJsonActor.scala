@@ -28,7 +28,7 @@ object JNum{
 
 abstract class StronglyTypedJsonActor extends CometActor with CometListener with Logger {
 	protected val functionDefinitions:List[ClientSideFunction]
-  case class AsyncFunctionRequest(name:String, args:List[String],serverSideFunc:List[JValue]=>JValue,returnResultFunction:Box[String],returnArguments:Boolean,params:List[JValue],bonusParams:List[JValue],start:Long){}
+  case class AsyncFunctionRequest(name:String, args:List[String],serverSideFunc:List[JValue]=>List[JValue],returnResultFunction:Box[String],returnArguments:Boolean,params:List[JValue],bonusParams:List[JValue],start:Long){}
   object backendActor extends LiftActor {
     override def messageHandler = {
       case afr@AsyncFunctionRequest(funcName,funcArgs,func,resultFunc,returnArguments,params,bonusParams,start) => {
@@ -63,14 +63,14 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
             JField("serverStart",JInt(start)),
             JField("serverEnd",JInt(end)),
             JField("success",JBool(exceptionOrResult.isRight))
-          ))) & exceptionOrResult.right.toOption.map(res => Call(rrf,res._1):JsCmd).getOrElse(Noop)
+          ))) & exceptionOrResult.right.toOption.map(res => Call(rrf,res._1.map(jv => JsExp.jValueToJsExp(jv)):_*):JsCmd).getOrElse(Noop)
           partialUpdate(returnCall)
         })
       }
       case _ => {}
     }
   }
-  case class ClientSideFunction(val name:String,val args:List[String],val serverSideFunc:List[JValue]=>JValue,val returnResultFunction:Box[String],val returnResponse:Boolean = false,val returnArguments:Boolean = false){
+  case class ClientSideFunction(val name:String,val args:List[String],val serverSideFunc:List[JValue]=>List[JValue],val returnResultFunction:Box[String],val returnResponse:Boolean = false,val returnArguments:Boolean = false){
     import net.liftweb.json.Extraction._
     import net.liftweb.json._
     val jsCreationFunc = Script(JsCrVar(name,AnonFunc(ajaxCall(JsRaw("JSON.stringify(augmentArguments(arguments))"),(s:String) => {
@@ -90,7 +90,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
                 if (bonusParams.exists(_ == JString("async"))){
                   async = true
                   backendActor ! AsyncFunctionRequest(name,args,serverSideFunc,returnResultFunction,returnArguments,params,bonusParams,start)
-                  Right((JString("asynchronous function started"),params,bonusParams))
+                  Right((List(JString("asynchronous function started")),params,bonusParams))
                 } else {
                   val output = serverSideFunc(params)
                   Right((output,params,bonusParams))
@@ -107,7 +107,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
         val end = new java.util.Date().getTime()
         val returnCall = Call("serverResponse",JObject({
           exceptionOrResult match {
-            case Right((response,params,bonusParams)) => {
+            case Right((responses,params,bonusParams)) => {
               JField("bonusArguments",JArray(bonusParams)) :: bonusParams.reverse.headOption.toList.map(ins => JField("instant",ins)) ::: {
                 returnArguments match {
                   case true => List(JField("arguments",JArray(params)))
@@ -115,7 +115,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
                 }
               } ::: { 
                 returnResponse match {
-                  case true => List(JField("response",response))
+                  case true => List(JField("response",JArray(responses)))
                   case false => Nil
                 }
               }
@@ -137,7 +137,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
           res <- exceptionOrResult.right.toOption
           if !async
         } yield {
-          returnCall & Call(rrf,res._1)
+          returnCall & Call(rrf,res._1.map(jv => JsExp.jValueToJsExp(jv)):_*)
         }).getOrElse(returnCall)
       } catch {
         case e:Exception => {

@@ -209,25 +209,25 @@ class MeTLAccount extends StronglyTypedJsonActor with Logger with JArgUtils with
       val allProfiles = prof :: Globals.availableProfiles.is
       Globals.availableProfiles(allProfiles)
       println("created new profile")
-      JArray(allProfiles.map(renderProfile _))
+      List(JArray(allProfiles.map(renderProfile _)))
     },Full(RECEIVE_PROFILES)),
     ClientSideFunction("switchToProfile",List("profileId"),(args) => {
       val profId = getArgAsString(args(0)).trim
-      Globals.availableProfiles.find(_.id == profId).map(profile => {
+      List(Globals.availableProfiles.find(_.id == profId).map(profile => {
         Globals.currentProfile(profile)
         renderProfile(profile)
       }).getOrElse({
         renderProfile(Globals.currentProfile.is)
-      })
+      }))
     },Full(RECEIVE_ACTIVE_PROFILE)),
     ClientSideFunction("setDefaultProfile",List("profileId"),(args) => {
       val profId = getArgAsString(args(0)).trim
-      Globals.availableProfiles.find(_.id == profId).map(profile => {
+      List(Globals.availableProfiles.find(_.id == profId).map(profile => {
         serverConfig.updateAccountRelationship(Globals.currentAccount.name,Globals.currentAccount.provider,profile.id,false,true)
         JString(profId)
       }).getOrElse({
         JString(serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2) 
-      })
+      }))
     },Full(RECEIVE_DEFAULT_PROFILE))
   )
   override def lifespan = Globals.searchActorLifespan
@@ -264,29 +264,29 @@ class MeTLProfile extends StronglyTypedJsonActor with Logger with JArgUtils with
   override lazy val functionDefinitions = List(
     ClientSideFunction("changeProfileNickname",List("newName"),(args) => {
       val newName = getArgAsString(args(0)).trim
-      renderProfile(updateProfile(thisProfile.copy(name = newName)))
+      List(renderProfile(updateProfile(thisProfile.copy(name = newName))))
     },Full(RECEIVE_PROFILE)),
     ClientSideFunction("changeAttribute",List("key","value"),(args) => {
       val k = getArgAsString(args(0)).trim
       val v = getArgAsString(args(1)).trim
       val orig = thisProfile
-      renderProfile(updateProfile(thisProfile.copy(attributes = orig.attributes.updated(k,v))))
+      List(renderProfile(updateProfile(thisProfile.copy(attributes = orig.attributes.updated(k,v)))))
     },Full(RECEIVE_PROFILE)),
     ClientSideFunction("getProfileSessionHistory",Nil,(args) => {
-      Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id))
+      List(Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id)))
     },Full(RECEIVE_SESSION_HISTORY)),
     ClientSideFunction("getAttendances",Nil,(args) => {
-      JArray(serverConfig.getAttendancesByAuthor(thisProfile.id).map(serializer.fromMeTLAttendance _))
+      List(JArray(serverConfig.getAttendancesByAuthor(thisProfile.id).map(serializer.fromMeTLAttendance _)))
     },Full(RECEIVE_ATTENDANCES)),
     ClientSideFunction("getThemes",Nil,(args) => {
-      JArray(serverConfig.getThemesByAuthor(thisProfile.id).map(t => Extraction.decompose(t)))
+      List(JArray(serverConfig.getThemesByAuthor(thisProfile.id).map(t => Extraction.decompose(t))))
     },Full(RECEIVE_THEMES)),
     ClientSideFunction("getConversations",Nil,(args) => {
-      JArray(serverConfig.getConversationsByAuthor(thisProfile.id).map(serializer.fromConversation _))
+      List(JArray(serverConfig.getConversationsByAuthor(thisProfile.id).map(serializer.fromConversation _)))
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunction("testCall",List("first","second","third"),(args) => {
       partialUpdate(Call("MeTLBus.call",JString("testEndpoint"),JArray(args)))
-      JNull
+      Nil
     },None)
   )
   protected var profile:Option[Profile] = None
@@ -349,11 +349,11 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   override lazy val functionDefinitions = List(
     /*
      ClientSideFunction("getPresentUsers",List.empty[String],(args) => {
-     rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
+     List(rooms.getOrElse((serverName,m.slide),() => EmptyRoom)())
      },Full(RECEIVE_PRESENT_USERS)),
      */
-    ClientSideFunction("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
-    ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
+    ClientSideFunction("getUserGroups",List.empty[String],(args) => List(getUserGroups),Full(RECEIVE_USER_GROUPS)),
+    ClientSideFunction("getUser",List.empty[String],(unused) => List(JString(username)),Full(RECEIVE_USERNAME)),
     ClientSideFunction("getSearchResult",List("query"),(args) => {
       val q = getArgAsString(args(0)).toLowerCase.trim
       query = Some(q)
@@ -361,20 +361,20 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
       listing = filterConversations(foundConversations,true)
       //debug(listing.toString())
       trace("searchingWithQuery: %s => %s : %s".format(query,foundConversations.length,listing.length))
-      serializer.fromConversationList(listing)
+      List(serializer.fromConversationList(listing))
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunction("createConversation",List("title"),(args) => {
       val title = getArgAsString(args(0))
       warn("Creating conversation: %s".format(title))
       val newConv = serverConfig.createConversation(title,username)
       listing = (newConv :: listing).distinct
-      serializer.fromConversation(newConv)
+      List(serializer.fromConversation(newConv))
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS))/*,
     ClientSideFunction("sleepAndThenAlert",List("delay","message"),(args) => {
       val delay = getArgAsInt(args(0))
       val message = getArgAsString(args(1))
       Thread.sleep(delay)
-      JString(message)
+      List(JString(message))
     },Full("alert"))*/
   )
 
@@ -468,13 +468,13 @@ abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with 
     )))
   }))).toList)
   override lazy val functionDefinitions = List(
-    ClientSideFunction("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
-    ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
+    ClientSideFunction("getUserGroups",List.empty[String],(args) => List(getUserGroups),Full(RECEIVE_USER_GROUPS)),
+    ClientSideFunction("getUser",List.empty[String],(unused) => List(JString(username)),Full(RECEIVE_USERNAME)),
     ClientSideFunction("getSearchResult",List("query"),(args) => {
-      serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(getArgAsString(args(0)).toLowerCase.trim)))
+      List(serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(getArgAsString(args(0)).toLowerCase.trim))))
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunction("getProfiles",List("profileIds"),(args) => {
-      translateProfileIds(getArgAsListOfStrings(args(0)))
+      List(translateProfileIds(getArgAsListOfStrings(args(0))))
     },Full(RECEIVE_PROFILES))
   )
 
@@ -586,14 +586,14 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
   private def getUserGroups = JArray(Globals.getUserGroups.map(eg => net.liftweb.json.Extraction.decompose(eg)))
   override lazy val functionDefinitions = List(
     ClientSideFunction("getProfiles",List("profileIds"),(args) => {
-      translateProfileIds(getArgAsListOfStrings(args(0)))
+      List(translateProfileIds(getArgAsListOfStrings(args(0))))
     },Full(RECEIVE_PROFILES)),
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
       trace("reorderSlidesOfConversation(%s,%s)".format(jid,newSlides))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           (newSlides.arr.length == c.slides.length) match {
             case true => {
@@ -604,12 +604,12 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
           }
         }
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("deleteConversation",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           trace("deleting conversation %s".format(c.jid))
           serverConfig.deleteConversation(c.jid.toString)
@@ -618,16 +618,16 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
           trace("refusing to delete conversation %s".format(c.jid))
           c
         }
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("renameConversation",List("jid","newTitle"),(args) => {
       val jid = getArgAsString(args(0))
       val newTitle = getArgAsString(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => serverConfig.renameConversation(c.jid.toString,newTitle)
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("changeSubjectOfConversation",List("conversationJid","newSubject","newRelationshipSystem","newRelationshipKey"),(args) => {
       val jid = getArgAsString(args(0))
@@ -635,7 +635,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
       val newRelationshipSystem = tryo(getArgAsString(args(2)))
       val newRelationshipKey = tryo(getArgAsString(args(3)))
       var c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(if (shouldModifyConversation(c) && (newSubject.toLowerCase == "unrestricted" || newSubject.toLowerCase == username || Globals.getUserGroups.exists(_.name == newSubject))){
+      List(serializer.fromConversation(refreshForeignRelationship(if (shouldModifyConversation(c) && (newSubject.toLowerCase == "unrestricted" || newSubject.toLowerCase == username || Globals.getUserGroups.exists(_.name == newSubject))){
         var newRelationship = for {
           sys <- newRelationshipSystem
           key <- newRelationshipKey
@@ -649,45 +649,45 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
         serverConfig.updateConversation(c.jid.toString,newC)
       } else {
         c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addSlideToConversationAtIndex",List("jid","index"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("duplicateSlideById",List("jid","slideId"),(args) => {
       val jid = getArgAsString(args(0))
       val slideId = getArgAsString(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => StatelessHtml.duplicateSlideInternal(username,slideId.toString,c.jid.toString).getOrElse(c)
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("duplicateConversation",List("jid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => StatelessHtml.duplicateConversationInternal(username,c.jid.toString).openOr(c)
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS)),
     ClientSideFunction("changeExposureOfSlide",List("jid","slideId","exposed"),(args) => {
       val jid = getArgAsString(args(0))
       val slideId = getArgAsString(args(1))
       val exposed = getArgAsBool(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           serverConfig.updateConversation(c.jid.toString,c.copy(slides = c.slides.find(_.id == slideId).map(_.copy(exposed = exposed)).toList ::: c.slides.filterNot(_.id == slideId)))
         }
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS))
   )
   override def registerWith = MeTLEditConversationActorManager
@@ -815,10 +815,10 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
   protected var tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   override lazy val functionDefinitions = List(
     ClientSideFunction("getProfiles",List("profileIds"),(args) => {
-      translateProfileIds(getArgAsListOfStrings(args(0)))
+      List(translateProfileIds(getArgAsListOfStrings(args(0))))
     },Full(RECEIVE_PROFILES)),
     ClientSideFunction("getTokBoxArchives",List.empty[String],(args) => {
-      JArray(for {
+      List(JArray(for {
         tb <- Globals.tokBox.toList
         s <- tokSessions.toList.flatMap(_._2)
         a <- tb.getArchives(s)
@@ -833,21 +833,21 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             a.duration.toList.map(d => JField("size",JInt(d))) :::
             a.createdAt.toList.map(c => JField("created",JInt(c)))
         )
-      })
+      }))
     },Full(RECEIVE_TOK_BOX_ARCHIVES)),
     ClientSideFunction("getTokBoxArchive",List("id"),(args) => {
       val id = getArgAsString(args(0))
-      JArray((for {
+      List(JArray((for {
         tb <- Globals.tokBox
         s <- tokSessions.toList.flatMap(_._2).headOption
         a <- tb.getArchive(s,id)
       } yield {
         Extraction.decompose(a)
-      }).toList)
+      }).toList))
     },Full(RECEIVE_TOK_BOX_ARCHIVES)),
     ClientSideFunction("removeTokBoxArchive",List("id"),(args) => {
       val id = getArgAsString(args(0))
-      JArray((for {
+      List(JArray((for {
         tb <- Globals.tokBox
         s <- tokSessions.toList.flatMap(_._2).headOption
       } yield {
@@ -856,7 +856,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           JField("session",Extraction.decompose(s)),
           JField("success",JBool(a))
         ))
-      }).toList)
+      }).toList))
     },None),
     ClientSideFunction("startBroadcast",List("layout"),(args) => {
       val layout = getArgAsString(args(0))
@@ -866,8 +866,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           s <- tokSessions.toList.flatMap(_._2).headOption
           b = tb.startBroadcast(s,layout)
         } yield {
-          Extraction.decompose(b)
-        }).getOrElse(JNull)
+          List(Extraction.decompose(b))
+        }).getOrElse(Nil)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
     ClientSideFunction("updateBroadcastLayout",List("id","newLayout"),(args) => {
       val id = getArgAsString(args(0))
@@ -878,8 +878,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           s <- tokSessions.toList.flatMap(_._2).headOption
           a = tb.updateBroadcast(s,id,layout)
         } yield {
-          Extraction.decompose(a)
-        }).getOrElse(JNull)
+          List(Extraction.decompose(a))
+        }).getOrElse(Nil)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
     ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
       (for {
@@ -889,8 +889,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         b <- tb.getBroadcast(s)
         a = tb.stopBroadcast(s,b.id)
       } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
+        List(Extraction.decompose(a))
+      }).getOrElse(Nil)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
     ClientSideFunction("getBroadcast",List.empty[String],(args) => {
       (for {
@@ -898,55 +898,55 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         s <- tokSessions.toList.flatMap(_._2).headOption
         a <- tb.getBroadcast(s)
       } yield {
-        Extraction.decompose(a)
-      }).getOrElse(JNull)
+        List(Extraction.decompose(a))
+      }).getOrElse(Nil)
     },Full(RECEIVE_TOK_BOX_BROADCAST)),
     ClientSideFunction("refreshClientSideState",List.empty[String],(args) => {
       partialUpdate(refreshClientSideStateJs(true))
-      JNull
+      Nil
     },Empty),
     ClientSideFunction("getHistory",List("slide"),(args)=> {
       val jid = getArgAsString(args(0))
       trace("getHistory requested")
-      getSlideHistory(jid)
+      List(getSlideHistory(jid))
     },Full(RECEIVE_HISTORY)),
     ClientSideFunction("getSearchResult",List("query"),(args) => {
-      serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(getArgAsString(args(0)).toLowerCase.trim)))
+      List(serializer.fromConversationList(filterConversations(serverConfig.searchForConversation(getArgAsString(args(0)).toLowerCase.trim))))
     },Full(RECEIVE_CONVERSATIONS)),
-    ClientSideFunction("getIsInteractiveUser",List.empty[String],(args) => isInteractiveUser.map(iu => JBool(iu)).openOr(JBool(true)),Full(RECEIVE_IS_INTERACTIVE_USER)),
+    ClientSideFunction("getIsInteractiveUser",List.empty[String],(args) => List(isInteractiveUser.map(iu => JBool(iu)).openOr(JBool(true))),Full(RECEIVE_IS_INTERACTIVE_USER)),
     ClientSideFunction("setIsInteractiveUser",List("isInteractive"),(args) => {
       val isInteractive = getArgAsBool(args(0))
       isInteractiveUser = Full(isInteractive)
-      isInteractiveUser.map(iu => JBool(iu)).openOr(JBool(true))
+      List(isInteractiveUser.map(iu => JBool(iu)).openOr(JBool(true)))
     },Full(RECEIVE_IS_INTERACTIVE_USER)),
-    ClientSideFunction("getUserOptions",List.empty[String],(args) => JString("not yet implemented"),Full(RECEIVE_USER_OPTIONS)),
-    ClientSideFunction("setUserOptions",List("newOptions"),(args) => JString("not yet implemented"),Empty),
-    ClientSideFunction("getUserGroups",List.empty[String],(args) => getUserGroups,Full(RECEIVE_USER_GROUPS)),
-    ClientSideFunction("getResource",List("source"),(args) => JString("not yet implemented"),Empty),
+    ClientSideFunction("getUserOptions",List.empty[String],(args) => List(JString("not yet implemented")),Full(RECEIVE_USER_OPTIONS)),
+    ClientSideFunction("setUserOptions",List("newOptions"),(args) => List(JString("not yet implemented")),Empty),
+    ClientSideFunction("getUserGroups",List.empty[String],(args) => List(getUserGroups),Full(RECEIVE_USER_GROUPS)),
+    ClientSideFunction("getResource",List("source"),(args) => List(JString("not yet implemented")),Empty),
     ClientSideFunction("moveToSlide",List("where"),(args) => {
       val where = getArgAsString(args(0))
       debug("moveToSlideRequested(%s)".format(where))
       moveToSlide(where)
       partialUpdate(refreshClientSideStateJs(true))
-      JNull
+      Nil
     },Empty),
     ClientSideFunction("joinRoom",List("where"),(args) => {
       val where = getArgAsString(args(0))
       joinRoomByJid(where)
       joinRoomByJid(where+username)
-      JNull
+      Nil
     },Empty),
     ClientSideFunction("leaveRoom",List("where"),(args) => {
       val where = getArgAsString(args(0))
       leaveRoomByJid(where)
       leaveRoomByJid(where+username)
-      JNull
+      Nil
     },Empty),
     ClientSideFunction("sendStanza",List("stanza"),(args) => {
       val stanza = getArgAsJValue(args(0))
       trace("sendStanza: %s".format(stanza.toString))
       sendStanzaToServer(stanza)
-      JNull
+      Nil
     },Empty),
     ClientSideFunction("undeleteStanza",List("stanza"),(args) => {
       val stanza = getArgAsJValue(args(0))
@@ -1000,32 +1000,32 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         }
         case notAStanza => error("Not a stanza at undeleteStanza %s".format(notAStanza))
       }
-      JNull
+      Nil
     },Empty),
     ClientSideFunction("sendTransientStanza",List("stanza"),(args) => {
       val stanza = getArgAsJValue(args(0))
       sendStanzaToServer(stanza,"loopback")
-      JNull
+      Nil
     },Empty),
-    ClientSideFunction("getRooms",List.empty[String],(unused) => JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList),Full("recieveRoomListing")),
-    ClientSideFunction("getUser",List.empty[String],(unused) => JString(username),Full(RECEIVE_USERNAME)),
+    ClientSideFunction("getRooms",List.empty[String],(unused) => List(JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList)),Full("recieveRoomListing")),
+    ClientSideFunction("getUser",List.empty[String],(unused) => List(JString(username)),Full(RECEIVE_USERNAME)),
     ClientSideFunction("changePermissionsOfConversation",List("jid","newPermissions"),(args) => {
       val jid = getArgAsString(args(0))
       val newPermissions = getArgAsJValue(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("changeBlacklistOfConversation",List("jid","newBlacklist"),(args) => {
       val jid = getArgAsString(args(0))
       val rawBlacklist = getArgAsListOfStrings(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => serverConfig.updateConversation(c.jid.toString,c.copy(blackList = rawBlacklist))
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds","videoIds"),(args) => {
       val conversationJid = getArgAsString(args(0))
@@ -1111,17 +1111,17 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           r() ! LocalToServerMeTLStanza(deleter)
         })
       }
-      JNull
+      Nil
     },Empty),
     ClientSideFunction("overrideAllocation",List("conversationJid","slideObject"),(args) => {
       debug("Override allocation: %s".format(args))
       val newSlide = serializer.toSlide(getArgAsJValue(args(1)))
       val c = serverConfig.detailsOfConversation(getArgAsString(args(0)))
       debug("Parsed values: %s".format(newSlide,c))
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => serverConfig.updateConversation(c.jid.toString,c.copy(slides = newSlide :: c.slides.filterNot(_.id == newSlide.id)))
         case false => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addGroupSlideToConversationAtIndex",List("jid","index","grouping","initialGroups","parameter"),(args) => {
       val jid = getArgAsString(args(0))
@@ -1137,19 +1137,19 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         case "groupsOfOne" => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,OnePersonPerGroup,initialGroups)
         case _ => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByMaximumSize(4),initialGroups)
       }
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => serverConfig.addGroupSlideAtIndexOfConversation(c.jid.toString,index,grouping)
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addSlideToConversationAtIndex",List("jid","index"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addImageSlideToConversationAtIndex",List("jid","index","resourceId","caption"),(args) => {
       val jid = getArgAsString(args(0))
@@ -1158,7 +1158,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val captionArg = getArgAsJValue(args(3))
       val caption = serializer.toMeTLMultiWordText(captionArg)
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1175,7 +1175,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           newC
         }
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
 
     ClientSideFunction("addSubmissionSlideToConversationAtIndex",List("jid","index","submissionId"),(args) => {
@@ -1183,7 +1183,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val index = getArgAsInt(args(1))
       val submissionId = getArgAsString(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1200,14 +1200,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           newC
         }
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addQuizViewSlideToConversationAtIndex",List("jid","index","quizId"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val quizId = getArgAsString(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1232,14 +1232,14 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           newC
         }
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("addQuizResultsViewSlideToConversationAtIndex",List("jid","index","quizId"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val quizId = getArgAsString(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1284,13 +1284,13 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           newC
         }
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      List(serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           (newSlides.arr.length == c.slides.length) match {
             case true => serverConfig.reorderSlidesOfConversation(c.jid.toString,newSlides.arr.map(i => serializer.toSlide(i)).toList)
@@ -1298,17 +1298,17 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
           }
         }
         case _ => c
-      },username,Globals.getUserGroups))
+      },username,Globals.getUserGroups)))
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("getQuizzesForConversation",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val quizzes = getQuizzesForConversation(jid).map(q => serializer.fromMeTLQuiz(q)).toList
-      JArray(quizzes)
+      List(JArray(quizzes))
     },Full(RECEIVE_QUIZZES)),
     ClientSideFunction("getResponsesForQuizInConversation",List("conversationJid","quizId"),(args) => {
       val jid = getArgAsString(args(0))
       val quizId = getArgAsString(args(1))
-      JArray(getQuizResponsesForQuizInConversation(jid,quizId).map(q => serializer.fromMeTLQuizResponse(q)).toList)
+      List(JArray(getQuizResponsesForQuizInConversation(jid,quizId).map(q => serializer.fromMeTLQuizResponse(q)).toList))
     },Full(RECEIVE_QUIZ_RESPONSES)),
     ClientSideFunction("answerQuiz",List("conversationJid","quizId","chosenOptionName"),(args) => {
       val conversationJid = getArgAsString(args(0))
@@ -1316,22 +1316,22 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       val chosenOptionName = getArgAsString(args(2))
       val response = MeTLQuizResponse(serverConfig,username,new Date().getTime,chosenOptionName,username,quizId)
       rooms.get((server,conversationJid)).map(r => r() ! LocalToServerMeTLStanza(response))
-      JNull
+      Nil
     },Empty),
     ClientSideFunction("getGroupsProviders",Nil,(args) => {
-      JObject(List(
+      List(JObject(List(
         JField("groupsProviders",JArray(Globals.getGroupsProviders.filter(_.canQuery).map(gp => JObject(List(JField("storeId",JString(gp.storeId)),JField("displayName",JString(gp.name)))))))
-      ))
+      )))
     },Full("receiveGroupsProviders")),
     ClientSideFunction("getOrgUnitsFromGroupProviders",List("storeId"),(args) => {
       val sid = getArgAsString(args(0))
       val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
-      JObject(List(
+      List(JObject(List(
         JField("groupsProvider",gp),
         JField("orgUnits",JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
           gp.getGroupsFor(Globals.casState.is).map(g => Extraction.decompose(g))
         }).toList))
-      ))
+      )))
     },Full("receiveOrgUnitsFromGroupsProviders")),
     ClientSideFunction("getGroupSetsForOrgUnit",List("storeId","orgUnit"),(args) => {
       val sid = getArgAsString(args(0))
@@ -1348,11 +1348,11 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         gp.getGroupSetsFor(orgUnit,members).map(gs => Extraction.decompose(gs))
       }).toList)
       val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
-      JObject(List(
+      List(JObject(List(
         JField("groupsProvider",gp),
         JField("orgUnit",orgUnitJValue),
         JField("groupSets",groupSets)
-      ))
+      )))
     },Full("receiveGroupSetsForOrgUnit")),
     ClientSideFunction("getGroupsForGroupSet",List("storeId","orgUnit","groupSet"),(args) => {
       val sid = getArgAsString(args(0))
@@ -1371,12 +1371,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         gp.getGroupsFor(orgUnit,groupSet,members).map(gs => Extraction.decompose(gs))
       }).toList)
       val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
-      JObject(List(
+      List(JObject(List(
         JField("groupsProvider",gp),
         JField("orgUnit",orgUnitJValue),
         JField("groupSet",groupSetJValue),
         JField("groups",groups)
-      ))
+      )))
     },Full("receiveGroupsForGroupSet"))
   )
   private def getQuizResponsesForQuizInConversation(jid:String,quizId:String):List[MeTLQuizResponse] = {
