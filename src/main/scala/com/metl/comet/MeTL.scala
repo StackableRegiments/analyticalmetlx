@@ -283,7 +283,11 @@ class MeTLProfile extends StronglyTypedJsonActor with Logger with JArgUtils with
     },Full(RECEIVE_THEMES)),
     ClientSideFunction("getConversations",Nil,(args) => {
       JArray(serverConfig.getConversationsByAuthor(thisProfile.id).map(serializer.fromConversation _))
-    },Full(RECEIVE_CONVERSATIONS))
+    },Full(RECEIVE_CONVERSATIONS)),
+    ClientSideFunction("testCall",List("first","second","third"),(args) => {
+      partialUpdate(Call("Progress.call",JString("testEndpoint"),JArray(args)))
+      JNull
+    },None)
   )
   protected var profile:Option[Profile] = None
   protected def thisProfile = profile.getOrElse(Globals.currentProfile.is)
@@ -658,7 +662,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("duplicateSlideById",List("jid","slideId"),(args) => {
       val jid = getArgAsString(args(0))
-      val slideId = getArgAsInt(args(1))
+      val slideId = getArgAsString(args(1))
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => StatelessHtml.duplicateSlideInternal(username,slideId.toString,c.jid.toString).getOrElse(c)
@@ -675,7 +679,7 @@ class MeTLEditConversationActor extends StronglyTypedJsonActor with CometListene
     },Full(RECEIVE_NEW_CONVERSATION_DETAILS)),
     ClientSideFunction("changeExposureOfSlide",List("jid","slideId","exposed"),(args) => {
       val jid = getArgAsString(args(0))
-      val slideId = getArgAsInt(args(1))
+      val slideId = getArgAsString(args(1))
       val exposed = getArgAsBool(args(2))
       val c = serverConfig.detailsOfConversation(jid)
       serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
@@ -1025,7 +1029,7 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     },Full(RECEIVE_CONVERSATION_DETAILS)),
     ClientSideFunction("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds","videoIds"),(args) => {
       val conversationJid = getArgAsString(args(0))
-      val slideJid = getArgAsInt(args(1))
+      val slideJid = getArgAsString(args(1))
       val inkIds = getArgAsListOfStrings(args(2))
       val textIds = getArgAsListOfStrings(args(3))
       val multiWordTextIds = getArgAsListOfStrings(args(4))

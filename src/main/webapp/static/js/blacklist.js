@@ -345,10 +345,10 @@ var Blacklist = (function(){
             processData: false
         });
     };
-    Progress.conversationDetailsReceived["blacklist"] = updateAuthorList;
-    Progress.onConversationJoin["blacklist"] = clearState;
-    Progress.historyReceived["blacklist"] = historyReceivedFunction;
-    Progress.stanzaReceived["blacklist"] = onBlacklistReceived;
+    MeTLBus.subscribe("conversationDetailsReceived","blacklist",updateAuthorList);
+    MeTLBus.subscribe("onConversationJoin","blacklist",clearState);
+    MeTLBus.subscribe("historyReceived","blacklist",historyReceivedFunction);
+    MeTLBus.subscribe("stanzaReceived","blacklist",onBlacklistReceived);
     return {
         getAllBlacklists:function(){return Conversations.shouldModifyConversation() ? filteredBlacklists() : [];},
         getCurrentBlacklist:function(){return Conversations.shouldModifyConversation() ? currentBlacklist : {};},

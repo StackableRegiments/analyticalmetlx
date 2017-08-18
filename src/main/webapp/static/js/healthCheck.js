@@ -413,7 +413,7 @@ var HealthCheckViewer = (function(){
             return category in data && data[category] !== undefined && data[category].successful;
         });
         if( wasHealthy != healthy ) {
-            Progress.call("blit");
+            MeTLBus.call("blit");
         }
         $("#healthStatus").prop({
             max:max,

@@ -44,7 +44,7 @@ function updateActiveMenu(menuItem) {
     $(".activeBackstageTab").removeClass("activeBackstageTab active");
     $(menuItem).addClass("activeBackstageTab active");
 }
-Progress.blit["onLoad"] = blit;
+MeTLBus.subscribe("blit","onLoad",blit);
 var Pan = {
     pan:function(xDelta,yDelta){
         takeControlOfViewbox(true);
@@ -211,11 +211,11 @@ var TweenController = (function(){
         }
         blit();
         teacherViewUpdated(finalX,finalY,finalWidth,finalHeight);
-        Progress.call("onViewboxChanged");
+        MeTLBus.call("onViewboxChanged");
     };
     var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if(Conversations.isAuthor() && UserSettings.getIsInteractive()){
-            var ps = [x,y,w,h,Date.now(),Conversations.getCurrentSlideJid(),"autoZooming" in Progress.onBoardContentChanged];
+            var ps = [x,y,w,h,Date.now(),Conversations.getCurrentSlideJid(),MeTLBus.check("onBoardContentChanged","autoZooming")];
             if(w <= 0 || h <= 0){
                 return;
             }
@@ -280,8 +280,8 @@ var TweenController = (function(){
                 if (onComplete){
                     onComplete();
                 }
-                Progress.call("onViewboxChanged");
-                Progress.call("textBoundsChanged");
+                MeTLBus.call("onViewboxChanged");
+                MeTLBus.call("textBoundsChanged");
             }).start();
         var update = function(t){
             if (tween){
@@ -404,7 +404,7 @@ function showBackstage(id){
     }
     $(".dedicatedClose").click(hideBackstage);
     $("#masterLayout").css({"opacity": Conversations.getCurrentConversationJid() ? 0.3 : 0.0 });
-    Progress.call("onBackstageShow",[id]);
+    MeTLBus.call("onBackstageShow",[id]);
 }
 function hideBackstage(){
     $("html").css("overflow-y","hidden");
@@ -426,7 +426,7 @@ function hideBackstage(){
     if ("HealthCheckViewer" in window){
         HealthCheckViewer.pause();
     }
-    Progress.call("onBackstageHide");
+    MeTLBus.call("onBackstageHide");
 };
 function showSpinner() {
     $("#loadingSlidePopup").show();
@@ -569,7 +569,7 @@ $(function(){
                     var mode = Modes.currentMode;
                     Modes.none.activate();
                     mode.activate();
-                    Progress.call("onLayoutUpdated");
+                    MeTLBus.call("onLayoutUpdated");
                 }))
                 .appendTo(container);
         };
@@ -622,7 +622,7 @@ $(function(){
     });
 
     setLoadProgress(7);
-    Progress.stanzaReceived["boardOnLoad"] = actOnReceivedStanza;
+    MeTLBus.subscribe("stanzaReceived","boardOnLoad",actOnReceivedStanza);
 
     Modes.select.activate();
 

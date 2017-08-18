@@ -214,7 +214,7 @@ var Participants = (function(){
         });
     }
     $(function(){
-        Progress.attendanceReceived["participationHealth"] = function(attendances){
+        MeTLBus.subscribe("attendanceReceived","participationHealth",function(attendances){
             var loc = attendances.location;
             var currentMembers = attendances.currentMembers;
             var possibleMembers = attendances.possibleMembers;
@@ -225,7 +225,7 @@ var Participants = (function(){
                 max:possibleMembers.length,
                 min:0
             });
-        };
+        });
         updateButtons();
         participantsDatagrid = $("#participantsDatagrid");
         participantFollowControl = participantsDatagrid.find(".followControls").clone();
@@ -319,15 +319,15 @@ var Participants = (function(){
         });
         updateParticipantsListing();
     });
-    Progress.stanzaReceived["participants"] = onStanzaReceived;
-    Progress.themeReceived["participants"] = function(){
+    MeTLBus.subscribe("stanzaReceived","participants",onStanzaReceived);
+    MeTLBus.subscribe("themeReceived","participants",function(){
         if(window.currentBackstage == "participants"){
             updateParticipantsListing();
         }
-    }
-    Progress.historyReceived["participants"] = onHistoryReceived;
-    Progress.conversationDetailsReceived["participants"] = onDetailsReceived;
-    Progress.newConversationDetailsReceived["participants"] = onDetailsReceived;
+    });
+    MeTLBus.subscribe("historyReceived","participants",onHistoryReceived);
+    MeTLBus.subscribe("conversationDetailsReceived","participants",onDetailsReceived);
+    MeTLBus.subscribe("newConversationDetailsReceived","participants",onDetailsReceived);
 		$(function(){
 			reRenderParticipants();
 		});

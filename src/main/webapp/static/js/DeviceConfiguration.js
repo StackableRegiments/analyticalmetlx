@@ -297,8 +297,8 @@ var DeviceConfiguration = (function(){
     }
     var outerFit = innerFit;
     var initialized = false;
-    Progress.onLayoutUpdated["DeviceConfiguration"] = outerFit;
-    Progress.historyReceived["DeviceConfiguration_showChrome"] = function(){
+    MeTLBus.subscribe("onLayoutUpdated","DeviceConfiguration",outerFit);
+    MeTLBus.subscribe("historyReceived","DeviceConfiguration_showChrome",function(){
         try{
             if("UserSettings" in window && UserSettings.getIsInteractive()){
                 DeviceConfiguration.setSlides(true);
@@ -319,12 +319,12 @@ var DeviceConfiguration = (function(){
             initialized = true;
         }
         catch(e){
-            console.log("Progress.historyReceived.DeviceConfiguration_showChrome",e);
+            console.log("MeTLBus.historyReceived.DeviceConfiguration_showChrome",e);
         }
         tryToDetermineCurrentDevice();
         actOnCurrentDevice();
         outerFit();
-    }
+    })
 
     var updateToolsToggleButton = function(){
         var button = $("#slidesToggleButton");

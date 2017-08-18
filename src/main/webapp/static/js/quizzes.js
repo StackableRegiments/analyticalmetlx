@@ -746,9 +746,9 @@ var Quizzes = (function(){
             sendStanza(newQuiz);
         }
     };
-    Progress.onConversationJoin["Quizzes"] = clearState;
-    Progress.historyReceived["Quizzes"] = historyReceivedFunction;
-    Progress.stanzaReceived["Quizzes"] = stanzaReceivedFunction;
+    MeTLBus.subscribe("onConversationJoin","Quizzes",clearState);
+    MeTLBus.subscribe("historyReceived","Quizzes",historyReceivedFunction);
+    MeTLBus.subscribe("stanzaReceived","Quizzes",stanzaReceivedFunction);
     return {
         getCurrentQuiz:function(){return currentQuiz;},
         getAllQuizzes:function(){return quizzes;},

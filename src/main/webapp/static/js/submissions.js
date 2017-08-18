@@ -162,8 +162,8 @@ var Submissions = (function(){
         }
     };
 
-    Progress.onConversationJoin["Submissions"] = clearState;
-    Progress.historyReceived["Submissions"] = historyReceivedFunction;
+    MeTLBus.subscribe("onConversationJoin","Submissions",clearState);
+    MeTLBus.subscribe("historyReceived","Submissions",historyReceivedFunction);
     var clientSideSubmissionFunc = function(afterFunc){
         WorkQueue.pause();
 				afterFunc = afterFunc || function(succeeded){

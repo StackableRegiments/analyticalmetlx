@@ -11,11 +11,11 @@ var Conversations = (function(){
         var haveCheckedBanned = false;
         var bannedState = false;
         var pushBannedMessage = function(){
-            Progress.call("userBanned");
+            MeTLBus.call("userBanned");
             warningAlert("Banned","You have been banned from contributing publically to this class because you published some inappropriate content that is deemed to be contrary to the expectations of the university.\r\nThe content has been deleted on every screen, but the instructor has a record of your action.\r\nYou must contact your instructor in order to be reinstated as a contributing member of the classroom community.");
         };
         var pushUnbannedMessage = function(){
-            Progress.call("userUnbanned");
+            MeTLBus.call("userUnbanned");
             successAlert("Unbanned","The instructor has unbanned you.  You are once again permitted to contribute publicly in this class.");
         };
         var updateBannedVisualState = function(){
@@ -125,7 +125,7 @@ var Conversations = (function(){
         var SIGNAL_HISTORY = (1000 /*milis*/ / SENSOR_INTERVAL) * 60 * 15;
         setInterval(rollAudiences,SENSOR_INTERVAL);
         setInterval(displayAudiences,DISPLAY_INTERVAL);
-        Progress.stanzaReceived["thumbnailSparkline"] = function(stanza){
+        MeTLBus.subscribe("stanzaReceived","thumbnailSparkline",function(stanza){
             if(stanza.type == "theme"){
                 switch(stanza.author){
                 case "private":audienceAction({name:"anyPrivate"});
@@ -136,7 +136,7 @@ var Conversations = (function(){
                 audienceAction({name:stanza.author});
             }
             _.each(stanza.audiences,audienceAction);
-        };
+        });
         /*
          Workaround for parallel connection limits queueing thumbnail loads behind long poll
          */
@@ -304,7 +304,7 @@ var Conversations = (function(){
             }
             t.height(t.width() * 0.75);
         });
-        Progress.call("onLayoutUpdated");
+        MeTLBus.call("onLayoutUpdated");
     };
 
     var setStudentsCanPublishFunction = function(publishingAllowed){
@@ -408,7 +408,7 @@ var Conversations = (function(){
                         currentServerConfigName = details.configName;
                     }
                     if (currentConversation.jid.toString().toLowerCase() != oldConversationJid){
-                        Progress.call("onConversationJoin");
+                        MeTLBus.call("onConversationJoin");
                         BannedState.checkIsBanned(details,true);
                         ThumbCache.clearCache();
                     }
@@ -426,7 +426,7 @@ var Conversations = (function(){
             console.log("exception in actOnConversationDetails",e);
             updateStatus(sprintf("FAILED: ReceiveConversationDetails exception: %s",e));
         }
-        Progress.call("onLayoutUpdated");
+        MeTLBus.call("onLayoutUpdated");
     };
     var actOnSyncMove = function(jid){
         console.log("actOn",jid);
@@ -695,7 +695,7 @@ var Conversations = (function(){
             var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
             var newIndex = currentSlideIndex + 1;
             addGroupSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex,strategy,initialGroups,parameter);
-            Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
+            MeTLBus.subscribe("conversationDetailsReceived","JoinAtIndexIfAvailable",function(incomingDetails){
                 if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
                     if ("slides" in incomingDetails){
                         var newSlide = _.find(incomingDetails.slides,function(s){
@@ -720,7 +720,7 @@ var Conversations = (function(){
                         doMoveToSlide(newSlide.id.toString());
                     }
                 }
-            };
+            });
         }
     };
     var helpFunction = function(){
@@ -732,7 +732,7 @@ var Conversations = (function(){
             var currentSlideIndex = currentConversation.slides.filter(function(slide){return slide.id == currentSlide;})[0].index;
             var newIndex = currentSlideIndex + 1;
             addSlideToConversationAtIndex(currentConversation.jid.toString(),newIndex);
-            Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"] = function(incomingDetails){
+            MeTLBus.subscribe("conversationDetailsReceived","JoinAtIndexIfAvailable",function(incomingDetails){
                 if ("jid" in incomingDetails && incomingDetails.jid == currentJid){
                     if ("slides" in incomingDetails){
                         var newSlide = _.find(incomingDetails.slides,function(s){
@@ -741,7 +741,7 @@ var Conversations = (function(){
                         doMoveToSlide(newSlide.id.toString());
                     }
                 }
-            };
+            });
         }
     };
     var always = function(){return true;};
@@ -795,14 +795,14 @@ var Conversations = (function(){
         if(move){
             if(slideId != currentSlide){
                 try{
-                    Progress.call("beforeLeavingSlide",[slideId]);
+                    MeTLBus.call("beforeLeavingSlide",[slideId]);
                     currentSlide = slideId;
                     indicateActiveSlide(slideId);
-                    delete Progress.conversationDetailsReceived["JoinAtIndexIfAvailable"];
+                    MeTLBus.unsubscribe("conversationDetailsReceived","JoinAtIndexIfAvailable");
                     loadSlide(slideId);
                     updateQueryParams();
                     loadCurrentGroup(currentConversation);
-                    Progress.call("afterJoiningSlide",[slideId]);
+                    MeTLBus.call("afterJoiningSlide",[slideId]);
                 }
                 catch(e){
                     console.log(e);
@@ -861,10 +861,10 @@ var Conversations = (function(){
     var getCurrentGroupFunction = function(){
         return _.clone(currentGroup);
     };
-    Progress.syncMoveReceived["Conversations"] = actOnSyncMove;
-    Progress.conversationDetailsReceived["Conversations"] = actOnConversationDetails;
-    Progress.currentSlideJidReceived["Conversations"] = actOnCurrentSlideJidReceived;
-    Progress.currentConversationJidReceived["Conversations"] = actOnCurrentConversationJidReceived;
+    MeTLBus.subscribe("syncMoveReceived","Conversations",actOnSyncMove);
+    MeTLBus.subscribe("conversationDetailsReceived","Conversations",actOnConversationDetails);
+    MeTLBus.subscribe("currentSlideJidReceived","Conversations",actOnCurrentSlideJidReceived);
+    MeTLBus.subscribe("currentConversationJidReceived","Conversations",actOnCurrentConversationJidReceived);
     $(function(){
         $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
             .on("click","#nextSlideButton",goToNextSlideFunction)
@@ -950,33 +950,33 @@ function unwrap(jqs){
     return _.map(jqs,"0");
 }
 function receiveCurrentSlide(jid){
-    Progress.call("currentSlideJidReceived",[jid]);
+    MeTLBus.call("currentSlideJidReceived",[jid]);
 }
 function receiveCurrentConversation(jid){
-    Progress.call("currentConversationJidReceived",[jid]);
+    MeTLBus.call("currentConversationJidReceived",[jid]);
 }
 function receiveConversationDetails(details){
-    Progress.call("conversationDetailsReceived",[details]);
+    MeTLBus.call("conversationDetailsReceived",[details]);
 }
 function receiveSyncMove(jid){
     if(Conversations.getIsSyncedToTeacher() || Conversations.shouldModifyConversation()){
-        Progress.call("syncMoveReceived",[jid]);
+        MeTLBus.call("syncMoveReceived",[jid]);
     }
 }
 function receiveNewConversationDetails(details){
-    Progress.call("newConversationDetailsReceived",[details]);
+    MeTLBus.call("newConversationDetailsReceived",[details]);
 }
 function receiveConversations(listOfConversations){
-    Progress.call("conversationsReceived",[listOfConversations]);
+    MeTLBus.call("conversationsReceived",[listOfConversations]);
 }
 function receiveAttendance(attendances){
-    Progress.call("attendanceReceived",[attendances])
+    MeTLBus.call("attendanceReceived",[attendances])
 }
 function receiveGroupsProviders(providers){
-    Progress.call("groupProvidersReceived",[providers]);
+    MeTLBus.call("groupProvidersReceived",[providers]);
 }
 function receiveOrgUnitsFromGroupsProviders(orgUnits){
-    Progress.call("orgUnitsReceived",[orgUnits]);
+    MeTLBus.call("orgUnitsReceived",[orgUnits]);
     if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
         _.forEach(orgUnits.orgUnits,function(orgUnit){
             var ou = _.cloneDeep(orgUnit);
@@ -987,7 +987,7 @@ function receiveOrgUnitsFromGroupsProviders(orgUnits){
     }
 }
 function receiveGroupSetsForOrgUnit(groupSets){
-    Progress.call("groupSetsReceived",[groupSets]);
+    MeTLBus.call("groupSetsReceived",[groupSets]);
     if ("groupSets" in groupSets && groupSets.groupSets.length){
         _.forEach(groupSets.groupSets,function(groupSet){
             if ("groups" in groupSet && groupSet.groups.length){
@@ -1009,7 +1009,7 @@ function receiveGroupSetsForOrgUnit(groupSets){
     }
 }
 function receiveGroupsForGroupSet(groups){
-    Progress.call("groupsReceived",[groups]);
+    MeTLBus.call("groupsReceived",[groups]);
 }
 // these will be injected by lift
 //function moveToSlide(jid)

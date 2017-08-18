@@ -71,9 +71,9 @@ var TokBox = (function(){
         });
     };
 
-    Progress.conversationDetailsReceived["TokBox"] = actOnConversationDetails;
-    Progress.userBanned["TokBox"] = actOnConversationDetails;
-    Progress.userUnbanned["TokBox"] = actOnConversationDetails;
+    MeTLBus.subscribe("conversationDetailsReceived","TokBox",actOnConversationDetails);
+    MeTLBus.subscribe("userBanned","TokBox",actOnConversationDetails);
+    MeTLBus.subscribe("userUnbanned","TokBox",actOnConversationDetails);
     return {
         getSessions:function(){return sessions;},
         initialize:function(){
@@ -278,8 +278,8 @@ var TokBoxSession = function(desc,sessionContainer){
             }
         });
     };
-    Progress.afterWorkQueuePause["videoStreaming"] = downgradeVideoStreams;
-    Progress.beforeWorkQueueResume["videoStreaming"] = upgradeVideoStreams;
+    MeTLBus.subscribe("afterWorkQueuePause","videoStreaming",downgradeVideoStreams);
+    MeTLBus.subscribe("beforeWorkQueueResume","videoStreaming",upgradeVideoStreams);
 
     var onConversationDetailsReceived = function(conv){
         if ("jid" in conv && "Conversations" in window && "permissions" in conv && "studentsMayBroadcast" in conv.permissions){
@@ -287,7 +287,7 @@ var TokBoxSession = function(desc,sessionContainer){
         }
     };
 
-    Progress.conversationDetailsReceived["videoStreaming"] = onConversationDetailsReceived;
+    MeTLBus.subscribe("conversationDetailsReceived","videoStreaming",onConversationDetailsReceived);
 
     var shutdownFunc = function(){
         session.disconnect();

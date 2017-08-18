@@ -222,7 +222,7 @@ var stanzaHandlers = {
 };
 function themeReceived(theme){
     boardContent.themes.push(theme);
-    Progress.call("themeReceived");
+    MeTLBus.call("themeReceived");
 }
 function fileReceived(file){
     //doing nothing with files yet.
@@ -310,7 +310,7 @@ function textReceived(t){
     }
 }
 function receiveMeTLStanza(stanza){
-    Progress.call("stanzaReceived",[stanza]);
+    MeTLBus.call("stanzaReceived",[stanza]);
 }
 function actOnReceivedStanza(stanza){
     try{
@@ -320,10 +320,10 @@ function actOnReceivedStanza(stanza){
             case "command":break;
             case "attendance":break;
             default:
-                if(Progress.onBoardContentChanged.autoZooming){
+                if(MeTLBus.check("onBoardContentChanged","autoZooming")){
                     measureBoardContent(stanza.type == "multiWordText");
                 }
-                Progress.call("onBoardContentChanged");
+                MeTLBus.call("onBoardContentChanged");
             }
         }
         else{
@@ -714,7 +714,7 @@ function deleteInk(inks,privacy,id){
         var ink = boardContent[inks][id];
         if(ink.privacy.toUpperCase() == privacy.toUpperCase()){
             delete boardContent[inks][id];
-            Progress.call("onCanvasContentDeleted",[ink]);
+            MeTLBus.call("onCanvasContentDeleted",[ink]);
         }
     }
 }
@@ -722,28 +722,28 @@ function deleteImage(privacy,id){
     var image = boardContent.images[id];
     if(image.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.images[id];
-        Progress.call("onCanvasContentDeleted",[image]);
+        MeTLBus.call("onCanvasContentDeleted",[image]);
     }
 }
 function deleteVideo(privacy,id){
     var video = boardContent.videos[id];
     if(video.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.videos[id];
-        Progress.call("onCanvasContentDeleted",[video]);
+        MeTLBus.call("onCanvasContentDeleted",[video]);
     }
 }
 function deleteText(privacy,id){
     var text = boardContent.texts[id];
     if(text.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.texts[id];
-        Progress.call("onCanvasContentDeleted",[text]);
+        MeTLBus.call("onCanvasContentDeleted",[text]);
     }
 }
 function deleteMultiWordText(privacy,id){
     var text = boardContent.multiWordTexts[id];
     if(text.privacy.toUpperCase() == privacy.toUpperCase()){
         delete boardContent.multiWordTexts[id];
-        Progress.call("onCanvasContentDeleted",[text]);
+        MeTLBus.call("onCanvasContentDeleted",[text]);
     }
 }
 function dirtyInkReceived(dirtyInk){
@@ -1004,7 +1004,7 @@ function inkReceived(ink){
 }
 function takeControlOfViewbox(control){
     if(control){
-        delete Progress.onBoardContentChanged.autoZooming;
+        MeTLBus.unsubscribe("onBoardContentChanged","autoZooming");
         UserSettings.setUserPref("followingTeacherViewbox",false);
         $("#zoomToFull").removeClass("active");
         $("#zoomToCurrent").addClass("active");
@@ -1036,7 +1036,7 @@ function measureBoardContent(includingText){
     }
 }
 function zoomToFit(followable){
-    Progress.onBoardContentChanged.autoZooming = zoomToFit;
+    MeTLBus.subscribe("onBoardContentChanged","autoZooming",zoomToFit);
     takeControlOfViewbox(false);
     if(Modes.currentMode.name != "text"){
         var headerHeight = scaleScreenToWorld($("#masterHeader .heading").height());

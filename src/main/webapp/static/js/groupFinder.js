@@ -411,10 +411,10 @@ var GroupFinder = (function(){
             }
         });
     });
-    Progress.historyReceived["createContentGroups"] = function(){
+    MeTLBus.subscribe("historyReceived","createContentGroups",function(){
         boardContent.contentGroups = createContentGroups();
-    };
-    Progress.postRender["showOffscreenGroups"] = function(){
+    });
+    MeTLBus.subscribe("postRender","showOffscreenGroups",function(){
         var viewBounds = [viewboxX,viewboxY,viewboxX+viewboxWidth,viewboxY+viewboxHeight];
         $.each(boardContent.contentGroups,function(k,g){
             boardContext.strokeStyle = "red";
@@ -431,7 +431,7 @@ var GroupFinder = (function(){
                 showOffscreenElement(g);
             }
         });
-    };
+    });
     return {
         parties:parties
     };

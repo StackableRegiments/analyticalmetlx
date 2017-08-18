@@ -171,19 +171,19 @@ var ContentFilter = (function(){
     var clearAudiencesFunction = function(){
         audiences = [];
     }
-    Progress.currentSlideJidReceived["ContentFilter"] = function(){
+    MeTLBus.subscribe("currentSlideJidReceived","ContentFilter",function(){
         audiences = [];
         generateFilters();
-    }
-    Progress.onConversationJoin["ContentFilter"] = function(){
+    });
+    MeTLBus.subscribe("onConversationJoin","ContentFilter",function(){
         audiences = [];
         generateFilters();
-    };
-    Progress.afterJoiningSlide["ContentFilter"] = function(){
+    });
+    MeTLBus.subscribe("afterJoiningSlide","ContentFilter",function(){
         audiences = [];
         generateFilters();
-    };
-    Progress.conversationDetailsReceived["ContentFilter"] = generateFilters;
+    });
+    MeTLBus.subscribe("conversationDetailsReceived","ContentFilter",generateFilters);
     return {
         getFilters:getFiltersFunction,
         setFilter:setFilterFunction,

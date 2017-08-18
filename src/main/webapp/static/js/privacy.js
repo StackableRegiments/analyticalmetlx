@@ -16,7 +16,7 @@ var Privacy = (function(){
     var attemptToSetPrivacy = function(p){
         if (shouldSetPrivacy(p)){
             privacy = p;
-            Progress.call("onPrivacyChanged");
+            MeTLBus.call("onPrivacyChanged");
             return true;
         }
         return false;
@@ -97,14 +97,14 @@ var Privacy = (function(){
         adjustButtonsToIndicateSelection({});
     });
 
-    Progress.conversationDetailsReceived["privacy"] = adjustPrivacyForConversation;
-    Progress.onPrivacyChanged["privacy"] = setPrivacyIndicators;
-    Progress.onConversationJoin["privacy"] = function(){
+    MeTLBus.subscribe("conversationDetailsReceived","privacy",adjustPrivacyForConversation);
+    MeTLBus.subscribe("onPrivacyChanged","privacy",setPrivacyIndicators);
+    MeTLBus.subscribe("onConversationJoin","privacy",function(){
         adjustPrivacyForConversation();
         attemptToSetPrivacy("PUBLIC");
         setPrivacyIndicators();
-    }
-    Progress.onSelectionChanged["privacy"] = adjustButtonsToIndicateSelection;
+    });
+    MeTLBus.subscribe("onSelectionChanged","privacy",adjustButtonsToIndicateSelection);
     return {
         getCurrentPrivacy:function(){return privacy;},
         setPrivacy:function(newPrivacy){

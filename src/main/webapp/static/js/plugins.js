@@ -160,8 +160,8 @@ var Plugins = (function(){
                     ".groupChat {color:darkorange}"+
                     ".whisper {color:darkblue}",
                 load:function(bus,params){
-                    bus.stanzaReceived["Chatbox"] = actOnStanzaReceived;
-                    bus.historyReceived["Chatbox"] = actOnHistoryReceived;
+                    bus.subscribe("stanzaReceived","Chatbox",actOnStanzaReceived);
+                    bus.subscribe("historyReceived","Chatbox",actOnHistoryReceived);
                     container.append('<div class="chatContainer" >'+
                                      '<div class="chatMessageContainer" >'+
                                      '<div class="chatMessage" >'+
@@ -325,7 +325,7 @@ var Plugins = (function(){
                                                         _.forEach(groups,function(g){
                                                             ContentFilter.setFilter(g.id,false);
                                                         });
-                                                        Progress.call("deisolated");
+                                                        MeTLBus.call("deisolated");
                                                         blit();
                                                         var sendSubs = function(listOfGroups,afterFunc){
                                                             var group = listOfGroups[0];
@@ -523,13 +523,13 @@ var Plugins = (function(){
                                                 name:"groupView",
                                                 id:id
                                             }).change(function(){
-                                                Progress.call("beforeChangingAudience",[group.id]);
+                                                MeTLBus.call("beforeChangingAudience",[group.id]);
                                                 _.each(groups,function(g){
                                                     ContentFilter.setFilter(g.id,false);
                                                 });
                                                 ContentFilter.setFilter(group.id,true);
                                                 ContentFilter.setAudience(group.id);
-                                                Progress.call("isolated",[group.id]);
+                                                MeTLBus.call("isolated",[group.id]);
                                                 Modes.select.activate();
                                                 blit();
                                                 $("#masterFooter").scrollLeft(xOffset);
@@ -585,7 +585,7 @@ var Plugins = (function(){
                             console.log("Groups plugin render e",e);
                         }
                     }
-                    bus.gradeValueReceived["Groups plugin"] = function(gv){
+                    bus.subscribe("gradeValueReceived","Groups plugin",function(gv){
                         var linkedGradeLoc = sprintf("groupWork_%s",Conversations.getCurrentSlideJid());
                         var linkedGrade = _.find(Grades.getGrades(),function(grade){
                             return grade.location == linkedGradeLoc;
@@ -593,9 +593,9 @@ var Plugins = (function(){
                         if(linkedGrade && gv.gradeId == linkedGrade.id){
                             render();
                         }
-                    }
-                    bus.currentSlideJidReceived["Groups plugin"] = render;
-                    bus.conversationDetailsReceived["Groups plugin"] = render;
+                    });
+                    bus.subscribe("currentSlideJidReceived","Groups plugin",render);
+                    bus.subscribe("conversationDetailsReceived","Groups plugin",render);
                     return overContainer;
                 },
                 initialize:function(){
@@ -612,7 +612,7 @@ $(function(){
         var container = $("<div />",{
             class:"plugin"
         });
-        plugin.load(Progress).appendTo(container);
+        plugin.load(MeTLBus).appendTo(container);
         styleContainer.append(plugin.style);
         container.appendTo(pluginBar);
         plugin.initialize();

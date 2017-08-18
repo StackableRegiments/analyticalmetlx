@@ -1,65 +1,53 @@
-var Progress = (function(){
+var createMeTLBus = function(){
+		var queues = {};
     return {
 				manifest:function(){
-						var funcs = _.map(Progress,function(v,k){
-					return [k,_.keys(v).length];
+						var funcs = _.map(queues,function(v,k){
+							return [k,_.keys(v).length];
 						});
 						_.each(_.sortBy(funcs,"1").reverse(),function(func){
-					console.log(func);
+							console.log(func);
+						});
+				},
+				list:function(){
+						return _.mapValues(queues,function(v,k){
+							return _.map(v,function(f,vk){
+								return vk;
+							});
 						});
 				},
         call:function(key,args){
             args = args || [];
-            $.each(Progress[key],function(k,f){
-                try{
-                    f.apply(f,args);
-                }
-                catch(e){
-                    console.log("exception",key,k,e);
-                }
-            });
+						if (key in queues){
+							$.each(queues[key],function(k,f){
+									try{
+											f.apply(f,args);
+									}
+									catch(e){
+											console.log("exception",key,k,e);
+									}
+							});
+						} else {
+							console.log("MeTLBus called on non-existent endpoint",key,args);
+						}
         },
-				blit:{},
-        onBackstageShow:{},
-        onBackstageHide:{},
-        onPrivacyChanged:{},
-        beforeLeavingSlide:{},
-        beforeChangingAudience:{},
-        afterJoiningSlide:{},
-        onConversationJoin:{},
-        onSelectionChanged:{},
-        isolated:{},
-        deisolated:{},
-        onBoardContentChanged:{},
-        onViewboxChanged:{},
-        onLayoutUpdated:{},
-        textBoundsChanged:{},
-        postRender:{},
-        attendanceReceived:{},
-        historyReceived:{},
-        stanzaReceived:{},
-        themeReceived:{},
-        currentConversationJidReceived:{},
-        currentSlideJidReceived:{},
-        conversationDetailsReceived:{},
-        newConversationDetailsReceived:{},
-        conversationsReceived:{},
-        syncMoveReceived:{},
-        userGroupsReceived:{},
-        groupProvidersReceived:{},
-        orgUnitsReceived:{},
-        groupSetsReceived:{},
-        groupsReceived:{},
-        gradeValueReceived:{},
-        usernameReceived:{},
-        userOptionsReceived:{},
-        userBanned:{},
-        userUnbanned:{},
-        afterWorkQueuePause:{}, //these two are sensitive - don't put anything into these which itself would pause the workqueue, or you'll get deadlocks.
-        beforeWorkQueueResume:{},
-        onCanvasContentDeleted:{}
-    }
-})();
+				subscribe:function(eventName,subscriberId,f){
+					if (!(eventName in queues)){
+						queues[eventName] = {};
+					}
+					queues[eventName][subscriberId] = f;
+				},
+				unsubscribe:function(eventName,subscriberId){
+					if (eventName in queues){
+						delete queues[eventName][subscriberId];
+					}
+				},
+				check:function(eventName,subscriber){
+					return (eventName in queues && subscriber in queues[eventName]);
+				}
+		}
+};
+var MeTLBus = createMeTLBus();
 
 var WorkQueue = (function(){
     var isAbleToWork = true;
@@ -70,12 +58,12 @@ var WorkQueue = (function(){
         var f = work.pop();
         if(f){
             blitNeeded = blitNeeded || f();
-						Progress.call("blit")
+						MeTLBus.call("blit")
             popState();
         }
         else{
             if(blitNeeded){
-								Progress.call("blit")
+								MeTLBus.call("blit")
                 blitNeeded = false;
             }
         }
@@ -83,7 +71,7 @@ var WorkQueue = (function(){
     var pauseFunction = function(){
         stopResume();
         canWorkFunction(false);
-        Progress.call("afterWorkQueuePause");
+        MeTLBus.call("afterWorkQueuePause");
     };
     var canWorkFunction = function(state){
         isAbleToWork = state;
@@ -102,7 +90,7 @@ var WorkQueue = (function(){
     var gracefullyResumeFunction = function(){
         stopResume();
         gracefullyResumeTimeout = setTimeout(function(){canWorkFunction(true);},gracefullyResumeDelay);
-        Progress.call("beforeWorkQueueResume");
+        MeTLBus.call("beforeWorkQueueResume");
     };
 		var attachAfterActionFunc = function(f){
 			afterFuncs.push(f);
@@ -113,7 +101,7 @@ var WorkQueue = (function(){
         enqueue:function(func){//A function returning a bool, blit needed or not.
             if(isAbleToWork){
                 if(func()){
-									Progress.call("blit")
+									MeTLBus.call("blit")
                 };
             }
             else{

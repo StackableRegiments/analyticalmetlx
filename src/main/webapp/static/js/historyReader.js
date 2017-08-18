@@ -66,7 +66,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
         boardContent.height = boardContent.maxY - boardContent.minY;
         var startRender = function(){
             imagesLoadedMark = Date.now();
-            Progress.call("historyReceived",[json]);
+            MeTLBus.call("historyReceived",[json]);
             historyDecoratorsMark = Date.now();
             if(boardContent.minX == Infinity){
                 boardContent.minX = 0;
@@ -702,7 +702,7 @@ var renderImmediateContent = function(canvasContext,content,rendered,viewBounds)
     renderTexts(content.texts,rendered,viewBounds);
     renderRichTexts(content.multiWordTexts,canvasContext,rendered,viewBounds);
     renderInks(content.inks,canvasContext,rendered,viewBounds);
-    Progress.call("postRender");
+    MeTLBus.call("postRender");
 };
 var renderSelectionOutlines = function(canvasContext){
     var size = Modes.select.resizeHandleSize;
@@ -918,7 +918,7 @@ function render(content,hq,incCanvasContext){
             catch(e){
                 console.log("Render exception",e);
             }
-            Progress.call("onViewboxChanged");
+            MeTLBus.call("onViewboxChanged");
         }
         if ("HealthChecker" in window){
             HealthChecker.addMeasure("render",true,new Date().getTime() - renderStart);
@@ -1026,7 +1026,7 @@ var IncludeView = (function(){
         }) || notFollowable;
 
         TweenController.zoomAndPanViewbox(constrained.x,constrained.y,targetWidth,targetHeight,undefined,!shouldUpdateRequestedViewbox,notFollowable);
-        Progress.call("onViewboxChanged");
+        MeTLBus.call("onViewboxChanged");
     };
     return {
         specific:function(x,y,w,h,notFollowable){

@@ -239,10 +239,10 @@ var RecycleBin = (function(){
             reRenderDatagrid();
         }
     };
-    Progress.onConversationJoin["RecycleBin"] = clearState;
-    Progress.historyReceived["RecycleBin"] = historyReceivedFunction;
-    Progress.onCanvasContentDeleted["RecycleBin"] = onCanvasContentDeleted;
-    Progress.stanzaReceived["RecycleBin"] = onStanzaReceived;
+    MeTLBus.subscribe("onConversationJoin","RecycleBin",clearState);
+    MeTLBus.subscribe("historyReceived","RecycleBin",historyReceivedFunction);
+    MeTLBus.subscribe("onCanvasContentDeleted","RecycleBin",onCanvasContentDeleted);
+    MeTLBus.subscribe("stanzaReceived","RecycleBin",onStanzaReceived);
     $(function(){
         $("#menuRecycleBin").on("click",function(){
             showBackstage("recycleBin");

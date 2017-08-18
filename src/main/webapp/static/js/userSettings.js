@@ -54,9 +54,9 @@ var UserSettings = (function(){
         }
     };
 
-    Progress.usernameReceived["UserSettings"] = setUsernameFunction;
-    Progress.userGroupsReceived["UserSettings"] = setUserGroupsFunction;
-    Progress.userOptionsReceived["UserSettings"] = setUserOptionsFunction;
+    MeTLBus.subscribe("usernameReceived","UserSettings",setUsernameFunction);
+    MeTLBus.subscribe("userGroupsReceived","UserSettings",setUserGroupsFunction);
+    MeTLBus.subscribe("userOptionsReceived","UserSettings",setUserOptionsFunction);
     return {
         getUsername:function(){return username;},
         getUserOptions:function(){return userOptions;},
@@ -69,15 +69,15 @@ var UserSettings = (function(){
 })();
 
 function receiveUsername(newName){
-    Progress.call("usernameReceived",[newName]);
+    MeTLBus.call("usernameReceived",[newName]);
 }
 
 function receiveUserOptions(newOptions){
-    Progress.call("userOptionsReceived",[newOptions]);
+    MeTLBus.call("userOptionsReceived",[newOptions]);
 }
 
 function receiveUserGroups(newGroups){
-    Progress.call("userGroupsReceived",[newGroups]);
+    MeTLBus.call("userGroupsReceived",[newGroups]);
 }
 function receiveIsInteractiveUser(isInteractive){
     UserSettings.setIsInteractive(isInteractive);

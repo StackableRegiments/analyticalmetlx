@@ -223,9 +223,9 @@ var Attachments = (function(){
             sendStanza(newAttachment);
         }
     };
-    Progress.onConversationJoin["Attachments"] = clearState;
-    Progress.historyReceived["Attachments"] = historyReceivedFunction;
-    Progress.stanzaReceived["Attachments"] = stanzaReceivedFunction;
+    MeTLBus.subscribe("onConversationJoin","Attachments",clearState);
+    MeTLBus.subscribe("historyReceived","Attachments",historyReceivedFunction);
+    MeTLBus.subscribe("stanzaReceived","Attachments",stanzaReceivedFunction);
     return {
         getAllAttachments:function(){
             return attachments;

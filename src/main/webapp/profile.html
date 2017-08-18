@@ -155,18 +155,18 @@
 				getSessionHistory:function(){return sessionHistory;}
 			};
 		})();
-		var receiveThemes = function(themes){
+		MeTLBus.subscribe("receiveThemes","profile",function(themes){
 			console.log("themes:",themes);
-		};
-		var receiveAttendances = function(attendances){
+		});
+		MeTLBus.subscribe("receiveAttendances","profile",function(attendances){
 			console.log("attendances:",attendances);
-		};
-		var receiveConversations = function(conversations){
+		});
+		MeTLBus.subscribe("receiveConversations","profile",function(conversations){
 			console.log("conversations:",conversations);
-		};
-		var receiveSessionHistory = function(sh){
+		});
+		MeTLBus.subscribe("receiveSessionHistory","profile",function(sh){
 			ProfileUI.receiveSessionHistory(sh);
-		};
+		});
 	</script>
 	<style>
 #profileContainer {

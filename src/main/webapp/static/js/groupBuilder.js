@@ -429,7 +429,7 @@ var GroupBuilder = (function(){
             text:msg
         });
     }
-    Progress.groupProvidersReceived["GroupBuilder"] = function(args){
+    MeTLBus.subscribe("groupProvidersReceived","GroupBuilder",function(args){
         var select = $(".jAlert .ouSelector").empty();
         $("<option />",{
             text:"no groups",
@@ -471,24 +471,24 @@ var GroupBuilder = (function(){
                 }
             }
         });
-    };
-    Progress.orgUnitsReceived["GroupBuilder"] = function(orgUnits){
+    });
+    MeTLBus.subscribe("orgUnitsReceived","GroupBuilder",function(orgUnits){
         if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
         }
         else{
             blockGroups(false);
             statusReport(sprintf("No Org Units found for user %s",UserSettings.getUsername()));
         }
-    };
-    Progress.groupSetsReceived["GroupBuilder"] = function(groupSets){
+    });
+    MeTLBus.subscribe("groupSetsReceived","GroupBuilder",function(groupSets){
         if ("groupSets" in groupSets && groupSets.groupSets.length){
         }
         else{
             blockGroups(false);
             statusReport(sprintf("No Group Sets found in Org Unit %s",groupSets.orgUnit.name));
         }
-    };
-    Progress.groupsReceived["GroupBuilder"] = function(args){
+    });
+    MeTLBus.subscribe("groupsReceived","GroupBuilder",function(args){
         var byOrgUnit = availableGroupSets[args.orgUnit.name];
         if (byOrgUnit === undefined){
             byOrgUnit = {};
@@ -504,23 +504,23 @@ var GroupBuilder = (function(){
             renderAvailableGroupSets();
         }
         blockGroups(false);
-    };
-    Progress.onBackstageShow["GroupBuilder"] = function(backstage){
+    });
+    MeTLBus.subscribe("onBackstageShow","GroupBuilder",function(backstage){
         if(backstage == "groups"){
             render();
         }
         refreshToolState();
-    };
-    Progress.currentSlideJidReceived["GroupBuilder"] = function(){
+    });
+    MeTLBus.subscribe("currentSlideJidReceived","GroupBuilder",function(){
         if(currentBackstage == "groups"){
             render();
         }
-    };
-    Progress.conversationDetailsReceived["GroupBuilder"] = function(){
+    });
+    MeTLBus.subscribe("conversationDetailsReceived","GroupBuilder",function(){
         if(currentBackstage == "groups"){
             render();
         }
-    };
+    });
     var refreshToolState = function(){
         var menuButton = $("#menuGroups");
         if($("#roomToolbar.active").length && Conversations.shouldModifyConversation()){

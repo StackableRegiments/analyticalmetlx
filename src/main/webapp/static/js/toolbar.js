@@ -800,7 +800,7 @@ var Modes = (function(){
         $(toolsSelector).addClass("activeMode").removeClass("inactiveMode");
         $(".activeTool").removeClass("activeTool").addClass("inactiveTool");
         $(headerSelector).addClass("activeTool").removeClass("inactiveTool");
-        //Progress.call("onLayoutUpdated");//Only necessary if the rest of the application will be disrupted.  WILL blank canvas.
+        //MeTLBus.call("onLayoutUpdated");//Only necessary if the rest of the application will be disrupted.  WILL blank canvas.
     };
     var noneMode = {
         name:"none",
@@ -911,7 +911,7 @@ var Modes = (function(){
                         });
                         sendStanza(moved);
                         registerTracker(moved.identity,function(){
-                            Progress.call("onSelectionChanged");
+                            MeTLBus.call("onSelectionChanged");
                             blit();
                         });
                         return false;
@@ -1021,7 +1021,7 @@ var Modes = (function(){
                             blit();
                         });
                         registerTracker(resized.identity,function(){
-                            Progress.call("onSelectionChanged");
+                            MeTLBus.call("onSelectionChanged");
                         });
                         sendStanza(resized);
                         return false;
@@ -1129,7 +1129,7 @@ var Modes = (function(){
                     });
                     blit();
                     registerTracker(resized.identity,function(){
-                        Progress.call("onSelectionChanged");
+                        MeTLBus.call("onSelectionChanged");
                         blit();
                     });
                     sendStanza(resized);
@@ -1164,7 +1164,7 @@ var Modes = (function(){
         pushCanvasInteractableFunc("manualMove",manualMove);
         pushCanvasInteractableFunc("resizeFree",resizeFree);
         pushCanvasInteractableFunc("resizeAspectLocked",resizeAspectLocked);
-        Progress.textBoundsChanged["selectionHandles"] = function(textId,bounds){
+        MeTLBus.subscribe("textBoundsChanged","selectionHandles",function(textId,bounds){
             if(textId in Modes.select.selected.multiWordTexts){
                 var totalBounds = Modes.select.totalSelectedBounds();
                 manualMove.rehome(totalBounds);
@@ -1172,8 +1172,8 @@ var Modes = (function(){
                 resizeAspectLocked.rehome(totalBounds);
                 blit();
             }
-        };
-        Progress.onSelectionChanged["selectionHandles"] = function(){
+        });
+        MeTLBus.subscribe("onSelectionChanged","selectionHandles",function(){
             var totalBounds = Modes.select.totalSelectedBounds();
             if(totalBounds.x == Infinity){
                 attrs.opacity = 0;
@@ -1185,7 +1185,7 @@ var Modes = (function(){
                 resizeAspectLocked.rehome(totalBounds);
                 blit();
             }
-        };
+        });
     });
     var clearCanvasInteractableFunc = function(category){
         Modes.canvasInteractables[category] = [];
@@ -1532,14 +1532,14 @@ var Modes = (function(){
                                     incorporateBoardBounds(editor.bounds);
                                 }
                             },1000);
-                            Progress.beforeChangingAudience[t.identity] = function(){
+                            MeTLBus.subscribe("beforeChangingAudience",t.identity,function(){
                                 onChange.flush();
-                                delete Progress.beforeChangingAudience[t.identity];
-                            };
-                            Progress.beforeLeavingSlide[t.identity] = function(){
+                                MeTLBus.unsubscribe("beforeChangingAudience",t.identity);
+                            });
+                            MeTLBus.subscribe("beforeLeavingSlide",t.identity,function(){
                                 onChange.flush();
-                                delete Progress.beforeLeavingSlide[t.identity];
-                            };
+                                MeTLBus.unsubscribe("beforeLeavingSlide",t.identity);
+                            });
                             editor.doc.contentChanged(onChange);
                             editor.doc.contentChanged(function(){//This one isn't debounced so it scrolls as we type and stays up to date
                                 Modes.text.scrollToCursor(editor);
@@ -1605,7 +1605,7 @@ var Modes = (function(){
                     Modes.currentMode = Modes.text;
                     setActiveMode("#textTools","#insertText");
                     $(".activeBrush").removeClass("activeBrush");
-                    Progress.call("onLayoutUpdated");
+                    MeTLBus.call("onLayoutUpdated");
                     var lastClick = 0;
                     var down = function(x,y,z,worldPos){
                         var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
@@ -1711,10 +1711,10 @@ var Modes = (function(){
                         }
                         editor.doc.invalidateBounds();
                         editor.doc.isActive = true;
-                        Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+                        MeTLBus.subscribe("historyReceived","ClearMultiTextEchoes",function(){
                             Modes.text.echoesToDisregard = {};
-                        };
-                        Progress.call("onSelectionChanged",[Modes.select.selected]);
+                        });
+                        MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
                     };
                     textColors = getTextColors();
                     updateControlState(carota.runs.defaultFormatting);
@@ -1749,16 +1749,16 @@ var Modes = (function(){
                         editor.doc.invalidateBounds();
                         editor.doc.isActive = true;
                         editor.doc.load(newRuns);
-                        Progress.historyReceived["ClearMultiTextEchoes"] = function(){
+                        MeTLBus.subscribe("historyReceived","ClearMultiTextEchoes",function(){
                             Modes.text.echoesToDisregard = {};
-                        };
+                        });
                         Modes.text.scrollToCursor(editor);
                         var source = boardContent.multiWordTexts[editor.identity];
                         source.privacy = Privacy.getCurrentPrivacy();
                         source.target = "presentationSpace";
                         source.slide = Conversations.getCurrentSlideJid();
                         sendRichText(source);
-                        Progress.call("onSelectionChanged",[Modes.select.selected]);
+                        MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
                     };
                 },
                 deactivate:function(){
@@ -1866,7 +1866,7 @@ var Modes = (function(){
                                     newH + insertMargin * 2);
                                 Modes.select.clearSelection();
                                 Modes.select.selected.videos[videoStanza.identity] = boardContent.videos[videoStanza.identity];
-                                Progress.call("onSelectionChanged",[Modes.select.selected]);
+                                MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
                             });
                             sendStanza(videoStanza);
                             resetVideoUpload();
@@ -1904,7 +1904,7 @@ var Modes = (function(){
                     resetVideoUpload();
                 }
             });
-            Progress.beforeLeavingSlide["videos"] = function(){
+            MeTLBus.subscribe("beforeLeavingSlide","videos",function(){
                 if ("videos" in boardContent){
                     _.forEach(boardContent.videos,function(video){
                         if (video != null && video != undefined && "destroy" in video){
@@ -1912,7 +1912,7 @@ var Modes = (function(){
                         }
                     });
                 }
-            };
+            });
             return {
                 activate:function(){
                     Modes.currentMode.deactivate();
@@ -1934,7 +1934,7 @@ var Modes = (function(){
                         "x":worldPos.x,
                         "y":worldPos.y
                     }
-                    Progress.call("onLayoutUpdated");
+                    MeTLBus.call("onLayoutUpdated");
                     insertOptions.show();
                 },
                 deactivate:function(){
@@ -2141,7 +2141,7 @@ var Modes = (function(){
                                     newH + insertMargin * 2);
                                 Modes.select.clearSelection();
                                 Modes.select.selected.images[imageStanza.identity] = boardContent.images[imageStanza.identity];
-                                Progress.call("onSelectionChanged",[Modes.select.selected]);
+                                MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
                             });
                             sendStanza(imageStanza);
                             resetImageUpload();
@@ -2204,7 +2204,7 @@ var Modes = (function(){
                         "x":worldPos.x,
                         "y":worldPos.y
                     }
-                    Progress.call("onLayoutUpdated");
+                    MeTLBus.call("onLayoutUpdated");
                     imageModes.reapplyVisualStyle();
                     insertOptions.show();
                 },
@@ -2336,7 +2336,7 @@ var Modes = (function(){
             };
             var clearSelectionFunction = function(){
                 Modes.select.selected = {images:{},texts:{},inks:{},multiWordTexts:{},videos:{}};
-                Progress.call("onSelectionChanged",[Modes.select.selected]);
+                MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
             };
             var selectionCategories = [
                 {
@@ -2390,7 +2390,7 @@ var Modes = (function(){
                     }
                 });
                 if(changed){
-                    Progress.call("onSelectionChanged",[Modes.select.selected]);
+                    MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
                 }
             },100);
             var banContentFunction = function(){
@@ -2438,11 +2438,11 @@ var Modes = (function(){
                     $("#administerContent").removeClass("activeBrush");
                 }
             };
-            Progress.onBoardContentChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
-            Progress.onViewboxChanged["ModesSelect"] = updateSelectionWhenBoardChanges;
-            Progress.onSelectionChanged["ModesSelect"] = updateSelectionVisualState;
-            Progress.historyReceived["ModesSelect"] = clearSelectionFunction;
-            Progress.conversationDetailsReceived["ModesSelect"] = function(conversation){
+            MeTLBus.subscribe("onBoardContentChanged","ModesSelect",updateSelectionWhenBoardChanges);
+            MeTLBus.subscribe("onViewboxChanged","ModesSelect",updateSelectionWhenBoardChanges);
+            MeTLBus.subscribe("onSelectionChanged","ModesSelect",updateSelectionVisualState);
+            MeTLBus.subscribe("historyReceived","ModesSelect",clearSelectionFunction);
+            MeTLBus.subscribe("conversationDetailsReceived","ModesSelect",function(conversation){
                 if (isAdministeringContent && !Conversations.shouldModifyConversation(conversation)){
                     isAdministeringContent = false;
                 }
@@ -2454,7 +2454,7 @@ var Modes = (function(){
                     $("#ban").hide().unbind("click");
                 }
                 updateAdministerContentVisualState(conversation);
-            };
+            });
             return {
                 name:"select",
                 isAdministeringContent:function(){return isAdministeringContent;},
@@ -2532,7 +2532,7 @@ var Modes = (function(){
                             }
                             sendStanza(deleteTransform);
                             _.forEach(_.union(Modes.select.selected.inks,Modes.select.selected.texts,Modes.select.selected.images,Modes.select.selected.multiWordTexts,Modes.select.selected.videos),function(stanza){
-                                Progress.call("onCanvasContentDeleted",[stanza]);
+                                MeTLBus.call("onCanvasContentDeleted",[stanza]);
                             });
                             clearSelectionFunction();
                         }
@@ -2645,7 +2645,7 @@ var Modes = (function(){
                                 moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
                                 Modes.select.dragging = false;
                                 registerTracker(moved.identity,function(){
-                                    Progress.call("onSelectionChanged");
+                                    MeTLBus.call("onSelectionChanged");
                                     blit();
                                 });
                                 sendStanza(moved);
@@ -2807,7 +2807,7 @@ var Modes = (function(){
                                         _.keys(Modes.select.selected.inks).length,
                                         _.keys(Modes.select.selected.videos).length));*/
                                 }
-                                Progress.call("onSelectionChanged",[Modes.select.selected]);
+                                MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
                             }
                             marquee.css(
                                 {width:0,height:0}
@@ -2851,7 +2851,7 @@ var Modes = (function(){
                 var startWorldPos;
                 var proportion;
                 var originPoint = {x:0,y:0};
-		if(Progress.onBoardContentChanged.autoZooming){
+		if(MeTLBus.check("onBoardContentChanged","autoZooming")){
 		    takeControlOfViewbox(false);
 		}
 		else{
@@ -2939,10 +2939,10 @@ var Modes = (function(){
                     break;
                 }
             };
-            Progress.onConversationJoin["setConversationRole"] = function(){
+            MeTLBus.subscribe("onConversationJoin","setConversationRole",function(){
                 applyStateStyling();
-            }
-            Progress.conversationDetailsReceived["respectNewPermissions"] = applyStateStyling;
+            });
+            MeTLBus.subscribe("conversationDetailsReceived","respectNewPermissions",applyStateStyling);
             return {
                 name:"feedback",
                 activate:function(){
@@ -2962,7 +2962,7 @@ var Modes = (function(){
                 deactivate:function(){
                     removeActiveMode();
                     unregisterPositionHandlers(board);
-                    Progress.call("onLayoutUpdated");
+                    MeTLBus.call("onLayoutUpdated");
                 }
             };
         })(),
@@ -3069,7 +3069,7 @@ var Modes = (function(){
                         penButton.addClass("activeTool").addClass("active");
                         hlButton.removeClass("activeTool").removeClass("active");
                     }
-                    Progress.call("onLayoutUpdated");
+                    MeTLBus.call("onLayoutUpdated");
                 }
                 $("#resetPenButton").click(function(){
                     var originalBrush = _.find(originalBrushes,function(i){
@@ -3177,7 +3177,7 @@ var Modes = (function(){
                         deleteTransform.isDeleted = true;
                         deleteTransform.inkIds = _.map(deleted,function(stanza){return stanza.identity;});
                         _.forEach(deleted,function(stanza){
-                            Progress.call("onCanvasContentDeleted",[stanza]);
+                            MeTLBus.call("onCanvasContentDeleted",[stanza]);
                         });
                         sendStanza(deleteTransform);
                     } else {

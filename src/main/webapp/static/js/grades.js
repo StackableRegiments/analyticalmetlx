@@ -62,7 +62,7 @@ var Grades = (function(){
                     var oldGradeValue = gradeColl[stanza.gradedUser];
                     if (!oldGradeValue || oldGradeValue.timestamp < stanza.timestamp){
                         gradeColl[stanza.gradedUser] = stanza;
-                        Progress.call("gradeValueReceived",[stanza]);
+                        MeTLBus.call("gradeValueReceived",[stanza]);
                     }
                     break;
                 }
@@ -74,9 +74,9 @@ var Grades = (function(){
             console.log("Grades.stanzaReceived",e);
         }
     };
-    Progress.onConversationJoin["Grades"] = clearState;
-    Progress.historyReceived["Grades"] = historyReceivedFunc;
-    Progress.stanzaReceived["Grades"] = stanzaReceived;
+    MeTLBus.subscribe("onConversationJoin","Grades",clearState);
+    MeTLBus.subscribe("historyReceived","Grades",historyReceivedFunc);
+    MeTLBus.subscribe("stanzaReceived","Grades",stanzaReceived);
     $(function(){
 
         $.getJSON("/getExternalGradebooks",function(data){
