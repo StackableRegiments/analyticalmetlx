@@ -57,13 +57,13 @@ class StudentActivity extends StronglyTypedJsonActor with JArgUtils {
   override lazy val functionDefinitions: List[ClientSideFunction] =
     List(ClientSideFunction("getCourses", List(), (_) => {
       val options = getAllOptions
-      createJCourses(options)
+      List(createJCourses(options))
     }, Full("updateCourses")),
       ClientSideFunction("getStudentActivity", List("from", "to", "courseId"), (args) => {
       val fromDate = tryo(new Date(getArgAsLong(args.head))) // Timestamp
       val toDate = tryo(new Date(getArgAsLong(args(1)))) // Timestamp
       val courseId = tryo(getArgAsString(args(2)).toLowerCase.trim).filter(c => c.nonEmpty)
-      calculateResults(courseId, fromDate, toDate)
+      List(calculateResults(courseId, fromDate, toDate))
     }, Full("updateActivity")))
 
   override protected def registerWith: SimpleActor[Any] = {
