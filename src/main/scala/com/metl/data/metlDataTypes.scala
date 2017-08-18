@@ -935,13 +935,13 @@ object MeTLVideoStream{
   def empty = MeTLVideoStream(ServerConfiguration.empty,"","",0L,Empty,true,Nil)
 }
 
-case class MeTLSubmission(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,title:String,slideJid:Int,url:String,imageBytes:Box[Array[Byte]] = Empty,blacklist:List[SubmissionBlacklistedPerson] = List.empty[SubmissionBlacklistedPerson], override val target:String = "submission",override val privacy:Privacy = Privacy.PUBLIC,override val identity:String = new Date().getTime.toString,override val audiences:List[Audience] = Nil) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slideJid.toString,identity){
+case class MeTLSubmission(override val server:ServerConfiguration,override val author:String,override val timestamp:Long,title:String,slideJid:String,url:String,imageBytes:Box[Array[Byte]] = Empty,blacklist:List[SubmissionBlacklistedPerson] = List.empty[SubmissionBlacklistedPerson], override val target:String = "submission",override val privacy:Privacy = Privacy.PUBLIC,override val identity:String = new Date().getTime.toString,override val audiences:List[Audience] = Nil) extends MeTLCanvasContent(server,author,timestamp,target,privacy,slideJid,identity){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLSubmission = Stopwatch.time("MeTLSubmission.adjustTimestamp",{
     copy(timestamp = newTime)
   })
 }
 object MeTLSubmission{
-  def empty = MeTLSubmission(ServerConfiguration.empty,"",0L,"",0,"")
+  def empty = MeTLSubmission(ServerConfiguration.empty,"",0L,"","","")
 }
 case class SubmissionBlacklistedPerson(username:String,highlight:Color)
 object SubmissionBlacklistedPerson{

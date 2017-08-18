@@ -531,7 +531,7 @@ class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with L
           case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
           case m:MeTLDirtyVideo => m.copy(slide = newLoc.getJid)
           case m:MeTLUndeletedCanvasContent => m.copy(slide = newLoc.getJid)
-          case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
+          case m:MeTLSubmission => tryo(newLoc.getJid).map(ns => m.copy(slideJid = ns)).getOrElse(m)
           case m:MeTLUnhandledCanvasContent => m.copy(slide = newLoc.getJid)
           case m:MeTLQuiz => m
           case s:MeTLStanza => s
@@ -678,7 +678,7 @@ class ExportXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializ
       val highlight = getColorByName(bl,"highlight")
       SubmissionBlacklistedPerson(username,highlight)
     }).toList
-    MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
+    MeTLSubmission(config,m.author,m.timestamp,title,c.slide,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
   })
   override def fromSubmission(input:MeTLSubmission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSubmission", {
     canvasContentToXml("screenshotSubmission",input,List(

@@ -285,7 +285,7 @@ class MeTLProfile extends StronglyTypedJsonActor with Logger with JArgUtils with
       JArray(serverConfig.getConversationsByAuthor(thisProfile.id).map(serializer.fromConversation _))
     },Full(RECEIVE_CONVERSATIONS)),
     ClientSideFunction("testCall",List("first","second","third"),(args) => {
-      partialUpdate(Call("Progress.call",JString("testEndpoint"),JArray(args)))
+      partialUpdate(Call("MeTLBus.call",JString("testEndpoint"),JArray(args)))
       JNull
     },None)
   )

@@ -741,7 +741,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           val highlight = toColor(getColorByName(blo,"highlight"))
           SubmissionBlacklistedPerson(username,highlight)
         }).toList
-        MeTLSubmission(config,mc.author,mc.timestamp,title,slide.toInt,url,Empty,blacklist,cc.target,cc.privacy,cc.identity,mc.audiences)
+        MeTLSubmission(config,mc.author,mc.timestamp,title,slide,url,Empty,blacklist,cc.target,cc.privacy,cc.identity,mc.audiences)
       }
       case _ => MeTLSubmission.empty
     }

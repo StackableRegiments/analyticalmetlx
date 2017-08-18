@@ -254,7 +254,7 @@ object H2Command extends H2Command with LongKeyedMetaMapper[H2Command]{
 class H2Submission extends H2MeTLCanvasContent[H2Submission]{
   def getSingleton = H2Submission
   object title extends MappedMeTLString(this,512)
-  object slideJid extends MappedInt(this)
+  object slideJid extends MappedMeTLString(this,H2Constants.identity)
   object url extends MappedMeTLString(this,H2Constants.url)
   object blacklist extends MappedText(this)
 }
