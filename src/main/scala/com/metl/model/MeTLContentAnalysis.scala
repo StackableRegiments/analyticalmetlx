@@ -120,7 +120,7 @@ object CanvasContentAnalysis extends Logger {
   lazy val propFile = XML.load(Globals.configurationFileLocation)
 
   def element(c:MeTLCanvasContent) = JArray(List(JString(c.author),JInt(c.timestamp),JDouble(c.left),JDouble(c.top),JDouble(c.right),JDouble(c.bottom)))
-  def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100) = Chunked(timeThreshold,distanceThreshold,
+  def chunk(es:List[MeTLCanvasContent],timeThreshold:Int=5000,distanceThreshold:Int=100): Chunked = Chunked(timeThreshold,distanceThreshold,
     es.sortBy(_.timestamp).groupBy(_.author).map {
       case (author,items) => {
         Chunkset(author, items.foldLeft((0L,List.empty[List[MeTLCanvasContent]])){
@@ -136,7 +136,7 @@ object CanvasContentAnalysis extends Logger {
         }._2.map(run => Chunk(run.reverse)))
       }
     }.toList)
-  def thematize(phrases:List[String]) = {
+  def thematize(phrases:List[String]): List[String] = {
     val api = "textanalysis.p.mashape.com/textblob-noun-phrase-extraction"
     val keyValue = "exampleKey"
 
