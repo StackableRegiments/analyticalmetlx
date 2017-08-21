@@ -562,6 +562,9 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
     prof
   }
   override lazy val functionDefinitions = List(
+    CommonFunctions.getAccount,
+    CommonFunctions.getProfiles,
+    CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
     CommonFunctions.getProfile(() => thisProfile),
     CommonFunctions.changeProfileNickname(profileAccessor _,updateProfile _),
@@ -579,8 +582,11 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
     super.localSetup
   }
   override def render = OnLoad(
-    Call("getProfile") & 
+    Call("getAccount") &
+    Call("getProfiles") &
+    Call("getDefaultProfile") &
     Call("getActiveProfile") &
+    Call("getProfile") & 
     Call("getProfileSessionHistory") &
     Call("getConversations") &
     Call("getAttendances") &
@@ -627,6 +633,10 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
     query
   }
   override lazy val functionDefinitions = List(
+    CommonFunctions.getAccount,
+    CommonFunctions.getProfiles,
+    CommonFunctions.getDefaultProfile,
+    CommonFunctions.getActiveProfile,
     CommonFunctions.getUserGroups,
     CommonFunctions.getUsername,
     CommonFunctions.searchForConversation(updateListing _,updateQuery _),
@@ -665,8 +675,11 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
     val thisGroups = jUserGroups
     printSince("groups, serialized")
     val cmd = OnLoad(
+      Call("getAccount") &
+      Call("getProfiles") &
+      Call("getDefaultProfile") &
+      Call("getActiveProfile") &
       busCall(RECEIVE_USERNAME,jUsername) &
-      busCall(RECEIVE_PROFILE,thisProfile) &
       busCall(RECEIVE_USER_GROUPS,thisGroups) &
       busCall(RECEIVE_QUERY,JString(query.getOrElse(""))) &
       busCall(RECEIVE_CONVERSATIONS,serList) &
@@ -712,6 +725,10 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
   import com.metl.view._
   
   override lazy val functionDefinitions = List(
+    CommonFunctions.getAccount,
+    CommonFunctions.getProfiles,
+    CommonFunctions.getDefaultProfile,
+    CommonFunctions.getActiveProfile,
     CommonFunctions.getProfilesById,
     CommonFunctions.reorderSlidesOfConversation,
     CommonFunctions.deleteConversation,
@@ -737,8 +754,11 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
 
   override def render = {
     OnLoad(conversation.filter(c => shouldModifyConversation(c)).map(c => {
+      Call("getAccount") &
+      Call("getProfiles") &
+      Call("getDefaultProfile") &
+      Call("getActiveProfile") &
       busCall(RECEIVE_USERNAME,jUsername) &
-      busCall(RECEIVE_PROFILE,jProfile) &
       busCall(RECEIVE_USER_GROUPS,jUserGroups) &
       busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(c,username,userGroups))) &
       busCall(RECEIVE_SHOW_CONVERSATION_LINKS,JBool(showLinks))
@@ -827,6 +847,10 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
   protected var tokSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   protected var tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   override lazy val functionDefinitions = List(
+    CommonFunctions.getAccount,
+    CommonFunctions.getProfiles,
+    CommonFunctions.getDefaultProfile,
+    CommonFunctions.getActiveProfile,
     CommonFunctions.getProfilesById,
     TokBoxFunctions.getTokBoxArchives(() => tokSessions),
     TokBoxFunctions.getTokBoxArchive(() => tokSessions),
@@ -1517,8 +1541,13 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
     } yield {
       hideLoader
     }
+    val baseCmds:JsCmd = Call("getAccount") &
+    Call("getProfiles") &
+    Call("getDefaultProfile") &
+    Call("getActiveProfile")
+
     val jsCmds:List[Box[JsCmd]] = List(receiveUserProfile,receiveUsername,receiveUserGroups,receiveCurrentConversation,receiveCurrentSlide,receiveConversationDetails,receiveLastSyncMove,receiveHistory,receiveInteractiveUser,receiveTokBoxEnabled) ::: receiveTokBoxSlideSpecificSessions ::: receiveTokBoxSessions ::: List(receiveTokBoxBroadcast,loadComplete)
-    jsCmds.foldLeft(Noop)((acc,item) => item.map(i => acc & i).openOr(acc))
+    jsCmds.foldLeft(baseCmds)((acc,item) => item.map(i => acc & i).openOr(acc))
   }
   private def joinConversation(jid:String):Box[Conversation] = {
     val details = serverConfig.detailsOfConversation(jid)
