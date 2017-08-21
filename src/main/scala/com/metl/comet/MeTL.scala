@@ -582,8 +582,18 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
     Call("getThemes")
   )
   override def lowPriority = {
+    case p:Profile if Globals.currentProfile.is.id == p.id => {
+      partialUpdate(
+        busCall(RECEIVE_ACTIVE_PROFILE,renderProfile(p))
+      )
+      if (p.id == thisProfile.id){
+        partialUpdate(
+          busCall(RECEIVE_PROFILE,renderProfile(thisProfile)) &
+          busCall(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id)))
+        )
+      }
+    }
     case p:Profile if thisProfile.id == p.id => {
-      updateProfile(p)
       partialUpdate(
         busCall(RECEIVE_PROFILE,renderProfile(thisProfile)) &
         busCall(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id)))
