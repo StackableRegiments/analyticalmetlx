@@ -521,7 +521,6 @@ class MeTLAccount extends MeTLActorBase[MeTLAccount]{
   )
   override def lowPriority = {
     case p:Profile if Globals.availableProfiles.is.exists(_.id == p.id) => {
-      reRender
       partialUpdate(busCall(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _))) & {
         if (serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2 == p.id){
           busCall(RECEIVE_PROFILE,renderProfile(p))
