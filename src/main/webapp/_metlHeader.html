@@ -70,6 +70,11 @@
 .dropdown-content .profileImg img {
 	max-width:120px;
 }
+#healthCheckListing {
+	overflow-y:scroll !important;
+	max-height:600px;
+	width:300px;
+}
 	</style>
   <script src="static/js/stable/sprintf-0.7-beta1.js"></script>
 	<script src="static/js/stable/lodash.js"></script>
@@ -164,7 +169,6 @@
 			<span id="healthCheck" class="meters" >
 				<meter id="healthStatus" class="dropbtn"></meter>
 				<div id="healthCheckDropdown" class="dropdown-content">
-					<h2 class="align-left mrh nmt">Client health</h2>
 					<div class="health-check-listing align-left half mrh">
 						<div id="healthCheckListing" class="clear box-model-block">
 							<div class="healthCheckItem flex-container-row">
@@ -172,6 +176,7 @@
 						</div>
 					</div>
 					<div class="health-check-summary align-right quarter mrh">
+						<h2 class="align-left mrh nmt">Client health</h2>
 						<div class="healthCheckSummaryLatencyContainer">
 							<h3>Network status</h3>
 							<div>
@@ -183,7 +188,11 @@
 								<h4>Network call success rate</h4>
 								Client request success rate: <span class="successRate">0</span>%
 							</div>
-							<div class="heathCheckSummaryServerResponseContainer">
+							<div class="healthCheckSummaryClientQueueContainer">
+								<h4>Client network queue length</h4> 
+								<div>Client queue length: <span class="clientQueueLength"></span></div>
+							</div>
+							<div class="healthCheckSummaryServerResponseContainer">
 								<h4>Server response queue length</h4>
 								<div>Queue wait time: <span class="serverResponseAverage"></span> ms (<span class="serverResponseHumanReadable"></span>)</div>
 							</div>

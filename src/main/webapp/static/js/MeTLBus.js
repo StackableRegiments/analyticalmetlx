@@ -17,7 +17,7 @@ var createMeTLBus = function(){
 						});
 				},
         call:function(key,args){
-					console.log("MeTLBus.call",key,args);
+//					console.log("MeTLBus.call",key,args);
             args = args || [];
 						if (key in queues){
 							$.each(queues[key],function(k,f){

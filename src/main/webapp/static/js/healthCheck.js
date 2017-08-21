@@ -86,7 +86,7 @@ var HealthChecker = (function(){
         return _.mapValues(store,function(v){return v.items();});
     };
     var getAggregatedMeasuresFunc = function(granularity){
-        return _.mapValues(store,function(v){
+        return _.mapValues(store,function(v,k){
             var set = {};
             _.forEach(v.items(),function(item){
                 var sample = (Math.floor(item.instant / granularity) * granularity);
@@ -131,6 +131,7 @@ var HealthChecker = (function(){
                     max:_.max(durations),
                     min:_.min(durations),
                     average:_.mean(durations),
+							 			last:_.takeRight(durations,1)[0],
                     recent:_.mean(_.takeRight(durations,10)),
                     successful:count == 0 || v[count-1].success,
                     successRate:_.countBy(v,"success")[true] / count
@@ -140,8 +141,9 @@ var HealthChecker = (function(){
     };
 		var trackNetworkCallFunc = function(trackingId,startTime){
 			trackedCalls[trackingId] = startTime;
-			console.log("started:",trackingId,startTime);
+			//console.log("started:",trackingId,startTime);
 			addMeasureFunc("clientQueue",true,_.size(_.keys(trackedCalls)));
+			updateGraph();
 		};
 		MeTLBus.subscribe("serverResponse","healthCheck",function(responseObj){
 			var now = new Date().getTime();
@@ -160,12 +162,13 @@ var HealthChecker = (function(){
 				var reversed = _.reverse(responseObj.bonusArguments);
 				var startTime = reversed[0];
 				var trackingId = reversed[1];
-				console.log("startTime, trackingId",reversed,startTime,trackingId);
+				//console.log("startTime, trackingId",reversed,startTime,trackingId);
 				var matchingElement = trackedCalls[trackingId];
 				if (matchingElement == startTime){
 					delete trackedCalls[trackingId];
 					addMeasureFunc("clientQueue",true,_.size(_.keys(trackedCalls)));
-					console.log("ended:",trackingId,now - startTime);
+					//console.log("ended:",trackingId,now - startTime);
+					updateGraph();
 				}	
 			}
 		});
@@ -267,7 +270,7 @@ var HealthCheckViewer = (function(){
         if (!(categoryName in charts)){
             var category = adjustTimeFunc(rawCategory);
             var rootElem = healthCheckItemTemplate.clone();
-            var canvas = $("<canvas />").addClass("healthCheckCanvas").css({"margin-top":"-20px"});
+            var canvas = $("<canvas />").addClass("healthCheckCanvas");//.css({"margin-top":"-20px"});
             rootElem.html(canvas);
             healthCheckContainer.append(rootElem);
             var options = {
@@ -404,19 +407,22 @@ var HealthCheckViewer = (function(){
                 options: options
             };
             var chart = new Chart(canvas[0].getContext("2d"),chartDesc);
-            console.log("New chart",categoryName);
+            //console.log("New chart",categoryName);
             charts[categoryName] = chart;
         }
     };
     var resumeFunc = function(){
         viewing = true;
-        var checkData = HealthChecker.getAggregatedMeasures(1000);
-        var descriptionData = HealthChecker.describeHealth();
-        refreshFunc(checkData,descriptionData);
+        checkData = HealthChecker.getAggregatedMeasures(1000);
+        descriptionData = HealthChecker.describeHealth();
+        refreshFunc();
         _.forEach(checkData,function(rawCategory,categoryName){
             generateGraphFromCategory(categoryName,rawCategory);
         });
     };
+		var metersElement = undefined;
+		var healthCheckButton = undefined;
+		var healthCheckMeter = undefined;
     var summarizeHealth = function(data){
         var health = 10;
         if(data.latency){
@@ -425,31 +431,34 @@ var HealthCheckViewer = (function(){
         if(data.render){
             health -= Math.min(8,data.render.recent / 20);
         }
-        $(".meters").css("background-color", (function(){
-            if (_.some(["latency","serverResponse"], function(category){
-                    return !(category in data) || (data[category] === undefined || data[category].successRate < 1);
-                })){
-                return "red";
-            }
-            else
-            {
-                return "transparent";
-            }
-        })());
+				var bgColor = "transparent";
+				if (_.some(["latency","serverResponse"], function(category){
+							return !(category in data) || (data[category] === undefined || data[category].successRate < 1);
+					})){
+					bgColor = "red";
+				}
+			
+				if (metersElement !== undefined){
+					metersElement.css("background-color", bgColor);
+				}
         var wasHealthy = healthy;
         healthy = _.every(["latency", "serverResponse"], function (category) {
             return category in data && data[category] !== undefined && data[category].successful;
         });
         if( wasHealthy != healthy ) {
-            MeTLBus.call("blit");
+					WorkQueue.enqueue(function(){
+						MeTLBus.call("blit");
+					});
         }
-        $("#healthStatus").prop({
-            max:max,
-            low:low,
-            high:high,
-            min:min,
-            value:health
-        });
+				if (healthCheckMeter !== undefined){
+					healthCheckMeter.prop({
+							max:max,
+							low:low,
+							high:high,
+							min:min,
+							value:health
+					});
+				}
     };
     var cells = {};
     var c = function(selector){
@@ -458,60 +467,79 @@ var HealthCheckViewer = (function(){
         }
         return cells[selector] = $(selector);
     };
-    var refreshFunc = function(checkData,descriptionData){
-        WorkQueue.enqueue(function(){
-            summarizeHealth(descriptionData);
-        });
-        if(viewing){
-            var overallLatencyData = descriptionData["latency"];
-            if (overallLatencyData != undefined){
-                c(".healthCheckSummaryLatencyContainer").show();
-                c(".latencyAverage").text(parseInt(overallLatencyData.average));
-                c(".worstLatency").text(parseInt(overallLatencyData.min));
-                c(".bestLatency").text(parseInt(overallLatencyData.max));
-                c(".successRate").text(parseInt(overallLatencyData.successRate * 100));
-                if (overallLatencyData.average > 200){
-                    c(".latencyHumanReadable").text("poor");
-                } else if (overallLatencyData.average > 50){
-                    c(".latencyHumanReadable").text("moderate");
-                } else if (overallLatencyData.average > 20){
-                    c(".latencyHumanReadable").text("good");
-                }
-            } else {
-                c(".healthCheckSummaryLatencyContainer").hide();
-            }
-            var overallServerResponseData = descriptionData["serverResponse"];
-            if (overallServerResponseData != undefined){
-                c(".heathCheckSummaryServerResponseContainer").show();
-                var serverHealthData = overallServerResponseData.average;
-                c(".serverResponseAverage").text(parseInt(serverHealthData));
-                var humanReadableServerHealthData = serverHealthData > 2 ? "poor" : "good";
-                c(".serverResponseHumanReadable").text(humanReadableServerHealthData);
-            } else {
-                c(".heathCheckSummaryServerResponseContainer").hide();
-            }
-            _.forEach(checkData,function(rawCategory,categoryName){
-                var category = adjustTimeFunc(rawCategory);
-                if (!(categoryName in charts)){
-                    generateGraphFromCategory(categoryName,rawCategory);
-                }
-                var chart = charts[categoryName];
-                chart.data.datasets[0].data = errorDataFunc(category);
-                chart.data.datasets[1].data = minDataFunc(category);
-                chart.data.datasets[2].data = averageDataFunc(category);
-                chart.data.datasets[3].data = maxDataFunc(category);
-                chart.update();
-            });
-        }
-    };
+		var checkData = {};
+		var descriptionData = {};
+		var visualUpdateSpeed = 100;
+		var refreshWithDataFunc = function(cd,dd){
+			checkData = cd;
+			descriptionData = dd;
+			refreshFunc();
+		};
+    var refreshFunc = _.throttle(function(){
+			window.requestAnimationFrame(function(ts){
+				var s = new Date().getTime();
+				summarizeHealth(descriptionData);
+				var s1 = new Date().getTime();
+				if(viewing){
+						var overallLatencyData = descriptionData["latency"];
+						if (overallLatencyData != undefined){
+								c(".healthCheckSummaryLatencyContainer").show();
+								c(".latencyAverage").text(parseInt(overallLatencyData.average));
+								c(".worstLatency").text(parseInt(overallLatencyData.min));
+								c(".bestLatency").text(parseInt(overallLatencyData.max));
+								c(".successRate").text(parseInt(overallLatencyData.successRate * 100));
+								if (overallLatencyData.average > 200){
+										c(".latencyHumanReadable").text("poor");
+								} else if (overallLatencyData.average > 50){
+										c(".latencyHumanReadable").text("moderate");
+								} else if (overallLatencyData.average > 20){
+										c(".latencyHumanReadable").text("good");
+								}
+						} else {
+								c(".healthCheckSummaryLatencyContainer").hide();
+						}
+						var clientQueueLength = descriptionData["clientQueue"];
+						if (clientQueueLength != undefined){
+							c(".healthCheckSummaryClientQueueContainer").show();
+								var clientQueueData = clientQueueLength.last;
+								c(".clientQueueLength").text(parseInt(clientQueueData));
+						} else {
+								c(".healthCheckSummaryClientQueueContainer").hide();
+						}
+						var overallServerResponseData = descriptionData["serverResponse"];
+						if (overallServerResponseData != undefined){
+								c(".healthCheckSummaryServerResponseContainer").show();
+								var serverHealthData = overallServerResponseData.average;
+								c(".serverResponseAverage").text(parseInt(serverHealthData));
+								var humanReadableServerHealthData = serverHealthData > 2 ? "poor" : "good";
+								c(".serverResponseHumanReadable").text(humanReadableServerHealthData);
+						} else {
+								c(".healthCheckSummaryServerResponseContainer").hide();
+						}
+						_.forEach(checkData,function(rawCategory,categoryName){
+								var category = adjustTimeFunc(rawCategory);
+								generateGraphFromCategory(categoryName,rawCategory);
+								var chart = charts[categoryName];
+								chart.data.datasets[0].data = errorDataFunc(category);
+								chart.data.datasets[1].data = minDataFunc(category);
+								chart.data.datasets[2].data = averageDataFunc(category);
+								chart.data.datasets[3].data = maxDataFunc(category);
+								chart.update();
+						});
+				}
+				var s2 = new Date().getTime();
+				console.log("refreshFunc:",s2 - s, s1 - s, s2 - s1);
+			});
+    },visualUpdateSpeed);
     var healthyFunc = function(){
       return healthy;
     };
 		$(function(){
-			var healthCheckButton = $("#healthCheck");
+			healthCheckButton = $("#healthCheck");
+			healthCheckMeter = $("#healthStatus");
 			var healthCheckDisplay = $("#healthCheckDropdown");
+			metersElement = $(".meters");
 			healthCheckButton.bind("click",function(){
-				console.log("click!",viewing);
 				if (!viewing){
 					healthCheckDisplay.show();
 					resumeFunc();
@@ -524,7 +552,7 @@ var HealthCheckViewer = (function(){
     return {
         resume:resumeFunc,
         pause:pauseFunc,
-        refreshDisplays:refreshFunc,
+        refreshDisplays:refreshWithDataFunc,
         healthy:healthyFunc
     };
 })();

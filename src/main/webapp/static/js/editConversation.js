@@ -223,7 +223,7 @@ var Conversation = (function(){
                 var oldSlides = conversation.slides;
                 var newIndex = 0;
                 var newSlides = _.map($(".slideId"),function(el){
-                    var slideId = parseInt($(el).text());
+                    var slideId = $(el).text();
                     var returnedSlide = _.find(conversation.slides,function(slide){
                         if (slide.id == slideId){
                             return true;
