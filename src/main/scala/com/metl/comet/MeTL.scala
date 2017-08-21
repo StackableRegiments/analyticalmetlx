@@ -523,7 +523,8 @@ class MeTLAccount extends MeTLActorBase[MeTLAccount]{
     case p:Profile if Globals.availableProfiles.is.exists(_.id == p.id) => {
       partialUpdate(busCall(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _))) & {
         if (serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2 == p.id){
-          busCall(RECEIVE_PROFILE,renderProfile(p))
+          busCall(RECEIVE_ACTIvE_PROFILE,renderProfile(p))
+          busCall(RECEIVE_DEFAULT_PROFILE,JString(p.id))
         } else {
           Noop
         }
@@ -543,11 +544,13 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
     warn("updating profile: %s".format(p))
     val prof = serverConfig.updateProfile(p.id,p)
     internalProfile = internalProfile.map(_p => prof)
+    if (Globals.availableProfiles.exists(_.id == prof.id)){
+      Globals.availableProfiles(prof :: (Globals.availableProfiles.is.filterNot(_.id == prof.id)))
+    }
+    if (Globals.currentProfile.is.id == prof.id){
+      Globals.currentProfile(prof)
+    }
     if (prof.copy(timestamp = 0L) != p.copy(timestamp = 0L)){
-      Globals.availableProfiles(prof :: Globals.availableProfiles.is.filterNot(_.id == prof.id))
-      if (Globals.currentProfile.is.id == prof.id){
-        Globals.currentProfile(prof)
-      }
       MeTLProfileActorManager ! prof
       MeTLAccountActorManager ! prof
     }
