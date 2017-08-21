@@ -58,7 +58,7 @@
 					if (imageSrc === undefined || imageSrc == ""){
 						imageSrc = sprintf("http://api.adorable.io/avatars/285/%s.png",profId); 
 					}
-					rootElem.find(".profileImage").attr("src",imageSrc);
+					rootElem.find(".candidateProfileImage").attr("src",imageSrc);
 					return rootElem;
 				}));
 			};
@@ -101,8 +101,9 @@
 #accountContainer {
 	background:white;
 }
-.profileImage {
-	width:200px;
+.candidateProfileImage {
+	max-width:200px;
+	max-height:200px;
 }
 	</style>
 	<div id="accountContainer">
@@ -112,7 +113,7 @@
 			<div class="profile">
 				<span class="profileName"></span>
 				<span class="profileId"></span>
-				<img class="profileImage"></span>
+				<img class="candidateProfileImage"></span>
 				<input type="checkbox" class="isActive"></input>
 				<label class="isActiveLabel">active</label>
 				<input type="checkbox" class="isDefault"></span>

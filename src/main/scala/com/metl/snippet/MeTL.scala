@@ -337,7 +337,6 @@ class Metl extends Logger {
     })
   }
   def header = {
-    println("URI: [%s]".format(S.uri))
     val locations:List[Tuple2[String,NodeSeq]] = S.uri.split("/").toList.map(_.trim).filterNot(_ == "") match {
       case "board" :: _args => List(
         (conversationSearch(),Text("conversationSearch")) 
@@ -360,16 +359,6 @@ class Metl extends Logger {
       S.param("conversationJid").map(cj => (editConversation(cj),Text("editConversation"))).toList
       case _ => Nil
     }
-    /*
-    val locations:List[Tuple2[String,NodeSeq]] = S.location match {
-      case Full(loc) => {
-        (loc :: loc.breadCrumbs).map(l => {
-          (l.calcDefaultHref,l.title)
-        })
-      }
-      case _ => Nil
-    }
-    */
     "#breadcrumbs" #> {
       ".breadcrumbItem *" #> locations.map(l => {
         ".breadcrumbLink [href]" #> Text(l._1) &

@@ -132,7 +132,7 @@
 						return rootElem;
 				}));
 			};
-			Profiles.attachProfileUpdated(profileUpdated);
+			MeTLBus.subscribe("receiveProfile","profile.html",profileUpdated);
 			$(function(){
 				sessionTemplate = $("#profileSessionHistory").find(".session").clone();
 				sessionItemTemplate = sessionTemplate.find(".sessionItems").find(".sessionItem").clone();

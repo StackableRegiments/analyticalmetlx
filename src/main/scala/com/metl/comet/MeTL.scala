@@ -282,6 +282,21 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
   }
 
   object CommonFunctions {
+    def getActiveProfile = ClientSideFunction("getActiveProfile",List(),(args) => {
+      busArgs(RECEIVE_ACTIVE_PROFILE,jProfile)
+    },Full(METLBUS_CALL))
+    def getAccount = ClientSideFunction("getAccount",List(),(args) => {
+      busArgs(RECEIVE_ACCOUNT,jAccount)
+    },Full(METLBUS_CALL))
+    def getProfile(profileAccessor:()=>Profile) = ClientSideFunction("getProfile",List(),(args) => {
+      busArgs(RECEIVE_PROFILE,renderProfile(profileAccessor()))
+    },Full(METLBUS_CALL))
+    def getProfiles = ClientSideFunction("getProfiles",List(),(args) => {
+      busArgs(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _)))
+    },Full(METLBUS_CALL))
+    def getDefaultProfile = ClientSideFunction("getDefaultProfile",List(),(args) => {
+      busArgs(RECEIVE_DEFAULT_PROFILE,JString(serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2))
+    },Full(METLBUS_CALL))
     def getProfilesById:ClientSideFunction = ClientSideFunction("getProfiles",List("profileIds"),(args) => {
       busArgs(RECEIVE_PROFILES,translateProfileIds(getArgAsListOfStrings(args(0))))
     },Full(METLBUS_CALL))
@@ -485,6 +500,10 @@ class MeTLAccount extends MeTLActorBase[MeTLAccount]{
   import net.liftweb.json.Extraction
   override def registerWith = MeTLAccountActorManager
   override lazy val functionDefinitions = List(
+    CommonFunctions.getAccount,
+    CommonFunctions.getProfiles,
+    CommonFunctions.getDefaultProfile,
+    CommonFunctions.getActiveProfile,
     CommonFunctions.createProfile,
     CommonFunctions.switchToProfile,
     CommonFunctions.setDefaultProfile
@@ -495,13 +514,22 @@ class MeTLAccount extends MeTLActorBase[MeTLAccount]{
     super.localSetup
   }
   override def render = OnLoad(
-    busCall(RECEIVE_ACCOUNT,jAccount) &
-    busCall(RECEIVE_ACTIVE_PROFILE,renderProfile(Globals.currentProfile.is)) &
-    busCall(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _))) &
-    busCall(RECEIVE_DEFAULT_PROFILE,JString(serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2))
+    Call("getAccount") &
+    Call("getProfiles") &
+    Call("getDefaultProfile") &
+    Call("getActiveProfile")
   )
   override def lowPriority = {
-    case p:Profile if Globals.availableProfiles.is.exists(_.id == p.id) => partialUpdate(busCall(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _))))
+    case p:Profile if Globals.availableProfiles.is.exists(_.id == p.id) => {
+      reRender
+      partialUpdate(busCall(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _))) & {
+        if (serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2 == p.id){
+          busCall(RECEIVE_PROFILE,renderProfile(p))
+        } else {
+          Noop
+        }
+      })
+    }
     case _ => warn("MeTLAccountActor received unknown message")
   }
 }
@@ -527,6 +555,8 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
     prof
   }
   override lazy val functionDefinitions = List(
+    CommonFunctions.getActiveProfile,
+    CommonFunctions.getProfile(() => thisProfile),
     CommonFunctions.changeProfileNickname(profileAccessor _,updateProfile _),
     CommonFunctions.changeProfileAttribute(profileAccessor _,updateProfile _),
     CommonFunctions.getProfileSessionHistory(profileAccessor _),
@@ -542,7 +572,8 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
     super.localSetup
   }
   override def render = OnLoad(
-    busCall(RECEIVE_PROFILE,renderProfile(thisProfile)) &
+    Call("getProfile") & 
+    Call("getActiveProfile") &
     Call("getProfileSessionHistory") &
     Call("getConversations") &
     Call("getAttendances") &
