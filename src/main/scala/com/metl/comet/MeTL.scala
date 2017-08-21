@@ -542,15 +542,20 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
   def profileAccessor:Profile = thisProfile
   protected def updateProfile(p:Profile):Profile = {
     warn("updating profile: %s".format(p))
+    val orig = thisProfile
     val prof = serverConfig.updateProfile(p.id,p)
     internalProfile = internalProfile.map(_p => prof)
     if (Globals.availableProfiles.exists(_.id == prof.id)){
+      warn("updating availables with this new one: %s".format(prof))
       Globals.availableProfiles(prof :: (Globals.availableProfiles.is.filterNot(_.id == prof.id)))
     }
     if (Globals.currentProfile.is.id == prof.id){
+      warn("updating current with this new one: %s".format(prof))
       Globals.currentProfile(prof)
     }
-    if (prof.copy(timestamp = 0L) != p.copy(timestamp = 0L)){
+    warn("comparing: %s => %s".format(orig,prof))
+    if (prof.name != orig.name || prof.attributes != orig.attributes){
+      warn("notifying other actors of this new one: %s".format(prof))
       MeTLProfileActorManager ! prof
       MeTLAccountActorManager ! prof
     }
@@ -583,17 +588,20 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
   )
   override def lowPriority = {
     case p:Profile if Globals.currentProfile.is.id == p.id => {
+      println("profile received and it's current: %s".format(p))
       partialUpdate(
-        busCall(RECEIVE_ACTIVE_PROFILE,renderProfile(p))
-      )
-      if (p.id == thisProfile.id){
-        partialUpdate(
-          busCall(RECEIVE_PROFILE,renderProfile(thisProfile)) &
-          busCall(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id)))
-        )
-      }
+        busCall(RECEIVE_ACTIVE_PROFILE,renderProfile(p)) &
+        { if (p.id == thisProfile.id){
+            internalProfile = internalProfile.map(_p => p)
+            busCall(RECEIVE_PROFILE,renderProfile(thisProfile)) &
+            busCall(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id)))
+          } else {
+            Noop
+          }
+        })
     }
     case p:Profile if thisProfile.id == p.id => {
+      println("profile received and it's this one: %s".format(p))
       partialUpdate(
         busCall(RECEIVE_PROFILE,renderProfile(thisProfile)) &
         busCall(RECEIVE_SESSION_HISTORY,Extraction.decompose(serverConfig.getSessionsForProfile(thisProfile.id)))
