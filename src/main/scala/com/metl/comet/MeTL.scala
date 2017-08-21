@@ -523,7 +523,7 @@ class MeTLAccount extends MeTLActorBase[MeTLAccount]{
     case p:Profile if Globals.availableProfiles.is.exists(_.id == p.id) => {
       partialUpdate(busCall(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _))) & {
         if (serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2 == p.id){
-          busCall(RECEIVE_ACTIvE_PROFILE,renderProfile(p))
+          busCall(RECEIVE_ACTIVE_PROFILE,renderProfile(p))
           busCall(RECEIVE_DEFAULT_PROFILE,JString(p.id))
         } else {
           Noop
