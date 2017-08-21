@@ -14,7 +14,7 @@ function loadSlide(jid){
     moveToSlide(jid.toString());
 }
 
-function receiveHistory(json,incCanvasContext,afterFunc){
+MeTLBus.subscribe("receiveHistory","historyReader",function(json,incCanvasContext,afterFunc){
     try{
         var canvasContext = incCanvasContext == undefined ? boardContext : incCanvasContext;
         var historyDownloadedMark, prerenderInkMark, prerenderImageMark, prerenderHighlightersMark,prerenderTextMark,imagesLoadedMark,renderMultiWordMark, historyDecoratorsMark, blitMark;
@@ -145,7 +145,7 @@ function receiveHistory(json,incCanvasContext,afterFunc){
     catch(e){
         console.log("receiveHistory exception",e);
     }
-}
+});
 
 var lineDrawingThreshold = 25;
 function incorporateBoardBounds(bounds){

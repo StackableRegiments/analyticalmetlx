@@ -309,9 +309,9 @@ function textReceived(t){
         console.log("textReceived exception:",e);
     }
 }
-function receiveMeTLStanza(stanza){
-    MeTLBus.call("stanzaReceived",[stanza]);
-}
+MeTLBus.subscribe("receiveMeTLStanza","board.js:312",function(stanza){
+		MeTLBus.call("stanzaReceived",[stanza]);
+});
 function actOnReceivedStanza(stanza){
     try{
         if(stanza.type in stanzaHandlers){

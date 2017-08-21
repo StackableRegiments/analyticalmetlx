@@ -41,20 +41,19 @@ var Profiles = (function(){
 	var attachProfileUpdatedFunc = function(newFunc){
 		onProfileUpdatedFuncs.push(newFunc);
 	};
+
+	MeTLBus.subscribe("receiveProfile","profiles",function(profile){ //invoked by Lift
+		receiveProfileFunc(profile);
+	});
+	MeTLBus.subscribe("receiveProfiles","profiles",function(profiles){ //invoked by Lift
+		receiveProfilesFunc(profiles);
+	});
 	return {
 		getCurrentProfile:getCurrentProfileFunc,
 		getAllKnownProfiles:getAllKnownProfilesFunc,
 		getProfileForId:getProfileForIdFunc,
-		receiveProfile:receiveProfileFunc,
-		receiveProfiles:receiveProfilesFunc,
 		getUsernameFor:getUsernameForFunc,
 		attachProfileUpdated:attachProfileUpdatedFunc
 	};
 })();
 
-function receiveProfile(profile){ //invoked by Lift
-	Profiles.receiveProfile(profile);
-};
-function receiveProfiles(profiles){ //invoked by Lift
-	Profiles.receiveProfiles(profiles);
-}

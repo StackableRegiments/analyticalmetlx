@@ -28,6 +28,7 @@ object JNum{
 
 abstract class StronglyTypedJsonActor extends CometActor with CometListener with Logger {
 	protected val functionDefinitions:List[ClientSideFunction]
+  protected def serverResponse(v:JValue):JsCmd = Call("serverResponse",v)
   case class AsyncFunctionRequest(name:String, args:List[String],serverSideFunc:List[JValue]=>List[JValue],returnResultFunction:Box[String],returnArguments:Boolean,params:List[JValue],bonusParams:List[JValue],start:Long){}
   object backendActor extends LiftActor {
     override def messageHandler = {
@@ -43,7 +44,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
         }
         val end = new java.util.Date().getTime()
         resultFunc.foreach(rrf => {
-          val returnCall:JsCmd = Call("serverResponse",JObject({
+          val returnCall:JsCmd = serverResponse(JObject({
             exceptionOrResult match {
               case Right((response,params,bonusParams)) => {
                 JField("bonusArguments",JArray(bonusParams)) :: bonusParams.reverse.headOption.toList.map(ins => JField("instant",ins)) ::: {
@@ -105,7 +106,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
           }
         }
         val end = new java.util.Date().getTime()
-        val returnCall = Call("serverResponse",JObject({
+        val returnCall = serverResponse(JObject({
           exceptionOrResult match {
             case Right((responses,params,bonusParams)) => {
               JField("bonusArguments",JArray(bonusParams)) :: bonusParams.reverse.headOption.toList.map(ins => JField("instant",ins)) ::: {
@@ -143,7 +144,7 @@ abstract class StronglyTypedJsonActor extends CometActor with CometListener with
         case e:Exception => {
           val end = new java.util.Date().getTime()
           error("Exception in ClientSideFunc::%s(%s) => %s\r\n%s".format(name,args.mkString(","),e.getMessage,ExceptionUtils.getStackTraceAsString(e)))
-          Call("serverResponse",JObject(
+          serverResponse(JObject(
             List(
               JField("command",JString(name)),
               JField("duration",JInt(end - start)),

@@ -865,6 +865,74 @@ var Conversations = (function(){
     MeTLBus.subscribe("conversationDetailsReceived","Conversations",actOnConversationDetails);
     MeTLBus.subscribe("currentSlideJidReceived","Conversations",actOnCurrentSlideJidReceived);
     MeTLBus.subscribe("currentConversationJidReceived","Conversations",actOnCurrentConversationJidReceived);
+
+		//from LIFT
+		MeTLBus.subscribe("receiveSyncMove","conversations.js",function(jid){
+			if(Conversations.getIsSyncedToTeacher() || Conversations.shouldModifyConversation()){
+					MeTLBus.call("syncMoveReceived",[jid]);
+			}
+		});
+		MeTLBus.subscribe("receiveCurrentConversation","conversations",function(jid){
+				MeTLBus.call("currentConversationJidReceived",[jid]);
+		});
+		MeTLBus.subscribe("receiveCurrentSlide","conversations",function(jid){
+				MeTLBus.call("currentSlideJidReceived",[jid]);
+		});
+		MeTLBus.subscribe("receiveConversationDetails","conversations",function(details){
+				MeTLBus.call("conversationDetailsReceived",[details]);
+		});
+		MeTLBus.subscribe("receiveNewConversationDetails","conversations",function(details){
+				MeTLBus.call("newConversationDetailsReceived",[details]);
+		});
+		MeTLBus.subscribe("receiveConversations","conversations",function(listOfConversations){
+				MeTLBus.call("conversationsReceived",[listOfConversations]);
+		});
+		MeTLBus.subscribe("receiveAttendance","conversations",function(attendances){
+				MeTLBus.call("attendanceReceived",[attendances])
+		});
+		MeTLBus.subscribe("receiveGroupsProviders","conversations",function(providers){
+				MeTLBus.call("groupProvidersReceived",[providers]);
+		});
+		MeTLBus.subscribe("receiveOrgUnitsFromGroupsProviders","conversations",function(orgUnits){
+				MeTLBus.call("orgUnitsReceived",[orgUnits]);
+				if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
+						_.forEach(orgUnits.orgUnits,function(orgUnit){
+								var ou = _.cloneDeep(orgUnit);
+								delete ou.groupSets;
+								delete ou.members;
+								getGroupSetsForOrgUnit(orgUnits.groupsProvider.storeId,ou,"async");
+						});
+				}
+		});
+		MeTLBus.subscribe("receiveGroupSetsForOrgUnit","conversations",function(groupSets){
+				MeTLBus.call("groupSetsReceived",[groupSets]);
+				if ("groupSets" in groupSets && groupSets.groupSets.length){
+						_.forEach(groupSets.groupSets,function(groupSet){
+								if ("groups" in groupSet && groupSet.groups.length){
+										receiveGroupsForGroupSet({
+												orgUnit:groupSets.orgUnit,
+												groupSet:groupSet,
+												groups:groupSet.groups
+										});
+								} else {
+										var ou = _.cloneDeep(groupSets.orgUnit);
+										delete ou.members;
+										delete ou.groupSets;
+										var gs = _.cloneDeep(groupSet);
+										delete gs.members;
+										delete gs.groups;
+										getGroupsForGroupSet(groupSets.groupsProvider.storeId,ou,gs,"async");
+								}
+						});
+				}
+		});
+		MeTLBus.subscribe("receiveGroupsForGroupSet","conversations",function(groups){
+				MeTLBus.call("groupsReceived",[groups]);
+		});
+		MeTLBus.subscribe("updateThumb","conversations",function(jid){
+				updateThumbnail(jid);
+		});
+
     $(function(){
         $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
             .on("click","#nextSlideButton",goToNextSlideFunction)
@@ -942,75 +1010,6 @@ var Conversations = (function(){
     };
 })();
 
-function updateThumb(jid){
-    Conversations.updateThumbnail(jid);
-}
-
-function unwrap(jqs){
-    return _.map(jqs,"0");
-}
-function receiveCurrentSlide(jid){
-    MeTLBus.call("currentSlideJidReceived",[jid]);
-}
-function receiveCurrentConversation(jid){
-    MeTLBus.call("currentConversationJidReceived",[jid]);
-}
-function receiveConversationDetails(details){
-    MeTLBus.call("conversationDetailsReceived",[details]);
-}
-function receiveSyncMove(jid){
-    if(Conversations.getIsSyncedToTeacher() || Conversations.shouldModifyConversation()){
-        MeTLBus.call("syncMoveReceived",[jid]);
-    }
-}
-function receiveNewConversationDetails(details){
-    MeTLBus.call("newConversationDetailsReceived",[details]);
-}
-function receiveConversations(listOfConversations){
-    MeTLBus.call("conversationsReceived",[listOfConversations]);
-}
-function receiveAttendance(attendances){
-    MeTLBus.call("attendanceReceived",[attendances])
-}
-function receiveGroupsProviders(providers){
-    MeTLBus.call("groupProvidersReceived",[providers]);
-}
-function receiveOrgUnitsFromGroupsProviders(orgUnits){
-    MeTLBus.call("orgUnitsReceived",[orgUnits]);
-    if ("orgUnits" in orgUnits && orgUnits.orgUnits.length){
-        _.forEach(orgUnits.orgUnits,function(orgUnit){
-            var ou = _.cloneDeep(orgUnit);
-            delete ou.groupSets;
-            delete ou.members;
-            getGroupSetsForOrgUnit(orgUnits.groupsProvider.storeId,ou,"async");
-        });
-    }
-}
-function receiveGroupSetsForOrgUnit(groupSets){
-    MeTLBus.call("groupSetsReceived",[groupSets]);
-    if ("groupSets" in groupSets && groupSets.groupSets.length){
-        _.forEach(groupSets.groupSets,function(groupSet){
-            if ("groups" in groupSet && groupSet.groups.length){
-                receiveGroupsForGroupSet({
-                    orgUnit:groupSets.orgUnit,
-                    groupSet:groupSet,
-                    groups:groupSet.groups
-                });
-            } else {
-                var ou = _.cloneDeep(groupSets.orgUnit);
-                delete ou.members;
-                delete ou.groupSets;
-                var gs = _.cloneDeep(groupSet);
-                delete gs.members;
-                delete gs.groups;
-                getGroupsForGroupSet(groupSets.groupsProvider.storeId,ou,gs,"async");
-            }
-        });
-    }
-}
-function receiveGroupsForGroupSet(groups){
-    MeTLBus.call("groupsReceived",[groups]);
-}
 // these will be injected by lift
 //function moveToSlide(jid)
 //function joinConversation(jid)

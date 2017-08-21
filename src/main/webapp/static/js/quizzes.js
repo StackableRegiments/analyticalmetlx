@@ -749,6 +749,8 @@ var Quizzes = (function(){
     MeTLBus.subscribe("onConversationJoin","Quizzes",clearState);
     MeTLBus.subscribe("historyReceived","Quizzes",historyReceivedFunction);
     MeTLBus.subscribe("stanzaReceived","Quizzes",stanzaReceivedFunction);
+		MeTLBus.subscribe("receiveQuizzes","Quizzes",receiveQuizzesFromLiftFunction);
+		MeTLBus.subscribe("receiveQuizResponses","Quizzes",receiveQuizResponsesFromLiftFunction);
     return {
         getCurrentQuiz:function(){return currentQuiz;},
         getAllQuizzes:function(){return quizzes;},

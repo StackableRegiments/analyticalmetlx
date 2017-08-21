@@ -548,7 +548,8 @@ $(function(){
     zoom.click(bounceAnd(function(){
         loadSlidesAtNativeZoom = $(this).is(":checked");
         UserSettings.setUserPref("loadSlidesAtNativeZoom",loadSlidesAtNativeZoom);
-        receiveHistory(boardContent);
+        //receiveHistory(boardContent); // why?  why was this?!?
+				MeTLBus.call("receiveHistory",boardContent);
     }));
     var sizeChooser = function(pref,values){
         var container = $("<div />");

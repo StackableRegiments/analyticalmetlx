@@ -74,6 +74,28 @@ var TokBox = (function(){
     MeTLBus.subscribe("conversationDetailsReceived","TokBox",actOnConversationDetails);
     MeTLBus.subscribe("userBanned","TokBox",actOnConversationDetails);
     MeTLBus.subscribe("userUnbanned","TokBox",actOnConversationDetails);
+		// from LIFT
+		MeTLBus.subscribe("receiveTokBoxSessionToken","TokBox",function(tokenMsg){
+				if ("token" in tokenMsg){
+						receiveTokBoxSessionFunc(tokenMsg);
+				}
+		});
+		MeTLBus.subscribe("removeTokBoxSessions","TokBox",function(sessionIds){
+				//console.log("removeTokBoxSessions",sessionIds);
+				removeSessionsFunc(sessionIds);
+		});
+		MeTLBus.subscribe("receiveTokBoxEnabled","TokBox",function(isEnabled){
+				console.log("TokBox enabled",isEnabled);
+				setTokBoxEnabledStateFunc(isEnabled);
+		})
+		MeTLBus.subscribe("receiveTokBoxArchives","TokBox",function(archives){
+				//console.log("archives:",archives);
+		});
+		MeTLBus.subscribe("receiveTokBoxBroadcast","TokBox",function(broadcast){
+				//TokBox.receiveBroadcast(broadcast);
+		});
+
+
     return {
         getSessions:function(){return sessions;},
         initialize:function(){
@@ -86,10 +108,7 @@ var TokBox = (function(){
             actOnConversationDetails(Conversations.getCurrentConversation());
             initialized = true;
         },
-        receiveTokBoxSession:receiveTokBoxSessionFunc,
         getTokBoxEnabledState:function(){return enabled},
-        setTokBoxEnabledState:setTokBoxEnabledStateFunc,
-        removeSessions:removeSessionsFunc,
         canPublish:function(){ return Conversations.shouldModifyConversation() || publishingPermitted; }
     }
 })();
@@ -444,25 +463,6 @@ var TokBoxSession = function(desc,sessionContainer){
     };
 };
 
-function receiveTokBoxSessionToken(tokenMsg){
-    if ("token" in tokenMsg){
-        TokBox.receiveTokBoxSession(tokenMsg);
-    }
-}
-function removeTokBoxSessions(sessionIds){
-    //console.log("removeTokBoxSessions",sessionIds);
-    TokBox.removeSessions(sessionIds);
-}
-function receiveTokBoxEnabled(isEnabled){
-    console.log("TokBox enabled",isEnabled);
-    TokBox.setTokBoxEnabledState(isEnabled);
-}
-function receiveTokBoxArchives(archives){
-    //console.log("archives:",archives);
-}
-function receiveTokBoxBroadcast(broadcast){
-    //TokBox.receiveBroadcast(broadcast);
-}
 //injected by lift
 //function getTokBoxToken(id){}
 //function getTokBoxArchives(){}

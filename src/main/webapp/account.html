@@ -17,83 +17,85 @@
   <script data-lift="with-resource-id" src="static/js/collections.js"></script>
   <script data-lift="with-resource-id" src="static/js/profile.js"></script>
 	<script type="text/javascript">
-		function augmentArguments(args){
-			args[_.size(args)] = new Date().getTime();
-			return args;
-		}
-		function serverResponse(response){
-			//console.log("serverResponse:",response);
-		}
-		function receiveCurrentProfile(prof){
-			console.log("received current: ",prof);
-			currentProfile = prof.id;
-			reRenderUI();
-		};
-		function receiveProfiles(profiles){
-			availableProfiles = profiles;
-			reRenderUI();
-		};
-		function receiveDefaultProfile(profId){
-			console.log("received default: ",profId);
-			defaultProfile = profId;
-			reRenderUI();
-		};
-		function receiveAccount(acc){
-			console.log("received account: ",acc);
-			account = acc;
-			reRenderUI();
-		};
-		var profileContainer = undefined;
-		var profileTemplate = undefined;
-		var availableProfiles = [];
-		var account = undefined;
-		var currentProfile = undefined;
-		var defaultProfile = undefined;
+		var Account = (function(){
+			var profileContainer = undefined;
+			var profileTemplate = undefined;
+			var availableProfiles = [];
+			var account = undefined;
+			var currentProfile = undefined;
+			var defaultProfile = undefined;
 
-		var reRenderUI = function(){
-			if (account){
-				$("#accountProvider").text(account.accountProvider);
-				$("#accountName").text(account.accountName);
-			}
-			profileContainer.html(_.map(availableProfiles,function(prof){
-				var profId = prof.id;
-				var rootElem = profileTemplate.clone();				
-				rootElem.find(".profileName").text(prof.name);
-				rootElem.find(".profileId").text(profId);
-				rootElem.find(".isDefaultLabel").attr("for",profId + "_isDefaultCheckbox");
-				rootElem.find(".isDefault").attr("id",profId + "_isDefaultCheckbox").prop("checked",profId == defaultProfile).change(function(){
-					var newValue = $(this).is(":checked");
-					if (newValue && profId != defaultProfile){
-						setDefaultProfile(profId);
-					} else {
-						reRenderUI();
-					}
-				});
-				rootElem.find(".isActiveLabel").attr("for",prof.id + "_isActiveCheckbox");
-				rootElem.find(".isActive").attr("id",profId + "_isActiveCheckbox").prop("checked",profId == currentProfile).change(function(){
-					var newValue = $(this).is(":checked");
-					if (newValue && profId != currentProfile){
-						switchToProfile(profId);
-					} else {
-						reRenderUI();
-					}
-				});
-				rootElem.find(".editProfileLink").attr("href","/profile?profileId="+profId);
-				var imageSrc = prof.attributes.avatarUrl;
-				if (imageSrc === undefined || imageSrc == ""){
-					imageSrc = sprintf("http://api.adorable.io/avatars/285/%s.png",profId); 
+			var reRenderUI = function(){
+				if (account){
+					$("#accountProvider").text(account.accountProvider);
+					$("#accountName").text(account.accountName);
 				}
-				rootElem.find(".profileImage").attr("src",imageSrc);
-				return rootElem;
-			}));
-		};
-		$(function(){
-			profileContainer = $("#profileContainer");
-			profileTemplate = profileContainer.find(".profile").clone();
-			profileContainer.empty();
-			reRenderUI();
-			$("#createProfile").bind("click",function(){createProfile();});
-		});
+				profileContainer.html(_.map(availableProfiles,function(prof){
+					var profId = prof.id;
+					var rootElem = profileTemplate.clone();				
+					rootElem.find(".profileName").text(prof.name);
+					rootElem.find(".profileId").text(profId);
+					rootElem.find(".isDefaultLabel").attr("for",profId + "_isDefaultCheckbox");
+					rootElem.find(".isDefault").attr("id",profId + "_isDefaultCheckbox").prop("checked",profId == defaultProfile).change(function(){
+						var newValue = $(this).is(":checked");
+						if (newValue && profId != defaultProfile){
+							setDefaultProfile(profId);
+						} else {
+							reRenderUI();
+						}
+					});
+					rootElem.find(".isActiveLabel").attr("for",prof.id + "_isActiveCheckbox");
+					rootElem.find(".isActive").attr("id",profId + "_isActiveCheckbox").prop("checked",profId == currentProfile).change(function(){
+						var newValue = $(this).is(":checked");
+						if (newValue && profId != currentProfile){
+							switchToProfile(profId);
+						} else {
+							reRenderUI();
+						}
+					});
+					rootElem.find(".editProfileLink").attr("href","/profile?profileId="+profId);
+					var imageSrc = prof.attributes.avatarUrl;
+					if (imageSrc === undefined || imageSrc == ""){
+						imageSrc = sprintf("http://api.adorable.io/avatars/285/%s.png",profId); 
+					}
+					rootElem.find(".profileImage").attr("src",imageSrc);
+					return rootElem;
+				}));
+			};
+			$(function(){
+				profileContainer = $("#profileContainer");
+				profileTemplate = profileContainer.find(".profile").clone();
+				profileContainer.empty();
+				reRenderUI();
+				$("#createProfile").bind("click",function(){createProfile();});
+			});
+			MeTLBus.subscribe("receiveCurrentProfile","account",function(prof){
+				console.log("received current: ",prof);
+				currentProfile = prof.id;
+				reRenderUI();
+			});
+			MeTLBus.subscribe("receiveProfiles","account",function(profiles){
+				availableProfiles = profiles;
+				reRenderUI();
+			});
+			MeTLBus.subscribe("receiveDefaultProfile","account",function(profId){
+				console.log("received default: ",profId);
+				defaultProfile = profId;
+				reRenderUI();
+			});
+			MeTLBus.subscribe("receiveAccount","account",function(acc){
+				console.log("received account: ",acc);
+				account = acc;
+				reRenderUI();
+			});
+			return {
+				getAvailableProfiles:function(){ return availableProfiles; },
+				getCurrentProfile:function(){ return currentProfile; },											 
+				getDefaultProfile:function(){ return defaultProfile; },											 
+				getAccount:function(){ return account; }											 
+			};
+		})();
+
 	</script>
 	<style>
 #accountContainer {

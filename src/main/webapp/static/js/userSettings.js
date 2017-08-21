@@ -57,6 +57,20 @@ var UserSettings = (function(){
     MeTLBus.subscribe("usernameReceived","UserSettings",setUsernameFunction);
     MeTLBus.subscribe("userGroupsReceived","UserSettings",setUserGroupsFunction);
     MeTLBus.subscribe("userOptionsReceived","UserSettings",setUserOptionsFunction);
+		//from LIFT
+		MeTLBus.subscribe("receiveUsername","UserSettings",function(newName){
+			MeTLBus.call("usernameReceived",[newName]);
+		});
+		MeTLBus.subscribe("receiveUserOptions","UserSettings",function(newOptions){
+			MeTLBus.call("userOptionsReceived",[newOptions]);
+		});
+		MeTLBus.subscribe("receiveUserGroups","UserSettings",function(newGroups){
+			MeTLBus.call("userGroupsReceived",[newGroups]);
+		});
+		MeTLBus.subscribe("receiveIsInteractiveUser","UserSettings",function(isInteractive){
+			UserSettings.setIsInteractive(isInteractive);
+		});
+
     return {
         getUsername:function(){return username;},
         getUserOptions:function(){return userOptions;},
@@ -68,20 +82,6 @@ var UserSettings = (function(){
     };
 })();
 
-function receiveUsername(newName){
-    MeTLBus.call("usernameReceived",[newName]);
-}
-
-function receiveUserOptions(newOptions){
-    MeTLBus.call("userOptionsReceived",[newOptions]);
-}
-
-function receiveUserGroups(newGroups){
-    MeTLBus.call("userGroupsReceived",[newGroups]);
-}
-function receiveIsInteractiveUser(isInteractive){
-    UserSettings.setIsInteractive(isInteractive);
-}
 
 // these will be injected by lift
 //function changeUser(newName) //only to be used in staging

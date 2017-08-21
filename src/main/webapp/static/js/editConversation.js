@@ -1,4 +1,3 @@
-
 var Conversation = (function(){
 	var showLinks = true;
 		var profiles = {};
@@ -251,6 +250,29 @@ var Conversation = (function(){
 			showLinks = shouldShowLinks;
 			reRender();
 		};
+
+		MeTLBus.subscribe("receiveUsername","editConversation",function(username){
+			receiveUsernameFunc(username);
+		});
+		MeTLBus.subscribe("receiveUserGroups","editConversation",function(userGroups){
+			receiveUserGroupsFunc(userGroups);
+		});
+		MeTLBus.subscribe("receiveConversationDetails","editConversation",function(details){
+			receiveConversationDetailsFunc(details);
+		});
+			MeTLBus.subscribe("receiveNewConversationDetails","editConversation",function(details){
+			console.log("new conversation received");
+		});
+		MeTLBus.subscribe("receiveShowConversationLinks","editConversation",function(shouldShowLinks){
+			console.log("receivedShowLinks:",shouldShowLinks);
+			setLinkVisibilityFunc(shouldShowLinks);
+		});
+		MeTLBus.subscribe("receiveProfiles","editConversation",function(profiles){ //invoked by Lift
+			receiveProfilesFunc(profiles);
+		});
+		MeTLBus.subscribe("receiveProfile","editConversation",function(profile){ //invoked by Lift
+		});
+
     $(function(){
         reorderContainer = $("#reorderInProgress");
         sharingContainer = $(".conversationSharing");
@@ -327,10 +349,6 @@ var Conversation = (function(){
         reRender();
     });
     return {
-        receiveUserGroups:receiveUserGroupsFunc,
-        receiveUsername:receiveUsernameFunc,
-        receiveConversationDetails:receiveConversationDetailsFunc,
-				receiveProfiles:receiveProfilesFunc,
         getConversationDetails:getConversationDetailsFunc,
         getUsername:getUsernameFunc,
         getUserGroups:getUserGroupsFunc,
@@ -338,32 +356,4 @@ var Conversation = (function(){
     };
 })();
 
-function augmentArguments(args){
-    args[_.size(args)] = new Date().getTime();
-    return args;
-}
 
-function serverResponse(response){
-    //console.log("serverResponse:",response);
-}
-function receiveUsername(username){
-    Conversation.receiveUsername(username);
-}
-function receiveUserGroups(userGroups){
-    Conversation.receiveUserGroups(userGroups);
-}
-function receiveConversationDetails(details){
-    Conversation.receiveConversationDetails(details);
-}
-function receiveNewConversationDetails(details){
-    console.log("new conversation received");
-}
-function receiveShowLinks(shouldShowLinks){
-	console.log("receivedShowLinks:",shouldShowLinks);
-	Conversation.setLinkVisibility(shouldShowLinks);
-}
-function receiveProfiles(profiles){ //invoked by Lift
-	Conversations.receiveProfiles(profiles);
-}
-function receiveProfile(profile){ //invoked by Lift
-}

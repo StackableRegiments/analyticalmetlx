@@ -149,24 +149,24 @@
 				sessionHistory = sh;
 				reRenderUI();
 			};
+			MeTLBus.subscribe("receiveThemes","profile",function(themes){
+				console.log("themes:",themes);
+			});
+			MeTLBus.subscribe("receiveAttendances","profile",function(attendances){
+				console.log("attendances:",attendances);
+			});
+			MeTLBus.subscribe("receiveConversations","profile",function(conversations){
+				console.log("conversations:",conversations);
+			});
+			MeTLBus.subscribe("receiveSessionHistory","profile",function(sh){
+				ProfileUI.receiveSessionHistory(sh);
+			});
 			return {
 				receiveSessionHistory:receiveSessionHistoryFunc,
 				getProfile:function(){return currentProfile;},
 				getSessionHistory:function(){return sessionHistory;}
 			};
 		})();
-		MeTLBus.subscribe("receiveThemes","profile",function(themes){
-			console.log("themes:",themes);
-		});
-		MeTLBus.subscribe("receiveAttendances","profile",function(attendances){
-			console.log("attendances:",attendances);
-		});
-		MeTLBus.subscribe("receiveConversations","profile",function(conversations){
-			console.log("conversations:",conversations);
-		});
-		MeTLBus.subscribe("receiveSessionHistory","profile",function(sh){
-			ProfileUI.receiveSessionHistory(sh);
-		});
 	</script>
 	<style>
 #profileContainer {

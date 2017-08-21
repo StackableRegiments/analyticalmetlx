@@ -6,6 +6,8 @@ var HealthChecker = (function(){
 
     var clockOffset = 0;
 
+		var trackedCalls = {};
+
     var addMeasureFunc = function(category,success,duration){
         if (!(category in store)){
             store[category] = timedQueue(storeLifetime);
@@ -136,6 +138,36 @@ var HealthChecker = (function(){
             }
         });
     };
+		var trackNetworkCallFunc = function(trackingId,startTime){
+			trackedCalls[trackingId] = startTime;
+			console.log("started:",trackingId,startTime);
+			addMeasureFunc("clientQueue",true,_.size(_.keys(trackedCalls)));
+		};
+		MeTLBus.subscribe("serverResponse","healthCheck",function(responseObj){
+			var now = new Date().getTime();
+			HealthChecker.addMeasure(responseObj.command,responseObj.success,responseObj.duration);
+			if ("instant" in responseObj){
+					var startTime = responseObj.instant;
+					var totalTime = now - startTime;
+					var latency = (totalTime - responseObj.duration) / 2;
+					HealthChecker.addMeasure("latency","success" in responseObj && responseObj.success,latency);
+			}
+			if ("success" in responseObj && responseObj.success == false){
+					console.log(responseObj);
+					errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "Error encountered");
+			}
+			if ("bonusArguments" in responseObj && responseObj.bonusArguments.length > 1){
+				var startTime = _.reverse(responseObj.bonusArguments)[0];
+				var trackingId = _.reverse(responseObj.bonusArguments)[1];
+				var matchingElement = trackedCalls[trackingId];
+				if (matchingElement == startTime){
+					delete trackedCalls[trackingId];
+					addMeasureFunc("clientQueue",true,_.size(_.keys(trackedCalls)));
+					console.log("ended:",trackingId,now - startTime);
+				}	
+			}
+		});
+
     $(function(){
         resumeHealthCheckFunc(true);
     });
@@ -152,27 +184,18 @@ var HealthChecker = (function(){
         addMeasure:addMeasureFunc,
         getMeasures:getMeasuresFunc,
         getAggregatedMeasures:getAggregatedMeasuresFunc,
-        describeHealth:describeHealthFunction
+        describeHealth:describeHealthFunction,
+				trackNetworkCall:trackNetworkCallFunc
     }
 })();
 
 var augmentArguments = function(args){
-    args[_.size(args)] = new Date().getTime();
-    return args;
-};
-
-var serverResponse = function(responseObj){
-    HealthChecker.addMeasure(responseObj.command,responseObj.success,responseObj.duration);
-    if ("instant" in responseObj){
-        var startTime = responseObj.instant;
-        var totalTime = new Date().getTime() - startTime;
-        var latency = (totalTime - responseObj.duration) / 2;
-        HealthChecker.addMeasure("latency",responseObj.success,latency);
-    }
-    if ("success" in responseObj && responseObj.success == false){
-        console.log(responseObj);
-        errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "Error encountered");
-    }
+	var trackingId = _.uniqueId();
+	var clientTimestamp = new Date().getTime();
+	args[_.size(args)] = trackingId;
+	args[_.size(args) + 1] = clientTimestamp;
+	HealthChecker.trackNetworkCall(trackingId,clientTimestamp);
+	return args;
 };
 
 var HealthCheckViewer = (function(){

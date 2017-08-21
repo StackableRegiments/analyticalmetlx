@@ -78,3 +78,7 @@ var timedQueue = function(period){
         items:itemsFunc
     };
 };
+
+function unwrap(jqs){
+    return _.map(jqs,"0");
+}

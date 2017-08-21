@@ -21,12 +21,12 @@ var Conversations = (function(){
 
     var searchPermitted = false;
 
-		var receiveProfilesFunc = function(newProfiles){
+		MeTLBus.subscribe("receiveProfiles","conversationSearch",function(newProfiles){
 			profiles = _.merge(profiles,newProfiles);
-		};
-		var receiveProfileFunc = function(profile){
+		});
+		MeTLBus.subscribe("receiveProfile","conversationSearch",function(profile){
 			myProfile = profile;
-		};
+		});
     $(function(){
         var DateField = function(config){
             jsGrid.Field.call(this,config);
@@ -384,43 +384,44 @@ var Conversations = (function(){
     var createFunc = function(title){
         createConversation(title); //injected from Lift
     };
-    var receiveUsernameFunc = function(user){
+
+    MeTLBus.subscribe("receiveUsername","conversationSearch",function(user){
         username = user;
-    };
+    });
     var getUsernameFunc = function(){
         return username;
     };
-    var receiveUserGroupsFunc = function(groups){
+    MeTLBus.subscribe("receiveUserGroups","conversationSearch",function(groups){
         userGroups = groups;
-    };
+    });
     var getUserGroupsFunc = function(){
         return userGroups
     };
-    var receiveConversationDetailsFunc = function(details){
+    MeTLBus.subscribe("receiveConversationDetails","conversationSearch",function(details){
         currentSearchResults.push(details);
         reRender();
-    };
-    var receiveSearchResultsFunc = function(results){
+    });
+    MeTLBus.subscribe("receiveConversations","conversationSearch",function(results){
         // console.log("receiveSearchResults",results);
         currentSearchResults = results;
         permitOneSearch();
         updateQueryParams();
         reRender();
-    };
-    var receiveNewConversationDetailsFunc = function(details){
+    });
+    MeTLBus.subscribe("receiveNewConversationDetails","conversationSearch",function(details){
         details.newConversation = true;
         currentSearchResults.push(details);
         reRender();
-    };
-    var receiveImportDescriptionFunc = function(importDesc){
+    });
+    MeTLBus.subscribe("receiveImportDescription","conversationSearch",function(importDesc){
         currentImports = _.filter(currentImports,function(id){return id.id != importDesc.id;});
         currentImports.push(importDesc);
         reRender();
-    };
-    var receiveImportDescriptionsFunc = function(importDescs){
+    });
+    MeTLBus.subscribe("receiveImportDescriptions","conversationSearch",function(importDescs){
         currentImports = importDescs;
         reRender();
-    };
+    });
     var updateQueryParams = function(){
         // console.log("updating queryparams:",getQueryFunc(),window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
@@ -437,12 +438,12 @@ var Conversations = (function(){
         }
     };
 
-    var receiveQueryFunc = function(q){
+    MeTLBus.subscribe("receiveQuery","conversationSearch",function(q){
         currentQuery = q.toLowerCase().trim();
         updateQueryParams();
         searchBox.val(getQueryFunc());
         reRender();
-    };
+    });
     var getConversationListingFunc = function(){
         return dataGridItems;
     };
@@ -453,14 +454,6 @@ var Conversations = (function(){
         return currentQuery;
     };
     return {
-        receiveUsername:receiveUsernameFunc,
-        receiveUserGroups:receiveUserGroupsFunc,
-        receiveConversationDetails:receiveConversationDetailsFunc,
-        receiveSearchResults:receiveSearchResultsFunc,
-        receiveNewConversationDetails:receiveNewConversationDetailsFunc,
-        receiveImportDescription:receiveImportDescriptionFunc,
-        receiveImportDescriptions:receiveImportDescriptionsFunc,
-        receiveQuery:receiveQueryFunc,
         getConversationListing:getConversationListingFunc,
         getImportListing:getImportListingFunc,
         getQuery:getQueryFunc,
@@ -470,46 +463,5 @@ var Conversations = (function(){
         create:createFunc,
         getUserGroups:function(){return userGroups;},
         getUsername:function(){return username;},
-				receiveProfiles:receiveProfilesFunc,
-				receiveProfile:receiveProfileFunc
     };
 })();
-
-function augmentArguments(args){
-    args[_.size(args)] = new Date().getTime();
-    return args;
-}
-
-function serverResponse(response){ //invoked by Lift
-}
-function receiveUsername(username){ //invoked by Lift
-    Conversations.receiveUsername(username);
-}
-function receiveUserGroups(userGroups){ //invoked by Lift
-    Conversations.receiveUserGroups(userGroups);
-}
-
-function receiveConversationDetails(details){ //invoked by Lift
-    Conversations.receiveConversationDetails(details);
-}
-function receiveConversations(conversations){ //invoked by Lift
-    Conversations.receiveSearchResults(conversations);
-}
-function receiveNewConversationDetails(details){ //invoked by Lift
-    Conversations.receiveNewConversationDetails(details);
-}
-function receiveImportDescription(importDesc){ //invoked by Lift
-    Conversations.receiveImportDescription(importDesc);
-}
-function receiveImportDescriptions(importDescs){ //invoked by Lift
-    Conversations.receiveImportDescriptions(importDescs);
-}
-function receiveQuery(query){ //invoked by Lift
-    Conversations.receiveQuery(query);
-}
-function receiveProfiles(profiles){ //invoked by Lift
-	Conversations.receiveProfiles(profiles);
-}
-function receiveProfile(profile){ //invoked by Lift
-	Conversations.receiveProfile(profile);
-}
