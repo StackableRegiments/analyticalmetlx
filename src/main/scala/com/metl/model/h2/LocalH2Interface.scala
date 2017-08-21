@@ -627,6 +627,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       insertResource(jid,data)
     })
   })
+
   def getProfiles(ids:String *):List[Profile] = Stopwatch.time("H2Interface.getProfiles",{
     H2Profile.findAll(ByList(H2Profile.profileId,ids.toList)).groupBy(_.profileId.get).toList.map(_._2).flatMap(_.sortBy(_.timestamp.get).reverse.headOption.map(serializer.toProfile _))
   })
@@ -653,6 +654,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     val defaultProf = profs.filter(_.default.get).toList.sortBy(_.timestamp.get).reverse.headOption.map(_.profileId.get).getOrElse("")
     (profs.map(_.profileId.get).toList,defaultProf)
   })
+
   protected def toSessionRecord(in:H2SessionRecord):SessionRecord = {
     SessionRecord(
       sid = in.sessionId.get,

@@ -9,6 +9,7 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   protected lazy val history = new PersistedHistory(this,dbInterface)
   protected lazy val conversations = new PersistedConversations(this,dbInterface,onConversationUpdated)
   protected lazy val resourceProvider = new PersistedResourceProvider(this,dbInterface)
+  protected lazy val profileProvider = new CachingProfileProvider(new PersistedProfileProvider(this,dbInterface))
   override def shutdown = {
     dbInterface.shutdown
     super.shutdown
@@ -44,11 +45,11 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def getResource(identifier:String):Array[Byte] = resourceProvider.getResource(identifier)
   override def insertResource(data:Array[Byte]):String = resourceProvider.insertResource(data)
   override def upsertResource(identifier:String,data:Array[Byte]):String = resourceProvider.upsertResource(identifier,data)
-  override def getProfiles(ids:String *):List[Profile] = history.getProfiles(ids:_*)
-  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = history.createProfile(name,attrs)
-  override def updateProfile(id:String,profile:Profile):Profile = history.updateProfile(id,profile)
-  override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = history.getProfileIds(accountName,accountProvider)
-  override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = history.updateAccountRelationship(accountName,accountProvider,profileId,disabled,default)
+  override def getProfiles(ids:String *):List[Profile] = profileProvider.getProfiles(ids:_*)
+  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = profileProvider.createProfile(name,attrs)
+  override def updateProfile(id:String,profile:Profile):Profile = profileProvider.updateProfile(id,profile)
+  override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = profileProvider.getProfileIds(accountName,accountProvider)
+  override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = profileProvider.updateAccountRelationship(accountName,accountProvider,profileId,disabled,default)
   override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = dbInterface.getSessionsForAccount(accountName,accountProvider)
   override def getSessionsForProfile(profileId:String):List[SessionRecord] = dbInterface.getSessionsForProfile(profileId)
   override def updateSession(sessionRecord:SessionRecord):SessionRecord = dbInterface.updateSession(sessionRecord)

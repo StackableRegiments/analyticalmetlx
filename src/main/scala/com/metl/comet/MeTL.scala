@@ -129,15 +129,20 @@ trait ReturnToMeTLBus[T <: StronglyTypedJsonActor] extends StronglyTypedJsonActo
   def busCall(queue:String,args:JValue *):Call = Call(METLBUS_CALL,busArgs(queue,args:_*).map(jv => JsExp.jValueToJsExp(jv)):_*)
 }
 
+object MeTLActorBaseHelper {
+  val serverConfig = ServerConfiguration.default
+  val formats = net.liftweb.json.DefaultFormats
+  val serializer = new JsonSerializer(serverConfig)
+}
 
 trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with ProfileJsonHelpers with ConversationFilter {
   self: T =>
 
   import com.metl.view.StatelessHtml
-  protected lazy val serverConfig = ServerConfiguration.default
+  protected implicit val formats = MeTLActorBaseHelper.formats
+  protected lazy val serverConfig = MeTLActorBaseHelper.serverConfig
   override def autoIncludeJsonCode = true
-  private lazy val serializer = new JsonSerializer(serverConfig)
-  protected implicit val formats = net.liftweb.json.DefaultFormats
+  protected lazy val serializer = MeTLActorBaseHelper.serializer
 
   protected lazy val RECEIVE_PROFILE = "receiveProfile"
   protected lazy val RECEIVE_PROFILES = "receiveProfiles"
@@ -169,9 +174,9 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
   protected def jUserGroups = JArray(userGroups.map(eg => Extraction.decompose(eg)))
   protected def jProfile = renderProfile(profile)
   protected def jAccount = JObject(List(
-      JField("accountName",JString(account._1)),
-      JField("accountProvider",JString(account._2))
-    ))
+    JField("accountName",JString(account._1)),
+    JField("accountProvider",JString(account._2))
+  ))
 
   protected def shouldModifyConversation(c:Conversation):Boolean = com.metl.snippet.Metl.shouldModifyConversation(username,c)
   protected def shouldDisplayConversation(c:Conversation):Boolean = com.metl.snippet.Metl.shouldDisplayConversation(c)
@@ -581,21 +586,45 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
   override def lifespan = Globals.searchActorLifespan
 
   override def localSetup = {
-    warn("localSetup for ConversationSearch [%s]".format(name))
+    val s = new Date().getTime
+    warn("localSetup for ConversationSearch [%s] started".format(name))
     query = Some(name.flatMap(nameString => {
       com.metl.snippet.Metl.getQueryFromName(nameString)
     }).getOrElse(Globals.currentProfile.is.name.toLowerCase.trim))
     listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q),true))
+    warn("localSetup for ConversationSearch [%s] (%sms)".format(name,new Date().getTime - s))
     super.localSetup
   }
-  override def render = OnLoad(
-    busCall(RECEIVE_USERNAME,jUsername) &
-    busCall(RECEIVE_PROFILE,renderProfile(Globals.currentProfile.is)) &
-    busCall(RECEIVE_USER_GROUPS,jUserGroups) &
-    busCall(RECEIVE_QUERY,JString(query.getOrElse(""))) &
-    busCall(RECEIVE_CONVERSATIONS,serializer.fromConversationList(listing.map(c => refreshForeignRelationship(c,username,userGroups)))) &
-    busCall(RECEIVE_IMPORT_DESCRIPTIONS,JArray(imports.map(serialize _)))
-  )
+  override def render = {
+    val s = new Date().getTime
+    var last = s
+    def printSince(m:String):Unit = {
+      val now = new Date().getTime
+      println("%s [%sms]".format(m,now - last))
+      last = now
+    }
+    val importDescriptions = JArray(imports.map(serialize _))
+    printSince("imports")
+    val startingList = listing.map(c => refreshForeignRelationship(c,username,userGroups))
+    printSince("listing, mapped by foreignRelationship (%s)".format(startingList.length))
+    val serList = serializer.fromConversationList(startingList)
+    printSince("listing, serialized")
+    val thisProfile = renderProfile(Globals.currentProfile.is)
+    printSince("profile, serialized")
+    val thisGroups = jUserGroups
+    printSince("groups, serialized")
+    val cmd = OnLoad(
+      busCall(RECEIVE_USERNAME,jUsername) &
+      busCall(RECEIVE_PROFILE,thisProfile) &
+      busCall(RECEIVE_USER_GROUPS,thisGroups) &
+      busCall(RECEIVE_QUERY,JString(query.getOrElse(""))) &
+      busCall(RECEIVE_CONVERSATIONS,serList) &
+      busCall(RECEIVE_IMPORT_DESCRIPTIONS,importDescriptions)
+    )
+    val end = new Date().getTime
+    warn("render for ConversationSearch (%sms)".format(end - s))
+    cmd
+  }
   protected def serialize(id:ImportDescription):JValue = Extraction.decompose(id)
 
   protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q || in.jid.toString == q).getOrElse(false)
@@ -997,10 +1026,11 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      List(JString(RECEIVE_CONVERSATION_DETAILS),serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
         case _ => c
-      },username,userGroups)))
+      },username,userGroups))
+      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL)),
     ClientSideFunction("addImageSlideToConversationAtIndex",List("jid","index","resourceId","caption"),(args) => {
       val jid = getArgAsString(args(0))
@@ -1009,7 +1039,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val captionArg = getArgAsJValue(args(3))
       val caption = serializer.toMeTLMultiWordText(captionArg)
       val c = serverConfig.detailsOfConversation(jid)
-      List(JString(RECEIVE_CONVERSATION_DETAILS),serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1026,7 +1056,8 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           newC
         }
         case _ => c
-      },username,userGroups)))
+      },username,userGroups))
+      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL)),
 
     ClientSideFunction("addSubmissionSlideToConversationAtIndex",List("jid","index","submissionId"),(args) => {
@@ -1034,7 +1065,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val index = getArgAsInt(args(1))
       val submissionId = getArgAsString(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      List(JString(RECEIVE_CONVERSATION_DETAILS),serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1051,14 +1082,15 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           newC
         }
         case _ => c
-      },username,userGroups)))
+      },username,userGroups))
+      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL)),
     ClientSideFunction("addQuizViewSlideToConversationAtIndex",List("jid","index","quizId"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val quizId = getArgAsString(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      List(JString(RECEIVE_CONVERSATION_DETAILS),serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1083,14 +1115,15 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           newC
         }
         case _ => c
-      },username,userGroups)))
+      },username,userGroups))
+      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL)),
     ClientSideFunction("addQuizResultsViewSlideToConversationAtIndex",List("jid","index","quizId"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val quizId = getArgAsString(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      List(JString(RECEIVE_CONVERSATION_DETAILS),serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1135,13 +1168,14 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           newC
         }
         case _ => c
-      },username,userGroups)))
+      },username,userGroups))
+      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv) 
     },Full(METLBUS_CALL)),
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      List(JString(RECEIVE_CONVERSATION_DETAILS),serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
           (newSlides.arr.length == c.slides.length) match {
             case true => serverConfig.reorderSlidesOfConversation(c.jid.toString,newSlides.arr.map(i => serializer.toSlide(i)).toList)
@@ -1149,17 +1183,18 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           }
         }
         case _ => c
-      },username,userGroups)))
+      },username,userGroups))
+      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv) 
     },Full(METLBUS_CALL)),
     ClientSideFunction("getQuizzesForConversation",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val quizzes = getQuizzesForConversation(jid).map(q => serializer.fromMeTLQuiz(q)).toList
-      List(JString(RECEIVE_QUIZZES),JArray(quizzes))
+      busArgs(RECEIVE_QUIZZES,JArray(quizzes))
     },Full(METLBUS_CALL)),
     ClientSideFunction("getResponsesForQuizInConversation",List("conversationJid","quizId"),(args) => {
       val jid = getArgAsString(args(0))
       val quizId = getArgAsString(args(1))
-      List(JString(RECEIVE_QUIZ_RESPONSES),JArray(getQuizResponsesForQuizInConversation(jid,quizId).map(q => serializer.fromMeTLQuizResponse(q)).toList))
+      busArgs(RECEIVE_QUIZ_RESPONSES,JArray(getQuizResponsesForQuizInConversation(jid,quizId).map(q => serializer.fromMeTLQuizResponse(q)).toList))
     },Full(METLBUS_CALL)),
     ClientSideFunction("answerQuiz",List("conversationJid","quizId","chosenOptionName"),(args) => {
       val conversationJid = getArgAsString(args(0))
@@ -1170,14 +1205,14 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       Nil
     },Empty),
     ClientSideFunction("getGroupsProviders",Nil,(args) => {
-      List(JString("receiveGroupsProviders"),JObject(List(
+      busArgs("receiveGroupsProviders",JObject(List(
         JField("groupsProviders",JArray(Globals.getGroupsProviders.filter(_.canQuery).map(gp => JObject(List(JField("storeId",JString(gp.storeId)),JField("displayName",JString(gp.name)))))))
       )))
     },Full(METLBUS_CALL)),
     ClientSideFunction("getOrgUnitsFromGroupProviders",List("storeId"),(args) => {
       val sid = getArgAsString(args(0))
       val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
-      List(JString("receiveOrgUnitsFromGroupsProviders"),JObject(List(
+      busArgs("receiveOrgUnitsFromGroupsProviders",JObject(List(
         JField("groupsProvider",gp),
         JField("orgUnits",JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
           gp.getGroupsFor(Globals.casState.is).map(g => Extraction.decompose(g))
@@ -1199,7 +1234,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
         gp.getGroupSetsFor(orgUnit,members).map(gs => Extraction.decompose(gs))
       }).toList)
       val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
-      List(JString("receiveGroupSetsForOrgUnit"),JObject(List(
+      busArgs("receiveGroupSetsForOrgUnit",JObject(List(
         JField("groupsProvider",gp),
         JField("orgUnit",orgUnitJValue),
         JField("groupSets",groupSets)
@@ -1222,7 +1257,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
         gp.getGroupsFor(orgUnit,groupSet,members).map(gs => Extraction.decompose(gs))
       }).toList)
       val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
-      List(JString("receiveGroupsForGroupSet"),JObject(List(
+      busArgs("receiveGroupsForGroupSet",JObject(List(
         JField("groupsProvider",gp),
         JField("orgUnit",orgUnitJValue),
         JField("groupSet",groupSetJValue),

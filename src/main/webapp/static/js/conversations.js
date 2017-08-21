@@ -930,7 +930,7 @@ var Conversations = (function(){
 				MeTLBus.call("groupsReceived",[groups]);
 		});
 		MeTLBus.subscribe("updateThumb","conversations",function(jid){
-				updateThumbnail(jid);
+				updateThumbnailFor(jid);
 		});
 
     $(function(){

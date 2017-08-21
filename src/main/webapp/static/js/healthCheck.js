@@ -157,8 +157,10 @@ var HealthChecker = (function(){
 					errorAlert(sprintf("error in %s",responseObj.command),responseObj.response || "Error encountered");
 			}
 			if ("bonusArguments" in responseObj && responseObj.bonusArguments.length > 1){
-				var startTime = _.reverse(responseObj.bonusArguments)[0];
-				var trackingId = _.reverse(responseObj.bonusArguments)[1];
+				var reversed = _.reverse(responseObj.bonusArguments);
+				var startTime = reversed[0];
+				var trackingId = reversed[1];
+				console.log("startTime, trackingId",reversed,startTime,trackingId);
 				var matchingElement = trackedCalls[trackingId];
 				if (matchingElement == startTime){
 					delete trackedCalls[trackingId];
@@ -185,12 +187,15 @@ var HealthChecker = (function(){
         getMeasures:getMeasuresFunc,
         getAggregatedMeasures:getAggregatedMeasuresFunc,
         describeHealth:describeHealthFunction,
-				trackNetworkCall:trackNetworkCallFunc
+				trackNetworkCall:trackNetworkCallFunc,
+				getCurrentQueue:function(){
+					return _.clone(trackedCalls);
+				}
     }
 })();
 
 var augmentArguments = function(args){
-	var trackingId = _.uniqueId();
+	var trackingId = _.uniqueId().toString();
 	var clientTimestamp = new Date().getTime();
 	args[_.size(args)] = trackingId;
 	args[_.size(args) + 1] = clientTimestamp;
