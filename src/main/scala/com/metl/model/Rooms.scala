@@ -69,8 +69,8 @@ object RoomMetaDataUtils {
       case List("global") => GlobalRoom(server)
       case List("c",jid,"t",time) => ConversationRoom(server,incJid)
       case List("s",jid,"t",time) => SlideRoom(server,incJid)
-      //case List("c",jid,"t",time,user) => ConversationRoom(
-      case List("s",jid,"t",time,user) => PrivateSlideRoom(server,"s_%s_t_%s_".format(jid,time),user)
+      //case List("c",jid,"t",time,"p",user) => ConversationRoom(server,"c_%s_t_%s_".format(jid,time),"p_%s".format(user))
+      case List("s",jid,"t",time,"p",user) => PrivateSlideRoom(server,"s_%s_t_%s_".format(jid,time),"p_%s".format(user))
       case List("u",user) => PersonalChatRoom(server,incJid)
       case _ => UnknownRoom
     }
@@ -92,7 +92,7 @@ class HistoryCachingRoomProvider(configName:String,idleTimeout:Option[Long]) ext
     val b = new java.util.Date().getTime - start
     r.localSetup
     val c = new java.util.Date().getTime - start
-    info("created room %s (%s, %s, %s) %s".format(room,a,b,c,roomDefinition))
+    warn("created room %s (%s, %s, %s) %s".format(room,a,b,c,roomDefinition))
     r
   })
   override def removeMeTLRoom(room:String) = Stopwatch.time("Rooms.removeMeTLRoom(%s)".format(room),{
@@ -529,7 +529,9 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
           val relatedConversations = config.getConversationsForSlideId(s.getJid)
           println("updating snapshot for %s to %s".format(roomMetaData,relatedConversations))
           relatedConversations.foreach(cJid => {
-            MeTLXConfiguration.getRoom(cJid,configName,ConversationRoom(config.name,cJid)) ! UpdateThumb(history.jid)
+            if (MeTLXConfiguration.checkRoom(cJid,configName)){
+              MeTLXConfiguration.getRoom(cJid,configName,ConversationRoom(config.name,cJid)) ! UpdateThumb(history.jid)
+            }
           })
         }
         case _ => {}

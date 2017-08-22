@@ -72,7 +72,7 @@ class Metl extends Logger {
     conversationSearch()
   }
   def conversationSummary(conversationJid:String):String = {
-    "/conversation?conversationJid=%s&unique=true".format(conversationJid)
+    "/conversationSummary?conversationJid=%s&unique=true".format(conversationJid)
   }
   def editConversation(conversationJid:String):String = {
     "/editConversation?conversationJid=%s&unique=true".format(conversationJid)

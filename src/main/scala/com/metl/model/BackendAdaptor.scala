@@ -423,6 +423,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     info(configs)
   }
   def listRooms(configName:String):List[MeTLRoom] = configs(configName)._2.list
+  def checkRoom(jid:String,configName:String):Boolean = configs(configName)._2.exists(jid)
   def getRoom(jid:String,configName:String):MeTLRoom = getRoom(jid,configName,RoomMetaDataUtils.fromJid(jid),false)
   def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData):MeTLRoom = getRoom(jid,configName,roomMetaData,false)
   def getRoom(jid:String,configName:String,roomMetaData:RoomMetaData,eternal:Boolean):MeTLRoom = {
