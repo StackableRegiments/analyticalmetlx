@@ -554,8 +554,10 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     }
   })
   override def getSnapshot(size:RenderDescription) = {
+    val s = new java.util.Date().getTime()
+    warn("%s.getSnapshot started: %s".format(roomMetaData,size))
     showInterest
-    snapshots.get(size).getOrElse({
+    val result = snapshots.get(size).getOrElse({
       roomMetaData match {
         case s:SlideRoom => {
           slideRenderer.render(getHistory,size,"presentationSpace")
@@ -565,6 +567,9 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
         }
       }
     })
+    val e = new java.util.Date().getTime()
+    warn("%s.getSnapshot completed: %s (%sms)".format(roomMetaData,size,e - s))
+    result
   }
   override def getThumbnail = {
     getSnapshot(Globals.ThumbnailSize)

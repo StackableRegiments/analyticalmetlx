@@ -141,7 +141,7 @@ var Conversations = (function(){
             noDataContent: "No conversations match your query",
             rowClick:function(obj){
                 if ("jid" in obj.item && !("importing" in obj.item)){
-                    window.location.href = sprintf("/board?conversationJid=%s&unique=true",obj.item.jid);
+                    window.location.href = sprintf("/conversationSummary?conversationJid=%s&unique=true",obj.item.jid);
                 }
             },
             controller: {

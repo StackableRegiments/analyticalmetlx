@@ -25,11 +25,15 @@ resolvers ++= Seq(
 
 seq(webSettings :_*)
 
-startScriptJettyVersion in Compile := "9.2.10.v20150310"
+val jettyVersion = "9.4.6.v20170531"
 
-startScriptJettyChecksum := "45b03a329990cff2719d1d7a1d228f3b7f6065e8"
+val jettyChecksum = "4a1d73ee8e6818bda4943e64e6db1b5d"
 
-startScriptJettyURL in Compile <<= (startScriptJettyVersion in Compile) { (version) => "http://refer.adm.monash.edu/jetty-distribution-" + version + ".zip" }
+startScriptJettyVersion in Compile := jettyVersion
+
+startScriptJettyChecksum := jettyChecksum
+
+startScriptJettyURL in Compile <<= (startScriptJettyVersion in Compile) { (version) => "http://central.maven.org/maven2/org/eclipse/jetty/jetty-distribution/%s/jetty-distribution-%s.zip".format(version,version) }
 
 startScriptJettyContextPath := "/"
 
@@ -50,7 +54,6 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
-  val jettyVersion = "9.3.10.v20160621"
   Seq(
     //"org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
     //"org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config

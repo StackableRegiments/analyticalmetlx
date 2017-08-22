@@ -97,6 +97,7 @@ class Boot extends Logger {
       Menu(Loc("Course activity","activity" :: Nil,"Course activity")),
       Menu(Loc("Profile","profile" :: Nil,"Profile")),
       Menu(Loc("Account","account" :: Nil,"Account")),
+      Menu(Loc("ConversationSummary","conversationSummary" :: Nil,"Conversation Summary")),
       //WebMeTL
       Menu(Loc("Conversation Search","conversationSearch" :: Nil,"Conversation Search",Hidden)),
       Menu(Loc("Conversation","conversation" :: Nil,"Conversation",Hidden)),

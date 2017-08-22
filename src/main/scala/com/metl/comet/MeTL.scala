@@ -95,6 +95,13 @@ object MeTLEditConversationActorManager extends LiftActor with ListenerManager w
     case _ => warn("MeTLEditConversationActorManager received unknown message")
   }
 }
+object ConversationSummaryActorManager extends LiftActor with ListenerManager with Logger {
+  def createUpdate = HealthyWelcomeFromRoom
+  override def lowPriority = {
+    case m:MeTLCommand => sendListenersMessage(m)
+    case _ => warn("ConversationSummaryActorManager received unknown message")
+  }
+}
 
 trait ConversationFilter {
   protected def refreshForeignRelationship(c:Conversation,me:String,myGroups:List[OrgUnit]):Conversation = {
@@ -774,6 +781,59 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
       })
     }
     case _ => warn("MeTLEditConversationActor received unknown message")
+  }
+}
+
+class ConversationSummaryActor extends MeTLActorBase[ConversationSummaryActor] {
+  import com.metl.view._
+  
+  override lazy val functionDefinitions = List(
+    CommonFunctions.getAccount,
+    CommonFunctions.getProfiles,
+    CommonFunctions.getDefaultProfile,
+    CommonFunctions.getActiveProfile,
+    CommonFunctions.getProfilesById,
+    CommonFunctions.reorderSlidesOfConversation,
+    CommonFunctions.deleteConversation,
+    CommonFunctions.renameConversation,
+    CommonFunctions.changeSubjectOfConversation,
+    CommonFunctions.addSlideToConversationAtIndex,
+    CommonFunctions.duplicateSlideById,
+    CommonFunctions.duplicateConversation,
+    CommonFunctions.changeExposureOfSlide
+  )
+  override def registerWith = ConversationSummaryActorManager
+  override def lifespan = Globals.editConversationActorLifespan
+  protected var conversation:Option[Conversation] = None
+  override def localSetup = {
+    super.localSetup
+    name.foreach(nameString => {
+      warn("localSetup for [%s]".format(name))
+      conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => refreshForeignRelationship(serverConfig.detailsOfConversation(jid.toString),username,userGroups))
+    })
+  }
+
+  override def render = {
+    OnLoad(conversation.filter(c => shouldDisplayConversation(c)).map(c => {
+      Call("getAccount") &
+      Call("getProfiles") &
+      Call("getDefaultProfile") &
+      Call("getActiveProfile") &
+      busCall(RECEIVE_USERNAME,jUsername) &
+      busCall(RECEIVE_USER_GROUPS,jUserGroups) &
+      busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(c,username,userGroups)))
+    }).getOrElse(RedirectTo(conversationSearch())))
+  }
+  override def lowPriority = {
+    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") && c.commandParameters.headOption.exists(cid => conversation.exists(_.jid.toString == cid.toString))  => {
+      conversation.foreach(c => {
+        val newConv = refreshForeignRelationship(serverConfig.detailsOfConversation(c.jid.toString),username,userGroups)
+        trace("receivedUpdatedConversation: %s => %s".format(c,newConv))
+        conversation = Some(newConv)
+        reRender
+      })
+    }
+    case _ => warn("ConversationSummaryActor received unknown message")
   }
 }
 

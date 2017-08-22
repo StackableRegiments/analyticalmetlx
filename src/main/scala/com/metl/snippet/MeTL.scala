@@ -51,28 +51,31 @@ class Metl extends Logger {
     "/board?conversationJid=%s&slideId=%s&showTools=false".format(conversationJid,slideId)
   }
   def thumbnailFor(conversationJid:String,slideId:String):String = {
-    "/thumbnail/%s".format(slideId.toString)
+    "/thumbnail/%s".format(slideId)
   }
   def thumbnailWithPrivateFor(conversationJid:String,slideId:String):String = {
-    "/thumbnailWithPrivate/%s".format(slideId.toString)
+    "/thumbnailWithPrivate/%s".format(slideId)
   }
   def printSlideFor(conversationJid:String,slideId:String):String = {
-    "/printableImage/%s".format(slideId.toString)
+    "/printableImage/%s".format(slideId)
   }
   def printSlideWithPrivateFor(conversationJid:String,slideId:String):String = {
-    "/printableImageWithPrivateFor/%s".format(slideId.toString)
+    "/printableImageWithPrivateFor/%s".format(slideId)
   }
   def remotePluginConversationChooser(ltiToken:String):String = {
     "/remotePluginConversationChooser?ltiToken=%s".format(ltiToken)
   }
   def remotePluginChoseConversation(ltiToken:String,conversationJid:Int):String = {
-    "/brightSpark/remotePluginConversationChosen?ltiToken=%s&conversationJid=%s".format(ltiToken,conversationJid.toString)
+    "/brightSpark/remotePluginConversationChosen?ltiToken=%s&conversationJid=%s".format(ltiToken,conversationJid)
   }
   def noBoard:String = {
     conversationSearch()
   }
+  def conversationSummary(conversationJid:String):String = {
+    "/conversation?conversationJid=%s&unique=true".format(conversationJid)
+  }
   def editConversation(conversationJid:String):String = {
-    "/editConversation?conversationJid=%s&unique=true".format(conversationJid.toString)
+    "/editConversation?conversationJid=%s&unique=true".format(conversationJid)
   }
   def conversationSearch():String = {
     "/conversationSearch?unique=true"
@@ -191,6 +194,7 @@ class Metl extends Logger {
     output
   }
   def specificEditConversation(in:NodeSeq):NodeSeq = {
+    S.param("conversationJid").openOr(S.redirectTo(noBoard))
     val name = generateName(true)
     val clazz = "lift:comet?type=MeTLEditConversationActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
@@ -201,6 +205,14 @@ class Metl extends Logger {
     S.param("conversationJid").openOr(S.redirectTo(noBoard))
     val name = generateName()
     val clazz = "lift:comet?type=MeTLActor&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    //warn("generating comet html: %s".format(output))
+    output
+  }
+  def specificConversationSummary(in:NodeSeq):NodeSeq = {
+    S.param("conversationJid").openOr(S.redirectTo(noBoard))
+    val name = generateName()
+    val clazz = "lift:comet?type=ConversationSummaryActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
     //warn("generating comet html: %s".format(output))
     output
@@ -338,25 +350,32 @@ class Metl extends Logger {
   }
   def header = {
     val locations:List[Tuple2[String,NodeSeq]] = S.uri.split("/").toList.map(_.trim).filterNot(_ == "") match {
-      case "board" :: _args => List(
-        (conversationSearch(),Text("conversationSearch")) 
-      ) :::
-      S.param("conversationJid").map(cj => {
-        (S.param("slideId").map(sj => boardFor(cj,sj)).getOrElse(boardFor(cj)),Text("board"))
-      }).toList
+      case "board" :: _args => {
+        (conversationSearch(),Text("conversationSearch")) ::
+          S.param("conversationJid").toList.flatMap(cj => {
+            (conversationSummary(cj),Text("conversation")) :: 
+            S.param("slideId").map(sj => (boardFor(cj,sj),Text("board"))).toList
+          }).toList
+      }
       case "conversationSearch" :: _args => List(
         (conversationSearch(),Text("conversationSearch"))
       )
+      case "conversationSummary" :: _args => {
+        (conversationSearch(),Text("conversationSearch")) ::
+          S.param("conversationJid").toList.map(cj => {
+            (conversationSummary(cj),Text("conversation"))
+          }).toList
+      }
       case "profile" :: _args => List(
         (S.param("profileId").map(profileId => "/profile?profileId=%s".format(profileId)).getOrElse("/profile"),Text("Profile"))
       )
       case "account" :: _args => List(
         ("/account",Text("Account"))
       )
-      case "editConversation" :: _args => List(
-        (conversationSearch(),Text("conversationSearch")) 
-      ) :::
-      S.param("conversationJid").map(cj => (editConversation(cj),Text("editConversation"))).toList
+      case "editConversation" :: _args => {
+        (conversationSearch(),Text("conversationSearch")) ::
+          S.param("conversationJid").map(cj => (editConversation(cj),Text("editConversation"))).toList
+      }
       case _ => Nil
     }
     "#breadcrumbs" #> {
