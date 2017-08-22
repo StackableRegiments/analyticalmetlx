@@ -205,7 +205,7 @@ var Conversations = (function(){
             ctx.fill();
             return c[0].toDataURL();
         })(320,240);
-
+		
         return {
             paint:function(slide,scrollContainer){
                 if(slide){
@@ -238,6 +238,7 @@ var Conversations = (function(){
         }));
     };
     var doIfVisible = function(slide,thumbScroller,func){
+			console.log("doIfVisible:",slide);
         var slidesTop = 0;
         var slidesBottom = thumbScroller.height();
         var slideContainer = thumbScroller.find(sprintf("#slideContainer_%s",slide.id));
@@ -245,15 +246,17 @@ var Conversations = (function(){
         var slideTop = slideContainer.position().top;
         var slideBottom = slideTop + slideContainer.height();
         var visible =  (slideBottom >= slidesTop) && (slideTop <= slidesBottom);
-        if(slidesTop + slidesBottom + slideTop + slideBottom == 0){
+				var containerNotYetLoaded = slideContainer.height() < 30;//slidesTop + slidesBottom + slideTop + slideBottom == 0;
+				console.log("containerNotYetLoaded: ",containerNotYetLoaded,slidesTop,slidesBottom,slideTop,slideBottom);
+        if(containerNotYetLoaded){
             _.delay(function(){
                 doIfVisible(slide,thumbScroller,func);
             },1000);
             visible = false;
-        }
-        else if(visible){
+        } else if(visible){
             func();
-        }
+        } else {
+				}
     };
     var refreshSlideDisplay = function(){
         var slideContainer = $("#slideContainer");
@@ -396,7 +399,6 @@ var Conversations = (function(){
     };
     var actOnConversationDetails = function(details){
         try{
-            console.log("received conversation:",details);
             var oldConversationJid = "";
             if ("jid" in currentConversation){
                 oldConversationJid = currentConversation.jid.toString().toLowerCase();
@@ -429,7 +431,6 @@ var Conversations = (function(){
         MeTLBus.call("onLayoutUpdated");
     };
     var actOnSyncMove = function(jid){
-        console.log("actOn",jid);
         if ((Conversations.getIsSyncedToTeacher() || shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
             if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
                 WorkQueue.enqueue(function(){
@@ -465,12 +466,10 @@ var Conversations = (function(){
         }
     };
     var actOnCurrentConversationJidReceived = function(jid){
-        console.log("currentConversationJid received:",jid);
         targetConversationJid = jid;
         updateLinks();
     };
     var actOnCurrentSlideJidReceived = function(jid){
-        console.log("currentSlideJid received:",jid);
         currentSlide = jid;
         indicateActiveSlide(jid);
         updateLinks();
@@ -816,7 +815,6 @@ var Conversations = (function(){
                     command:"/SYNC_MOVE",
                     parameters:[slideId]
                 };
-                console.log("sending:",newStanza);
                 sendStanza(newStanza);
             }
         }
