@@ -190,32 +190,32 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
   override def createConversation(title:String,author:String):Conversation = {
     val jid = getNewJid
     val now = new java.util.Date()
-    val local = Conversation(config,author,now.getTime,List(Slide(config,author,"%s_%s".format(jid,new java.util.Date().getTime),0)),"unrestricted","",jid,title,now.getTime,Permissions.default(config))
+    val local = Conversation(author,now.getTime,List(Slide(author,"%s_%s".format(jid,new java.util.Date().getTime),0)),"unrestricted","",jid,title,now.getTime,Permissions.default)
     pushConversationToServer(local)
   }
   override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
   override def deleteConversation(jid:String):Conversation = {
     val conv = detailsOf(jid)
     val now = new java.util.Date()
-    val local = Conversation(config,conv.author,now.getTime,conv.slides,"deleted",conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
+    val local = Conversation(conv.author,now.getTime,conv.slides,"deleted",conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def renameConversation(jid:String,newTitle:String):Conversation = {
     val conv = detailsOf(jid)
     val now = new java.util.Date()
-    val local = Conversation(config,conv.author,now.getTime,conv.slides,conv.subject,conv.tag,conv.jid,newTitle,conv.created,conv.permissions)
+    val local = Conversation(conv.author,now.getTime,conv.slides,conv.subject,conv.tag,conv.jid,newTitle,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = {
     val conv = detailsOf(jid)
     val now = new java.util.Date()
-    val local = Conversation(config,conv.author,now.getTime,conv.slides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,newPermissions)
+    val local = Conversation(conv.author,now.getTime,conv.slides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,newPermissions)
     pushConversationToServer(local)
   }
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = {
     val conv = detailsOf(jid)
     val now = new java.util.Date()
-    val local = Conversation(config,conv.author,now.getTime,conv.slides,newSubject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
+    val local = Conversation(conv.author,now.getTime,conv.slides,newSubject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = {
@@ -226,11 +226,11 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
         case i:Int if (i < index) => i
         case i:Int => i + 1
       }
-      Slide(config,s.author,s.id,newIndex,s.defaultHeight,s.defaultWidth,s.exposed,s.slideType)
+      Slide(s.author,s.id,newIndex,s.defaultHeight,s.defaultWidth,s.exposed,s.slideType)
     })
-    val newSlide = Slide(config,conv.author,"%s_%s".format(jid,new java.util.Date().getTime), index)
+    val newSlide = Slide(conv.author,"%s_%s".format(jid,new java.util.Date().getTime), index)
     val now = new java.util.Date()
-    val local = Conversation(config,conv.author,now.getTime,newSlide :: newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
+    val local = Conversation(conv.author,now.getTime,newSlide :: newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = {
@@ -241,17 +241,17 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
         case i:Int if (i < index) => i
         case i:Int => i + 1
       }
-      Slide(config,s.author,s.id,newIndex,s.defaultHeight,s.defaultWidth,s.exposed,s.slideType,List(grouping))
+      Slide(s.author,s.id,newIndex,s.defaultHeight,s.defaultWidth,s.exposed,s.slideType,List(grouping))
     })
-    val newSlide = Slide(config,conv.author,"%s_%s".format(jid,new java.util.Date().getTime), index)
+    val newSlide = Slide(conv.author,"%s_%s".format(jid,new java.util.Date().getTime), index)
     val now = new java.util.Date()
-    val local = Conversation(config,conv.author,now.getTime,newSlide :: newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
+    val local = Conversation(conv.author,now.getTime,newSlide :: newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = {
     val conv = detailsOf(jid)
     val now = new java.util.Date()
-    val local = Conversation(config,conv.author,now.getTime,newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
+    val local = Conversation(conv.author,now.getTime,newSlides,conv.subject,conv.tag,conv.jid,conv.title,conv.created,conv.permissions)
     pushConversationToServer(local)
   }
   override def updateConversation(jid:String,conversation:Conversation):Conversation = {
@@ -273,7 +273,7 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
     remote
   }
   protected def notifyXmpp(newConversation:Conversation) = {
-    val stanza = MeTLCommand(config,newConversation.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(newConversation.jid.toString))
+    val stanza = MeTLCommand(newConversation.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(newConversation.jid.toString))
     trace("conversationUpdater sent message: %s".format(stanza))
     mb.sendStanzaToRoom(stanza)
   }

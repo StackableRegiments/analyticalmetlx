@@ -16,9 +16,10 @@ class MessageBusDefinition(val location:String, val feedbackName:String, val onR
     }
   }
   override def hashCode = (location+feedbackName).hashCode
+  override def toString = "MBD(%s,%s)".format(location,feedbackName)
 }
 
-abstract class MessageBusProvider {
+abstract class MessageBusProvider extends Logger {
   def getMessageBus(definition:MessageBusDefinition):MessageBus
   def releaseMessageBus(definition:MessageBusDefinition):Unit = {}
   def sendMessageToBus(busFilter:MessageBusDefinition => Boolean, message:MeTLStanza):Unit = {}
@@ -39,11 +40,35 @@ abstract class OneBusPerRoomMessageBusProvider extends MessageBusProvider {
 class LoopbackMessageBusProvider extends OneBusPerRoomMessageBusProvider {
   override def createNewMessageBus(definition:MessageBusDefinition) = Stopwatch.time("LoopbackMessageBusProvider",new LoopbackBus(definition,this))
 }
+
+class TappingMessageBusProvider(mbp:MessageBusProvider,upTap:MeTLStanza=>Unit = s => {},downTap:MeTLStanza=>Unit = s => {}) extends MessageBusProvider {
+  override def getMessageBus(definition:MessageBusDefinition):MessageBus = {
+    val newDef = new MessageBusDefinition(definition.location,definition.feedbackName,(s:MeTLStanza) => {
+      try {
+        downTap(s)
+      } catch {
+        case e:Exception => {
+          error("tapbus threw exception: %s".format(e.getMessage),e)
+        }
+      }
+      definition.onReceive(s)
+    },definition.onConnectionLost,definition.onConnectionRegained)
+    warn("creating messageBus from definition: %s => %s".format(definition,newDef))
+    new TabBus(mbp.getMessageBus(newDef),upTap)
+  }
+  override def releaseMessageBus(definition:MessageBusDefinition):Unit = {
+    mbp.releaseMessageBus(definition)
+  }
+  override def sendMessageToBus(busFilter:MessageBusDefinition => Boolean, message:MeTLStanza):Unit = {
+    mbp.sendMessageToBus(busFilter,message)
+  }
+}
+
 object EmptyMessageBusProvider extends MessageBusProvider{
   def getMessageBus(definition:MessageBusDefinition) = EmptyMessageBus
 }
 
-abstract class MessageBus(definition:MessageBusDefinition, creator:MessageBusProvider) {
+abstract class MessageBus(definition:MessageBusDefinition, creator:MessageBusProvider) extends Logger {
   def getDefinition:MessageBusDefinition = definition
   def getCreator:MessageBusProvider = creator
   def sendStanzaToRoom[A <: MeTLStanza](stanza:A,updateTimestamp:Boolean = true):Boolean
@@ -53,19 +78,13 @@ abstract class MessageBus(definition:MessageBusDefinition, creator:MessageBusPro
   def release = creator.releaseMessageBus(definition)
 }
 
-class TabBus(mb:MessageBus) extends MessageBus(mb.getDefinition,mb.getCreator){
-  protected def onMessageToRoom[A <: MeTLStanza](s:A):Unit = {}
-  protected def onMessageFromRoom[A <: MeTLStanza](s:A):Unit = {}
+class TabBus(mb:MessageBus,upTap:MeTLStanza => Unit = s => {}) extends MessageBus(mb.getDefinition,mb.getCreator){
   override def getDefinition:MessageBusDefinition = mb.getDefinition
   override def getCreator:MessageBusProvider = mb.getCreator
   override def sendStanzaToRoom[A <: MeTLStanza](stanza:A,updateTimestamp:Boolean = true):Boolean = {
-    onMessageToRoom(stanza)
+    upTap(stanza)
     mb.sendStanzaToRoom(stanza,updateTimestamp)
-  }
-  override def recieveStanzaFromRoom[A <: MeTLStanza](stanza:A) = {
-    onMessageFromRoom(stanza)
-    mb.recieveStanzaFromRoom(stanza)
-  }
+  } 
   override def notifyConnectionLost = mb.notifyConnectionLost
   override def notifyConnectionResumed = mb.notifyConnectionResumed
   override def release = mb.release

@@ -62,7 +62,6 @@ class MeTLQuizSuite extends FunSuite with GeneratorDrivenPropertyChecks with Bef
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLQuiz]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			id ("eecrole:023409234923"),
 			timestamp (-1L),
@@ -101,7 +100,6 @@ class MeTLQuizSuite extends FunSuite with GeneratorDrivenPropertyChecks with Bef
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLQuiz]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			timestamp (-1L),
 			id ("eecrole:023409234923"),
@@ -155,7 +153,6 @@ class MeTLQuizReponseSuite extends FunSuite with GeneratorDrivenPropertyChecks w
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLQuizResponse]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			id ("eecrole:023409234923"),
 			timestamp (-1L),

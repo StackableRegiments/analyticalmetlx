@@ -42,7 +42,6 @@ class MeTLImageSuite extends FunSuite with GeneratorDrivenPropertyChecks with Be
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLImage]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			timestamp (-1L),
 			tag ("eecrole:223445834582"),
@@ -74,7 +73,6 @@ class MeTLImageSuite extends FunSuite with GeneratorDrivenPropertyChecks with Be
       }
     }
 			genImage should have (
-				server (ServerConfiguration.empty),
 				author ((xml \\ "author").text),
 				target ((xml \\ "target").text),
 				privacy (Privacy.parse((xml \\ "privacy").text)),
@@ -105,7 +103,6 @@ class MeTLImageSuite extends FunSuite with GeneratorDrivenPropertyChecks with Be
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLDirtyImage]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			timestamp (-1L),
 			target ("test"),
@@ -121,7 +118,6 @@ class MeTLImageSuite extends FunSuite with GeneratorDrivenPropertyChecks with Be
           implicit val xml = xmlSerializer.fromMeTLDirtyImage(genDirtyImage)
 
           genDirtyImage should have (
-              server (ServerConfiguration.empty),
               author (queryXml[String]("author")),
               target (queryXml[String]("target")),
               privacy (queryXml[Privacy]("privacy")),

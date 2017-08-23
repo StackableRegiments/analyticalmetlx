@@ -70,7 +70,7 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
       (h.getDeletedCanvasContents should contain (ink))
       h.getDeletedCanvasContents.foreach((undeletedInk:MeTLCanvasContent) => {
         val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2)
-        val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.server,undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
+        val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
         h.addStanza(newUndeletedInk)
         h.addStanza(undeleteMarker)
         (h.getCanvasContents should contain (newUndeletedInk))
@@ -81,7 +81,7 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
   test("add an ink and then delete it with a moveDelta") {
     forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
+      val moveDelta = MeTLMoveDelta(ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
       h.addStanza(moveDelta)
       (h.getCanvasContents should not contain (ink))
@@ -91,14 +91,14 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
   test("add an ink and then delete it with a moveDelta and then undelete it") {
     forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
+      val moveDelta = MeTLMoveDelta(ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
       h.addStanza(moveDelta)
       (h.getCanvasContents should not contain (ink))
       (h.getDeletedCanvasContents should contain (ink))
       h.getDeletedCanvasContents.foreach((undeletedInk:MeTLCanvasContent) => {
         val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2)
-        val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.server,undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
+        val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
         h.addStanza(newUndeletedInk)
         h.addStanza(undeleteMarker)
         (h.getCanvasContents should contain (newUndeletedInk))
@@ -109,14 +109,14 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
   test("add an ink and then delete it with a moveDelta and then undelete it and then filter the history") {
     forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
+      val moveDelta = MeTLMoveDelta(ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
       h.addStanza(moveDelta)
       (h.getCanvasContents should not contain (ink))
       (h.getDeletedCanvasContents should contain (ink))
       h.getDeletedCanvasContents.foreach((undeletedInk:MeTLCanvasContent) => {
         val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2)
-        val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.server,undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
+        val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
         h.addStanza(newUndeletedInk)
         h.addStanza(undeleteMarker)
         val nh = h.filter(c => true)
@@ -130,14 +130,14 @@ class MeTLHistorySuite extends FunSuite with GeneratorDrivenPropertyChecks with 
   test("add an ink and then delete it with a moveDelta and then undelete it and then filter the history and then merge the history") {
     forAll (genInk) { (ink: MeTLInk) =>
       val h = new History("test")
-      val moveDelta = MeTLMoveDelta(ink.server,ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
+      val moveDelta = MeTLMoveDelta(ink.author,ink.timestamp + 1,ink.target,ink.privacy,ink.slide,nextFuncName,0.0,0.0,List(ink.identity),Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,true)
       h.addStanza(ink)
       h.addStanza(moveDelta)
       (h.getCanvasContents should not contain (ink))
       (h.getDeletedCanvasContents should contain (ink))
       h.getDeletedCanvasContents.foreach((undeletedInk:MeTLCanvasContent) => {
         val newUndeletedInk = undeletedInk.generateNewIdentity(nextFuncName).adjustTimestamp(ink.timestamp + 2)
-        val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.server,undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
+        val undeleteMarker = MeTLUndeletedCanvasContent(undeletedInk.author,undeletedInk.timestamp + 1,undeletedInk.target,undeletedInk.privacy,undeletedInk.slide,nextFuncName,"ink",ink.identity,newUndeletedInk.identity)
         h.addStanza(newUndeletedInk)
         h.addStanza(undeleteMarker)
         val nh = h.filter(c => true)

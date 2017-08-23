@@ -46,7 +46,6 @@ class MeTLSubmissionExtractorSuite extends FunSuite with GeneratorDrivenProperty
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLSubmission]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			timestamp (-1L),
 			title ("blah"),
@@ -66,7 +65,6 @@ class MeTLSubmissionExtractorSuite extends FunSuite with GeneratorDrivenProperty
             implicit val xml = xmlSerializer.fromSubmission(genSubmission)
 
             genSubmission should have (
-                server (ServerConfiguration.empty),
                 author (queryXml[String]("author")),
                 slideJid (queryXml[String]("slide")),
                 title (queryXml[String]("title")),

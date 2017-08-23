@@ -60,7 +60,6 @@ class MeTLMoveDeltaSuite extends FunSuite with GeneratorDrivenPropertyChecks wit
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLMoveDelta]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			timestamp (-1L),
 			target ("test"),
@@ -85,7 +84,6 @@ class MeTLMoveDeltaSuite extends FunSuite with GeneratorDrivenPropertyChecks wit
 			val xml = xmlSerializer.fromMeTLMoveDelta(genMoveDelta)
 
 			genMoveDelta should have (
-				server (ServerConfiguration.empty),
 				author ((xml \\ "author").text),
 				target ((xml \\ "target").text),
 				privacy (Privacy.parse((xml \\ "privacy").text)),

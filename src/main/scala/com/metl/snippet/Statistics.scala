@@ -25,9 +25,9 @@ class Statistics extends Logger {
 
   def render: CssBindFunc = {
     "#statisticsButton" #> ajaxButton("Refresh", () => {
-      Call("updateStatistics", JString(createHtmlTable(reportCache.get("enterprise")))).cmd
+      Call("updateStatistics", JString(createHtmlTable(reportCache.get("enterprise").getOrElse(Nil)))).cmd
     }) &
-      "#loaderStats" #> Script(OnLoad(Call("updateStatistics", JString(createHtmlTable(reportCache.get("enterprise")))).cmd))
+      "#loaderStats" #> Script(OnLoad(Call("updateStatistics", JString(createHtmlTable(reportCache.get("enterprise").getOrElse(Nil)))).cmd))
   }
 
   def runQuery(name: String, sql: String, params: List[Any]): List[String] = {

@@ -87,7 +87,7 @@ class ChunkAnalyzer extends Logger with Chunker{
         us.foreach(url =>{
           val identity = "%s@%s:%s".format(url,c.author,room.location)
           if(!alreadyReleased(identity)){
-            room ! LocalToServerMeTLStanza(MeTLChatMessage(room.config, "| mother |", new Date().getTime, nextFuncName, "html",
+            room ! LocalToServerMeTLStanza(MeTLChatMessage("| mother |", new Date().getTime, nextFuncName, "html",
               "<a href='" + url + "' target='_blank'>" + url + "</a>", room.roomMetaData.getJid.toString, Nil))
             alreadyReleased = alreadyReleased + identity
           }

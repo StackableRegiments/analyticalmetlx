@@ -109,7 +109,7 @@ class MeTL2011XmppMultiConn(cf:()=>Tuple2[String,String],r:String,h:String,d:Str
     trace("XMPPMultiConn(%s):onUntypedMessageReceived(%s,%s,%s)".format(this,room,message))
     val targets = subscribedBusses(room).values
     trace("XMPPMultiConn(%s):onUntypedMessageReceived.sendTo(%s)".format(this,targets))
-    targets.foreach(mb => mb.recieveStanzaFromRoom(MeTLCommand(config,"unknown",new java.util.Date().getTime,parts.head,parts.tail.toList)))
+    targets.foreach(mb => mb.recieveStanzaFromRoom(MeTLCommand("unknown",new java.util.Date().getTime,parts.head,parts.tail.toList)))
   }
   override lazy val ignoredTypes = List("metlMetaData")
   override lazy val subscribedTypes = List("ink","textbox","image","dirtyInk","dirtyText","dirtyImage","screenshotSubmission","submission","quiz","quizResponse","command","moveDelta","teacherstatus","attendance").map(item => {
@@ -153,7 +153,7 @@ class MeTL2011XmppConn(cf:()=>Tuple2[String,String],r:String,h:String,d:String,c
   }
   override def onUntypedMessageRecieved(room:String,message:String) = {
     val parts = message.split(" ")
-    bus.recieveStanzaFromRoom(MeTLCommand(config,"unknown",new java.util.Date().getTime,parts.head,parts.tail.toList))
+    bus.recieveStanzaFromRoom(MeTLCommand("unknown",new java.util.Date().getTime,parts.head,parts.tail.toList))
   }
   override lazy val ignoredTypes = List("metlMetaData")
   override lazy val subscribedTypes = List("ink","textbox","image","dirtyInk","dirtyText","dirtyImage","screenshotSubmission","submission","quiz","quizResponse","command","moveDelta","teacherstatus","attendance").map(item => {

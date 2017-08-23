@@ -27,7 +27,6 @@ class MeTLInkSuite extends FunSuite with GeneratorDrivenPropertyChecks with Befo
 			val xml = xmlSerializer.fromMeTLInk(genInk)
 
 			genInk should have (
-				server (ServerConfiguration.empty),
 				author ((xml \\ "author").text),
 				target ((xml \\ "target").text),
 				privacy (Privacy.parse((xml \\ "privacy").text)),
@@ -64,7 +63,6 @@ class MeTLInkSuite extends FunSuite with GeneratorDrivenPropertyChecks with Befo
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLInk]
 
 		result should have(
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			target ("test"),
 			privacy (Privacy.PRIVATE),
@@ -94,7 +92,6 @@ class MeTLInkSuite extends FunSuite with GeneratorDrivenPropertyChecks with Befo
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLDirtyInk]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			timestamp (-1L),
 			target ("test"),
@@ -110,7 +107,6 @@ class MeTLInkSuite extends FunSuite with GeneratorDrivenPropertyChecks with Befo
             implicit val xml = xmlSerializer.fromMeTLDirtyInk(genDirtyInk)
 
             genDirtyInk should have (
-                server (ServerConfiguration.empty),
                 author (queryXml[String]("author")),
                 target (queryXml[String]("target")),
                 privacy (queryXml[Privacy]("privacy")),

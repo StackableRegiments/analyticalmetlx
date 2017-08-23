@@ -495,33 +495,43 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       case _ => {}
     }
   }
-  def getAllConversations:List[Conversation] = H2Conversation.findAll.groupBy(_.jid.get).toList.flatMap(c => {
-    val allForThisJid = c._2
-    val latest = allForThisJid.sortBy(_.lastAccessed.get).reverse.headOption
-    latest.map(l => serializer.toConversation(l))
-  })
+  def getAllConversations:List[Conversation] = {
+    /*
+    H2Conversation.findAll(BySql("""%s = (SELECT MAX(%s) FROM %s subquery WHERE %s = subquery.%s)""".format(H2Conversation.creation.dbColumnName,H2Conversation.creation.dbColumnName,H2Conversation.dbTableName,H2Conversation.jid.dbColumnName,H2Conversation.jid.dbColumnName),IHaveValidatedThisSQL("dave","23/08/2017"))).map(serializer.toConversation _)
+    */
+    H2Conversation.findAll.groupBy(_.jid.get).toList.flatMap(c => {
+      val allForThisJid = c._2
+      val latest = allForThisJid.sortBy(_.lastAccessed.get).reverse.headOption
+      latest.map(l => serializer.toConversation(l))
+    })
+  }
   
   override def getConversationsForSlideId(jid:String):List[String] = getAllConversations.filter(_.slides.exists(_.id == jid)).map(_.jid).toList
   def searchForConversation(query:String):List[Conversation] = getAllConversations.filter(c => c.title.toLowerCase.trim.contains(query.toLowerCase.trim) || c.author.toLowerCase.trim == query.toLowerCase.trim).toList
   def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def detailsOfConversation(jid:String):Conversation = H2Conversation.findAll(By(H2Conversation.jid,jid),OrderBy(H2Conversation.creation,Descending),MaxRows(1)).headOption.map(hc => serializer.toConversation(hc)).getOrElse(Conversation.empty)
-  def getAllSlides:List[Slide] = H2Slide.findAll.groupBy(_.jid.get).toList.flatMap(s => {
+  def getAllSlides:List[Slide] = {
+    /*
+    H2Slide.findAll(BySql("""%s = (SELECT MAX(%s) FROM %s subquery WHERE %s = subquery.%s)""".format(H2Slide.creation.dbColumnName,H2Slide.creation.dbColumnName,H2Slide.dbTableName,H2Slide.id.dbColumnName,H2Slide.id.dbColumnName),IHaveValidatedThisSQL("dave","23/08/2017"))).map(serializer.toSlide _)
+    */
+    H2Slide.findAll.groupBy(_.jid.get).toList.flatMap(s => {
     val allForThisJid = s._2
     val latest = allForThisJid.sortBy(_.creation.get).reverse.headOption
     latest.map(l => serializer.toSlide(l))
   })
+  }
   def detailsOfSlide(jid:String):Slide = H2Slide.findAll(By(H2Slide.jid,jid),OrderBy(H2Slide.creation,Descending),MaxRows(1)).headOption.map(hs => serializer.toSlide(hs)).getOrElse(Slide.empty)
   def generateConversationJid:String = "c_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
   def generateSlideJid:String = "s_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
   def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = {
     val slide = H2Slide.create.slideType(slideType).creation(new java.util.Date().getTime).author(author).jid(generateSlideJid).defaultHeight(540).defaultWidth(720).saveMe
-    Slide(config,slide.author,slide.jid.get,0,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
+    Slide(slide.author,slide.jid.get,0,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
   }
   def createConversation(title:String,author:String):Conversation = {
     val now = new Date()
     val newJid = generateConversationJid
     val slide = createSlide(author).copy(index = 0,exposed = true) 
-    val details = Conversation(config,author,now.getTime,List(slide),"unrestricted","",newJid,title,now.getTime,Permissions.default(config))
+    val details = Conversation(author,now.getTime,List(slide),"unrestricted","",newJid,title,now.getTime,Permissions.default)
     updateConversation(details)
     details
   }
@@ -623,11 +633,18 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   })
 
   def getProfiles(ids:String *):List[Profile] = Stopwatch.time("H2Interface.getProfiles",{
-    H2Profile.findAll(ByList(H2Profile.profileId,ids.toList)).groupBy(_.profileId.get).toList.map(_._2).flatMap(_.sortBy(_.timestamp.get).reverse.headOption.map(serializer.toProfile _))
+    /*
+    val results = H2Profile.findAll(ByList(H2Profile.profileId,ids.toList),BySql("""%s = (SELECT MAX(%s) FROM %s subquery WHERE %s = subquery.%s) GROUP BY %s""".format(H2Profile.timestamp.dbColumnName,H2Profile.timestamp.dbColumnName,H2Profile.dbTableName,H2Profile.profileId.dbColumnName,H2Profile.profileId.dbColumnName,H2Profile.profileId.dbColumnName),IHaveValidatedThisSQL("dave","23/08/2017"))).map(serializer.toProfile _)
+    println("H2GetProfiles(%s) %s => %s".format(ids,results.length, results))
+    */
+    val raw = H2Profile.findAll(ByList(H2Profile.profileId,ids.toList))
+    val results = raw.groupBy(_.profileId.get).toList.map(_._2).flatMap(_.sortBy(_.timestamp.get).reverse.headOption.map(serializer.toProfile _))
+    println("H2GetProfiles(%s) %s => %s".format(ids,raw.length, results))
+    results 
   })
   protected def createProfileId:String = "p_%s".format(nextFuncName)
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = {
-    val newP = Profile(config,new Date().getTime,createProfileId,name,attrs,Nil)
+    val newP = Profile(new Date().getTime,createProfileId,name,attrs,Nil)
     val hp = serializer.fromProfile(newP)
     hp.save
     serializer.toProfile(hp)

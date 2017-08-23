@@ -27,7 +27,6 @@ class MeTLTextExtractorSuite extends FunSuite with GeneratorDrivenPropertyChecks
 			implicit val xml = xmlSerializer.fromMeTLText(genText)
 
 			genText should have (
-				server (ServerConfiguration.empty),
 				author (queryXml[String]("author")),
 				target (queryXml[String]("target")),
 				privacy (queryXml[Privacy]("privacy")),
@@ -76,7 +75,7 @@ class MeTLTextExtractorSuite extends FunSuite with GeneratorDrivenPropertyChecks
 					  </message>
 
 		val result = xmlSerializer.toMeTLData(content)
-		assert(result === MeTLText(ServerConfiguration.empty, "eecrole", -1L, "Hello World!", 100.0, 200.0, 0, 120.0, 300.0, "eecrole:223445834582",
+		assert(result === MeTLText("eecrole", -1L, "Hello World!", 100.0, 200.0, 0, 120.0, 300.0, "eecrole:223445834582",
 			"Underline", "Helvetica", "Bold", 12.0, "Italics", "eecrole:223445834582", "test", Privacy.PRIVATE, "4", Color(255, 255, 0, 0)))
 	}
 
@@ -95,7 +94,6 @@ class MeTLTextExtractorSuite extends FunSuite with GeneratorDrivenPropertyChecks
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLDirtyText]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			timestamp (-1L),
 			target ("test"),
@@ -112,7 +110,6 @@ class MeTLTextExtractorSuite extends FunSuite with GeneratorDrivenPropertyChecks
 			implicit val xml = xmlSerializer.fromMeTLDirtyText(genDirtyText)
 
 			genDirtyText should have (
-              server (ServerConfiguration.empty),
               author (queryXml[String]("author")),
               target (queryXml[String]("target")),
               privacy (queryXml[Privacy]("privacy")),

@@ -53,7 +53,8 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   val name = incomingName
   val host = incomingHost
   val onConversationDetailsUpdated:Conversation=>Unit = onConversationDetailsUpdatedFunc
-  def getMessageBus(d:MessageBusDefinition):MessageBus
+  val messageBusProvider:MessageBusProvider
+  def getMessageBus(d:MessageBusDefinition):MessageBus = messageBusProvider.getMessageBus(d)
   def getHistory(jid:String):History
   def getAllConversations:List[Conversation]
   def getAllSlides:List[Slide]
@@ -152,7 +153,7 @@ object MockData extends ResourceLoader {
       case e:Exception => Failure("could not get resource jpg",Full(e),Empty)
     }
     List(
-      MeTLMultiWordText(c,a,1L,100.0,200.0,200.0,100.0,100.0,"mockTag",textId,t,p,s,List(
+      MeTLMultiWordText(a,1L,100.0,200.0,200.0,100.0,100.0,"mockTag",textId,t,p,s,List(
         MeTLTextWord("test data ",false,false,false,j,black,f,12.0),
         MeTLTextWord("must",true,false,false,j,red,f,10.0),
         MeTLTextWord(" be ",false,false,false,j,green,f,10.0),
@@ -160,21 +161,21 @@ object MockData extends ResourceLoader {
         MeTLTextWord(" and ",false,false,false,j,black,f,8.0),
         MeTLTextWord("small",false,true,false,j,red,f,10.0)
       )),
-      MeTLInk(c,a,2L,1.0,1.0,List(
+      MeTLInk(a,2L,1.0,1.0,List(
         Point(100,250,128),
         Point(300,250,255),
         Point(300,300,128),
         Point(100,300,255),
         Point(100,250,128)
       ),red,8.0,false,t,p,s,inkId + "_not_moved"),
-      MeTLInk(c,a,3L,1.0,1.0,List(
+      MeTLInk(a,3L,1.0,1.0,List(
         Point(100,250,128),
         Point(300,250,255),
         Point(300,300,128),
         Point(100,300,255),
         Point(100,250,128)
       ),black,8.0,false,t,p,s,inkId),
-      MeTLMultiWordText(c,a,4L,100.0,200.0,200.0,100.0,350.0,"mockTag",textId + "_not_moved",t,p,s,List(
+      MeTLMultiWordText(a,4L,100.0,200.0,200.0,100.0,350.0,"mockTag",textId + "_not_moved",t,p,s,List(
         MeTLTextWord("test data ",false,false,false,j,black,f,12.0),
         MeTLTextWord("must",true,false,false,j,red,f,10.0),
         MeTLTextWord(" be ",false,false,false,j,green,f,10.0),
@@ -182,9 +183,9 @@ object MockData extends ResourceLoader {
         MeTLTextWord(" and ",false,false,false,j,black,f,8.0),
         MeTLTextWord("small",false,true,false,j,red,f,10.0)
       )),
-      MeTLImage(c,a,5L,"",Full("mockSource_1"),imageBytes("engineering.jpg"),Empty,200,150,350,100,t,p,s,imageId),
-      MeTLImage(c,a,6L,"",Full("mockSource_1"),imageBytes("engineering.jpg"),Empty,200,150,350,100,t,p,s,imageId + "_not_moved"),
-      MeTLMoveDelta(c,a,7L,t,p,s,mdId,100.0,100.0,
+      MeTLImage(a,5L,"",Full("mockSource_1"),imageBytes("engineering.jpg"),Empty,200,150,350,100,t,p,s,imageId),
+      MeTLImage(a,6L,"",Full("mockSource_1"),imageBytes("engineering.jpg"),Empty,200,150,350,100,t,p,s,imageId + "_not_moved"),
+      MeTLMoveDelta(a,7L,t,p,s,mdId,100.0,100.0,
         List(inkId),
         Nil,
         List(textId),
@@ -205,7 +206,7 @@ object MockData extends ResourceLoader {
 
 object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   val serializer = new PassthroughSerializer
-  override def getMessageBus(d:MessageBusDefinition) = EmptyMessageBus
+  override val messageBusProvider:MessageBusProvider = EmptyMessageBusProvider
   override def getHistory(jid:String) = History.empty
   override def getAllConversations = List.empty[Conversation]
   override def getAllSlides:List[Slide] = List.empty[Slide]
@@ -259,7 +260,7 @@ object EmptyBackendAdaptorConfigurator extends ServerConfigurator{
 
 object FrontendSerializationAdaptor extends ServerConfiguration("frontend","frontend",(c)=>{}){
   val serializer = new GenericXmlSerializer(this)
-  override def getMessageBus(d:MessageBusDefinition) = EmptyMessageBus
+  override val messageBusProvider:MessageBusProvider = EmptyMessageBusProvider
   override def getHistory(jid:String) = History.empty
   override def getAllConversations = List.empty[Conversation]
   override def getAllSlides:List[Slide] = List.empty[Slide]
@@ -311,7 +312,7 @@ object FrontendSerializationAdaptorConfigurator extends ServerConfigurator{
 }
 
 class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.name,sc.host,sc.onConversationDetailsUpdated){
-  override def getMessageBus(d:MessageBusDefinition) = sc.getMessageBus(d)
+  override val messageBusProvider:MessageBusProvider = sc.messageBusProvider
   override def getHistory(jid:String) = sc.getHistory(jid)
   override def getAllConversations = sc.getAllConversations
   override def getAllSlides:List[Slide] = List.empty[Slide]

@@ -146,7 +146,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val name = getStringByName(a,"name")
         val audienceType = getStringByName(a,"type")
         val action = getStringByName(a,"action")
-        Some(Audience(config,domain,name,audienceType,action))
+        Some(Audience(domain,name,audienceType,action))
       } catch {
         case e:Exception => {
           None
@@ -318,12 +318,12 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     case s:String if s == jsonType => net.liftweb.json.parse(i.unhandled)
     case _ => JNull
   }
-  override def toMeTLUnhandledData(i:JValue) = MeTLUnhandledData(config,i.toString,jsonType)
+  override def toMeTLUnhandledData(i:JValue) = MeTLUnhandledData(i.toString,jsonType)
   override def toMeTLUnhandledStanza(i:JValue) = {
     i match {
       case input:JObject => {
         val m = parseJObjForMeTLContent(input,config)
-        MeTLUnhandledStanza(config,m.author,m.timestamp,i.toString,jsonType,m.audiences)
+        MeTLUnhandledStanza(m.author,m.timestamp,i.toString,jsonType,m.audiences)
       }
       case other => MeTLUnhandledStanza.empty(other.toString,jsonType)
     }
@@ -334,7 +334,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case input:JObject => {
         val cc = parseJObjForCanvasContent(input)
         val m = parseJObjForMeTLContent(input,config)
-        MeTLUnhandledCanvasContent(config,m.author,m.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,m.audiences,1.0,1.0,i.toString,jsonType)
+        MeTLUnhandledCanvasContent(m.author,m.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,m.audiences,1.0,1.0,i.toString,jsonType)
       }
       case other => MeTLUnhandledCanvasContent.empty(other.toString,jsonType)
     }
@@ -356,7 +356,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val text = getStringByName(input,"text")
         val origin = getStringByName(input,"origin")
         val location = getStringByName(input,"location")
-        MeTLTheme(config,mc.author,mc.timestamp,location,Theme(mc.author,text,origin),mc.audiences)
+        MeTLTheme(mc.author,mc.timestamp,location,Theme(mc.author,text,origin),mc.audiences)
       }
       case _ => MeTLTheme.empty
     }
@@ -377,7 +377,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val contentType = getStringByName(input,"contentType")
         val context = getStringByName(input,"context")
         val identity = getStringByName(input,"identity")
-        MeTLChatMessage(config,mc.author,mc.timestamp,identity,contentType,content,context,mc.audiences)
+        MeTLChatMessage(mc.author,mc.timestamp,identity,contentType,content,context,mc.audiences)
       }
     }
   })
@@ -401,7 +401,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val url = (input \ "url").extractOpt[String]
         val deleted = getBooleanByName(input,"deleted")
         val bytes = url.map(u => config.getResource(u))
-        MeTLFile(config,mc.author,mc.timestamp,name,id,url,bytes,deleted,mc.audiences)
+        MeTLFile(mc.author,mc.timestamp,name,id,url,bytes,deleted,mc.audiences)
       }
       case _ => MeTLFile.empty
     }
@@ -422,7 +422,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val id = getStringByName(input,"id")
         val url = (input \ "url").extractOpt[String]
         val deleted = getBooleanByName(input,"deleted")
-        MeTLVideoStream(config,mc.author,id,mc.timestamp,url,deleted,mc.audiences)
+        MeTLVideoStream(mc.author,id,mc.timestamp,url,deleted,mc.audiences)
       }
       case _ => MeTLVideoStream.empty
     }
@@ -462,7 +462,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val isDeleted = getBooleanByName(input,"isDeleted")
         val xOrigin = getDoubleByName(input,"xOrigin")
         val yOrigin = getDoubleByName(input,"yOrigin")
-        MeTLMoveDelta(config,mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,xOrigin,yOrigin,inkIds,textIds,multiWordTextIds,imageIds,videoIds,xTranslate,yTranslate,xScale,yScale,newPrivacy,isDeleted,mc.audiences)
+        MeTLMoveDelta(mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,xOrigin,yOrigin,inkIds,textIds,multiWordTextIds,imageIds,videoIds,xTranslate,yTranslate,xScale,yScale,newPrivacy,isDeleted,mc.audiences)
       }
       case _ => MeTLMoveDelta.empty
     }
@@ -473,7 +473,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val mc = parseJObjForMeTLContent(input,config)
         val location = getStringByName(input,"location")
         val present = getBooleanByName(input,"present")
-        Attendance(config,mc.author,mc.timestamp,location,present,mc.audiences)
+        Attendance(mc.author,mc.timestamp,location,present,mc.audiences)
       }
       case _ => Attendance.empty
     }
@@ -495,7 +495,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val color = toColor(getColorByName(input,"color"))
         val thickness = getDoubleByName(input,"thickness")
         val isHighlighter = getBooleanByName(input,"isHighlighter")
-        MeTLInk(config,mc.author,mc.timestamp,checksum,startingSum,points,color,thickness,isHighlighter,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+        MeTLInk(mc.author,mc.timestamp,checksum,startingSum,points,color,thickness,isHighlighter,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
       }
       case _ => MeTLInk.empty
     }
@@ -525,7 +525,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           val height = getDoubleByName(input,"height")
           val x = getDoubleByName(input,"x")
           val y = getDoubleByName(input,"y")
-          MeTLImage(config,mc.author,mc.timestamp,tag,source,imageBytes,pngBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+          MeTLImage(mc.author,mc.timestamp,tag,source,imageBytes,pngBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
         }
         case _ => MeTLImage.empty
       }
@@ -557,7 +557,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val height = getDoubleByName(input,"height")
         val x = getDoubleByName(input,"x")
         val y = getDoubleByName(input,"y")
-        MeTLVideo(config,mc.author,mc.timestamp,source,videoBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+        MeTLVideo(mc.author,mc.timestamp,source,videoBytes,width,height,x,y,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
       }
       case _ => MeTLVideo.empty
     }
@@ -589,7 +589,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val size = getDoubleByName(input,"size")
         val decoration = getStringByName(input,"decoration")
         val color = toColor(getColorByName(input,"color"))
-        MeTLText(config,mc.author,mc.timestamp,text,height,width,caret,x,y,tag,style,family,weight,size,decoration,cc.identity,cc.target,cc.privacy,cc.slide,color,mc.audiences)
+        MeTLText(mc.author,mc.timestamp,text,height,width,caret,x,y,tag,style,family,weight,size,decoration,cc.identity,cc.target,cc.privacy,cc.slide,color,mc.audiences)
       }
       case _ => MeTLText.empty
     }
@@ -607,7 +607,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           val y = getDoubleByName(input,"y")
           val width = getDoubleByName(input,"width")
           val height = getDoubleByName(input,"height")
-          MeTLMultiWordText(config,mc.author,mc.timestamp,height,width,requestedWidth,x,y,tag,cc.identity,cc.target,cc.privacy,cc.slide,words,mc.audiences)
+          MeTLMultiWordText(mc.author,mc.timestamp,height,width,requestedWidth,x,y,tag,cc.identity,cc.target,cc.privacy,cc.slide,words,mc.audiences)
         }
         catch {
           case e:Throwable =>
@@ -663,7 +663,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case input:JObject => {
         val mc = parseJObjForMeTLContent(input,config)
         val cc = parseJObjForCanvasContent(input)
-        MeTLDirtyInk(config,mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+        MeTLDirtyInk(mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
       }
       case _ => MeTLDirtyInk.empty
     }
@@ -676,7 +676,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case input:JObject => {
         val mc = parseJObjForMeTLContent(input,config)
         val cc = parseJObjForCanvasContent(input)
-        MeTLDirtyVideo(config,mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+        MeTLDirtyVideo(mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
       }
       case _ => MeTLDirtyVideo.empty
     }
@@ -689,7 +689,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case input:JObject => {
         val mc = parseJObjForMeTLContent(input,config)
         val cc = parseJObjForCanvasContent(input)
-        MeTLDirtyImage(config,mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+        MeTLDirtyImage(mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
       }
       case _ => MeTLDirtyImage.empty
     }
@@ -702,7 +702,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case input:JObject => {
         val mc = parseJObjForMeTLContent(input,config)
         val cc = parseJObjForCanvasContent(input)
-        MeTLDirtyText(config,mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
+        MeTLDirtyText(mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,mc.audiences)
       }
       case _ => MeTLDirtyText.empty
     }
@@ -716,7 +716,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val mc = parseJObjForMeTLContent(input,config)
         val command = getStringByName(input,"command")
         val parameters = getListOfStringsByName(input,"parameters")
-        MeTLCommand(config,mc.author,mc.timestamp,command,parameters,mc.audiences)
+        MeTLCommand(mc.author,mc.timestamp,command,parameters,mc.audiences)
       }
       case _ => MeTLCommand.empty
     }
@@ -741,7 +741,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           val highlight = toColor(getColorByName(blo,"highlight"))
           SubmissionBlacklistedPerson(username,highlight)
         }).toList
-        MeTLSubmission(config,mc.author,mc.timestamp,title,slide,url,Empty,blacklist,cc.target,cc.privacy,cc.identity,mc.audiences)
+        MeTLSubmission(mc.author,mc.timestamp,title,slide,url,Empty,blacklist,cc.target,cc.privacy,cc.identity,mc.audiences)
       }
       case _ => MeTLSubmission.empty
     }
@@ -764,7 +764,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val options = getListOfObjectsByName(input,"options").map(o => toQuizOption(o))
         val url = tryo(getStringByName(input,"url"))
         val quizImage = url.map(u =>config.getResource(u))
-        MeTLQuiz(config,mc.author,mc.timestamp,created,question,id,url,quizImage,isDeleted,options,mc.audiences)
+        MeTLQuiz(mc.author,mc.timestamp,created,question,id,url,quizImage,isDeleted,options,mc.audiences)
       }
       case _ => MeTLQuiz.empty
     }
@@ -805,7 +805,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val answer = getStringByName(input,"answer")
         val answerer = getStringByName(input,"answerer")
         val id = getStringByName(input,"id")
-        MeTLQuizResponse(config,mc.author,mc.timestamp,answer,answerer,id,mc.audiences)
+        MeTLQuizResponse(mc.author,mc.timestamp,answer,answerer,id,mc.audiences)
       }
       case _ => MeTLQuizResponse.empty
     }
@@ -825,7 +825,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val oldElementIdentity = getStringByName(j,"oldIdentity")
         val newElementIdentity = getStringByName(j,"newIdentity")
         val elementType = getStringByName(j,"elementType")
-        MeTLUndeletedCanvasContent(config,mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,elementType,oldElementIdentity,newElementIdentity,mc.audiences)
+        MeTLUndeletedCanvasContent(mc.author,mc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,elementType,oldElementIdentity,newElementIdentity,mc.audiences)
       }
       case _ => MeTLUndeletedCanvasContent.empty
     }
@@ -859,10 +859,6 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val permissions = toPermissions(getObjectByName(input,"permissions"))
         val blacklist = getListOfStringsByName(input,"blacklist")
         val audiences = parseJObjForAudiences(input,config)
-        val thisConfig = getStringByName(input,"configName") match {
-          case "" => config
-          case other => ServerConfiguration.configForName(other)
-        }
         val foreignRelationship = getOptionalObjectByName(input,"foreignRelationship").flatMap(n => {
           n.value match {
             case jo:JObject => {
@@ -877,7 +873,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
             case _ => None
           }
         })
-        Conversation(thisConfig,author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist,audiences,foreignRelationship)
+        Conversation(author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist,audiences,foreignRelationship)
       }
       case _ => Conversation.empty
     }
@@ -895,8 +891,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("created",JString(new java.util.Date(input.created).toString())),
       JField("creation",JInt(input.created)),
       JField("permissions",fromPermissions(input.permissions)),
-      JField("blacklist",JArray(input.blackList.map(bli => JString(bli)).toList)),
-      JField("configName",JString(input.server.name))
+      JField("blacklist",JArray(input.blackList.map(bli => JString(bli)).toList))
     ) ::: config.getProfiles(input.author).headOption.map(p => JField("authorName",JString(p.name))).toList ::: input.foreignRelationship.toList.map(fr => {
       JField("foreignRelationship",JObject(List(
         JField("system",JString(fr.system)),
@@ -915,7 +910,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val exposed = getBooleanByName(input,"exposed")
         val slideType = getStringByName(input,"slideType")
         val groupSet = getListOfObjectsByName(input,"groupSets").map(gs => toGroupSet(gs))
-        Slide(config,author,id,index,defaultHeight,defaultWidth,exposed,slideType,groupSet)
+        Slide(author,id,index,defaultHeight,defaultWidth,exposed,slideType,groupSet)
       }
       case _ => Slide.empty
     }
@@ -939,7 +934,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val location = getStringByName(input,"location")
         val groupingStrategy = toGroupingStrategy((input \ "groupingStrategy").extract[JObject])
         val groups = getListOfObjectsByName(input,"groups").map(gn => toGroup(gn))
-        GroupSet(config,id,location,groupingStrategy,groups,audiences)
+        GroupSet(id,location,groupingStrategy,groups,audiences)
       }
       case _ => GroupSet.empty
     }
@@ -988,7 +983,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val location = getStringByName(input,"location")
         val timestamp = getLongByName(input,"timestamp")
         val members = getListOfStringsByName(input,"members")
-        Group(config,id,location,timestamp,members,audiences)
+        Group(id,location,timestamp,members,audiences)
       }
       case _ => Group.empty
     }
@@ -1009,9 +1004,9 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
         val studentsMayBroadcast = getOptionalBooleanByName(input,"studentsMayBroadcast").getOrElse(false)
         val studentsMayChatPublicly = getOptionalBooleanByName(input,"studentsMayChatPublicly").getOrElse(true)
-        Permissions(config,studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
+        Permissions(studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
       }
-      case _ => Permissions.default(config)
+      case _ => Permissions.default
     }
   })
   override def fromPermissions(input:Permissions):JValue = Stopwatch.time("JsonSerializer.fromPermissions",{
@@ -1105,7 +1100,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           }
         })
         val gradeReferenceUrl = getOptionalStringByName(j,"gradeReferenceUrl")
-        MeTLGrade(config,m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,numericMinimum,m.audiences)
+        MeTLGrade(m.author,m.timestamp,id,location,name,description,gradeType,visible,foreignRelationship,gradeReferenceUrl,numericMaximum,numericMinimum,m.audiences)
       }
       case _ => MeTLGrade.empty
     }
@@ -1140,7 +1135,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val gradeValue = getDoubleByName(j,"gradeValue")
         val gradeComment = getOptionalStringByName(j,"gradeComment")
         val gradePrivateComment = getOptionalStringByName(j,"gradePrivateComment")
-        MeTLNumericGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+        MeTLNumericGradeValue(m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
       }
       case _ => MeTLNumericGradeValue.empty
     }
@@ -1165,7 +1160,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val gradeValue = getBooleanByName(j,"gradeValue")
         val gradeComment = getOptionalStringByName(j,"gradeComment")
         val gradePrivateComment = getOptionalStringByName(j,"gradePrivateComment")
-        MeTLBooleanGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+        MeTLBooleanGradeValue(m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
       }
       case _ => MeTLBooleanGradeValue.empty
     }
@@ -1190,7 +1185,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val gradeValue = getStringByName(j,"gradeValue")
         val gradeComment = getOptionalStringByName(j,"gradeComment")
         val gradePrivateComment = getOptionalStringByName(j,"gradePrivateComment")
-        MeTLTextGradeValue(config,m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
+        MeTLTextGradeValue(m.author,m.timestamp,gradeId,gradedUser,gradeValue,gradeComment,gradePrivateComment,m.audiences)
       }
       case _ => MeTLTextGradeValue.empty
     }
@@ -1217,7 +1212,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         } yield {
           (attrName,attrValue)
         }):_*)
-        Profile(config, m.timestamp, id, name, attrs, m.audiences)
+        Profile(m.timestamp, id, name, attrs, m.audiences)
       }
       case _ => Profile.empty
     }

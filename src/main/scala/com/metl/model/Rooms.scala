@@ -19,8 +19,8 @@ import collection.JavaConverters._
 import scala.collection.mutable.Queue
 
 abstract class RoomProvider(configName:String) {
-  def get(room:String):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,configName),false)
-  def get(room:String,eternal:Boolean):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,configName),false)
+  def get(room:String):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room),false)
+  def get(room:String,eternal:Boolean):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room),false)
   def get(room:String,roomDefinition:RoomMetaData):MeTLRoom = get(room,roomDefinition,false)
   def get(jid:String,roomMetaData:RoomMetaData,eternal:Boolean):MeTLRoom
   def removeMeTLRoom(room:String):Unit
@@ -40,38 +40,39 @@ object MeTLRoomType extends Enumeration {
   val Conversation,Slide,PrivateSlide,PersonalChatroom,Global,Unknown = Value
 }
 
-abstract class RoomMetaData(val server:String, val roomType:MeTLRoomType.Value) {
+abstract class RoomMetaData(val roomType:MeTLRoomType.Value) {
   def getJid:String
 }
 
-case class ConversationRoom(override val server:String,jid:String) extends RoomMetaData(server,MeTLRoomType.Conversation){
-  def cd:Conversation = ServerConfiguration.configForName(server).detailsOfConversation(jid.toString)
+case class ConversationRoom(jid:String) extends RoomMetaData(MeTLRoomType.Conversation){
+  def cd:Conversation = ServerConfiguration.default.detailsOfConversation(jid)
   override def getJid = jid
 }
-case class SlideRoom(override val server:String,slideId:String) extends RoomMetaData(server,MeTLRoomType.Slide){
+case class SlideRoom(slideId:String) extends RoomMetaData(MeTLRoomType.Slide){
+  def s:Slide = ServerConfiguration.default.detailsOfSlide(slideId)
   override def getJid = slideId
 }
-case class PrivateSlideRoom(override val server:String,slideId:String,owner:String) extends RoomMetaData(server,MeTLRoomType.PrivateSlide){
+case class PrivateSlideRoom(slideId:String,owner:String) extends RoomMetaData(MeTLRoomType.PrivateSlide){
   override def getJid = slideId.toString + owner
 }
-case class PersonalChatRoom(override val server:String,owner:String) extends RoomMetaData(server,MeTLRoomType.PersonalChatroom){
+case class PersonalChatRoom(owner:String) extends RoomMetaData(MeTLRoomType.PersonalChatroom){
   override def getJid = owner
 }
-case class GlobalRoom(override val server:String) extends RoomMetaData(server,MeTLRoomType.Global){
+case object GlobalRoom extends RoomMetaData(MeTLRoomType.Global){
   override def getJid = "global"
 }
-case object UnknownRoom extends RoomMetaData(EmptyBackendAdaptor.name,MeTLRoomType.Unknown){
+case object UnknownRoom extends RoomMetaData(MeTLRoomType.Unknown){
   override def getJid = ""
 }
 object RoomMetaDataUtils {
-  def fromJid(incJid:String,server:String = ServerConfiguration.default.name):RoomMetaData = {
+  def fromJid(incJid:String):RoomMetaData = {
     incJid.split("_").toList match {
-      case List("global") => GlobalRoom(server)
-      case List("c",jid,"t",time) => ConversationRoom(server,incJid)
-      case List("s",jid,"t",time) => SlideRoom(server,incJid)
-      //case List("c",jid,"t",time,"p",user) => ConversationRoom(server,"c_%s_t_%s_".format(jid,time),"p_%s".format(user))
-      case List("s",jid,"t",time,"p",user) => PrivateSlideRoom(server,"s_%s_t_%s_".format(jid,time),"p_%s".format(user))
-      case List("u",user) => PersonalChatRoom(server,incJid)
+      case List("global") => GlobalRoom
+      case List("c",jid,"t",time) => ConversationRoom(incJid)
+      case List("s",jid,"t",time) => SlideRoom(incJid)
+      //case List("c",jid,"t",time,"p",user) => ConversationRoom("c_%s_t_%s_".format(jid,time),"p_%s".format(user))
+      case List("s",jid,"t",time,"p",user) => PrivateSlideRoom("s_%s_t_%s_".format(jid,time),"p_%s".format(user))
+      case List("u",user) => PersonalChatRoom(incJid)
       case _ => UnknownRoom
     }
   }
@@ -308,7 +309,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         ju._3 ! u
       })
     }
-    case m@MotherMessage(html,audiences) => joinedUsers.foreach(j => j._3 ! MeTLChatMessage(config,"| mother |",new Date().getTime,nextFuncName,"html",html.toString,roomMetaData.getJid,audiences))
+    case m@MotherMessage(html,audiences) => joinedUsers.foreach(j => j._3 ! MeTLChatMessage("| mother |",new Date().getTime,nextFuncName,"html",html.toString,roomMetaData.getJid,audiences))
     case _ => None
   }
   protected def catchAll:PartialFunction[Any,Unit] = {
@@ -325,7 +326,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         com.metl.comet.MeTLSlideDisplayActorManager ! m
         com.metl.comet.MeTLEditConversationActorManager ! m
         m.commandParameters.headOption.foreach(convJid => {
-          MeTLXConfiguration.getRoom(convJid,config.name,ConversationRoom(config.name,convJid)) ! UpdateConversationDetails(convJid)
+          MeTLXConfiguration.getRoom(convJid,config.name,ConversationRoom(convJid)) ! UpdateConversationDetails(convJid)
         })
       }
       case (m:MeTLCommand,cr:ConversationRoom) if List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION").contains(m.command) => {
@@ -349,7 +350,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     joinedUsers.foreach(j => j._3 ! a)
   })
   def addTheme(theme:Theme) = {
-    sendStanzaToServer(MeTLTheme(config,theme.author,new java.util.Date().getTime,location,theme,Nil))
+    sendStanzaToServer(MeTLTheme(theme.author,new java.util.Date().getTime,location,theme,Nil))
   }
   protected def sendStanzaToServer(s:MeTLStanza,updateTimestamp:Boolean = true):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer",{
     trace("%s l->s %s".format(location,s))
@@ -530,7 +531,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
           println("updating snapshot for %s to %s".format(roomMetaData,relatedConversations))
           relatedConversations.foreach(cJid => {
             if (MeTLXConfiguration.checkRoom(cJid,configName)){
-              MeTLXConfiguration.getRoom(cJid,configName,ConversationRoom(config.name,cJid)) ! UpdateThumb(history.jid)
+              MeTLXConfiguration.getRoom(cJid,configName,ConversationRoom(cJid)) ! UpdateThumb(history.jid)
             }
           })
         }

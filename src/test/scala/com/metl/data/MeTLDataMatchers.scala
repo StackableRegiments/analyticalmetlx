@@ -20,17 +20,6 @@ trait ArrayHelpers {
 
 trait MeTLStanzaMatchers extends ArrayHelpers {
 
-	def server(expectedValue: ServerConfiguration) =
-	  new HavePropertyMatcher[MeTLStanza, ServerConfiguration] {
-		def apply(stanza: MeTLStanza) =
-		  HavePropertyMatchResult(
-			stanza.server == expectedValue,
-			"server",
-			expectedValue,
-			stanza.server
-		  )
-	  }
-
 	def author(expectedValue: String) =
 	  new HavePropertyMatcher[MeTLStanza, String] {
 		def apply(stanza: MeTLStanza) =

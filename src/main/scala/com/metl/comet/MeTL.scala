@@ -304,7 +304,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
     def getDefaultProfile = ClientSideFunction("getDefaultProfile",List(),(args) => {
       busArgs(RECEIVE_DEFAULT_PROFILE,JString(serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2))
     },Full(METLBUS_CALL))
-    def getProfilesById:ClientSideFunction = ClientSideFunction("getProfiles",List("profileIds"),(args) => {
+    def getProfilesById:ClientSideFunction = ClientSideFunction("getProfilesByIds",List("profileIds"),(args) => {
       busArgs(RECEIVE_PROFILES,translateProfileIds(getArgAsListOfStrings(args(0))))
     },Full(METLBUS_CALL))
     def createProfile:ClientSideFunction = ClientSideFunction("createProfile",List(),(args) => {
@@ -999,7 +999,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
                   val newIdentitySeed = "%s_%s".format(new Date().getTime(),dc.identity).take(64)
                   val newM = dc.generateNewIdentity(newIdentitySeed)
                   val newIdentity = newM.identity
-                  val newUDM = MeTLUndeletedCanvasContent(config,username,0L,dc.target,dc.privacy,dc.slide,"%s_%s_%s".format(new Date().getTime(),dc.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),dc.identity,newIdentity,Nil)
+                  val newUDM = MeTLUndeletedCanvasContent(username,0L,dc.target,dc.privacy,dc.slide,"%s_%s_%s".format(new Date().getTime(),dc.slide,username),(stanza \ "type").extract[Option[String]].getOrElse("unknown"),dc.identity,newIdentity,Nil)
                   trace("created newUDM: %s".format(newUDM))
                   room ! LocalToServerMeTLStanza(newUDM)
                   
@@ -1081,20 +1081,20 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
         images.foreach(image => {
           val color = coloredAuthors(image.author).highlight
           val bounds = List(Point(image.left,image.top,thickness),Point(image.right,image.top,thickness),Point(image.right,image.bottom,thickness),Point(image.left,image.bottom,thickness),Point(image.left,image.top,thickness))
-          val newStanza = MeTLInk(serverConfig,"blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
+          val newStanza = MeTLInk("blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
           annotationHistory.addStanza(newStanza)
 
         })
         texts.foreach(text => {
           val color = coloredAuthors(text.author).highlight
           val bounds = List(Point(text.left,text.top,thickness),Point(text.right,text.top,thickness),Point(text.right,text.bottom,thickness),Point(text.left,text.bottom,thickness),Point(text.left,text.top,thickness))
-          val newStanza = MeTLInk(serverConfig,"blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
+          val newStanza = MeTLInk("blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
           annotationHistory.addStanza(newStanza)
         })
         multiWordTexts.foreach(text => {
           val color = coloredAuthors(text.author).highlight
           val bounds = List(Point(text.left,text.top,thickness),Point(text.right,text.top,thickness),Point(text.right,text.bottom,thickness),Point(text.left,text.bottom,thickness),Point(text.left,text.top,thickness))
-          val newStanza = MeTLInk(serverConfig,"blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
+          val newStanza = MeTLInk("blacklist",-1,0.0,0.0,bounds,color,thickness,true,"presentationSpace",Privacy.PUBLIC,slideJid.toString,"",Nil,1.0,1.0)
           annotationHistory.addStanza(newStanza)
         })
 
@@ -1107,7 +1107,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
             val blacklistedPeople = coloredAuthors.values.toList
             val imageBytes = pubRoom.map(_.slideRenderer.render(mergedHistory,width,height)).getOrElse(Array.empty[Byte])
             val uri = serverConfig.postResource(conversationJid,title,imageBytes)
-            val submission = MeTLSubmission(serverConfig,username,now,title,slideJid,uri,Full(imageBytes),blacklistedPeople,"bannedcontent")
+            val submission = MeTLSubmission(username,now,title,slideJid,uri,Full(imageBytes),blacklistedPeople,"bannedcontent")
             trace("banned with the following: %s".format(submission))
             rooms.get((server,conversationJid)).map(r =>{
               r() ! LocalToServerMeTLStanza(submission)
@@ -1119,7 +1119,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           }
         }
         val deleterId = nextFuncName
-        val deleter = MeTLMoveDelta(serverConfig,username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,multiWordTextIds,imageIds,videoIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
+        val deleter = MeTLMoveDelta(username,now,"presentationSpace",Privacy.PUBLIC,slideJid.toString,deleterId,0.0,0.0,inkIds,textIds,multiWordTextIds,imageIds,videoIds,0.0,0.0,0.0,0.0,Privacy.NOT_SET,true)
         rooms.get((server,slideJid.toString)).map(r =>{
           r() ! LocalToServerMeTLStanza(deleter)
         })
@@ -1141,15 +1141,15 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val initialGroups = args(3) match {
-        case JArray(groups) => groups.map(getArgAsListOfStrings _).map(members => com.metl.data.Group(serverConfig,nextFuncName,jid,new Date().getTime,members))
+        case JArray(groups) => groups.map(getArgAsListOfStrings _).map(members => com.metl.data.Group(nextFuncName,jid,new Date().getTime,members))
         case _ => Nil
       }
       val c = serverConfig.detailsOfConversation(jid)
       val grouping = getArgAsString(args(2)) match {
-        case "byTotalGroups" => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByTotalGroups(getArgAsInt(args(4))),initialGroups)
-        case "byMaximumSize" => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByMaximumSize(getArgAsInt(args(4))),initialGroups)
-        case "groupsOfOne" => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,OnePersonPerGroup,initialGroups)
-        case _ => com.metl.data.GroupSet(serverConfig,nextFuncName,jid,ByMaximumSize(4),initialGroups)
+        case "byTotalGroups" => com.metl.data.GroupSet(nextFuncName,jid,ByTotalGroups(getArgAsInt(args(4))),initialGroups)
+        case "byMaximumSize" => com.metl.data.GroupSet(nextFuncName,jid,ByMaximumSize(getArgAsInt(args(4))),initialGroups)
+        case "groupsOfOne" => com.metl.data.GroupSet(nextFuncName,jid,OnePersonPerGroup,initialGroups)
+        case _ => com.metl.data.GroupSet(nextFuncName,jid,ByMaximumSize(4),initialGroups)
       }
       val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => serverConfig.addGroupSlideAtIndexOfConversation(c.jid.toString,index,grouping)
@@ -1182,9 +1182,9 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
             val bytes = serverConfig.getResource(resourceId)
             val now = new java.util.Date().getTime
             val identity = "%s%s".format(username,now.toString)
-            val tempSubImage = MeTLImage(serverConfig,username,now,identity,Full(resourceId),Full(bytes),Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+            val tempSubImage = MeTLImage(username,now,identity,Full(resourceId),Full(bytes),Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
             val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
-            val subImage = MeTLImage(serverConfig,username,now,identity,Full(resourceId),Full(bytes),Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+            val subImage = MeTLImage(username,now,identity,Full(resourceId),Full(bytes),Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
             slideRoom ! LocalToServerMeTLStanza(subImage)
             slideRoom ! LocalToServerMeTLStanza(caption.copy(slide=ho.id.toString))
           })
@@ -1208,9 +1208,9 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
             MeTLXConfiguration.getRoom(jid,server).getHistory.getSubmissions.find(sub => sub.identity == submissionId).map(sub => {
               val now = new java.util.Date().getTime
               val identity = "%s%s".format(username,now.toString)
-              val tempSubImage = MeTLImage(serverConfig,username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+              val tempSubImage = MeTLImage(username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
               val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
-              val subImage = MeTLImage(serverConfig,username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+              val subImage = MeTLImage(username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
               slideRoom ! LocalToServerMeTLStanza(subImage)
             })
           })
@@ -1234,7 +1234,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
             convHistory.getQuizzes.filter(q => q.id == quizId && !q.isDeleted).sortBy(q => q.timestamp).reverse.headOption.map(quiz => {
               val now = new java.util.Date().getTime
               val identity = "%s%s".format(username,now.toString)
-              val genText = (text:String,size:Double,offset:Double,identityModifier:String) => MeTLText(serverConfig,username,now,text,size * 2,320,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
+              val genText = (text:String,size:Double,offset:Double,identityModifier:String) => MeTLText(username,now,text,size * 2,320,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
               val quizTitle = genText(quiz.question,16,0,"title")
               val questionOffset = quiz.url match{
                 case Full(_) => 340
@@ -1243,7 +1243,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
               val quizOptions = quiz.options.foldLeft(List.empty[MeTLText])((acc,item) => {
                 acc ::: List(genText("%s: %s".format(item.name,item.text),10,(acc.length * 10) + questionOffset,"option:"+item.name))
               })
-              val allStanzas = quiz.url.map(u => List(MeTLImage(serverConfig,username,now,identity+"image",Full(u),Empty,Empty,320,240,10,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle)
+              val allStanzas = quiz.url.map(u => List(MeTLImage(username,now,identity+"image",Full(u),Empty,Empty,320,240,10,50,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle)
               allStanzas.foreach(stanza => slideRoom ! LocalToServerMeTLStanza(stanza))
             })
           })
@@ -1278,14 +1278,14 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
                 quiz.options.find(qo => qo.name == item._2.answer).map(qo => acc.updated(qo,item._2 :: acc(qo))).getOrElse(acc)
               })
               val identity = "%s%s".format(username,now.toString)
-              def genText(text:String,size:Double,offset:Double,identityModifier:String,maxHeight:Option[Double] = None) = MeTLText(serverConfig,username,now,text,maxHeight.getOrElse(size * 2),640,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
+              def genText(text:String,size:Double,offset:Double,identityModifier:String,maxHeight:Option[Double] = None) = MeTLText(username,now,text,maxHeight.getOrElse(size * 2),640,0,10,10 + offset,identity+identityModifier,"Normal","Arial","Normal",size,"none",identity+identityModifier,"presentationSpace",Privacy.PUBLIC,ho.id.toString,Color(255,0,0,0))
               val quizTitle = genText(quiz.question,32,0,"title",Some(100))
 
               val graphWidth = 640
               val graphHeight = 480
               val bytes = com.metl.renderer.QuizRenderer.renderQuiz(quiz,answers.flatMap(_._2).toList,new com.metl.renderer.RenderDescription(graphWidth,graphHeight))
               val quizGraphIdentity = serverConfig.postResource(jid,"graphResults_%s_%s".format(quizId,now),bytes)
-              val quizGraph = MeTLImage(serverConfig,username,now,identity+"resultsGraph",Full(quizGraphIdentity),Empty,Empty,graphWidth,graphHeight,10,100,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"resultsGraph")
+              val quizGraph = MeTLImage(username,now,identity+"resultsGraph",Full(quizGraphIdentity),Empty,Empty,graphWidth,graphHeight,10,100,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"resultsGraph")
               val questionOffset = graphHeight + 100
               val quizOptions = quiz.options.foldLeft(List.empty[MeTLText])((acc,item) => {
                 acc ::: List(genText(
@@ -1294,7 +1294,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
                   (acc.length * 30) + questionOffset,
                   "option:"+item.name))
               })
-              val allStanzas = quiz.url.map(u => List(MeTLImage(serverConfig,username,now,identity+"image",Full(u),Empty,Empty,320,240,330,100,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle,quizGraph)
+              val allStanzas = quiz.url.map(u => List(MeTLImage(username,now,identity+"image",Full(u),Empty,Empty,320,240,330,100,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity+"image"))).getOrElse(List.empty[MeTLStanza]) ::: quizOptions ::: List(quizTitle,quizGraph)
               allStanzas.foreach(stanza => {
                 slideRoom ! LocalToServerMeTLStanza(stanza)
               })
@@ -1335,7 +1335,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val conversationJid = getArgAsString(args(0))
       val quizId = getArgAsString(args(1))
       val chosenOptionName = getArgAsString(args(2))
-      val response = MeTLQuizResponse(serverConfig,username,new Date().getTime,chosenOptionName,username,quizId)
+      val response = MeTLQuizResponse(username,new Date().getTime,chosenOptionName,username,quizId)
       rooms.get((server,conversationJid)).map(r => r() ! LocalToServerMeTLStanza(response))
       Nil
     },Empty),
@@ -1418,7 +1418,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
   def emit(source:String,value:String,domain:String) = {
     trace("emit triggered by %s: %s,%s,%s".format(username,source,value,domain))
     currentConversation.map(cc => {
-      MeTLXConfiguration.getRoom(cc.jid.toString,server) ! LocalToServerMeTLStanza(MeTLTheme(serverConfig,username,-1L,cc.jid.toString,Theme(source,value,domain),Nil))
+      MeTLXConfiguration.getRoom(cc.jid.toString,server) ! LocalToServerMeTLStanza(MeTLTheme(username,-1L,cc.jid.toString,Theme(source,value,domain),Nil))
     })
   }
   private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
@@ -1701,7 +1701,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
         trace("conversation contains slide")
         currentSlide = Full(jid)
         if (cc.author.trim.toLowerCase == username.trim.toLowerCase && isInteractiveUser.map(iu => iu == true).getOrElse(true)){
-          val syncMove = MeTLCommand(serverConfig,username,new Date().getTime,"/SYNC_MOVE",List(jid,uniqueId))
+          val syncMove = MeTLCommand(username,new Date().getTime,"/SYNC_MOVE",List(jid,uniqueId))
           rooms.get((server,cc.jid.toString)).map(r => r() ! LocalToServerMeTLStanza(syncMove))
         }
         joinRoomByJid(jid)
@@ -1756,11 +1756,11 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
             
             trace("trying to send truePresence to room: %s %s".format(c.jid,slideId))
             if (c.slides.exists(_.id == r)){
-              val room = MeTLXConfiguration.getRoom(c.jid,server,ConversationRoom(server,c.jid))
-              room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideId,true,Nil))
+              val room = MeTLXConfiguration.getRoom(c.jid,server,ConversationRoom(c.jid))
+              room !  LocalToServerMeTLStanza(Attendance(username,-1L,slideId,true,Nil))
             } else {
-              val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server))
-              room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,c.jid,true,Nil))
+              val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
+              room ! LocalToServerMeTLStanza(Attendance(username,-1L,c.jid,true,Nil))
             }
           })
         } catch {
@@ -1775,11 +1775,11 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           currentConversation.map(c => {
             trace("trying to send falsePresence to room: %s %s".format(c.jid,slideId))
             if (c.slides.exists(_.id == r)){
-              val room = MeTLXConfiguration.getRoom(c.jid,s,ConversationRoom(server,c.jid))
-              room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideId,false,Nil))
+              val room = MeTLXConfiguration.getRoom(c.jid,s,ConversationRoom(c.jid))
+              room !  LocalToServerMeTLStanza(Attendance(username,-1L,slideId,false,Nil))
             } else {
-              val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server))
-              room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,c.jid,false,Nil))
+              val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
+              room ! LocalToServerMeTLStanza(Attendance(username,-1L,c.jid,false,Nil))
             }
           })
         } catch {
@@ -1852,7 +1852,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
               debug("sendStanzaToServer sending chatMessage: "+r)
               if( cc.blackList.contains(username)) {
                 // Banned students can only whisper the teacher.
-                r() ! LocalToServerMeTLStanza(s.adjustAudience(List(Audience(cc.server, "metl", cc.author, "user", "read"))))
+                r() ! LocalToServerMeTLStanza(s.adjustAudience(List(Audience("metl", cc.author, "user", "read"))))
               }
               else
               {
@@ -1944,7 +1944,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
             case _ => "global"
           }
           val alteredCommand = c match {
-            case MeTLCommand(config,author,timestamp,"/SYNC_MOVE",List(jid),audiences) => MeTLCommand(config,author,timestamp,"/SYNC_MOVE",List(jid,uniqueId),audiences)
+            case MeTLCommand(author,timestamp,"/SYNC_MOVE",List(jid),audiences) => MeTLCommand(author,timestamp,"/SYNC_MOVE",List(jid,uniqueId),audiences)
             case other => other
           }
           rooms.get((serverName,roomTarget)).map(r => {

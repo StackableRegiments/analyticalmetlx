@@ -5,7 +5,6 @@ import com.metl.data._
 
 abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Conversation=>Unit) extends ServerConfiguration(name,host,onConversationUpdated){
   protected val dbInterface:PersistenceInterface
-  protected lazy val messageBusProvider = new PersistingMessageBusProvider(this,dbInterface)
   protected lazy val history = new PersistedHistory(this,dbInterface)
   protected lazy val conversations = new PersistedConversations(this,dbInterface,onConversationUpdated)
   protected lazy val resourceProvider = new PersistedResourceProvider(this,dbInterface)
@@ -18,7 +17,7 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
     dbInterface.isReady
     super.isReady
   }
-  override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
+  override lazy val messageBusProvider:MessageBusProvider = new PersistingMessageBusProvider(this,dbInterface)
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
   override def getAllConversations = conversations.getAllConversations
   override def getAllSlides = conversations.getAllSlides

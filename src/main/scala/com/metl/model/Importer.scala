@@ -320,7 +320,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
                 (720,576)
               }
             }
-            val bgImg = MeTLImage(server,author,-1L,tag,Full(identity),Full(imageBytes),Empty,dimensions._1,dimensions._2,0,0,"presentationSpace",Privacy.PUBLIC,slideId.toString,identity,Nil,1.0,1.0)
+            val bgImg = MeTLImage(author,-1L,tag,Full(identity),Full(imageBytes),Empty,dimensions._1,dimensions._2,0,0,"presentationSpace",Privacy.PUBLIC,slideId.toString,identity,Nil,1.0,1.0)
             debug("building metlImage: %s".format(bgImg))
             val history = new History(slideId.toString)
             history.addStanza(bgImg)
@@ -371,16 +371,16 @@ object Importer extends Logger {
     val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
     histories.foreach(h => {
       val oldJid = h._1
-      val serverName = remoteConv.server.name
+      val serverName = ServerConfiguration.default.name
       val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
-        case PrivateSlideRoom(_sn,oldSlideJid,oldAuthor) => newSlides.get(oldSlideJid).map(newS => PrivateSlideRoom(serverName,newS.id,oldAuthor))
-        case SlideRoom(_sn,oldSlideJid) => newSlides.get(oldSlideJid).map(newS => SlideRoom(serverName,newS.id))
-        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid))
+        case PrivateSlideRoom(oldSlideJid,oldAuthor) => newSlides.get(oldSlideJid).map(newS => PrivateSlideRoom(newS.id,oldAuthor))
+        case SlideRoom(oldSlideJid) => newSlides.get(oldSlideJid).map(newS => SlideRoom(newS.id))
+        case ConversationRoom(_oldConvJid) => Some(ConversationRoom(remoteConv.jid))
         case _ => None
       }
       newRoom.foreach(nr => {
         ServerSideBackgroundWorker ! CopyContent(
-          remoteConv.server,
+          ServerConfiguration.default,
           h._2,
           nr
         )
@@ -632,7 +632,7 @@ class ExportXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializ
     val height = getDoubleByName(input,"height")
     val x = getDoubleByName(input,"x")
     val y = getDoubleByName(input,"y")
-    MeTLImage(config,m.author,m.timestamp,tag,source,Full(imageBytes),pngBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
+    MeTLImage(m.author,m.timestamp,tag,source,Full(imageBytes),pngBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
   }
   override def fromMeTLImage(input:MeTLImage):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLImage",{
     canvasContentToXml("image",input,List(
@@ -656,7 +656,7 @@ class ExportXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializ
     val newUrl = quizImage.map(qi => config.postResource("quizImages",nextFuncName,qi))
     val isDeleted = getBooleanByName(input,"isDeleted")
     val options = getXmlByName(input,"quizOption").map(qo => toQuizOption(qo)).toList
-    MeTLQuiz(config,m.author,m.timestamp,created,question,id,newUrl,quizImage,isDeleted,options,m.audiences)
+    MeTLQuiz(m.author,m.timestamp,created,question,id,newUrl,quizImage,isDeleted,options,m.audiences)
   })
   override def fromMeTLQuiz(input:MeTLQuiz):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLQuiz", {
     metlContentToXml("quiz",input,List(
@@ -678,7 +678,7 @@ class ExportXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializ
       val highlight = getColorByName(bl,"highlight")
       SubmissionBlacklistedPerson(username,highlight)
     }).toList
-    MeTLSubmission(config,m.author,m.timestamp,title,c.slide,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
+    MeTLSubmission(m.author,m.timestamp,title,c.slide,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
   })
   override def fromSubmission(input:MeTLSubmission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSubmission", {
     canvasContentToXml("screenshotSubmission",input,List(
@@ -694,7 +694,7 @@ class ExportXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializ
     val deleted = getBooleanByName(input,"deleted")
     val bytes = downscaler.filterByMaximumSize(base64Decode(getStringByName(input,"bytes")))
     val url = bytes.map(ib => config.postResource("files",nextFuncName,ib))
-    MeTLFile(config,m.author,m.timestamp,name,id,url,bytes,deleted)
+    MeTLFile(m.author,m.timestamp,name,id,url,bytes,deleted)
   })
   override def fromMeTLFile(input:MeTLFile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLFile",{
     metlContentToXml("file",input,List(
@@ -716,7 +716,7 @@ class ExportXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializ
     val height = getDoubleByName(input,"height")
     val x = getDoubleByName(input,"x")
     val y = getDoubleByName(input,"y")
-    MeTLVideo(config,m.author,m.timestamp,source,videoBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
+    MeTLVideo(m.author,m.timestamp,source,videoBytes,width,height,x,y,c.target,c.privacy,c.slide,c.identity,m.audiences)
   })
   override def fromMeTLVideo(input:MeTLVideo):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromMeTLVideo",{
     canvasContentToXml("video",input,List(

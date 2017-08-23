@@ -139,7 +139,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
   var configurationProvider:Option[ConfigurationProvider] = None
   val updateGlobalFunc = (c:Conversation) => {
     debug("serverSide updateGlobalFunc: %s".format(c))
-    getRoom("global",c.server.name,GlobalRoom(c.server.name)) ! LocalToServerMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
+    getRoom("global",ServerConfiguration.default.name,GlobalRoom) ! LocalToServerMeTLStanza(MeTLCommand(c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
   def getRoomProvider(name:String,filePath:String) = {
     val idleTimeout:Option[Long] = (XML.load(filePath) \\ "caches" \\ "roomLifetime" \\ "@miliseconds").headOption.map(_.text.toLong)// Some(30L * 60L * 1000L)
@@ -416,7 +416,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
 
     configs.values.foreach(c => {
-      getRoom("global",c._1.name,GlobalRoom(c._1.name),true)
+      getRoom("global",c._1.name,GlobalRoom,true)
       debug("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     //setupStackAdaptorFromFile(Globals.configurationFileLocation)
@@ -448,8 +448,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
 
 class TransientLoopbackAdaptor(configName:String,onConversationDetailsUpdated:Conversation=>Unit) extends ServerConfiguration(configName,"no_host",onConversationDetailsUpdated){
   val serializer = new PassthroughSerializer
-  val messageBusProvider = new LoopbackMessageBusProvider
-  override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
+  override val messageBusProvider = new LoopbackMessageBusProvider
   override def getHistory(jid:String) = History.empty
   override def getAllConversations = List.empty[Conversation]
   override def getAllSlides = List.empty[Slide]
@@ -545,26 +544,26 @@ class ThemeCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
     locationsByThemeCache.shutdown
   }
 
-  def getThemesByAuthor(author:String):List[Theme] = themesByAuthorCache.get(author)
-  def getAuthorsByTheme(theme:String):List[String] =  authorsByThemeCache.get(theme)
-  def getSlidesByThemeKeyword(theme:String):List[String] = locationsByThemeCache.get(theme)
-  def getConversationsByTheme(theme:String):List[String] = locationsByThemeCache.get(theme)
-  def getAttendancesByAuthor(author:String):List[Attendance] = attendancesByAuthorCache.get(author)
+  def getThemesByAuthor(author:String):List[Theme] = themesByAuthorCache.get(author).getOrElse(Nil)
+  def getAuthorsByTheme(theme:String):List[String] =  authorsByThemeCache.get(theme).getOrElse(Nil)
+  def getSlidesByThemeKeyword(theme:String):List[String] = locationsByThemeCache.get(theme).getOrElse(Nil)
+  def getConversationsByTheme(theme:String):List[String] = locationsByThemeCache.get(theme).getOrElse(Nil)
+  def getAttendancesByAuthor(author:String):List[Attendance] = attendancesByAuthorCache.get(author).getOrElse(Nil)
 
   def addAttendance(a:Attendance):Unit = {
     if (attendancesByAuthorCache.contains(a.author)){
-      attendancesByAuthorCache.update(a.author,a :: attendancesByAuthorCache.get(a.author))
+      attendancesByAuthorCache.update(a.author,a :: attendancesByAuthorCache.get(a.author).getOrElse(Nil))
     }
   }
   def addTheme(t:MeTLTheme):Unit = {
     if (themesByAuthorCache.contains(t.author)){
-      themesByAuthorCache.update(t.author,t.theme :: themesByAuthorCache.get(t.author))
+      themesByAuthorCache.update(t.author,t.theme :: themesByAuthorCache.get(t.author).getOrElse(Nil))
     }
     if (authorsByThemeCache.contains(t.theme.text)){
-      authorsByThemeCache.update(t.theme.text,(t.author :: authorsByThemeCache.get(t.theme.text)).distinct)
+      authorsByThemeCache.update(t.theme.text,(t.author :: authorsByThemeCache.get(t.theme.text).getOrElse(Nil)).distinct)
     }
     if (locationsByThemeCache.contains(t.theme.text)){
-      locationsByThemeCache.update(t.theme.text,(t.location :: locationsByThemeCache.get(t.theme.text)).distinct)
+      locationsByThemeCache.update(t.theme.text,(t.location :: locationsByThemeCache.get(t.theme.text).getOrElse(Nil)).distinct)
     }
   }
 }
@@ -581,15 +580,16 @@ class SessionCache(config:ServerConfiguration,cacheConfig:CacheConfig){
     getCurrentSessions.filter(sr => sr.accountName == accountName && sr.accountProvider == accountProvider)
   }
   def getSessionsForProfile(profileId:String):List[SessionRecord] = {
-    sessionCache.get(profileId)
+    sessionCache.get(profileId).getOrElse(Nil)
   }
   def updateSession(sessionRecord:SessionRecord):SessionRecord = {
     val updated = config.updateSession(sessionRecord)
-    sessionCache.update(sessionRecord.profileId,sessionCache.get(sessionRecord.profileId) ::: List(updated))
+    sessionCache.update(sessionRecord.profileId,sessionCache.get(sessionRecord.profileId).getOrElse(Nil) ::: List(updated))
     updated
   }
   def getCurrentSessions:List[SessionRecord] = {
-    sessionCache.getAll(sessionCache.keys).toList.flatMap(_._2)
+    Nil
+    //sessionCache.getAll(sessionCache.keys).toList.flatMap(_._2)
   }
 }
 class ResourceCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
@@ -609,7 +609,7 @@ class ResourceCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
     resourceCache.shutdown
   }
   def getImage(jid:String,identity:String):MeTLImage = {
-    imageCache.get((Some(jid),identity))
+    imageCache.get((Some(jid),identity)).getOrElse(MeTLImage.empty)
   }
   def postResource(jid:String,userProposedId:String,data:Array[Byte]):String = {
     val res = config.postResource(jid,userProposedId,data)
@@ -617,7 +617,7 @@ class ResourceCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
     res
   }
   def getResource(jid:String,identifier:String):Array[Byte] = {
-    resourceCache.get((Some(jid),identifier))
+    resourceCache.get((Some(jid),identifier)).getOrElse(Array.empty[Byte])
   }
   def insertResource(jid:String,data:Array[Byte]):String = {
     val res = config.insertResource(jid,data)
@@ -630,10 +630,10 @@ class ResourceCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
     res
   }
   def getImage(identity:String):MeTLImage = {
-    imageCache.get((None,identity))
+    imageCache.get((None,identity)).getOrElse(MeTLImage.empty)
   }
   def getResource(identifier:String):Array[Byte] = {
-    resourceCache.get((None,identifier))
+    resourceCache.get((None,identifier)).getOrElse(Array.empty[Byte])
   }
   def insertResource(data:Array[Byte]):String = {
     val res = config.insertResource(data)
@@ -659,11 +659,19 @@ class ProfileCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
     accountStore.shutdown
   }
   def getProfiles(ids:String *):List[Profile] = {
+    ids.flatMap(id => profileStore.get(id)).toList
+    /*
+    val id = nextFuncName
+    println("%s called getProfiles: %s".format(id,ids))
     val (cachedKeys,uncachedKeys) = ids.toList.partition(i => profileStore.contains(i))
     val uncached = config.getProfiles(uncachedKeys:_*)
-    val cached = profileStore.getAll(cachedKeys)
-    uncached.foreach(uk => profileStore.update(uk.id,uk))
-    uncached ::: cached.toList.map(_._2)
+    val cached = ids.map(i => profileStore.get(i))//All(cachedKeys)
+    //profileStore.updateAll(Map(uncached.map(uc => (uc.id,uc)):_*))
+    uncached.foreach(uc => profileStore.update(uc.id,uc))
+    val result = uncached ::: cached.toList.flatten//map(_._2)
+    println("%s completed getProfiles: %s => %s".format(id,ids,result.length))
+    result
+    */
   }
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = {
     val newP = config.createProfile(name,attrs,audiences)
@@ -678,7 +686,7 @@ class ProfileCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
   def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {
     val nar = config.updateAccountRelationship(accountName,accountProvider,profileId,disabled,default)
     val id = (accountName,accountProvider)
-    val current = accountStore.get(id)
+    val current = accountStore.get(id).getOrElse((Nil,""))
     val currentList = current._1
     val currentDefault = current._2
     val updatedValue = {
@@ -692,7 +700,7 @@ class ProfileCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
     accountStore.update(id,updatedValue)
   }
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = {
-    accountStore.get((accountName,accountProvider))
+    accountStore.get((accountName,accountProvider)).getOrElse((Nil,""))
   }
 }
 
@@ -708,20 +716,19 @@ class CachingServerAdaptor(
   protected val profileCache = profileCacheConfig.map(c => new ProfileCache(config,c))
   protected val resourceCache = resourceCacheConfig.map(c => new ResourceCache(config,c))
   protected val sessionCache = sessionCacheConfig.map(c => new SessionCache(config,c))
-
-  override def getMessageBus(d:MessageBusDefinition) = new TabBus(config.getMessageBus(d)){
-    override protected def onMessageToRoom[A <: MeTLStanza](s:A):Unit = { 
-      println("message going down!: %s".format(s))
-      s match {
-        case a:Attendance => themeCache.foreach(tc => tc.addAttendance(a))
-        case t:MeTLTheme => themeCache.foreach(tc => tc.addTheme(t))
-        case _ => {}
-      }
-    }
-    override protected def onMessageFromRoom[A <: MeTLStanza](s:A):Unit = { 
+ 
+  override val messageBusProvider = new TappingMessageBusProvider(config.messageBusProvider,s => {
     println("message going up!: %s".format(s))
+  },
+  s => {
+    println("message going down!: %s".format(s))
+    s match {
+      case a:Attendance => themeCache.foreach(tc => tc.addAttendance(a))
+      case t:MeTLTheme => themeCache.foreach(tc => tc.addTheme(t))
+      case _ => {}
     }
-  }
+  })
+
   override def getAllConversations = conversationCache.map(_.getAllConversations).getOrElse(config.getAllConversations)
   override def getAllSlides = conversationCache.map(_.getAllSlides).getOrElse(config.getAllSlides)
   override def getConversationsForSlideId(jid:String) = conversationCache.map(_.getConversationsForSlideId(jid)).getOrElse(config.getConversationsForSlideId(jid))
@@ -789,12 +796,19 @@ case class CacheConfig(heapSize:Int,heapUnits:net.sf.ehcache.config.MemoryUnit,m
 class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheConfig:CacheConfig) extends Logger {
   import net.sf.ehcache.{Cache,CacheManager,Element,Status,Ehcache}
   import net.sf.ehcache.loader.{CacheLoader}
-  import net.sf.ehcache.config.{CacheConfiguration,MemoryUnit}
+  import net.sf.ehcache.config.{CacheConfiguration,MemoryUnit,SizeOfPolicyConfiguration}
   import net.sf.ehcache.store.{MemoryStoreEvictionPolicy}
   import java.util.Collection
   import scala.collection.JavaConversions._
   protected val cm = CacheManager.getInstance()
   val cacheName = "%s_%s".format(name,nextFuncName)
+  val sizeOfPolicy:SizeOfPolicyConfiguration = {
+    val p = new SizeOfPolicyConfiguration()
+    p.setMaxDepth(1024 * 1024 * 1024)
+    val c = SizeOfPolicyConfiguration.MaxDepthExceededBehavior.CONTINUE
+    p.setMaxDepthExceededBehavior(c.name)
+    p
+  }
   val cacheConfiguration = new CacheConfiguration()
     .name(cacheName)
     .maxBytesLocalHeap(cacheConfig.heapSize,cacheConfig.heapUnits)
@@ -802,6 +816,9 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
     .memoryStoreEvictionPolicy(cacheConfig.memoryEvictionPolicy)
     .persistence(new PersistenceConfiguration().strategy(PersistenceConfiguration.Strategy.NONE))
     .logging(false)
+    .copyOnRead(false)
+    .copyOnWrite(false)
+//    .sizeOfPolicy(sizeOfPolicy)
   cacheConfig.timeToLiveSeconds.foreach(s => cacheConfiguration.timeToLiveSeconds(s))
   val cache = new Cache(cacheConfiguration)
   cm.addCache(cache)
@@ -811,11 +828,22 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
     def getName:String = getClass.getSimpleName
     def getStatus:Status = cache.getStatus
     def init:Unit = {}
-    def load(key:Object):Object = key match {
-      case k:A => {
-        creationFunc(k).asInstanceOf[Object]
+    def load(key:Object):Object = {
+      if (key == null || key == ""){
+        throw new Exception("cache %s loading passed empty or null key")
+        null
+      } else {
+        warn("cache %s loading (%s)".format(name,key))
+        key match {
+          case k:A => {
+            creationFunc(k).asInstanceOf[Object]
+          }
+          case other => {
+            warn("cache %s loading (%s) supplied other type of key [%s]".format(name,key,other))
+            null
+          }
+        }
       }
-      case _ => null
     }
     def load(key:Object,arg:Object):Object = load(key) // not yet sure what to do with this argument in this case
     def loadAll(keys:Collection[_]):java.util.Map[Object,Object] = Map(keys.toArray.toList.map(k => (k,load(k))):_*)
@@ -823,17 +851,28 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   }
   val loader = new FuncCacheLoader
   def keys:List[A] = cache.getKeys.toList.map(_.asInstanceOf[A])
-  def contains(key:A):Boolean = {
-    cache.isKeyInCache(key)
-  }
-  def get(key:A):B = {
-    cache.getWithLoader(key,loader,null).getObjectValue.asInstanceOf[B]
-  }
-  def getAll(keys:List[A]):Map[A,B] = {
-    Map(cache.getAllWithLoader(keys,loader).toList.map(tup => (tup._1.asInstanceOf[A],tup._2.asInstanceOf[Element].getObjectValue.asInstanceOf[B])):_*)
+  def contains(key:A):Boolean = key != null && cache.isKeyInCache(key)
+  def get(key:A):Option[B] = {
+    cache.getWithLoader(key,loader,null) match {
+      case null => {
+        warn("getWithLoader(%s) returned null".format(key))
+        None
+      }
+      case e:Element => e.getObjectValue match {
+        case i:B => {
+          warn("getWithLoader(%s) returned %s".format(key,i))
+          Some(i)
+        }
+        case other => {
+          warn("getWithLoader(%s) returned %s cast to type".format(key,other))
+          Some(other.asInstanceOf[B])
+        }
+      }
+    }
   }
   def update(key:A,value:B):Unit = {
     cache.put(new Element(key,value))
+    println("put keys in cache[%s]: %s (%s)".format(name,keys.length,cache.getSize))
   }
   def startup = try {
     if (cache.getStatus == Status.STATUS_UNINITIALISED){
@@ -846,65 +885,3 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   }
   def shutdown = cache.dispose()
 }
-/*
-class ResourceCachingAdaptor(sc:ServerConfiguration,cacheConfig:CacheConfig) extends PassThroughAdaptor(sc){
-  val imageCache = new ManagedCache[String,MeTLImage]("imageByIdentity",((i:String)) => super.getImage(i),cacheConfig)
-  val imageWithJidCache = new ManagedCache[Tuple2[String,String],MeTLImage]("imageByIdentityAndJid",(ji) => super.getImage(ji._1,ji._2),cacheConfig)
-  val resourceCache = new ManagedCache[String,Array[Byte]]("resourceByIdentity",(i:String) => super.getResource(i),cacheConfig)
-  val resourceWithJidCache = new ManagedCache[Tuple2[String,String],Array[Byte]]("resourceByIdentityAndJid",(ji) => super.getResource(ji._1,ji._2),cacheConfig)
-  override def getImage(jid:String,identity:String) = {
-    imageWithJidCache.get((jid,identity))
-  }
-  override def postResource(jid:String,userProposedId:String,data:Array[Byte]):String = {
-    val res = super.postResource(jid,userProposedId,data)
-    resourceWithJidCache.update((jid,res),data)
-    res
-  }
-  override def getResource(jid:String,identifier:String):Array[Byte] = {
-    resourceWithJidCache.get((jid,identifier))
-  }
-  override def insertResource(jid:String,data:Array[Byte]):String = {
-    val res = super.insertResource(jid,data)
-    resourceWithJidCache.update((jid,res),data)
-    res
-  }
-  override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = {
-    val res = super.upsertResource(jid,identifier,data)
-    resourceWithJidCache.update((jid,res),data)
-    res
-  }
-  override def getImage(identity:String) = {
-    imageCache.get(identity)
-  }
-  override def getResource(identifier:String):Array[Byte] = {
-    resourceCache.get(identifier)
-  }
-  override def insertResource(data:Array[Byte]):String = {
-    val res = super.insertResource(data)
-    resourceCache.update(res,data)
-    res
-  }
-  override def upsertResource(identifier:String,data:Array[Byte]):String = {
-    val res = super.upsertResource(identifier,data)
-    resourceCache.update(res,data)
-    res
-  }
-  override def shutdown:Unit = {
-    super.shutdown
-    imageCache.shutdown
-    imageWithJidCache.shutdown
-    resourceCache.shutdown
-    resourceWithJidCache.shutdown
-  }
-  protected lazy val initialize = {
-    resourceWithJidCache.startup
-    resourceCache.startup
-    imageWithJidCache.startup
-    imageCache.startup
-  }
-  override def isReady:Boolean = {
-    initialize
-    super.isReady
-  }
-}
-*/

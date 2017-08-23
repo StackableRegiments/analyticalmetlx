@@ -262,7 +262,6 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
     val result = xmlSerializer.toMeTLUnhandledStanza(content)
 
     result should have (
-      server (ServerConfiguration.empty),
       author ("eecrole"),
       timestamp (3453463456234L)
     )
@@ -349,7 +348,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
   }
 
   test("metl content to xml with audiences") {
-    val content = ParsedMeTLContent("eecrole", -1L,List(Audience(ServerConfiguration.empty,"a","b","c","d"),Audience(ServerConfiguration.empty,"e","f","g","h")))
+    val content = ParsedMeTLContent("eecrole", -1L,List(Audience("a","b","c","d"),Audience("e","f","g","h")))
 
     val result = XmlUtils.parsedMeTLContentToXml(content)
 
@@ -357,7 +356,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
   }
 
   test("theme to xml") {
-    val content = MeTLTheme(ServerConfiguration.empty,"anauthor",1,"2",Theme("anauthor","sometext","anorigin"),Nil)
+    val content = MeTLTheme("anauthor",1,"2",Theme("anauthor","sometext","anorigin"),Nil)
     val result = xmlSerializer.fromTheme(content).norm.toString
     assert((<message timestamp="1"><theme>
       <author>anauthor</author>
@@ -377,7 +376,7 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
     <audiences />
     </theme>
     val result = xmlSerializer.toTheme(content)
-    assert(result === MeTLTheme(ServerConfiguration.empty,"anauthor",1,"2",Theme("anauthor","sometext","anorigin"),Nil))
+    assert(result === MeTLTheme("anauthor",1,"2",Theme("anauthor","sometext","anorigin"),Nil))
   }
 
   test("extract different depth canvas content") {
@@ -451,10 +450,6 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
     assert(stanza.identity == "21758.0")
   }
 
-  test("construct generic xml serializer with empty server configuration") {
-
-    assert(xmlSerializer.configName === "empty")
-  }
   test("parse metl move delta to xml and back") {
     forAll (genMoveDelta) { (gennedMoveDelta: MeTLMoveDelta) =>
 

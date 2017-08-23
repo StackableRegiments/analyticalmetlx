@@ -26,11 +26,11 @@ object StudentActivityReportHelper extends Logger {
   protected val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
 
   def studentActivity(courseId: Option[String],from:Option[Date],to:Option[Date]): List[List[String]] = {
-    reportCache.get((courseId,from,to))
+    reportCache.get((courseId,from,to)).getOrElse(Nil)
   }
 
   def studentActivityCsv(courseId: Option[String],from:Option[Date],to:Option[Date]): String = {
-    rowsToCsv(reportCache.get(courseId,from,to))
+    rowsToCsv(studentActivity(courseId,from,to))
   }
 
   def countDays(duration: (Long, Boolean, Long, Long)): Double = {
@@ -53,7 +53,7 @@ object StudentActivityReportHelper extends Logger {
     var rawRows: List[RawRow] = List()
     conversations.foreach(conversation => {
       // Load all detail of the room
-      val room = MeTLXConfiguration.getRoom(conversation.jid.toString, server.name, ConversationRoom(server.name, conversation.jid.toString))
+      val room = MeTLXConfiguration.getRoom(conversation.jid, server.name, ConversationRoom(conversation.jid))
 
       // Sort attendances just in case.
       val slideAttendances = room.getHistory.getAttendances
@@ -128,7 +128,7 @@ object StudentActivityReportHelper extends Logger {
   protected def getAllD2LUserIds(conversationForeignRelationship: Option[ForeignRelationship]): List[Member] = {
     conversationForeignRelationship match {
       case Some(fr) =>
-        val members = membersCache.get((fr.system, fr.key))
+        val members = membersCache.get((fr.system, fr.key)).getOrElse(None)
         members match {
           case Some(_) =>
             members.getOrElse(List())
@@ -141,7 +141,7 @@ object StudentActivityReportHelper extends Logger {
   protected def getD2LUserId(conversationForeignRelationship: Option[ForeignRelationship], metlUser: String): String = {
     conversationForeignRelationship match {
       case Some(fr) =>
-        val members = membersCache.get((fr.system, fr.key))
+        val members = membersCache.get((fr.system, fr.key)).getOrElse(None)
         members match {
           case Some(m) =>
             findUserIdInMembers(m, metlUser)

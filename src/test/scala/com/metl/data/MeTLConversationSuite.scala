@@ -81,11 +81,11 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
             jid ("232523454"),
             title ("The quest for answers"),
             created (23524634634343L),
-            permissions(Permissions(ServerConfiguration.empty, false, false, true,true,true)),
+            permissions(Permissions(false, false, true,true,true)),
             slides (List(
-              Slide(ServerConfiguration.empty, "eecrole", "3453463", 0),
-              Slide(ServerConfiguration.empty, "eecrole", "3453464", 1),
-              Slide(ServerConfiguration.empty, "eecrole", "3453465", 2)))
+              Slide("eecrole", "3453463", 0),
+              Slide("eecrole", "3453464", 1),
+              Slide("eecrole", "3453465", 2)))
 		)
 	}
 

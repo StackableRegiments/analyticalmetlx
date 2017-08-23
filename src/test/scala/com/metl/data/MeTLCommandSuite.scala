@@ -36,7 +36,6 @@ class MeTLCommandSuite extends FunSuite with GeneratorDrivenPropertyChecks with 
 		val result = xmlSerializer.toMeTLData(content).asInstanceOf[MeTLCommand]
 
 		result should have (
-			server (ServerConfiguration.empty),
 			author ("eecrole"),
 			timestamp (-1L),
 			command ("GO_TO_SLIDE"),

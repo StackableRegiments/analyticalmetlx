@@ -123,7 +123,7 @@ class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:S
       case "passfail" => MeTLGradeValueType.Boolean
       case _ => MeTLGradeValueType.Text
     }
-    MeTLGrade(config,author,new Date().getTime(),gradeId,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (id,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
+    MeTLGrade(author,new Date().getTime(),gradeId,location,d2lGos.Name,d2lGos.Description.flatMap(_.Text).getOrElse(""),gradeType,visible,d2lGos.Id.map(foreignId => (id,"%s_%s".format(ctx,foreignId))),None,Some(d2lGos.MaxPoints.toDouble),Some(0.0),Nil)
   }
   protected def fromGradeValue(uc:ID2LUserContext,in:MeTLGradeValue):D2LIncomingGradeValue = {
     val gradeObjectType = in.getType match {
@@ -155,15 +155,15 @@ class D2LGradebook(override val id:String, override val name:String,d2lBaseUrl:S
     in.GradeObjectType match {
       case 1 => {
         val gradeValue = in.PointsNumerator.getOrElse(0.0)
-        MeTLNumericGradeValue(config,author,timestamp,gradeId,gradedUser,gradeValue,comments,privateComments,Nil)
+        MeTLNumericGradeValue(author,timestamp,gradeId,gradedUser,gradeValue,comments,privateComments,Nil)
       }
       case 2 => {
         val gradeValue = in.Pass.getOrElse(false)
-        MeTLBooleanGradeValue(config,author,timestamp,gradeId,gradedUser,gradeValue,comments,privateComments,Nil)
+        MeTLBooleanGradeValue(author,timestamp,gradeId,gradedUser,gradeValue,comments,privateComments,Nil)
       }
       case _ => {
         val gradeValue = in.Text.getOrElse("")
-        MeTLTextGradeValue(config,author,timestamp,gradeId,gradedUser,gradeValue,comments,privateComments,Nil)
+        MeTLTextGradeValue(author,timestamp,gradeId,gradedUser,gradeValue,comments,privateComments,Nil)
       }
     }
   }
