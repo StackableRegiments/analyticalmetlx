@@ -9,7 +9,7 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   protected lazy val history = new PersistedHistory(this,dbInterface)
   protected lazy val conversations = new PersistedConversations(this,dbInterface,onConversationUpdated)
   protected lazy val resourceProvider = new PersistedResourceProvider(this,dbInterface)
-  protected lazy val profileProvider = new CachingProfileProvider(new PersistedProfileProvider(this,dbInterface))
+  protected lazy val profileProvider = new PersistedProfileProvider(this,dbInterface)
   override def shutdown = {
     dbInterface.shutdown
     super.shutdown
@@ -20,7 +20,8 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   }
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
-  override def getAllConversations = conversations.getAll
+  override def getAllConversations = conversations.getAllConversations
+  override def getAllSlides = conversations.getAllSlides
   override def searchForConversation(query:String) = conversations.search(query)
   override def searchForConversationByCourse(courseId:String) = conversations.searchByCourse(courseId)
   override def detailsOfConversation(jid:String) = conversations.detailsOf(jid)

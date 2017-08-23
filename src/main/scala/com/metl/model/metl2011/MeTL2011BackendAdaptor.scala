@@ -31,7 +31,8 @@ class MeTL2011BackendAdaptor(name:String,hostname:String,xmppDomainName:String,o
   protected val resourceProvider = new MeTL2011Resources(this,http)
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
-  override def getAllConversations = conversations.getAll
+  override def getAllConversations = conversations.getAllConversations
+  override def getAllSlides = conversations.getAllSlides
   override def searchForConversation(query:String) = conversations.search(query)
   override def searchForConversationByCourse(courseId:String) = List.empty[Conversation]
   override def detailsOfConversation(jid:String) = conversations.detailsOf(jid)
@@ -155,7 +156,8 @@ class TransientMeTL2011BackendAdaptor(name:String,hostname:String,onConversation
   protected val resourceProvider = new MeTL2011Resources(this,http)
   override def getMessageBus(d:MessageBusDefinition) = messageBusProvider.getMessageBus(d)
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
-  override def getAllConversations = conversations.getAll
+  override def getAllConversations = conversations.getAllConversations
+  override def getAllSlides = conversations.getAllSlides
   override def getConversationsForSlideId(jid:String) = conversations.getConversationsForSlideId(jid)
   override def detailsOfSlide(jid:String) = conversations.detailsOfSlide(jid)
   override def searchForConversation(query:String) = conversations.search(query)

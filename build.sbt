@@ -20,7 +20,8 @@ lazy val root = (project in file(".")).
 
 resolvers ++= Seq(
   "snapshots"     at "https://oss.sonatype.org/content/repositories/snapshots",
-  "releases"        at "https://oss.sonatype.org/content/repositories/releases"
+  "releases"        at "https://oss.sonatype.org/content/repositories/releases",
+  "javanet"       at "http://download.java.net/maven/2/"
 )
 
 seq(webSettings :_*)
@@ -87,6 +88,7 @@ libraryDependencies ++= {
     "org.apache.poi" % "poi-ooxml-schemas" % "3.13",
     "org.apache.poi" % "poi-scratchpad" % "3.13",
     "net.sf.ehcache" % "ehcache" % "2.10.1",
+    "javax" % "javaee-api" % "6.0",
     //"io.github.stackableregiments" %% "metldata" % "3.20.+",
     //"io.github.stackableregiments" %% "metl2011" % "3.12.+",
     //"io.github.stackableregiments" %% "metl-h2" % "3.28.+",

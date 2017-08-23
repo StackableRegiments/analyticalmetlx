@@ -52,6 +52,25 @@ abstract class MessageBus(definition:MessageBusDefinition, creator:MessageBusPro
   def notifyConnectionResumed = definition.onConnectionRegained()
   def release = creator.releaseMessageBus(definition)
 }
+
+class TabBus(mb:MessageBus) extends MessageBus(mb.getDefinition,mb.getCreator){
+  protected def onMessageToRoom[A <: MeTLStanza](s:A):Unit = {}
+  protected def onMessageFromRoom[A <: MeTLStanza](s:A):Unit = {}
+  override def getDefinition:MessageBusDefinition = mb.getDefinition
+  override def getCreator:MessageBusProvider = mb.getCreator
+  override def sendStanzaToRoom[A <: MeTLStanza](stanza:A,updateTimestamp:Boolean = true):Boolean = {
+    onMessageToRoom(stanza)
+    mb.sendStanzaToRoom(stanza,updateTimestamp)
+  }
+  override def recieveStanzaFromRoom[A <: MeTLStanza](stanza:A) = {
+    onMessageFromRoom(stanza)
+    mb.recieveStanzaFromRoom(stanza)
+  }
+  override def notifyConnectionLost = mb.notifyConnectionLost
+  override def notifyConnectionResumed = mb.notifyConnectionResumed
+  override def release = mb.release
+}
+
 class LoopbackBus(definition:MessageBusDefinition,creator:MessageBusProvider) extends MessageBus(definition,creator) with Logger {
   override def sendStanzaToRoom[A <: MeTLStanza](stanza:A,updateStanza:Boolean = true):Boolean = {
     val newMessage = if (updateStanza) {

@@ -46,9 +46,10 @@ class MeTL2011CachedConversations(config:ServerConfiguration, http:HttpProvider,
     true
   }
 
-  override def getAll:List[Conversation] = Stopwatch.time("CachedConversations.getAll",{
+  override def getAllConversations:List[Conversation] = Stopwatch.time("CachedConversations.getAll",{
     conversations.map(_._2).toList
   })
+  override def getAllSlides:List[Slide] = conversations.flatMap(_._2.slides).toList
   override def search(query:String):List[Conversation] = Stopwatch.time("CachedConversations.search",{
     if(query == null || query.length == 0) List.empty[Conversation]
     else{
@@ -163,8 +164,11 @@ class MeTL2011Conversations(config:ServerConfiguration, val searchBaseUrl:String
     }
   }
 
-  override def getAll:List[Conversation] = Stopwatch.time("Conversations.getAll",{
+  override def getAllConversations:List[Conversation] = Stopwatch.time("Conversations.getAllConversations",{
     (scala.xml.XML.loadString(http.getClient.get(searchBaseUrl + "search?query=")) \\ "conversation").map(c => serializer.toConversation(c)).toList
+  })
+  override def getAllSlides:List[Slide] = Stopwatch.time("Conversations.getAllSlides",{
+    getAllConversations.flatMap(_.slides)
   })
   override def detailsOfSlide(jid:String):Slide = Slide.empty
   override def getConversationsForSlideId(jid:String):List[String] = Nil

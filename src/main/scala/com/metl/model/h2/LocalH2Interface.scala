@@ -468,22 +468,9 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   //conversations table
   protected lazy val mbDef = new MessageBusDefinition("global","conversationUpdating",receiveConversationDetailsUpdated _)
   protected lazy val conversationMessageBus = config.getMessageBus(mbDef)
-  protected lazy val conversationCache:scala.collection.mutable.Map[String,Conversation] = scala.collection.mutable.Map(H2Conversation.findAll.groupBy(_.jid.get).toList.flatMap(c => {
-    val allForThisJid = c._2
-    val latest = allForThisJid.sortBy(_.lastAccessed.get).reverse.headOption
-    latest.map(l => (l.jid.get,serializer.toConversation(l)))
-  }):_*)
-  protected lazy val slideCache:scala.collection.mutable.Map[String,Slide] = scala.collection.mutable.Map(H2Slide.findAll.groupBy(_.jid.get).toList.flatMap(s => {
-    val allForThisJid = s._2
-    val latest = allForThisJid.sortBy(_.modified.get).reverse.headOption
-    latest.map(l => (l.jid.get,serializer.toSlide(l)))
-  }):_*)
+
   protected def updateConversation(c:Conversation):Boolean = {
     try {
-      conversationCache.update(c.jid,c)
-      c.slides.foreach(s => {
-        slideCache.update(s.id,s.copy(exposed=true,groupSet=Nil,index=0))
-      })
       serializer.fromConversation(c.copy(lastAccessed = new java.util.Date().getTime)).save
       onConversationDetailsUpdated(c)
       true
@@ -500,7 +487,6 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         try{
           val jidToUpdate = c.commandParameters(0)
           val conversation = detailsOfConversation(jidToUpdate)
-          conversationCache.update(conversation.jid,conversation)
           onConversationDetailsUpdated(conversation)
         } catch {
           case e:Throwable => error("exception while attempting to update conversation details",e)
@@ -509,19 +495,27 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       case _ => {}
     }
   }
-  def getAllConversations:List[Conversation] = conversationCache.values.toList
-  override def getConversationsForSlideId(jid:String):List[String] = conversationCache.values.filter(_.slides.exists(_.id == jid)).map(_.jid).toList
-  def searchForConversation(query:String):List[Conversation] = conversationCache.values.filter(c => c.title.toLowerCase.trim.contains(query.toLowerCase.trim) || c.author.toLowerCase.trim == query.toLowerCase.trim).toList
-  def searchForConversationByCourse(courseId:String):List[Conversation] = conversationCache.values.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
-  def detailsOfConversation(jid:String):Conversation = conversationCache(jid)
-  def detailsOfSlide(jid:String):Slide = slideCache(jid)
+  def getAllConversations:List[Conversation] = H2Conversation.findAll.groupBy(_.jid.get).toList.flatMap(c => {
+    val allForThisJid = c._2
+    val latest = allForThisJid.sortBy(_.lastAccessed.get).reverse.headOption
+    latest.map(l => serializer.toConversation(l))
+  })
+  
+  override def getConversationsForSlideId(jid:String):List[String] = getAllConversations.filter(_.slides.exists(_.id == jid)).map(_.jid).toList
+  def searchForConversation(query:String):List[Conversation] = getAllConversations.filter(c => c.title.toLowerCase.trim.contains(query.toLowerCase.trim) || c.author.toLowerCase.trim == query.toLowerCase.trim).toList
+  def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
+  def detailsOfConversation(jid:String):Conversation = H2Conversation.findAll(By(H2Conversation.jid,jid),OrderBy(H2Conversation.creation,Descending),MaxRows(1)).headOption.map(hc => serializer.toConversation(hc)).getOrElse(Conversation.empty)
+  def getAllSlides:List[Slide] = H2Slide.findAll.groupBy(_.jid.get).toList.flatMap(s => {
+    val allForThisJid = s._2
+    val latest = allForThisJid.sortBy(_.creation.get).reverse.headOption
+    latest.map(l => serializer.toSlide(l))
+  })
+  def detailsOfSlide(jid:String):Slide = H2Slide.findAll(By(H2Slide.jid,jid),OrderBy(H2Slide.creation,Descending),MaxRows(1)).headOption.map(hs => serializer.toSlide(hs)).getOrElse(Slide.empty)
   def generateConversationJid:String = "c_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
   def generateSlideJid:String = "s_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
   def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = {
     val slide = H2Slide.create.slideType(slideType).creation(new java.util.Date().getTime).author(author).jid(generateSlideJid).defaultHeight(540).defaultWidth(720).saveMe
-    val s = Slide(config,slide.author,slide.jid.get,0,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
-    slideCache.put(s.id,s.copy(exposed = true,groupSet = Nil,index = 0))
-    s
+    Slide(config,slide.author,slide.jid.get,0,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
   }
   def createConversation(title:String,author:String):Conversation = {
     val now = new Date()

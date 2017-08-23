@@ -56,6 +56,7 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def getMessageBus(d:MessageBusDefinition):MessageBus
   def getHistory(jid:String):History
   def getAllConversations:List[Conversation]
+  def getAllSlides:List[Slide]
   def getConversationsForSlideId(jid:String):List[String]
   def searchForConversation(query:String):List[Conversation]
   def searchForConversationByCourse(courseId:String):List[Conversation]
@@ -207,6 +208,7 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def getMessageBus(d:MessageBusDefinition) = EmptyMessageBus
   override def getHistory(jid:String) = History.empty
   override def getAllConversations = List.empty[Conversation]
+  override def getAllSlides:List[Slide] = List.empty[Slide]
   override def getConversationsForSlideId(jid:String):List[String] = List.empty[String]
   override def searchForConversation(query:String) = List.empty[Conversation]
   override def searchForConversationByCourse(courseId:String) = List.empty[Conversation]
@@ -260,6 +262,7 @@ object FrontendSerializationAdaptor extends ServerConfiguration("frontend","fron
   override def getMessageBus(d:MessageBusDefinition) = EmptyMessageBus
   override def getHistory(jid:String) = History.empty
   override def getAllConversations = List.empty[Conversation]
+  override def getAllSlides:List[Slide] = List.empty[Slide]
   override def getConversationsForSlideId(jid:String):List[String] = List.empty[String]
   override def searchForConversation(query:String) = List.empty[Conversation]
   override def searchForConversationByCourse(query:String) = List.empty[Conversation]
@@ -311,6 +314,7 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def getMessageBus(d:MessageBusDefinition) = sc.getMessageBus(d)
   override def getHistory(jid:String) = sc.getHistory(jid)
   override def getAllConversations = sc.getAllConversations
+  override def getAllSlides:List[Slide] = List.empty[Slide]
   override def getConversationsForSlideId(jid:String):List[String] = sc.getConversationsForSlideId(jid)
   override def searchForConversation(query:String) = sc.searchForConversation(query)
   override def searchForConversationByCourse(courseId:String) = sc.searchForConversationByCourse(courseId)
