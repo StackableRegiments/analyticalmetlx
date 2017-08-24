@@ -67,7 +67,10 @@
 				profileTemplate = profileContainer.find(".profile").clone();
 				profileContainer.empty();
 				reRenderUI();
-				$("#createProfile").bind("click",function(){createProfile();});
+				$("#createProfile").click(function(){ 
+					console.log("clicked createProfile");
+					return createProfile();
+				});
 			});
 			MeTLBus.subscribe("receiveCurrentProfile","account",function(prof){
 				console.log("received current: ",prof);
@@ -121,7 +124,7 @@
 				<a class="editProfileLink">edit</a>
 			</div>
 		</div>
-		<input type="button" id="createProfile"></input>
+		<button id="createProfile" >Create profile</button>
 	</div>
 	<div class="lift:Metl.account"></div>
 </div>
