@@ -460,6 +460,10 @@ case class MeTLImage(override val author:String,override val timestamp:Long,tag:
     MeTLDirtyImage(author,dirtyTime,target,privacy,slide,identity)
   })
   override def generateNewIdentity(descriptor:String):MeTLImage = copy(identity = genNewIdentity("newImage:"+descriptor))
+  override def equals(other:Any):Boolean = other match {
+    case MeTLImage(a,ts,t,s,_ib,_pb,iw,ih,ix,iy,ta,p,sl,id,aus,sfx,sfy) => a == author && ts == timestamp && t == tag && s == source && iw == width && ih == height && ix == x && iy == y && ta == target && p == privacy && sl == slide && id == identity && aus == audiences && sfx == scaleFactorX && sfy == scaleFactorY
+    case _ => false
+  }
 }
 
 object MeTLImage{
@@ -955,6 +959,10 @@ case class MeTLSubmission(override val author:String,override val timestamp:Long
   def generateNewIdentity(descriptor: String): com.metl.data.MeTLCanvasContent = this
   def scale(xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
   def scale(factor: Double): com.metl.data.MeTLCanvasContent = this
+  override def equals(other:Any):Boolean = other match {
+    case MeTLSubmission(a,ts,t,sid,u,_ib,bl,ta,p,id,aus) => a == author && ts == timestamp && t == title && sid == slideJid && u == url && bl == blacklist && ta == target && p == privacy && id == identity && aus == audiences
+    case _ => false
+  }
 }
 object MeTLSubmission{
   def empty = MeTLSubmission("",0L,"","","")

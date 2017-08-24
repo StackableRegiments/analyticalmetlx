@@ -34,7 +34,7 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                                     <index>0</index>
                                     <defaultHeight>540</defaultHeight>
                                     <defaultWidth>720</defaultWidth>
-                                    <exposed>false</exposed>
+                                    <exposed>true</exposed>
                                     <type>SLIDE</type>
                                 </slide>
                                 <slide>
@@ -52,7 +52,7 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                                     <index>2</index>
                                     <defaultHeight>540</defaultHeight>
                                     <defaultWidth>720</defaultWidth>
-                                    <exposed>false</exposed>
+                                    <exposed>true</exposed>
                                     <type>SLIDE</type>
                                 </slide>
                             </slides>
@@ -83,9 +83,9 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
             created (23524634634343L),
             permissions(Permissions(false, false, true,true,true)),
             slides (List(
-              Slide("eecrole", "3453463", 0),
-              Slide("eecrole", "3453464", 1),
-              Slide("eecrole", "3453465", 2)))
+              Slide(author = "eecrole", id = "3453463", index = 0, exposed = true),
+              Slide(author = "eecrole", id = "3453464", index = 1, exposed = false),
+              Slide(author = "eecrole", id = "3453465", index = 2, exposed = true)))
 		)
 	}
 
