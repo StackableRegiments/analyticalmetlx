@@ -278,6 +278,7 @@ object MeTLStanza{
   def unapply(in:MeTLStanza) = Some((in.server,in.author,in.timestamp,in.audiences))
   def empty = MeTLStanza(ServerConfiguration.empty,"",0L)
 }
+case class Theme(author:String,text:String,origin:String)
 object MeTLTheme {
   def empty = MeTLTheme(ServerConfiguration.empty,"",0L,"",Theme("","",""),Nil)
 }
