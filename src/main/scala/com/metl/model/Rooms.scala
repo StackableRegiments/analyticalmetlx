@@ -88,12 +88,11 @@ class HistoryCachingRoomProvider(configName:String,idleTimeout:Option[Long]) ext
   protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData,eternal:Boolean = false) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room),{
     //val r = new HistoryCachingRoom(configName,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
     val start = new java.util.Date().getTime
-    val a = new java.util.Date().getTime - start
     val r = new XmppBridgingHistoryCachingRoom(configName,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
     val b = new java.util.Date().getTime - start
     r.localSetup
     val c = new java.util.Date().getTime - start
-    warn("created room %s (%s, %s, %s) %s".format(room,a,b,c,roomDefinition))
+    trace("created room %s (%s, %s) %s".format(room,b,c,roomDefinition))
     r
   })
   override def removeMeTLRoom(room:String) = Stopwatch.time("Rooms.removeMeTLRoom(%s)".format(room),{
@@ -303,9 +302,9 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       }
     }
     case u@UpdateThumb(slide) => {
-      warn("Received thumb request: %s => %s".format(roomMetaData,slide))
+      debug("Received thumb request: %s => %s".format(roomMetaData,slide))
       joinedUsers.foreach(ju => {
-        warn("notifying joinedUser: %s".format(ju))
+        debug("notifying joinedUser: %s".format(ju))
         ju._3 ! u
       })
     }
@@ -558,7 +557,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
   })
   override def getSnapshot(size:RenderDescription) = {
     val s = new java.util.Date().getTime()
-    warn("%s.getSnapshot started: %s".format(roomMetaData,size))
+    debug("%s.getSnapshot started: %s".format(roomMetaData,size))
     showInterest
     val result = snapshots.get(size).getOrElse({
       roomMetaData match {
@@ -571,7 +570,7 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       }
     })
     val e = new java.util.Date().getTime()
-    warn("%s.getSnapshot completed: %s (%sms)".format(roomMetaData,size,e - s))
+    debug("%s.getSnapshot completed: %s (%sms)".format(roomMetaData,size,e - s))
     result
   }
   override def getThumbnail = {

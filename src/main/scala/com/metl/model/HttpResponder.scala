@@ -18,10 +18,8 @@ object HttpResponder extends HttpCacher with Logger {
   debug("HttpResponder for server: %s".format(server))
   def getSnapshot(jid:String,size:String) = {
     val s = new java.util.Date().getTime()
-    warn("getSnapshot: start %s".format(jid))
     val room = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid))
     val m = new java.util.Date().getTime()
-    warn("getSnapshot: middle %s (%sms)".format(jid,m - s))
     val snap = room.getSnapshot(size.trim.toLowerCase match {
       case "thumbnail" => Globals.ThumbnailSize
       case "small" => Globals.SmallSize
@@ -31,7 +29,6 @@ object HttpResponder extends HttpCacher with Logger {
       case _ => Globals.ThumbnailSize
     })
     val e = new java.util.Date().getTime()
-    warn("getSnapshot: end %s (%sms)".format(jid,e - m))
     debug("getSnapshot: (%s => %s, %s) => %s".format(jid, room, size,snap))
     snap
   }

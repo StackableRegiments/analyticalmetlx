@@ -1744,49 +1744,66 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
   override def lifespan = Globals.metlActorLifespan
 
   private def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms",{
-    trace("roomInfo received: %s".format(roomInfo))
+    warn("roomInfo received: %s".format(roomInfo))
     trace("updateRooms: %s".format(roomInfo))
     roomInfo match {
       case RoomJoinAcknowledged(s,r) => {
         trace("joining room: %s".format(r))
-        rooms = rooms.updated((s,r),() => MeTLXConfiguration.getRoom(r,s))
-        try {
-          val slideId = r
-          currentConversation.map(c => {
-            
-            trace("trying to send truePresence to room: %s %s".format(c.jid,slideId))
-            if (c.slides.exists(_.id == r)){
-              val room = MeTLXConfiguration.getRoom(c.jid,server,ConversationRoom(c.jid))
-              room !  LocalToServerMeTLStanza(Attendance(username,-1L,slideId,true,Nil))
-            } else {
-              val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
-              room ! LocalToServerMeTLStanza(Attendance(username,-1L,c.jid,true,Nil))
+        if (rooms.contains((s,r))){
+          //don't do anything - you're already in the room
+        } else {
+          rooms = rooms.updated((s,r),() => MeTLXConfiguration.getRoom(r,s))
+          try {
+            RoomMetaDataUtils.fromJid(r) match {
+              case SlideRoom(sJid) if currentConversation.exists(c => c.slides.exists(_.id == sJid)) => {
+                currentConversation.map(c => {
+                  warn("trying to send truePresence for slideRoom to conversationRoom: %s %s".format(c.jid,sJid))
+                  val room = MeTLXConfiguration.getRoom(c.jid,server,ConversationRoom(c.jid))
+                  room !  LocalToServerMeTLStanza(Attendance(username,-1L,sJid,true,Nil))
+                })
+              }
+              case ConversationRoom(cJid) => {
+                warn("trying to send truePresence for conversationRoom to global: %s".format(cJid))
+                val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
+                room ! LocalToServerMeTLStanza(Attendance(username,-1L,cJid,true,Nil))
+              }
+              case _ => {}
             }
-          })
-        } catch {
-          case e:Exception => {
+          } catch {
+            case e:Exception => {
+              error("failed to send arrivingAttendance to room: (%s,%s) => %s".format(s,r,e.getMessage),e)
+            }
           }
         }
       }
       case RoomLeaveAcknowledged(s,r) => {
-        trace("leaving room: %s".format(r))
-        try {
-          val slideId = r
-          currentConversation.map(c => {
-            trace("trying to send falsePresence to room: %s %s".format(c.jid,slideId))
-            if (c.slides.exists(_.id == r)){
-              val room = MeTLXConfiguration.getRoom(c.jid,s,ConversationRoom(c.jid))
-              room !  LocalToServerMeTLStanza(Attendance(username,-1L,slideId,false,Nil))
-            } else {
-              val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
-              room ! LocalToServerMeTLStanza(Attendance(username,-1L,c.jid,false,Nil))
+        if (rooms.contains((s,r))){
+          trace("leaving room: %s".format(r))
+          try {
+            RoomMetaDataUtils.fromJid(r) match {
+              case SlideRoom(sJid) if currentConversation.exists(c => c.slides.exists(_.id == sJid)) => {
+                currentConversation.map(c => {
+                  warn("trying to send falsePresence for slideRoom to conversationRoom: %s %s".format(c.jid,sJid))
+                  val room = MeTLXConfiguration.getRoom(c.jid,server,ConversationRoom(c.jid))
+                  room !  LocalToServerMeTLStanza(Attendance(username,-1L,sJid,false,Nil))
+                })
+              }
+              case ConversationRoom(cJid) => {
+                warn("trying to send falsePresence for conversationRoom to global: %s".format(cJid))
+                val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
+                room ! LocalToServerMeTLStanza(Attendance(username,-1L,cJid,false,Nil))
+              }
+              case _ => {}
             }
-          })
-        } catch {
-          case e:Exception => {
+          } catch {
+            case e:Exception => {
+              error("failed to send leavingAttendance to room: (%s,%s) => %s".format(s,r,e.getMessage),e)
+            }
           }
+          rooms = rooms.filterNot(rm => rm._1 == (s,r))
+        } else {
+          // don't do anything - you're not in the roo
         }
-        rooms = rooms.filterNot(rm => rm._1 == (s,r))
       }
       case _ => {}
     }
