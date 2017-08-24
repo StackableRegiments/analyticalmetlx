@@ -8,7 +8,7 @@ import _root_.net.liftweb.common._
 import net.liftweb.util
 import net.sf.ehcache.config.PersistenceConfiguration
 
-class ConversationCache(config:ServerConfiguration) {
+class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit) {
   def startup:Unit = {}
   def shutdown:Unit = {}
   protected lazy val conversationCache:scala.collection.mutable.Map[String,Conversation] = scala.collection.mutable.Map(config.getAllConversations.map(c => (c.jid,c)):_*)
@@ -26,6 +26,7 @@ class ConversationCache(config:ServerConfiguration) {
     c.slides.foreach(s => {
       slideCache.update(s.id,s)
     })
+    onConversationDetailsUpdated(c)
     c
   }
   def createConversation(title:String,author:String):Conversation = {
@@ -229,7 +230,7 @@ class CachingServerAdaptor(
   resourceCacheConfig:Option[CacheConfig] = None,
   sessionCacheConfig:Option[CacheConfig] = None
 ) extends PassThroughAdaptor(config) {
-  protected val conversationCache = Some(new ConversationCache(config))
+  protected val conversationCache = Some(new ConversationCache(config,config.onConversationDetailsUpdated))
   protected val themeCache = themeCacheConfig.map(c => new ThemeCache(config,c))
   protected val profileCache = profileCacheConfig.map(c => new ProfileCache(config,c))
   protected val resourceCache = resourceCacheConfig.map(c => new ResourceCache(config,c))
