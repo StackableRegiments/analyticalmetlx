@@ -22,30 +22,29 @@ object ServerConfiguration{
   val parser = new ServerConfigurationParser
   def addServerConfigurator(sc:ServerConfigurator) = parser.addServerConfigurator(sc)
   List(
-    EmptyBackendAdaptorConfigurator,
-    FrontendSerializationAdaptorConfigurator
+    EmptyBackendAdaptorConfigurator
   ).foreach(addServerConfigurator _)
 
-  def loadServerConfigsFromFile(path:String,onConversationDetailsUpdated:Conversation=>Unit,messageBusCredentailsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]) = {
+  def loadServerConfigsFromFile(path:String,onConversationDetailsUpdated:Conversation=>Unit) = {
     val xml = XML.load(path)
-    (xml \\ "server").foreach(sc => interpret(sc,onConversationDetailsUpdated,messageBusCredentailsFunc,conversationListenerCredentialsFunc,httpCredentialsFunc))
+    (xml \\ "server").foreach(sc => interpret(sc,onConversationDetailsUpdated))
     (xml \\ "defaultServerConfiguration").text match {
       case s:String if (s.length > 0) => setDefaultServerConfiguration(() => configForName(s))
       case _ => {}
     }
   }
-  protected def interpret(n:Node,onConversationDetailsUpdated:Conversation=>Unit,messageBusCredentailsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]) = parser.interpret(n,onConversationDetailsUpdated,messageBusCredentailsFunc,conversationListenerCredentialsFunc,httpCredentialsFunc).map(s => addServerConfiguration(s))
+  protected def interpret(n:Node,onConversationDetailsUpdated:Conversation=>Unit) = parser.interpret(n,onConversationDetailsUpdated).map(s => addServerConfiguration(s))
 }
 
 class ServerConfigurationParser {
   protected var serverConfigurators:List[ServerConfigurator] = Nil
   def addServerConfigurator(sc:ServerConfigurator) = serverConfigurators = serverConfigurators ::: List(sc)
-  def interpret(n:Node,onConversationDetailsUpdated:Conversation=>Unit,messageBusCredentailsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]):List[ServerConfiguration] = serverConfigurators.filter(sc => sc.matchFunction(n)).flatMap(sc => sc.interpret(n,onConversationDetailsUpdated,messageBusCredentailsFunc,conversationListenerCredentialsFunc,httpCredentialsFunc))
+  def interpret(n:Node,onConversationDetailsUpdated:Conversation=>Unit):List[ServerConfiguration] = serverConfigurators.filter(sc => sc.matchFunction(n)).flatMap(sc => sc.interpret(n,onConversationDetailsUpdated))
 }
 
 class ServerConfigurator{
   def matchFunction(e:Node) = false
-  def interpret(e:Node,onConversationDetailsUpdated:Conversation=>Unit,messageBusCredentailsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]):Option[ServerConfiguration] = None
+  def interpret(e:Node,onConversationDetailsUpdated:Conversation=>Unit):Option[ServerConfiguration] = None
 }
 
 abstract class ServerConfiguration(incomingName:String,incomingHost:String,onConversationDetailsUpdatedFunc:Conversation=>Unit) {
@@ -255,60 +254,7 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
 
 object EmptyBackendAdaptorConfigurator extends ServerConfigurator{
   override def matchFunction(e:Node) = (e \\ "type").text == "empty"
-  override def interpret(e:Node,o:Conversation=>Unit,messageBusCredentailsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]) = Some(EmptyBackendAdaptor)
-}
-
-object FrontendSerializationAdaptor extends ServerConfiguration("frontend","frontend",(c)=>{}){
-  val serializer = new GenericXmlSerializer(this)
-  override val messageBusProvider:MessageBusProvider = EmptyMessageBusProvider
-  override def getHistory(jid:String) = History.empty
-  override def getAllConversations = List.empty[Conversation]
-  override def getAllSlides:List[Slide] = List.empty[Slide]
-  override def getConversationsForSlideId(jid:String):List[String] = List.empty[String]
-  override def searchForConversation(query:String) = List.empty[Conversation]
-  override def searchForConversationByCourse(query:String) = List.empty[Conversation]
-  override def detailsOfConversation(jid:String) = Conversation.empty
-  override def detailsOfSlide(jid:String) = Slide.empty
-  override def createConversation(title:String,author:String) = Conversation.empty
-  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
-  override def deleteConversation(jid:String):Conversation = Conversation.empty
-  override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
-  override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
-  override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = Conversation.empty
-  override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = Conversation.empty
-  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = Conversation.empty
-  override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = Conversation.empty
-  override def updateConversation(jid:String,newConversation:Conversation):Conversation = Conversation.empty
-  override def getImage(jid:String,identity:String) = MeTLImage.empty
-  override def postResource(jid:String,userProposedId:String,data:Array[Byte]):String = ""
-  override def getResource(jid:String,identifier:String):Array[Byte] = Array.empty[Byte]
-  override def insertResource(jid:String,data:Array[Byte]):String = ""
-  override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = ""
-  override def getImage(identity:String) = MeTLImage.empty
-  override def getResource(identifier:String):Array[Byte] = Array.empty[Byte]
-  override def insertResource(data:Array[Byte]):String = ""
-  override def upsertResource(identifier:String,data:Array[Byte]):String = ""
-  override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
-  override def getProfiles(ids:String *):List[Profile] = Nil
-  override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
-  override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
-  override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {}
-  override def getSessionsForAccount(accountName:String,accountProvider:String):List[SessionRecord] = Nil
-  override def getSessionsForProfile(profileId:String):List[SessionRecord] = Nil
-  override def updateSession(sessionRecord:SessionRecord):SessionRecord = SessionRecord.empty
-  override def getCurrentSessions:List[SessionRecord] = Nil
-
-  override def getThemesByAuthor(author:String):List[Theme] = Nil
-  override def getSlidesByThemeKeyword(theme:String):List[String] = Nil
-  override def getConversationsByTheme(theme:String):List[String] = Nil
-  override def getAttendancesByAuthor(author:String):List[Attendance] = Nil
-  override def getConversationsByAuthor(author:String):List[Conversation] = Nil
-  override def getAuthorsByTheme(theme:String):List[String] = Nil
-}
-
-object FrontendSerializationAdaptorConfigurator extends ServerConfigurator{
-  override def matchFunction(e:Node) = (e \\ "type").text == "frontend"
-  override def interpret(e:Node,o:Conversation=>Unit,messageBusCredentailsFunc:()=>Tuple2[String,String],conversationListenerCredentialsFunc:()=>Tuple2[String,String],httpCredentialsFunc:()=>Tuple2[String,String]) = Some(FrontendSerializationAdaptor)
+  override def interpret(e:Node,o:Conversation=>Unit) = Some(EmptyBackendAdaptor)
 }
 
 class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.name,sc.host,sc.onConversationDetailsUpdated){

@@ -2,7 +2,6 @@ package com.metl.model
 
 import com.metl.liftAuthenticator._
 import com.metl.data._
-import com.metl.metl2011._
 import com.metl.auth._
 import com.metl.utils._
 import _root_.net.liftweb.util._
@@ -135,8 +134,6 @@ case class MeTLRolePrincipal(name:String) extends java.security.Principal{
 
 object MeTLXConfiguration extends PropertyReader with Logger {
   protected var configs:Map[String,Tuple2[ServerConfiguration,RoomProvider]] = Map.empty[String,Tuple2[ServerConfiguration,RoomProvider]]
-  var clientConfig:Option[ClientConfiguration] = None
-  var configurationProvider:Option[ConfigurationProvider] = None
   val updateGlobalFunc = (c:Conversation) => {
     debug("serverSide updateGlobalFunc: %s".format(c))
     getRoom("global",ServerConfiguration.default.name,GlobalRoom) ! LocalToServerMeTLStanza(MeTLCommand(c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
@@ -171,71 +168,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     })
   }
-  def setupStackAdaptorFromFile(filePath:String) = {
-    val propFile = XML.load(filePath)
-    ifConfigured(propFile,"stackAdaptor",(n:NodeSeq) => {
-      for (
-        enabled <- tryo((n \ "@enabled").text.toBoolean);
-        if enabled;
-        mongoHost <- tryo((n \ "@mongoHost").text);
-        mongoPort <- tryo((n \ "@mongoPort").text.toInt);
-        mongoDb <- tryo((n \ "@mongoDb").text)
-      ) yield {  
-        val mo = MongoClientOptions.builder()
-          .socketTimeout(10000)
-          .socketKeepAlive(true)
-          .build()
-        val srvr = new ServerAddress(mongoHost,mongoPort)
-        MongoDB.defineDb(util.DefaultConnectionIdentifier, new MongoClient(srvr, mo), mongoDb)
-        //construct standingCache from DB
-        com.metl.model.Reputation.populateStandingMap
-        //construct LiftActors for topics with history from DB
-        com.metl.model.TopicManager.preloadAllTopics
-        //ensure that the default topic is available
-        com.metl.model.Topic.getDefaultValue
-      }
-    })
-  }
-
-  def setupClientConfigFromFile(filePath:String) = {
-    val propFile = XML.load(filePath)
-    val configurationProviderNodes = propFile \\ "serverConfiguration" \\ "securityProvider"
-    ifConfiguredFromGroup(configurationProviderNodes,Map(
-      "stableKeyProvider" -> {(n:NodeSeq) => {
-        configurationProvider = Some(new StableKeyConfigurationProvider())
-      }},
-      "stableKeyWithRemoteCheckerProvider" -> {(n:NodeSeq) => {
-        for (
-          lp <- (n \ "@localPort").headOption.map(_.text.toInt);
-          ls <- (n \ "@localScheme").headOption.map(_.text);
-          rbh <- (n \ "@remoteBackendHost").headOption.map(_.text);
-          rbp <- (n \ "@remoteBackendPort").headOption.map(_.text.toInt)
-        ) yield {
-          configurationProvider = Some(new StableKeyWithRemoteCheckerConfigurationProvider(ls,lp,rbh,rbp))
-        }
-      }},
-      "staticKeyProvider" -> {(n:NodeSeq) => {
-        for (
-          ep <- (n \ "@ejabberdPassword").headOption.map(_.text);
-          yu = (n \ "@yawsUsername").headOption.map(_.text);
-          yp <- (n \ "@yawsPassword").headOption.map(_.text)
-        ) yield {
-          val eu = (n \ "@ejabberdUsername").headOption.map(_.text)
-          configurationProvider = Some(new StaticKeyConfigurationProvider(eu,ep,yu,yp))
-        }
-      }}
-    ));
-    ifConfigured(propFile,"clientConfig",(n:NodeSeq) => {
-      clientConfig = for (
-        xd <- (n \ "xmppDomain").headOption.map(_.text);
-        iu <- (n \ "imageUrl").headOption.map(_.text);
-        xuser = "";
-        xpass = ""
-      ) yield {
-        ClientConfiguration(xd,xuser,xpass,iu)
-      }
-    })
-  }
   def setupExternalGradebooksFromFile(filePath:String) = {
     val nodes = XML.load(filePath) \\ "externalGradebooks"
     Globals.gradebookProviders = ExternalGradebooks.configureFromXml(nodes)
@@ -245,21 +177,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
     Globals.groupsProviders = GroupsProvider.constructFromXml(authorizationNodes)
     info("configured groupsProviders: %s".format(Globals.groupsProviders))
-  }
-  def setupClientAdaptorsFromFile(filePath:String) = {
-    xmppServer = (for (
-      cc <- clientConfig;
-      propFile = XML.load(filePath);
-      clientAdaptors <- (propFile \\ "clientAdaptors").headOption;
-      exs <- (clientAdaptors \ "embeddedXmppServer").headOption;
-      keystorePath <- (exs \ "@keystorePath").headOption.map(_.text);
-      keystorePassword <- (exs \ "@keystorePassword").headOption.map(_.text) 
-    ) yield {
-      val exs = new EmbeddedXmppServer(cc.xmppDomain,keystorePath,keystorePassword)
-      exs.initialize
-      LiftRules.unloadHooks.append( () => exs.shutdown)
-      exs
-    })
   }
   def setupMetlingPotsFromFile(filePath:String) = {
     Globals.metlingPots = MeTLingPot.configureFromXml(XML.load(filePath) \\ "metlingPotAdaptors")
@@ -305,103 +222,19 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       ))
     }
   }
-  def setupUserProfileProvidersFromFile(filePath:String) = {
-    val fileXml = XML.load(filePath)
-    ifConfiguredFromGroup((fileXml \\ "userProfileProvider").headOption.getOrElse(NodeSeq.Empty),Map(
-      "inMemoryUserProfileProvider" -> {
-        (n:NodeSeq) => Globals.userProfileProvider = Some(new CachedInMemoryProfileProvider())
-      },
-      "diskCachedProfileProvider" -> {
-        (n:NodeSeq) => Globals.userProfileProvider = for {
-          path <- (n \ "@path").headOption.map(_.text)
-        } yield {
-          new DiskCachedProfileProvider(path)
-        }
-      },
-      "dbProfileProvider" -> {
-        (n:NodeSeq) => Globals.userProfileProvider = for {
-          o <- Some(true)
-        } yield {
-          net.liftweb.mapper.Schemifier.schemify(true,net.liftweb.mapper.Schemifier.infoF _,MappedUserProfile)
-          new DBBackedProfileProvider()
-        }
-      }
-    ))
-    ifConfigured((fileXml \\ "userProfileSeeds").headOption.getOrElse(NodeSeq.Empty),"userProfileSeed",(n:NodeSeq) => {
-      for {
-        path <- (n \\ "@filename").headOption.map(_.text)
-        format <- (n \\ "@format").headOption.map(_.text)
-      } yield {
-        Globals.userProfileProvider.map(upp => {
-          format match {
-            case "xml" => {
-              val seed = new XmlUserProfileSeed(path)
-              seed.getValues.foreach(p => {
-                upp.updateProfile(p)
-              })
-            }
-            case "csv" => {
-              val seed = new CsvUserProfileSeed(path)
-              seed.getValues.foreach(p => {
-                upp.updateProfile(p)
-              })
-            }
-            case _ => {}
-          }
-        })
-      }
-    },true)
-  }
-
   def setupServersFromFile(filePath:String) = {
-    MeTL2011ServerConfiguration.initialize
-    MeTL2015ServerConfiguration.initialize
     LocalH2ServerConfiguration.initialize
     setupCachesFromFile(filePath)
     ServerConfiguration.loadServerConfigsFromFile(
       path = filePath,
-      onConversationDetailsUpdated = updateGlobalFunc,
-      messageBusCredentailsFunc = () => {
-        (for (
-          cc <- configurationProvider;
-          creds <- cc.getPasswords("metlxMessageBus_"+new java.util.Date().getTime.toString)
-        ) yield {
-          debug("vending msgBusCreds: %s".format(creds))
-          (creds._1,creds._2)
-        }).getOrElse(("",""))
-      },
-      conversationListenerCredentialsFunc = () => {
-        (for (
-          cc <- configurationProvider;
-          creds <- cc.getPasswords("metlxConversationListener_"+new java.util.Date().getTime.toString)
-        ) yield {
-          debug("vending convCreds: %s".format(creds))
-          (creds._1,creds._2)
-        }).getOrElse(("",""))
-      },
-      httpCredentialsFunc = () => {
-        (for (
-          cc <- configurationProvider;
-          creds <- cc.getPasswords("metlxHttp_"+new java.util.Date().getTime.toString)
-        ) yield {
-          debug("vending httpCreds: %s".format(creds))
-          (creds._3,creds._4)
-        }).getOrElse(("",""))
-      }
+      onConversationDetailsUpdated = updateGlobalFunc
     )
     val servers = ServerConfiguration.getServerConfigurations
     servers.foreach(_.isReady)
     configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name,filePath)))):_*)
   }
-  var xmppServer:Option[EmbeddedXmppServer] = None
   def initializeSystem = {
     Globals
-    /*
-    Props.mode match {
-      case Props.RunModes.Production => Globals.isDevMode = false
-      case _ => Globals.isDevMode = true
-    }
-    */
     // Setup RESTful endpoints (these are in view/Endpoints.scala)
     LiftRules.statelessDispatch.prepend(SystemRestHelper)
     LiftRules.statelessDispatch.prepend(MeTLRestHelper)
@@ -411,7 +244,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     LiftRules.dispatch.append(WebMeTLStatefulRestHelper)
 
     setupAuthorizersFromFile(Globals.configurationFileLocation)
-    setupClientConfigFromFile(Globals.configurationFileLocation)
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
 
@@ -419,9 +251,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       getRoom("global",c._1.name,GlobalRoom,true)
       debug("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
-    //setupStackAdaptorFromFile(Globals.configurationFileLocation)
-    setupClientAdaptorsFromFile(Globals.configurationFileLocation)
-
     setupExternalGradebooksFromFile(Globals.configurationFileLocation)
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
@@ -431,7 +260,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       Globals.metlingPots.foreach(_.shutdown)
       SecurityListener.cleanupAllSessions
     })
-    setupUserProfileProvidersFromFile(Globals.configurationFileLocation)
     LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
     LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
     Globals.metlingPots.foreach(_.init)

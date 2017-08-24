@@ -51,7 +51,7 @@
     <cookie-config>
       <name>JSESSIONID</name>
       <!-- leaving http-only cookies turned off until the C# client is dead -->
-      <!--                      <http-only>true</http-only>-->
+      <http-only>true</http-only>
       <!--<secure>true</secure>-->
     </cookie-config>
     <session-timeout>5</session-timeout>

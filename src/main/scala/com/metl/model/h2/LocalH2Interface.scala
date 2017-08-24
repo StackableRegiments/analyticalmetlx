@@ -496,14 +496,33 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     }
   }
   def getAllConversations:List[Conversation] = {
+    warn("H2 getAllConversations")
+    val s = new java.util.Date().getTime
+    val table = H2Conversation.dbTableName
+    val idCol = H2Conversation.jid.dbColumnName
+    val timeCol = H2Conversation.creation.dbColumnName
+
+    val sql = """SELECT * FROM %s maintable
+WHERE %s = (SELECT MAX(%s) FROM %s subtable WHERE subtable.%s = maintable.%s)
+GROUP BY %s""".format(
+      table,
+      timeCol,timeCol,table,idCol,idCol,
+      idCol
+    )
+    val results = H2Conversation.findAllByInsecureSql(sql,IHaveValidatedThisSQL("dave","24/08/2017")).map(serializer.toConversation _)
+    warn("H2 getAllConversations (%sms) => %s".format(s - new java.util.Date().getTime,results))
+    results
     /*
     H2Conversation.findAll(BySql("""%s = (SELECT MAX(%s) FROM %s subquery WHERE %s = subquery.%s)""".format(H2Conversation.creation.dbColumnName,H2Conversation.creation.dbColumnName,H2Conversation.dbTableName,H2Conversation.jid.dbColumnName,H2Conversation.jid.dbColumnName),IHaveValidatedThisSQL("dave","23/08/2017"))).map(serializer.toConversation _)
     */
+
+    /*
     H2Conversation.findAll.groupBy(_.jid.get).toList.flatMap(c => {
       val allForThisJid = c._2
       val latest = allForThisJid.sortBy(_.lastAccessed.get).reverse.headOption
       latest.map(l => serializer.toConversation(l))
     })
+    */
   }
   
   override def getConversationsForSlideId(jid:String):List[String] = getAllConversations.filter(_.slides.exists(_.id == jid)).map(_.jid).toList
@@ -511,14 +530,32 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def detailsOfConversation(jid:String):Conversation = H2Conversation.findAll(By(H2Conversation.jid,jid),OrderBy(H2Conversation.creation,Descending),MaxRows(1)).headOption.map(hc => serializer.toConversation(hc)).getOrElse(Conversation.empty)
   def getAllSlides:List[Slide] = {
+    warn("H2 getAllSlides")
+    val s = new java.util.Date().getTime
+    val table = H2Slide.dbTableName
+    val idCol = H2Slide.jid.dbColumnName
+    val timeCol = H2Slide.creation.dbColumnName
+
+    val sql = """SELECT * FROM %s maintable
+WHERE %s = (SELECT MAX(%s) FROM %s subtable WHERE subtable.%s = maintable.%s)
+GROUP BY %s""".format(
+      table,
+      timeCol,timeCol,table,idCol,idCol,
+      idCol
+    )
+    val results = H2Slide.findAllByInsecureSql(sql,IHaveValidatedThisSQL("dave","24/08/2017")).map(serializer.toSlide _)
+    warn("H2 getAllSlides (%sms) => %s".format(s - new java.util.Date().getTime,results))
+    results
     /*
     H2Slide.findAll(BySql("""%s = (SELECT MAX(%s) FROM %s subquery WHERE %s = subquery.%s)""".format(H2Slide.creation.dbColumnName,H2Slide.creation.dbColumnName,H2Slide.dbTableName,H2Slide.id.dbColumnName,H2Slide.id.dbColumnName),IHaveValidatedThisSQL("dave","23/08/2017"))).map(serializer.toSlide _)
     */
+   /*
     H2Slide.findAll.groupBy(_.jid.get).toList.flatMap(s => {
     val allForThisJid = s._2
     val latest = allForThisJid.sortBy(_.creation.get).reverse.headOption
     latest.map(l => serializer.toSlide(l))
   })
+    */
   }
   def detailsOfSlide(jid:String):Slide = H2Slide.findAll(By(H2Slide.jid,jid),OrderBy(H2Slide.creation,Descending),MaxRows(1)).headOption.map(hs => serializer.toSlide(hs)).getOrElse(Slide.empty)
   def generateConversationJid:String = "c_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
@@ -633,14 +670,34 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
   })
 
   def getProfiles(ids:String *):List[Profile] = Stopwatch.time("H2Interface.getProfiles",{
+    warn("H2 getProfiles(%s)".format(ids))
+    val s = new java.util.Date().getTime
+    val table = H2Profile.dbTableName
+    val idCol = H2Profile.profileId.dbColumnName
+    val timeCol = H2Profile.timestamp.dbColumnName
+
+    val sql = """SELECT * FROM %s maintable
+WHERE %s = (SELECT MAX(%s) FROM %s subtable WHERE subtable.%s = maintable.%s)
+GROUP BY %s""".format(
+      table,
+      timeCol,timeCol,table,idCol,idCol,
+      idCol
+    )
+    val results = H2Profile.findAllByInsecureSql(sql,IHaveValidatedThisSQL("dave","24/08/2017")).map(serializer.toProfile _)
+    warn("H2 getProfiles(%s) (%sms) => %s".format(ids,s - new java.util.Date().getTime,results))
+    results
+
+
     /*
     val results = H2Profile.findAll(ByList(H2Profile.profileId,ids.toList),BySql("""%s = (SELECT MAX(%s) FROM %s subquery WHERE %s = subquery.%s) GROUP BY %s""".format(H2Profile.timestamp.dbColumnName,H2Profile.timestamp.dbColumnName,H2Profile.dbTableName,H2Profile.profileId.dbColumnName,H2Profile.profileId.dbColumnName,H2Profile.profileId.dbColumnName),IHaveValidatedThisSQL("dave","23/08/2017"))).map(serializer.toProfile _)
     println("H2GetProfiles(%s) %s => %s".format(ids,results.length, results))
     */
+   /*
     val raw = H2Profile.findAll(ByList(H2Profile.profileId,ids.toList))
     val results = raw.groupBy(_.profileId.get).toList.map(_._2).flatMap(_.sortBy(_.timestamp.get).reverse.headOption.map(serializer.toProfile _))
     println("H2GetProfiles(%s) %s => %s".format(ids,raw.length, results))
     results 
+    */
   })
   protected def createProfileId:String = "p_%s".format(nextFuncName)
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = {
@@ -661,6 +718,23 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     H2AccountRelationships.create.timestamp(new Date().getTime).default(default).disabled(disabled).profileId(profileId).accountName(accountName).accountProvider(accountProvider).accountName(accountName).save
   }
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = Stopwatch.time("H2Interface.getProfileIds",{
+    /*
+    val s = new java.util.Date().getTime
+    val table = H2AccountRelationships.dbTableName
+    val idCol = H2AccountRelationships.profileId.dbColumnName
+    val timeCol = H2AccountRelationships.timestamp.dbColumnName
+
+    val sql = """SELECT * FROM %s maintable
+WHERE %s = (SELECT MAX(%s) FROM %s subtable WHERE subtable.%s = maintable.%s)
+GROUP BY %s""".format(
+      table,
+      timeCol,timeCol,table,idCol,idCol,
+      idCol
+    )
+    val results = H2AccountRelationships.findAllByInsecureSql(sql,IHaveValidatedThisSQL("dave","24/08/2017")).groupBy(_.profileId.get map(serializer.toProfile _)
+    warn("H2 getProfileIds(%s,%s) (%sms) => %s".format(accountName,accountProvider,s - new java.util.Date().getTime,results))
+    results
+    */
     val profs = H2AccountRelationships.findAll(By(H2AccountRelationships.accountName,accountName),By(H2AccountRelationships.accountProvider,accountProvider)).groupBy(_.profileId.get).flatMap(_._2.sortBy(_.timestamp.get).reverse.headOption.filterNot(_.disabled.get))
     val defaultProf = profs.filter(_.default.get).toList.sortBy(_.timestamp.get).reverse.headOption.map(_.profileId.get).getOrElse("")
     (profs.map(_.profileId.get).toList,defaultProf)

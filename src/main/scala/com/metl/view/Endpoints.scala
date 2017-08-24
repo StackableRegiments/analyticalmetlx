@@ -113,15 +113,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
           </html> ).toString.getBytes("UTF-8"),Nil,Nil,200
       ))
     }
-    case Req("verifyUserCredentials" :: Nil,_,_) => () => {
-      for (
-        u <- S.param("username");
-        p <- S.param("password");
-        cp <- MeTLXConfiguration.configurationProvider
-      ) yield {
-        PlainTextResponse(cp.checkPassword(u,p).toString,Nil,200)
-      }
-    }
     case r@Req("latency" :: Nil,_,_) => {
       val start = new java.util.Date().getTime
         () => {

@@ -86,9 +86,8 @@ class HistoryCachingRoomProvider(configName:String,idleTimeout:Option[Long]) ext
     override def apply(r:String) = createNewMeTLRoom(room,roomDefinition,eternal)
   }))
   protected def createNewMeTLRoom(room:String,roomDefinition:RoomMetaData,eternal:Boolean = false) = Stopwatch.time("Rooms.createNewMeTLRoom(%s)".format(room),{
-    //val r = new HistoryCachingRoom(configName,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
     val start = new java.util.Date().getTime
-    val r = new XmppBridgingHistoryCachingRoom(configName,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
+    val r = new HistoryCachingRoom(configName,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
     val b = new java.util.Date().getTime - start
     r.localSetup
     val c = new java.util.Date().getTime - start
@@ -586,26 +585,4 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
     }
   })
   override def toString = "HistoryCachingRoom(%s,%s,%s)".format(configName,location,creator)
-}
-
-class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends HistoryCachingRoom(configName,location,creator,roomMetaData,idleTimeout) {
-  protected var stanzasToIgnore = List.empty[MeTLStanza]
-  def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendMessageFromBridge",{
-    trace("XMPPBRIDGE (%s) sendToServer: %s".format(location,s))
-    sendStanzaToServer(s)
-  })
-  protected def sendMessageToBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingROom.sendMessageToBridge",{
-    trace("XMPPBRIDGE (%s) sendToBridge: %s".format(location,s))
-    MeTLXConfiguration.xmppServer.foreach(_.relayMessageToXmppMuc(location,s))
-  })
-  override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendToChildren",{
-    trace("XMPPBRIDGE (%s) sendToChildren: %s".format(location,s))
-    val (matches,remaining) = stanzasToIgnore.partition(sti => sti.equals(s))
-    matches.length match {
-      case 1 => stanzasToIgnore = remaining
-      case i:Int if i > 1 => stanzasToIgnore = remaining ::: matches.drop(1)
-      case _ => sendMessageToBridge(s)
-    }
-    super.sendToChildren(s)
-  })
 }
