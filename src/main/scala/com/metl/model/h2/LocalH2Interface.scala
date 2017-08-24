@@ -562,7 +562,7 @@ GROUP BY %s""".format(
   def generateSlideJid:String = "s_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
   def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = {
     val slide = H2Slide.create.slideType(slideType).creation(new java.util.Date().getTime).author(author).jid(generateSlideJid).defaultHeight(540).defaultWidth(720).saveMe
-    Slide(slide.author,slide.jid.get,0,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
+    Slide(slide.author.get,slide.jid.get,0,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
   }
   def createConversation(title:String,author:String):Conversation = {
     val now = new Date()
@@ -678,9 +678,11 @@ GROUP BY %s""".format(
 
     val sql = """SELECT * FROM %s maintable
 WHERE %s = (SELECT MAX(%s) FROM %s subtable WHERE subtable.%s = maintable.%s)
+AND %s IN (%s)
 GROUP BY %s""".format(
       table,
       timeCol,timeCol,table,idCol,idCol,
+      idCol,ids.map(id => "'%s'".format(id)).mkString(","),
       idCol
     )
     val results = H2Profile.findAllByInsecureSql(sql,IHaveValidatedThisSQL("dave","24/08/2017")).map(serializer.toProfile _)

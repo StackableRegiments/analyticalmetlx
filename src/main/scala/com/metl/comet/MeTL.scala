@@ -754,13 +754,19 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
     super.localSetup
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
-      conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => refreshForeignRelationship(serverConfig.detailsOfConversation(jid.toString),username,userGroups))
+      conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => refreshForeignRelationship(serverConfig.detailsOfConversation(jid),username,userGroups))
+      warn("editConversationActor has: %s".format(conversation))
       showLinks = com.metl.snippet.Metl.getLinksFromName(nameString).getOrElse(true)
     })
   }
 
   override def render = {
-    OnLoad(conversation.filter(c => shouldModifyConversation(c)).map(c => {
+    OnLoad(conversation.filter(c => {
+      val shouldModify = shouldModifyConversation(c)
+      warn("shouldModify returned: %s for %s".format(shouldModify,c))
+      shouldModify
+    }).map(c => {
+      warn("editConversationRendering")
       Call("getAccount") &
       Call("getProfiles") &
       Call("getDefaultProfile") &
@@ -769,12 +775,15 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
       busCall(RECEIVE_USER_GROUPS,jUserGroups) &
       busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(c,username,userGroups))) &
       busCall(RECEIVE_SHOW_CONVERSATION_LINKS,JBool(showLinks))
-    }).getOrElse(RedirectTo(conversationSearch())))
+    }).getOrElse({
+      warn("editConversation kicking: %s from %s".format(username,conversation))
+      RedirectTo(conversationSearch())
+    }))
   }
   override def lowPriority = {
-    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") && c.commandParameters.headOption.exists(cid => conversation.exists(_.jid.toString == cid.toString))  => {
+    case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") && c.commandParameters.headOption.exists(cid => conversation.exists(_.jid == cid))  => {
       conversation.foreach(c => {
-        val newConv = refreshForeignRelationship(serverConfig.detailsOfConversation(c.jid.toString),username,userGroups)
+        val newConv = refreshForeignRelationship(serverConfig.detailsOfConversation(c.jid),username,userGroups)
         trace("receivedUpdatedConversation: %s => %s".format(c,newConv))
         conversation = Some(newConv)
         reRender

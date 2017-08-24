@@ -25,7 +25,10 @@ object Metl extends Metl
 class Metl extends Logger {
   val config = ServerConfiguration.default
   def shouldModifyConversation(username:String, c:Conversation):Boolean = {
-    (Globals.isSuperUser || username.toLowerCase.trim == c.author.toLowerCase.trim) && c != Conversation.empty
+    val isNonEmpty = c != Conversation.empty
+    val result = (Globals.isSuperUser || username.toLowerCase.trim == c.author.toLowerCase.trim) && isNonEmpty
+    warn("shouldModifyConversation: jid:%s => isSuperUser:%s username:%s c.author:%s isNonEmpty:%s => %s".format(c.jid,Globals.isSuperUser,username,c.author,isNonEmpty,result))
+    result
   }
   def shouldDisplayConversation(c:Conversation,showDeleted:Boolean = false,me:String = Globals.currentUser.is,groups:List[OrgUnit] = Globals.getUserGroups):Boolean = {
     val subject = c.subject.trim.toLowerCase
@@ -194,7 +197,10 @@ class Metl extends Logger {
     output
   }
   def specificEditConversation(in:NodeSeq):NodeSeq = {
-    S.param("conversationJid").openOr(S.redirectTo(noBoard))
+    S.param("conversationJid").openOr({
+      warn("specificEditConversation kicking user")
+      S.redirectTo(noBoard)
+    })
     val name = generateName(true)
     val clazz = "lift:comet?type=MeTLEditConversationActor&amp;name=%s".format(name)
     val output = <span class={clazz}>{in}</span>
@@ -367,6 +373,7 @@ class Metl extends Logger {
           }).toList
       }
       case "profile" :: _args => List(
+        ("/account",Text("Account")),
         (S.param("profileId").map(profileId => "/profile?profileId=%s".format(profileId)).getOrElse("/profile"),Text("Profile"))
       )
       case "account" :: _args => List(

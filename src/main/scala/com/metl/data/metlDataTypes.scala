@@ -226,16 +226,10 @@ object Permissions{
   def default = Permissions(false,true,false,true,true)
 }
 
-class MeTLData(val audiences:List[Audience] = Nil){
-  override def equals(a:Any) = a match {
-    case MeTLData(aAudiences) => aAudiences == audiences
-    case _ => false
-  }
+abstract class MeTLData(val audiences:List[Audience] = Nil){
 }
 object MeTLData {
-  def apply(audiences:List[Audience] = Nil) = new MeTLData(audiences)
   def unapply(in:MeTLData) = Some((in.audiences))
-  def empty = MeTLData(Nil)
 }
 
 case class MeTLUnhandledData(unhandled:String,valueType:String,override val audiences:List[Audience] = Nil) extends MeTLData(audiences)
@@ -246,25 +240,17 @@ object MeTLUnhandledData {
 case class MeTLUnhandledStanza(override val author:String,override val timestamp:Long,unhandled:String,valueType:String,override val audiences:List[Audience] = Nil) extends MeTLStanza(author,timestamp,audiences){
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime) = Stopwatch.time("MeTLUnhandledStanza.adjustTimestamp",copy(timestamp = newTime))
 }
-class MeTLStanza(val author:String,val timestamp:Long,override val audiences:List[Audience] = Nil) extends MeTLData(audiences){
-  def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLStanza = Stopwatch.time("MeTLStanza.adjustTimestamp",{
-    MeTLStanza(author,newTime,audiences)
-  })
-  override def equals(a:Any) = a match {
-    case MeTLStanza(aAuthor,aTimestamp,aAudiences) => aAuthor == author && aTimestamp == timestamp && aAudiences == audiences
-    case _ => false
-  }
+abstract class MeTLStanza(val author:String,val timestamp:Long,override val audiences:List[Audience] = Nil) extends MeTLData(audiences){
+  def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLStanza
+}
+object MeTLStanza{
+  def unapply(in:MeTLStanza) = Some((in.author,in.timestamp,in.audiences))
 }
 
 case class Presentation(conversation:Conversation,stanzas:Map[Int,List[MeTLStanza]] = Map.empty[Int,List[MeTLStanza]],metaData:List[Tuple2[String,String]] = List.empty[Tuple2[String,String]],override val audiences:List[Audience] = Nil) extends MeTLData(audiences)
 object MeTLUnhandledStanza {
   def empty = MeTLUnhandledStanza("",0L,"","null")
   def empty(unhandled:String,valueType:String) = MeTLUnhandledStanza("",0L,unhandled,valueType)
-}
-object MeTLStanza{
-  def apply(author:String,timestamp:Long,audiences:List[Audience] = Nil) = new MeTLStanza(author,timestamp,audiences)
-  def unapply(in:MeTLStanza) = Some((in.author,in.timestamp,in.audiences))
-  def empty = MeTLStanza("",0L)
 }
 case class Theme(author:String,text:String,origin:String)
 
@@ -288,36 +274,38 @@ object Attendance{
   def empty = Attendance("",0L,"",false,Nil)
 }
 
-case class MeTLUnhandledCanvasContent(override val author:String,override val timestamp:Long,override val target:String,override val privacy:Privacy,override val slide:String,override val identity:String,override val audiences:List[Audience] = Nil, override val scaleFactorX:Double = 1.0,override val scaleFactorY:Double = 1.0,unhandled:String,valueType:String) extends MeTLCanvasContent(author,timestamp,target,privacy,slide,identity,audiences,scaleFactorX,scaleFactorY)
+case class MeTLUnhandledCanvasContent(override val author:String,override val timestamp:Long,override val target:String,override val privacy:Privacy,override val slide:String,override val identity:String,override val audiences:List[Audience] = Nil, override val scaleFactorX:Double = 1.0,override val scaleFactorY:Double = 1.0,unhandled:String,valueType:String) extends MeTLCanvasContent(author,timestamp,target,privacy,slide,identity,audiences,scaleFactorX,scaleFactorY){
+  override def adjustTimestamp(newTimestamp: Long): com.metl.data.MeTLCanvasContent = copy(timestamp = newTimestamp)
+  def adjustVisual(xTranslate: Double,yTranslate: Double,xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def alterPrivacy(newPrivacy: com.metl.data.Privacy.Privacy): com.metl.data.MeTLCanvasContent = copy(privacy = newPrivacy)
+  def generateDirty(dirtyTime: Long): com.metl.data.MeTLCanvasContent = this
+  def generateNewIdentity(descriptor: String): com.metl.data.MeTLCanvasContent = this
+  def scale(xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def scale(factor: Double): com.metl.data.MeTLCanvasContent = this
+}
 object MeTLUnhandledCanvasContent {
   def empty = MeTLUnhandledCanvasContent("",0L,"",Privacy.NOT_SET,"","",Nil,1.0,1.0,"","null")
   def empty(unhandled:String,valueType:String) = MeTLUnhandledCanvasContent("",0L,"",Privacy.NOT_SET,"","",Nil,1.0,1.0,unhandled,valueType)
 }
-class MeTLCanvasContent(override val author:String,override val timestamp:Long,val target:String,val privacy:Privacy,val slide:String,val identity:String,override val audiences:List[Audience] = Nil,val scaleFactorX:Double = 1.0,val scaleFactorY:Double = 1.0) extends MeTLStanza(author,timestamp,audiences) {
+abstract class MeTLCanvasContent(override val author:String,override val timestamp:Long,val target:String,val privacy:Privacy,val slide:String,val identity:String,override val audiences:List[Audience] = Nil,val scaleFactorX:Double = 1.0,val scaleFactorY:Double = 1.0) extends MeTLStanza(author,timestamp,audiences) {
   protected def genNewIdentity(role:String) = "%s:%s:%s_from:%s".format(new java.util.Date().getTime.toString,author,role,identity).take(256)
   def left:Double = 0.0
   def right:Double = 0.0
   def top:Double = 0.0
   def bottom:Double = 0.0
-  def scale(factor:Double):MeTLCanvasContent = MeTLCanvasContent(author,timestamp,target,privacy,slide,identity,audiences,factor,factor)
-  def scale(xScale:Double,yScale:Double):MeTLCanvasContent = MeTLCanvasContent(author,timestamp,target,privacy,slide,identity,audiences,xScale,yScale)
-  def alterPrivacy(newPrivacy:Privacy):MeTLCanvasContent = MeTLCanvasContent(author,timestamp,target,newPrivacy,slide,identity,audiences,scaleFactorX,scaleFactorY)
-  def adjustVisual(xTranslate:Double,yTranslate:Double,xScale:Double,yScale:Double) = MeTLCanvasContent(author,timestamp,target,privacy,slide,identity,audiences,scaleFactorX,scaleFactorY)
-  override def adjustTimestamp(newTimestamp:Long) = MeTLCanvasContent(author,newTimestamp,target,privacy,slide,identity,audiences,scaleFactorX,scaleFactorY)
-  def generateDirty(dirtyTime:Long) = MeTLCanvasContent.empty
+  def scale(factor:Double):MeTLCanvasContent
+  def scale(xScale:Double,yScale:Double):MeTLCanvasContent
+  def alterPrivacy(newPrivacy:Privacy):MeTLCanvasContent
+  def adjustVisual(xTranslate:Double,yTranslate:Double,xScale:Double,yScale:Double):MeTLCanvasContent
+  override def adjustTimestamp(newTimestamp:Long):MeTLCanvasContent
+  def generateDirty(dirtyTime:Long):MeTLCanvasContent
   def matches(other:MeTLCanvasContent):Boolean = other.identity == identity && other.privacy == privacy && other.slide == slide
   def isDirtiedBy(other:MeTLCanvasContent):Boolean = false
   def isDirtierFor(other:MeTLCanvasContent):Boolean = false
-  def generateNewIdentity(descriptor:String):MeTLCanvasContent = MeTLCanvasContent(author,timestamp,target,privacy,slide,genNewIdentity("newCanvasContent:"+descriptor),audiences,scaleFactorX,scaleFactorY)
-  override def equals(a:Any) = a match {
-    case MeTLCanvasContent(aAuthor,aTimestamp,aTarget,aPrivacy,aSlide,aIdentity,aAudiences,aScaleFactorX,aScaleFactorY) => aAuthor == author && aTimestamp == timestamp && aTarget == target && aPrivacy == privacy && aSlide == slide && aIdentity == identity && aAudiences == audiences && aScaleFactorX == scaleFactorX && aScaleFactorY == scaleFactorY
-    case _ => false
-  }
+  def generateNewIdentity(descriptor:String):MeTLCanvasContent
 }
 object MeTLCanvasContent{
-  def apply(author:String,timestamp:Long,target:String,privacy:Privacy,slide:String,identity:String,audiences:List[Audience] = Nil, scaleFactorX:Double = 1.0,scaleFactorY:Double = 1.0) = new MeTLCanvasContent(author,timestamp,target,privacy,slide,identity,audiences,scaleFactorX,scaleFactorY)
   def unapply(in:MeTLCanvasContent) = Some((in.author,in.timestamp,in.target,in.privacy,in.slide,in.identity,in.audiences,in.scaleFactorX,in.scaleFactorY))
-  def empty = MeTLCanvasContent("",0L,"",Privacy.NOT_SET,"","")
 }
 object MeTLTextWord {
   def empty = MeTLTextWord("",false,false,false,"",Color.empty,"",0.0)
@@ -798,6 +786,9 @@ case class MeTLMoveDelta(override val author:String,override val timestamp:Long,
     case i:MeTLMultiWordText => ((!testPrivacy) || privacy == i.privacy) && timestamp > i.timestamp && i.slide == slide && multiWordTextIds.contains(i.identity)
     case _ => false
   }
+  def alterPrivacy(newPrivacy: com.metl.data.Privacy.Privacy): com.metl.data.MeTLCanvasContent = this
+  def generateDirty(dirtyTime: Long): com.metl.data.MeTLCanvasContent = this
+  def scale(factor: Double): com.metl.data.MeTLCanvasContent = this
 }
 case object MeTLMoveDelta{
   def empty = MeTLMoveDelta("",0L,"",Privacy.NOT_SET,"","",0.0,0.0,Nil,Nil,Nil,Nil,Nil,0.0,0.0,1.0,1.0,Privacy.NOT_SET,false,Nil)
@@ -817,6 +808,10 @@ case class MeTLDirtyInk(override val author:String,override val timestamp:Long,o
     copy(timestamp = newTime)
   })
   override def generateNewIdentity(descriptor:String):MeTLDirtyInk = copy(identity = genNewIdentity("newMeTLDirtyInk:"+descriptor))
+  def adjustVisual(xTranslate: Double,yTranslate: Double,xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def generateDirty(dirtyTime: Long): com.metl.data.MeTLCanvasContent = this
+  def scale(xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def scale(factor: Double): com.metl.data.MeTLCanvasContent = this
 }
 object MeTLDirtyInk{
   def empty = MeTLDirtyInk("",0L,"",Privacy.NOT_SET,"","",Nil)
@@ -837,6 +832,10 @@ case class MeTLDirtyText(override val author:String,override val timestamp:Long,
     copy(timestamp=newTime)
   })
   override def generateNewIdentity(descriptor:String):MeTLDirtyText = copy(identity=genNewIdentity("newMeTLDirtyText:"+descriptor))
+  def adjustVisual(xTranslate: Double,yTranslate: Double,xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def generateDirty(dirtyTime: Long): com.metl.data.MeTLCanvasContent = this
+  def scale(xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def scale(factor: Double): com.metl.data.MeTLCanvasContent = this
 }
 object MeTLDirtyText{
   def empty = MeTLDirtyText("",0L,"",Privacy.NOT_SET,"","",Nil)
@@ -856,6 +855,10 @@ case class MeTLDirtyImage(override val author:String,override val timestamp:Long
     copy(timestamp=newTime)
   })
   override def generateNewIdentity(descriptor:String):MeTLDirtyImage = copy(identity=genNewIdentity("newMeTLDirtyImage:"+descriptor))
+  def adjustVisual(xTranslate: Double,yTranslate: Double,xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def generateDirty(dirtyTime: Long): com.metl.data.MeTLCanvasContent = this
+  def scale(xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def scale(factor: Double): com.metl.data.MeTLCanvasContent = this
 }
 object MeTLDirtyImage{
   def empty = MeTLDirtyImage("",0L,"",Privacy.NOT_SET,"","",Nil)
@@ -875,6 +878,10 @@ case class MeTLDirtyVideo(override val author:String,override val timestamp:Long
     copy(timestamp=newTime)
   })
   override def generateNewIdentity(descriptor:String):MeTLDirtyVideo = copy(identity=genNewIdentity("newMeTLDirtyVideo:"+descriptor))
+  def adjustVisual(xTranslate: Double,yTranslate: Double,xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def generateDirty(dirtyTime: Long): com.metl.data.MeTLCanvasContent = this
+  def scale(xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def scale(factor: Double): com.metl.data.MeTLCanvasContent = this
 }
 object MeTLDirtyVideo{
   def empty = MeTLDirtyVideo("",0L,"",Privacy.NOT_SET,"","",Nil)
@@ -891,6 +898,10 @@ case class MeTLUndeletedCanvasContent(override val author:String,override val ti
     copy(timestamp=newTime)
   })
   override def generateNewIdentity(descriptor:String):MeTLUndeletedCanvasContent = copy(identity=genNewIdentity("newMeTLUndeletedCanvasContent:"+descriptor))
+  override def adjustVisual(xTranslate: Double,yTranslate: Double,xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  override def generateDirty(dirtyTime: Long): com.metl.data.MeTLCanvasContent = this
+  override def scale(xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  override def scale(factor: Double): com.metl.data.MeTLCanvasContent = this
 }
 object MeTLUndeletedCanvasContent{
   def empty = MeTLUndeletedCanvasContent("",0L,"",Privacy.NOT_SET,"","","","","",Nil)
@@ -938,6 +949,12 @@ case class MeTLSubmission(override val author:String,override val timestamp:Long
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):MeTLSubmission = Stopwatch.time("MeTLSubmission.adjustTimestamp",{
     copy(timestamp = newTime)
   })
+  def adjustVisual(xTranslate: Double,yTranslate: Double,xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def alterPrivacy(newPrivacy: com.metl.data.Privacy.Privacy): com.metl.data.MeTLCanvasContent = this
+  def generateDirty(dirtyTime: Long): com.metl.data.MeTLCanvasContent = this
+  def generateNewIdentity(descriptor: String): com.metl.data.MeTLCanvasContent = this
+  def scale(xScale: Double,yScale: Double): com.metl.data.MeTLCanvasContent = this
+  def scale(factor: Double): com.metl.data.MeTLCanvasContent = this
 }
 object MeTLSubmission{
   def empty = MeTLSubmission("",0L,"","","")
