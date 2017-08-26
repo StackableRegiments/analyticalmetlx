@@ -96,6 +96,7 @@ class Boot extends Logger {
       Menu(Loc("Profile","profile" :: Nil,"Profile")),
       Menu(Loc("Account","account" :: Nil,"Account")),
       Menu(Loc("ConversationSummary","conversationSummary" :: Nil,"Conversation Summary")),
+      Menu(Loc("test","test" :: Nil, "Test")), // this is just so that I can build my JS canvas quickly and easily
       //WebMeTL
       Menu(Loc("Conversation Search","conversationSearch" :: Nil,"Conversation Search",Hidden)),
       Menu(Loc("Conversation","conversation" :: Nil,"Conversation",Hidden)),

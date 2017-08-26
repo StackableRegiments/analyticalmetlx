@@ -528,7 +528,7 @@ var HealthCheckViewer = (function(){
 						});
 				}
 				var s2 = new Date().getTime();
-				console.log("refreshFunc:",s2 - s, s1 - s, s2 - s1);
+				//console.log("refreshFunc:",s2 - s, s1 - s, s2 - s1);
 			});
     },visualUpdateSpeed);
     var healthyFunc = function(){

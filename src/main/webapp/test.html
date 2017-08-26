@@ -1,0 +1,66 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+	<script data-lift="with-resource-id" src="static/js/Canvas.js"></script>
+
+	<script type="text/javascript">
+		var mockHistory = {
+			type:"history",
+			inks:[
+				{
+					type:"ink",
+					timestamp:2,
+					identity:"2",
+					thickness:5,
+					points:[50,50,50,100,100,50,100,50,50,50,50,50],
+					color:["000000",255],
+					isHighlighter:false,
+					target:"presentationSpace",
+					author:"test",
+					privacy:"PUBLIC"
+				}
+			],
+			highlighters:[],
+			texts:[
+				{
+					type:"text",
+					timestamp:1,
+					identity:"1",
+					x:20,
+					y:20,
+					width:100,
+					height:30,
+					color:["000000",255],
+					text:"what about this",
+					font:"arial",
+					size:12,
+					weight:"regular",
+					style:"normal",
+					target:"presentationSpace",
+					author:"test",
+					privacy:"PUBLIC"
+				}
+			],
+			multiWordTexts:[],
+		 	images:[
+				/*
+				{
+					type:"image",
+					timestamp:3,
+					identity:"3",
+					x:100,
+					y:100,
+					width:160,
+					height:120,
+					target:"presentationSpace",
+					author:"test",
+					privacy:"PUBLIC"
+				}
+				*/
+			],
+			videos:[]
+		}
+		$(function(){
+				MeTLBus.call("mockHistoryReceived",[mockHistory]);
+		});
+	</script>
+	<div class="lift:embed?what=_canvas"></div>
+</div>

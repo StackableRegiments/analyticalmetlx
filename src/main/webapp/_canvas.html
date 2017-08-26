@@ -1,0 +1,79 @@
+<div>
+	<!--
+	<div id="tools">
+		<div id="privacyTools">
+			<button id="setPublicMode" class="subTool fa fa-"></button>
+			<button id="setPrivateMode" class="subTool fa fa-"></button>
+		</div>
+		<button id="setSelectMode" class="fa fa-"></button>
+		<div id="selectTools" class="subTools">
+			<button id="showSelection" class="subTool fa fa-"></button>
+			<button id="hideSelection" class="subTool fa fa-"></button>
+			<button id="deleteSelection" class="subTool fa fa-"></button>
+			<button id="banSelection" class="subTool fa fa-"></button>
+		</div>
+		<button id="setInkMode" class="fa fa-"></button>
+		<div id="inkTools" class="subTools">
+			<button id="inkColor" class="subTool fa fa-"></button>
+			<button id="inkWidth" class="subTool fa fa-"></button>
+			<button id="eraser" class="subTool fa fa-"></button>
+		</div>
+		<button id="setTextMode" class="fa fa-"></button>
+		<div id="textTools" class="subTools">
+			<button id="textBold" class="subTool fa fa-"></button>
+			<button id="textItalic" class="subTool fa fa-"></button>
+			<button id="textUnderline" class="subTool fa fa-"></button>
+			<button id="textColor" class="subTool fa fa-"></button>
+			<button id="textLarger" class="subTool fa fa-"></button>
+			<button id="textSmaller" class="subTool fa fa-"></button>
+		</div>
+		<button id="setInsertMode" class="fa fa-"></button>
+		<div id="insertTools" class="subTools">
+			<button id="insertImage" class="subTool fa fa-"></button>
+			<button id="insertVideo" class="subTool fa fa-"></button>
+		</div>
+		<button id="setZoomMode" class="fa fa-"></button>
+		<div id="zoomTools" class="subTools">
+			<button id="zoomIn" class="subTool fa fa-"></button>
+			<button id="zoomOut" class="subTool fa fa-"></button>
+			<button id="zoomAll" class="subTool fa fa-"></button>
+			<button id="zoomDefault" class="subTool fa fa-"></button>
+		</div>
+		<button id="setPanMode" class="fa fa-"></button>
+		<div id="panTools" class="subTools">
+			<button id="panLeft" class="subTool fa fa-"></button>
+			<button id="panRight" class="subTool fa fa-"></button>
+			<button id="panUp" class="subTool fa fa-"></button>
+			<button id="panDown" class="subTool fa fa-"><button>
+		</div>
+	</div>
+-->
+	<div id="boardContainer">
+		<canvas id="board" class="fill"></canvas>
+		<div id="textInputInvisibleHost"></div>
+		<div id="selectionAdorner"></div>
+		<div id="radar"></div>
+		<div id="marquee"></div>
+		<!-- not sure about these bits down here now -->
+		<div id="imageAdorner">
+			<div id="imageMarquee"></div>
+			<div id="imageInsertOptions" class="block with-border input-full-width">
+				<h2 class="med-txt nmt"><strong><label for="imageInsertOptionsClose" class="nm">Insert image</label></strong></h2>
+				<button id="imageInsertOptionsClose" class=" btn-close fa fa-times nmt"><span class="hidden">Close</span></button>
+				<img src="/static/images/spinner.gif" id="imageWorking"></img>
+				<input type="file" id="imageFileChoice"></input>
+			</div>
+			<div id="videoInsertOptions" class="block with-border input-full-width">
+				<h2 class="med-txt nmt"><strong><label for="imageInsertOptionsClose" class="nm">Insert video</label></strong></h2>
+				<button id="videoInsertOptionsClose" class=" btn-close fa fa-times nmt"><span class="hidden">Close</span></button>
+				<input type="file" id="videoFileChoice"></input>
+			</div>
+		</div>
+		<div id="loadingSlidePopup" class="loading-spinner" style="display:none;">
+			<span class="icon-spinner">
+				<i class="fa fa-cog fa-spin fa-3x fa-fw"></i>
+				<span class="sr-only" id="targetSlide">Loading...</span>
+			</span>
+		</div>
+	</div>
+<div>
