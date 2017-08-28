@@ -65,12 +65,17 @@
 			newCanvas.onStanza = function(s){
 				sendStanza(s);
 			};
-			newCanvas.onSelectionChanged = function(selected){
+			newCanvas.onSelectionChanged(function(selected){
 				MeTLBus.call("selectionChanged",[selected]);
-			};
-			newCanvas.onModeChanged = function(mode){
+			});
+			newCanvas.onModeChanged(function(mode){
 				MeTLBus.call("modeChanged",[mode]);
-			};
+			});
+			newCanvas.onStatistic(function(category,time,success){
+				if ("HealthChecker" in window){
+					HealthChecker.addMeasure(category,time,success);
+				}
+			});
 			newCanvas.setHistory(mockHistory);
 			window.InteractiveCanvas = newCanvas;
 		});

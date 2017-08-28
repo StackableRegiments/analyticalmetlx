@@ -1049,9 +1049,9 @@ var createCanvasRenderer = function(canvasElem){
 	}
 
 	var render = function(){
+		var renderStart = new Date().getTime();
 		try {
 			var content = boardContent;
-			var renderStart = new Date().getTime();
 			clearBoard({x:0,y:0,w:boardWidth,h:boardHeight});
 			boardWidth = $(canvasElem).width();
 			boardHeight = $(canvasElem).height();
@@ -1061,7 +1061,7 @@ var createCanvasRenderer = function(canvasElem){
 			canvasElem.attr("height",boardHeight);	
 			canvasElem[0].width = boardWidth;
 			canvasElem[0].height = boardHeight;	
-			renderStarted(boardContext,canvasElem,boardContent);
+			renderStarting(boardContext,canvasElem,boardContent);
 			if(content){
 				try{
 					visibleBounds = [];
@@ -1069,7 +1069,6 @@ var createCanvasRenderer = function(canvasElem){
 					var viewBounds = [boardContent.minX,boardContent.minY,boardContent.maxX,boardContent.maxY];
 					renderImages(content.images,rendered,viewBounds);
 					renderImmediateContent(content,rendered,viewBounds);
-					renderComplete(boardContext,canvasElem,boardContent);
 					/*
 					renderSelectionOutlines();
 					renderSelectionGhosts();
@@ -1081,17 +1080,13 @@ var createCanvasRenderer = function(canvasElem){
 				catch(e){
 					console.log("Render exception with content",e,content);
 				}
-				//MeTLBus.call("onViewboxChanged");
 			}
-			if ("HealthChecker" in window){
-					HealthChecker.addMeasure("render",true,new Date().getTime() - renderStart);
-			}
+			renderComplete(boardContext,canvasElem,boardContent);
+			statistic(render,new Date().getTime() - renderStart,true);
 		} catch(e){
-				console.log("exception in render:",e);
-				if ("HealthChecker" in window){
-						HealthChecker.addMeasure("render",false,new Date().getTime() - renderStart);
-				}
-				throw e;
+			console.log("exception in render:",e);
+			statistic(render,new Date().getTime() - renderStart,false);
+			throw e;
 		}
 	}
 	var blit = function(content){
@@ -1104,7 +1099,6 @@ var createCanvasRenderer = function(canvasElem){
 
 	var preRenderHistory = function(history,afterFunc){
 		try {
-			console.log("canvasRenderer rendering!",history,canvasElem);
 			var canvasContext = canvasElem[0].getContext("2d");
 			
 			history.multiWordTexts = _.pickBy(history.multiWordTexts,isUsable);
@@ -1280,7 +1274,7 @@ var createCanvasRenderer = function(canvasElem){
 				y:viewboxY
 			});
 		},
-		onHistory:function(f){
+		onHistoryChanged:function(f){
 			historyReceived = f;
 		},
 		onRenderStarting:function(f){

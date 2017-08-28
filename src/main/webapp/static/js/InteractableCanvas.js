@@ -1,17 +1,33 @@
 var createInteractiveCanvas = function(boardDiv){
+	var history = {};
+	// link in the renderer, and attach handlers as appropriate
 	var rendererObj = createCanvasRenderer(boardDiv);
-	/*
-	rendererObj.onRenderStarting = function(ctx,elem,history){
+	var statistic = function(category,time,success){
+		console.log("InteractiveCanvasStatistic",category,time,success);
 	};
-	rendererObj.onRenderComplete = function(ctx,elem,history){
+	rendererObj.onStatistic(function(c,t,s){return statistic(c,t,s);});
+	var renderStarting = function(ctx,elem,history){
 	};
-	rendererObj.onViewboxChanged = function(vb,ctx,elem){
+	rendererObj.onRenderStarting(function(c,e,h){return renderStarting(c,e,h);});
+	var renderComplete = function(ctx,elem,history){
 	};
-	rendererObj.onDimensionsChanged = function(dims,ctx,elem){
+	rendererObj.onRenderComplete(function(c,e,h){return renderComplete(c,e,h);});
+	var viewboxChanged = function(vb,ctx,elem){
 	};
-	rendererObj.onScaleChanged = function(scale,ctx,elem){
+	rendererObj.onViewboxChanged(function(v,c,e){return viewboxChanged(v,c,e);});
+	var scaleChanged = function(s,ctx,elem){
 	};
-	*/
+	rendererObj.onScaleChanged(function(s,c,e){return scaleChanged(s,c,e);});
+	var dimensionsChanged = function(dims,ctx,elem){
+	};
+	rendererObj.onDimensionsChanged(function(d,c,e){return dimensionsChanged(d,c,e);});
+	var canvasHistoryChanged = function(hist){
+		history = hist;
+		historyChanged(hist);
+	};
+	var historyChanged = function(history){
+	};
+	rendererObj.onHistoryChanged(function(h){return canvasHistoryChanged(h);});
 	MeTLBus.subscribe("mockHistoryReceived","interactiveCanvas",function(history){
 		if (rendererObj !== undefined){
 			rendererObj.setHistory(history,function(){
@@ -947,10 +963,10 @@ var createInteractiveCanvas = function(boardDiv){
 			});
 		});
 	};
-	clearCanvasInteractables = function(category){
+	var clearCanvasInteractables = function(category){
 		canvasInteractables[category] = [];
 	};
-	finishInteractableStates:function(){
+	var finishInteractableStates = function(){
 		_.forEach(_.keys(canvasInteractables),function(k){
 			_.forEach(canvasInteractables[k],function(ci){
 					if (ci != undefined && "deactivate" in ci){
@@ -1116,6 +1132,7 @@ var createInteractiveCanvas = function(boardDiv){
 				var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
 				var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
 				var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
+				/*
 				Fonts.getAllFamilies().map(function(family){
 						fontFamilySelector.append(fontFamilyOptionTemplate.clone().attr("value",family).text(family));
 				});
@@ -1125,6 +1142,7 @@ var createInteractiveCanvas = function(boardDiv){
 				Colors.getAllNamedColors().map(function(color){
 						fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
 				});
+				*/
 				fontLargerSelector.on("click",scaleCurrentSelection(1.2));
 				fontSmallerSelector.click(scaleCurrentSelection(0.8));
 				fontBoldSelector.click(toggleFormattingProperty("bold"));
@@ -1644,6 +1662,7 @@ var createInteractiveCanvas = function(boardDiv){
 			$(function(){
 					if (!hasInitialized){
 							hasInitialized = true;
+							/*
 							insertOptions = $("#videoInsertOptions").css({position:"absolute",left:0,top:0});
 							insertOptionsClose = $("#videoInsertOptionsClose").click(Modes.select.activate);
 							videoFileChoice = $("#videoFileChoice").attr("accept","video/mp4");
@@ -1657,6 +1676,7 @@ var createInteractiveCanvas = function(boardDiv){
 									clientSideProcessVideo(sendVideoToServer);
 							},false);
 							resetVideoUpload();
+							*/
 					}
 			});
 			MeTLBus.subscribe("beforeLeavingSlide","videos",function(){
@@ -1919,6 +1939,7 @@ var createInteractiveCanvas = function(boardDiv){
 			$(function(){
 					if (!hasInitialized){
 							hasInitialized = true;
+							/*
 							insertOptions = $("#imageInsertOptions").css({position:"absolute",left:0,top:0});
 							insertOptionsClose = $("#imageInsertOptionsClose").click(Modes.select.activate);
 							imageFileChoice = $("#imageFileChoice").attr("accept","image/*");
@@ -1935,6 +1956,7 @@ var createInteractiveCanvas = function(boardDiv){
 									}
 							},false);
 							resetImageUpload();
+							*/
 					}
 			});
 			return {
@@ -2005,7 +2027,7 @@ var createInteractiveCanvas = function(boardDiv){
 							modeChanged(noneMode);
 					}
 			};
-	})(),
+	})();
 	var	panMode = {
 		name:"pan",
 		activate:function(){
@@ -2168,7 +2190,6 @@ var createInteractiveCanvas = function(boardDiv){
 			return {
 					name:"select",
 					isAdministeringContent:function(){return isAdministeringContent;},
-					updateAdministerContentVisualState:updateAdministerContentVisualState,
 					selected:{
 							images:{},
 							texts:{},
@@ -2177,13 +2198,13 @@ var createInteractiveCanvas = function(boardDiv){
 							videos:{}
 					},
 					setSelection:function(selected){
-							Modes.select.selected = _.merge(Modes.select.selected,selected);
+							selected = _.merge(Modes.select.selected,selected);
 					},
 					handlesAtZoom:function(){
 							var zoom = scale();
 							return Modes.select.resizeHandleSize / zoom;
 					},
-					totalSelectedBounds:Bench.track("Modes.select.totalSelectedBounds",function(){
+					totalSelectedBounds:function(){
 							var totalBounds = {x:Infinity,y:Infinity,x2:-Infinity,y2:-Infinity};
 							var incorporate = function(item){
 									var bounds = item.bounds;
@@ -2202,7 +2223,7 @@ var createInteractiveCanvas = function(boardDiv){
 							totalBounds.tl = worldToScreen(totalBounds.x,totalBounds.y);
 							totalBounds.br = worldToScreen(totalBounds.x2,totalBounds.y2);
 							return totalBounds;
-					}),
+					},
 					offset:{x:0,y:0},
 					marqueeWorldOrigin:{x:0,y:0},
 					resizing:false,
@@ -2603,143 +2624,15 @@ var createInteractiveCanvas = function(boardDiv){
 			}
 	};
 	var drawMode = (function(){
-			var originalBrushes = Brushes.getDefaultBrushes();
-			var brushes = _.map(originalBrushes,function(i){return _.clone(i);});
-			var currentBrush;
 			var erasing = false;
-			var penSizeTemplate = undefined;
-			var penColorTemplate = undefined;
-			var updateOriginalBrush = function(brush){
-					brushes[brush.index] = brush;
-			};
+			var isHighlighter = false;
+			var color = "#000000";
 			var up = function(){};
 			var down = function(){};
 			var move = function(){};
 
 			var mousePressure = 256;
 			$(function(){
-					$(".activeBrush").removeClass("activeBrush");
-					var drawTools = function(){
-							var container = $("#drawTools");
-							_.each(container.find(".modeSpecificTool.pen"),function(button,i){
-									var brush = brushes[i];
-									var thisButton = $(button)
-											.css({color:brush.color})
-											.click(function(){
-													$(".activeBrush").removeClass("activeBrush");
-													$(this).addClass("activeBrush");
-													currentBrush = brush;
-													updateOriginalBrush(brush);
-													Modes.draw.drawingAttributes = currentBrush;
-													erasing = false;
-													drawAdvancedTools(brush);
-											}).removeClass("fa-tint").removeClass("fa-circle").addClass(brush.isHighlighter ? "fa-circle" : "fa-tint");
-									thisButton.find(".widthIndicator").text(brush.width);
-									if (brush == currentBrush){
-											thisButton.addClass("activeBrush");
-									}
-							});
-					};
-					var drawAdvancedTools = function(brush){
-							var dots = $("#colors .dots");
-							var bars = $("#sizes .dots");
-							var colors = Colors.getAllNamedColors();
-							var widths = Brushes.getAllBrushSizes();
-							bars.empty();
-							widths.map(function(width){
-									var sizeDot = penSizeTemplate.clone();
-									bars.append(sizeDot);
-									sizeDot.click(function(){
-											brush.width = width;
-											updateOriginalBrush(brush);
-											currentBrush = brush;
-											drawTools();
-											drawAdvancedTools(brush);
-									});
-									var bar = Canvas.circle(brush.color,width,50);
-									if (width == brush.width){
-											sizeDot.addClass("activeTool");
-									}
-									sizeDot.prepend(bar)
-									var sizeName = width.toString() + 'px';
-									sizeDot.find('.sizeDotName').append(sizeName);
-							});
-							dots.empty();
-							colors.map(function(color){
-									var colorDot = penColorTemplate.clone();
-									dots.append(colorDot);
-									colorDot.on("click",function(){
-											brush.color = color.rgb;
-											currentBrush = brush;
-											updateOriginalBrush(brush);
-											drawTools();
-											drawAdvancedTools(brush);
-									});
-									//var dot = Canvas.circle(color.rgb,50,50);
-									colorDot.css("color",color.rgb);
-									if ("rgb" in color && color.rgb == brush.color){
-											colorDot.addClass("activeTool");
-									}
-									//colorDot.prepend(dot);
-									var colorDotName = color.name;
-									colorDot.find('.colorDotName').append(colorDotName);
-							});
-							var hlButton = $("#setPenToHighlighter").unbind("click").on("click",function(){
-									brush.isHighlighter = true;
-									currentBrush = brush;
-									updateOriginalBrush(brush);
-									drawTools();
-									drawAdvancedTools(brush);
-							});
-							var penButton = $("#setPenToPen").unbind("click").on("click",function(){
-									brush.isHighlighter = false;
-									currentBrush = brush;
-									updateOriginalBrush(brush);
-									drawTools();
-									drawAdvancedTools(brush);
-							});
-							if ("isHighlighter" in currentBrush && currentBrush.isHighlighter){
-									hlButton.addClass("activeTool").addClass("active");
-									penButton.removeClass("activeTool").removeClass("active");
-							} else {
-									penButton.addClass("activeTool").addClass("active");
-									hlButton.removeClass("activeTool").removeClass("active");
-							}
-							MeTLBus.call("onLayoutUpdated");
-					}
-					$("#resetPenButton").click(function(){
-							var originalBrush = _.find(originalBrushes,function(i){
-									return i.id == currentBrush.id;
-							});
-							if (originalBrush != undefined){
-									currentBrush.width = originalBrush.width;
-									currentBrush.color = originalBrush.color;
-									currentBrush.isHighlighter = originalBrush.isHighlighter;
-									drawTools();
-									drawAdvancedTools(currentBrush);
-							}
-					});
-					penSizeTemplate = $("#penSize .sizeDot").clone();
-					penColorTemplate = $("#penColor .colorDot").clone();
-					currentBrush = brushes[0];
-					drawTools();
-					drawAdvancedTools(currentBrush);
-					var container = $("#drawTools");
-					container.find(".eraser").unbind("click").on("click",function(button){
-							$(".activeBrush").removeClass("activeBrush");
-							$(this).addClass("activeBrush");
-							erasing = true;
-							$("#drawDropdowns").hide();
-					});
-					container.find(".advancedTools").unbind("click").on("click",function(){
-							if (!erasing){
-									drawAdvancedTools(currentBrush);
-									$("#drawDropdowns").toggle();
-							}
-					});
-					$("#closePenDialog").unbind("click").on("click",function(){
-							$("#drawDropdowns").hide();
-					});
 					var currentStroke = [];
 					var isDown = false;
 					var resumeWork;
@@ -2747,9 +2640,9 @@ var createInteractiveCanvas = function(boardDiv){
 							deleted = [];
 							isDown = true;
 							if(!erasing && !modifiers.eraser){
-									boardContext.strokeStyle = Modes.draw.drawingAttributes.color;
-									boardContext.fillStyle = Modes.draw.drawingAttributes.color;
-									if (Modes.draw.drawingAttributes.isHighlighter){
+									boardContext.strokeStyle = color;
+									boardContext.fillStyle = color;
+									if (isHighlighter){
 											boardContext.globalAlpha = 0.4;
 									} else {
 											boardContext.globalAlpha = 1.0;
@@ -2833,42 +2726,25 @@ var createInteractiveCanvas = function(boardDiv){
 			});
 			return {
 					name:"draw",
-					brushes:brushes,
 					mousePressure:mousePressure,
 					activate:function(){
 							boardContext.setLineDash([]);
 							if(Modes.currentMode == Modes.draw){
 									return;
 							}
-							Modes.currentMode.deactivate();
-							Modes.currentMode = Modes.draw;
-							Modes.draw.drawingAttributes = currentBrush;
-							setActiveMode("#drawTools","#drawMode");
-
-							$(".activeBrush").removeClass("activeBrush");
-							if (erasing){
-									$("#drawTools").find(".eraser").addClass("activeBrush");
-							} else {
-									_.each($("#drawTools").find(".modeSpecificTool.pen"),function(button,i){
-											if ((i + 1) == currentBrush.id){
-													$(button).addClass("activeBrush");
-											}
-									});
-							}
+							currentMode.deactivate();
+							currentMode = drawMode;
 							registerPositionHandlers(board,down,move,up);
+							modeChanged(drawMode);
 					},
 					deactivate:function(){
-							$(".activeBrush").removeClass("activeBrush");
-							$("#drawDropdowns").hide();
 							WorkQueue.gracefullyResume();
 							unregisterPositionHandlers(board);
-							if(window.currentBackstage == "customizeBrushPopup"){
-									window.hideBackstage();
-							}
+							modeChanged(noneMode);
 					}
 			};
 	})();
-	var eraseMode = function({
+	var eraseMode = (function(){
 		return {
 			activate:function(){
 					currentMode.deactivate();
@@ -2894,6 +2770,11 @@ var createInteractiveCanvas = function(boardDiv){
 	var modeChanged = function(m){
 		console.log("modeChanged",m);
 	};
+	var setHistoryFunc = function(history){
+		rendererObj.setHistory(history,function(){
+			rendererObj.render();
+		});
+	};
 	return {
 		boardElem:boardDiv,
 		renderer:rendererObj,
@@ -2912,6 +2793,28 @@ var createInteractiveCanvas = function(boardDiv){
 		},
 		onModeChanged:function(f){
 			modeChanged = f;
+		},
+		onStatistic:function(f){
+			statistic = f;
+		},
+		onViewboxChanged:function(f){
+			viewboxChanged = f;
+		},
+		onScaleChanged:function(f){
+			scaleChanged = f;
+		},
+		onDimensionsChanged:function(f){
+			dimensionsChanged = f;
+		},
+		onRenderStarting:function(f){
+			renderStarting = f;
+		},
+		onRenderComplete:function(f){
+			renderComplete = f;
+		},
+		setHistory:setHistoryFunc,
+		onHistoryChanged:function(f){
+			historyChanged = f;
 		},
 		alertSnapshot:function(){
 			var dims = rendererObj.getDimensions();
