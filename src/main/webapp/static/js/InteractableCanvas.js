@@ -2593,6 +2593,77 @@ var createInteractiveCanvas = function(boardDiv){
 					else{
 						takeControlOfViewbox(true);
 					}
+					var aspectConstrainedDimensions = function(width,height){
+						var boardDims = rendererObj.getDimensions();
+						var proportion = boardDims.height / boardDims.width;
+						var comparisonProportion = height / width;
+						var dims = {
+							height:height,
+							width:width
+						};
+						if(comparisonProportion > proportion){
+							dims.height = width * proportion;
+						}
+						else{
+							dims.width = height / proportion;
+						}
+						return dims;
+					}
+					var aspectConstrainedRect = function(rect,hAlign,vAlign){ // vAlign and hAlign are strings to determine how to align the position of the aspect constrained rect within itself after adjusting the proportion.  It should be "top","bottom","center" and "left","right","center".
+						var boardDims = rendererObj.getDimensions();
+						var proportion = boardDims.height / boardDims.width;
+						var comparisonProportion = rect.height / rect.width;
+						var dims = {
+								left:rect.left,
+								top:rect.top,
+								right:rect.right,
+								bottom:rect.bottom,
+								width:rect.width,
+								height:rect.height
+						};
+						if (comparisonProportion > proportion){
+								dims.height = rect.width * proportion;
+								if (vAlign){
+										var vOffset = rect.height - dims.height;
+										if (vAlign == "center"){
+											dims.top += vOffset / 2;
+										} else if (vAlign == "bottom"){
+											dims.top += vOffset;
+										}
+								}
+						}
+						else {
+							dims.width = rect.height / proportion;
+							if (hAlign){
+								var hOffset = rect.width - dims.width;
+								if (hAlign == "center"){
+									dims.left += hOffset / 2;
+								} else if (hAlign == "right"){
+									dims.left += hOffset;
+								}
+							}
+						}
+						dims.right = dims.left + dims.width;
+						dims.bottom = dims.top + dims.height;
+						return dims;
+					}
+
+					function updateMarquee(marquee,pointA,pointB){
+						var rect = rectFromTwoPoints(pointA,pointB);
+						var selectionAdorner = $("#selectionAdorner");
+						if (!(jQuery.contains(selectionAdorner,marquee))){
+								selectionAdorner.append(marquee);
+						}
+						if (!(marquee.is(":visible"))){
+								marquee.show();
+						}
+						marquee.css({
+								left:px(rect.left),
+								top:px(rect.top),
+								width:px(rect.width),
+								height:px(rect.height)
+						});
+					}
 					var down = function(x,y,z,worldPos){
 							//adding this so that using the zoom marquee results in the autofit being turned off.
 							takeControlOfViewbox(true);
@@ -2622,9 +2693,17 @@ var createInteractiveCanvas = function(boardDiv){
 					}
 					var up = function(x,y,z,worldPos){
 							WorkQueue.gracefullyResume();
+							var newRect = rectFromTwoPoints(worldPos,startWorldPos);//[Math.min(startWorldPos.x,worldPos.x),Math.min(startWorldPos.y,worldPos.y),Math.abs(startWorldPos.x - worldPos.x),Math.abs(startWorldPos.y - worldPos.y)];
+							var aspectConstrained = aspectConstrainedRect(newRect);
+							console.log("up",newRect,aspectConstrained);
+							marquee.hide();
+							TweenController.zoomAndPanViewbox(aspectConstrained.left,aspectConstrained.top,aspectConstrained.width,aspectConstrained.height);
+							/*
+
 							var touchWidth = 50;
 							var tooSmallToUse = touchWidth * touchWidth;
 							marquee.hide();
+
 							var currentPoint = {x:contentOffsetX + worldPos.x,y:contentOffsetY + worldPos.y};
 							var startingWorldPoint = {x:contentOffsetX + startWorldPos.x,y:contentOffsetY + startWorldPos.y};
 							var rect = rectFromTwoPoints(currentPoint,startingWorldPoint);
@@ -2640,12 +2719,15 @@ var createInteractiveCanvas = function(boardDiv){
 							if (currentPoint.y == rect.top){
 									vAlign = "bottom";
 							}
+							startWorldPos = undefined;
+
 							var constrained = aspectConstrainedRect(rect,hAlign,vAlign);
 							var vX = constrained.left;
 							var vY = constrained.top;
 							var vW = constrained.width;
 							var vH = constrained.height;
 							IncludeView.specific(vX,vY,vW,vH);
+							*/
 					}
 					registerPositionHandlers(down,move,up);
 					modeChanged(zoomMode);
@@ -2919,7 +3001,7 @@ var createInteractiveCanvas = function(boardDiv){
 			var hDelta = requestedHeight - oh;
 			var xDelta = -1 * (wDelta / 2);
 			var yDelta = -1 * (hDelta / 2);
-			TweenController.zoomAndPanViewbox(xDelta,yDelta,wDelta,hDelta,onComplete);
+			TweenController.zoomAndPanViewboxRelative(xDelta,yDelta,wDelta,hDelta,onComplete);
 		};
     return {
         scale:scaleFunc,
@@ -3020,6 +3102,7 @@ var createInteractiveCanvas = function(boardDiv){
     },300);
     var tween;
     var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
+			console.log("easingAlterViewboxFunction",finalX,finalY,finalWidth,finalHeight,rendererObj.getViewbox());
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
                 onComplete();
@@ -3068,6 +3151,7 @@ var createInteractiveCanvas = function(boardDiv){
 					}
         };
         requestAnimationFrame(update);
+				/*
         if("Conversations" in window && Conversations.isAuthor()){
             if(notFollowable || shouldAvoidUpdatingRequestedViewbox){
                 //console.log("not following viewbox update");
@@ -3077,6 +3161,7 @@ var createInteractiveCanvas = function(boardDiv){
                 teacherViewUpdated(finalX,finalY,finalWidth,finalHeight);
             }
         }
+				*/
     };
     return {
         panViewbox:panViewboxFunction,

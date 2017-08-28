@@ -52,6 +52,20 @@ var rectFromTwoPoints = function(pointA,pointB,minimumSideLength){
 		};
 };
 
+var pica = function(value){
+    return value / 128;
+};
+var unpica = function(value){
+    return Math.floor(value * 128);
+}
+var px = function(value){
+    return sprintf("%spx",value);
+}
+var unpix = function(str){
+    return str.slice(0,str.length-2);
+}
+
+
 var createCanvasRenderer = function(canvasElem){
 	var boardContext = canvasElem[0].getContext("2d");
 	var boardContent = {};
@@ -1280,19 +1294,6 @@ var createCanvasRenderer = function(canvasElem){
 			});
 	};
 
-	var pica = function(value){
-			return value / 128;
-	}
-	var unpica = function(value){
-			return Math.floor(value * 128);
-	}
-	var px = function(value){
-			return sprintf("%spx",value);
-	}
-	var unpix = function(str){
-			return str.slice(0,str.length-2);
-	}
-	
 	var clearBoard = function(rect){
 			try {
 					var r = rect == undefined ? {x:0,y:0,w:boardWidth,h:boardHeight} : rect;
