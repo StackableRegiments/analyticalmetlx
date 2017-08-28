@@ -244,19 +244,26 @@ var createInteractiveCanvas = function(boardDiv){
 							finishInteractableStates();
 					});
 					var pointerOut = function(x,y,e){
+							var vb = rendererObj.getViewbox();
 							var point = releasePoint(e);
 							trackedTouches = {};
 							WorkQueue.gracefullyResume();
 							var worldPos = rendererObj.screenToWorld(x,y);
 							var worldX = worldPos.x;
 							var worldY = worldPos.y;
-							if(worldX < viewboxX){
-									takeControlOfViewbox(true);
-									Extend.left();
+							if(worldX < vb.x){
+								takeControlOfViewbox(true);
+								Extend.left();
 							}
-							else if(worldX >= (viewboxX + viewboxWidth)){
-									takeControlOfViewbox(true);
-									Extend.right();
+							else if(worldX >= (vb.x + vb.width)){
+								takeControlOfViewbox(true);
+								Extend.right();
+							} else if (worldY < vb.y){
+								takeControlOfViewbox(true);
+								Extend.up();
+							} else if (worldY >= (vb.y + vb.height)){
+								takeControlOfViewbox(true);
+								Extend.down();
 							}
 							else{
 									if(noInteractableConsumed(worldPos,"up")){
@@ -572,7 +579,7 @@ var createInteractiveCanvas = function(boardDiv){
 					box.doc.position.y += yDelta;
 					box.doc.invalidateBounds();
 				});
-				sendStanza(moved);
+				stanzaAvailable(moved);
 				registerTracker(moved.identity,function(){
 					MeTLBus.call("onSelectionChanged");
 					rendererObj.render();
@@ -789,7 +796,7 @@ var createInteractiveCanvas = function(boardDiv){
 				registerTracker(resized.identity,function(){
 						MeTLBus.call("onSelectionChanged");
 				});
-				sendStanza(resized);
+				stanzaAvailable(resized);
 				return false;
 			},
 			render:function(canvasContext){
@@ -898,7 +905,7 @@ var createInteractiveCanvas = function(boardDiv){
 							MeTLBus.call("onSelectionChanged");
 							rendererObj.render();
 					});
-					sendStanza(resized);
+					stanzaAvailable(resized);
 					return false;
 			},
 			render:function(canvasContext){
@@ -1425,7 +1432,7 @@ var createInteractiveCanvas = function(boardDiv){
 										if ("texts" in Modes.select.selected){
 												deleteTransform.textIds = [oldEditor.identity];
 										}
-										sendStanza(deleteTransform);
+										stanzaAvailable(deleteTransform);
 
 										var newEditor = createBlankText({x:oldEditor.x,y:oldEditor.y},[{
 												text: oldEditor.text,
@@ -1648,7 +1655,7 @@ var createInteractiveCanvas = function(boardDiv){
 													Modes.select.selected.videos[videoStanza.identity] = boardContent.videos[videoStanza.identity];
 													MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
 											});
-											sendStanza(videoStanza);
+											stanzaAvailable(videoStanza);
 											resetVideoUpload();
 											WorkQueue.gracefullyResume();
 									},
@@ -1924,7 +1931,7 @@ var createInteractiveCanvas = function(boardDiv){
 													Modes.select.selected.images[imageStanza.identity] = boardContent.images[imageStanza.identity];
 													MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
 											});
-											sendStanza(imageStanza);
+											stanzaAvailable(imageStanza);
 											resetImageUpload();
 											WorkQueue.gracefullyResume();
 											zoomToFit();
@@ -2064,6 +2071,26 @@ var createInteractiveCanvas = function(boardDiv){
 			modeChanged(noneMode);
 		}
 	};
+	var batchTransform = function(){
+		return {
+			type:"moveDelta",
+			identity:Date.now().toString(),
+			timestamp:Date.now(),
+			inkIds:[],
+			textIds:[],
+			multiWordTextIds:[],
+			videoIds:[],
+			imageIds:[],
+			xOrigin:0,
+			yOrigin:0,
+			xTranslate:0,
+			yTranslate:0,
+			xScale:1.0,
+			yScale:1.0,
+			isDeleted:false
+		}
+	}
+
 	var selectMode = (function(){
 			var isAdministeringContent = false;
 			var updateSelectionVisualState = function(sel){
@@ -2188,7 +2215,7 @@ var createInteractiveCanvas = function(boardDiv){
 					if ("videos" in Modes.select.selected){
 							deleteTransform.videoIds = _.keys(Modes.select.selected.videos);
 					}
-					sendStanza(deleteTransform);
+					stanzaAvailable(deleteTransform);
 					_.forEach(_.union(Modes.select.selected.inks,Modes.select.selected.texts,Modes.select.selected.images,Modes.select.selected.multiWordTexts,Modes.select.selected.videos),function(stanza){
 							MeTLBus.call("onCanvasContentDeleted",[stanza]);
 					});
@@ -2362,7 +2389,7 @@ var createInteractiveCanvas = function(boardDiv){
 															MeTLBus.call("onSelectionChanged");
 															blit();
 													});
-													sendStanza(moved);
+													stanzaAvailable(moved);
 											}
 											else{
 													var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos,2);
@@ -2631,6 +2658,7 @@ var createInteractiveCanvas = function(boardDiv){
 					unregisterPositionHandlers();
 			}
 	};
+	var raySpan = 10;
 	var deleted = [];
 	var eraseDown = function(x,y,z,worldPos,modifiers){
 		deleted = [];
@@ -2655,8 +2683,8 @@ var createInteractiveCanvas = function(boardDiv){
 		}
 		boardContext.globalAlpha = 0.4;
 		boardContext.fillStyle = "red";
-		deleteInRay(boardContent.inks);
-		deleteInRay(boardContent.highlighters);
+		deleteInRay(history.inks);
+		deleteInRay(history.highlighters);
 		boardContext.globalAlpha = 1.0;
 	};
 	var eraseUp = function(x,y,z,worldPos,modifiers){
@@ -2666,7 +2694,7 @@ var createInteractiveCanvas = function(boardDiv){
 		_.forEach(deleted,function(stanza){
 			MeTLBus.call("onCanvasContentDeleted",[stanza]);
 		});
-		sendStanza(deleteTransform);
+		stanzaAvailable(deleteTransform);
 	};
 
 	var drawMode = (function(){
@@ -2699,7 +2727,6 @@ var createInteractiveCanvas = function(boardDiv){
 					} else {
 					}
 			};
-			var raySpan = 10;
 			var deleted = [];
 			var trail = {};
 			var move = function(x,y,z,worldPos,modifiers){
@@ -2763,6 +2790,7 @@ var createInteractiveCanvas = function(boardDiv){
 	var eraseMode = (function(){
 		var isDown = false;
 		return {
+			name:"erase",
 			activate:function(){
 					currentMode.deactivate();
 					currentMode = eraseMode;
@@ -2979,7 +3007,7 @@ var createInteractiveCanvas = function(boardDiv){
             })){
                 return;
             };
-            sendStanza({
+            stanzaAvailable({
                 author:UserSettings.getUsername(),
                 timestamp:Date.now(),
                 type:"command",
@@ -3079,9 +3107,6 @@ var createInteractiveCanvas = function(boardDiv){
 	var selectionChanged = function(selected){
 		console.log("selectionChanged",selected);
 	};
-	var sendStanza = function(stanza){
-		console.log("sendStanza",stanza);
-	};
 	var modeChanged = function(m){
 		console.log("modeChanged",m);
 	};
@@ -3140,9 +3165,6 @@ var createInteractiveCanvas = function(boardDiv){
 		},
 		getSelected:function(){
 			return selected;
-		},
-		onStanza:function(f){
-			sendStanza = f;
 		},
 		onSelectionChanged:function(f){
 			selectionChanged = f;

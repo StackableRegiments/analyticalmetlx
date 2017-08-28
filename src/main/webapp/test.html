@@ -99,7 +99,7 @@
 			});
 			newCanvas.setHistory(mockHistory);
 			newCanvas.setDimensions(DeviceConfiguration.getMeasurements());
-			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
+			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "erase";}));
 			MeTLBus.subscribe("beforeWorkQueueResume","test",function(){});
 			MeTLBus.subscribe("afterWorkQueuePause","test",function(){});
 			MeTLBus.subscribe("layoutUpdated","test",function(dims){
