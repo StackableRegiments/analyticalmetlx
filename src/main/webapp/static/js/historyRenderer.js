@@ -839,16 +839,6 @@ var createCanvasRenderer = function(canvasElem){
 			return str.slice(0,str.length-2);
 	}
 	
-	var renderTint = function(canvasContext,rect){
-			if ('HealthCheckViewer' in window && !HealthCheckViewer.healthy()) {
-					var r = rect == undefined ? {x: 0, y: 0, w: boardWidth, h: boardHeight} : rect;
-					canvasContext.save();
-					canvasContext.fillStyle = "rgba(255, 0, 0, 0.1)";
-					canvasContext.fillRect(r.x, r.y, r.w, r.h);
-					canvasContext.restore();
-			}
-	}
-
 	var clearBoard = function(rect){
 			try {
 					var r = rect == undefined ? {x:0,y:0,w:boardWidth,h:boardHeight} : rect;
@@ -1137,7 +1127,6 @@ var createCanvasRenderer = function(canvasElem){
 			viewboxHeight = boardContent.maxY - boardContent.minY;
 
 			var startRender = function(){
-				MeTLBus.call("historyReceived",[history]);
 				if (boardContent.minX == Infinity){
 					boardContent.minX = 0;
 				}
