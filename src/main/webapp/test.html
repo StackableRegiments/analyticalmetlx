@@ -56,6 +56,51 @@
 			images:{},
 			videos:{}
 		};
+		var mockMultiWordText = {
+			type:"multiWordText",
+			x:20,
+			y:200,
+			width:300,
+			height:100,
+			tag:"testTag",
+			requestedWidth:300,
+			timestamp:4,
+			author:"test",
+			privacy:"PUBLIC",
+			target:"presentationSpace",
+			words:[
+				{
+					text:"red",
+					bold:false,
+					underline:false,
+					italic:true,
+					justify:"left",
+					color:["FF0000",255],
+					font:"arial",
+					size:12	
+				},
+				{
+					text:"green",
+					bold:false,
+					underline:true,
+					italic:false,
+					justify:"left",
+					color:["00FF00",255],
+					font:"arial",
+					size:10	
+				},
+				{
+					text:"blue",
+					bold:true,
+					underline:false,
+					italic:false,
+					justify:"left",
+					color:["0000FF",255],
+					font:"arial",
+					size:14	
+				}
+			]
+		};
 		mockHistory.inks[mockInk.identity] = mockInk;
 		mockHistory.texts[mockText.identity] = mockText;
 		mockHistory.images[mockImage.identity] = mockImage;
