@@ -126,12 +126,14 @@ var createCanvasRenderer = function(canvasElem){
 					outputScaleX = outputScaleY;
 					outputX = outputX * outputScaleY;
 			}
-			return {
+			var returnObj = {
 					width:outputX,
 					height:outputY,
 					scaleX:outputScaleX,
 					scaleY:outputScaleY
 			};
+			console.log("determineScaling",inX,inY,returnObj);
+			return returnObj;
 	}
 
 	var incorporateBoardBounds = function(bounds){
@@ -194,8 +196,13 @@ var createCanvasRenderer = function(canvasElem){
 		if (stanza !== undefined && "type" in stanza){
 			switch (stanza.type) {
 				case "ink":
-					prerenderInk(stanza,true);
-					boardContent.inks[stanza.identity] = stanza;
+					var ink = stanza;
+					prerenderInk(ink,true);
+					if (ink.isHighlighter){
+						boardContent.highlighters[ink.identity] = stanza;
+					} else {
+						boardContent.inks[ink.identity] = stanza;
+					}
 					render();
 					break;
 				case "text":
@@ -1047,32 +1054,31 @@ var createCanvasRenderer = function(canvasElem){
 			if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
 					var img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
 					if(img){
-							try{
-									var inset = ink.thickness / 2;
-									var sW = img.width;
-									var sH = img.height;
-									var xFactor = img.width / cWidth;
-									var yFactor = img.height / cHeight;
-									var iX = inset * xFactor;
-									var iY = inset * yFactor;
+						try{
+								var inset = ink.thickness / 2;
+								var sW = img.width;
+								var sH = img.height;
+								var xFactor = img.width / cWidth;
+								var yFactor = img.height / cHeight;
+								var iX = inset * xFactor;
+								var iY = inset * yFactor;
 
-									var tX = sBounds.screenPos.x - iX;
-									var tY = sBounds.screenPos.y - iY;
-									var tW = sBounds.screenWidth + 2 * iX;
-									var tH = sBounds.screenHeight + 2 * iY;
-									boardContext.drawImage(img,
-																					0, 0,
-																					sW, sH,
-																					tX,tY,
-																					tW,tW);
-							}
-							catch(e){
-								passException(e,"drawInk",[ink,img]);
-							}
-					}
-					else{
-							c = ink.canvas = prerenderInk(ink,incCanvasContext);
-							img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
+								var tX = sBounds.screenPos.x - iX;
+								var tY = sBounds.screenPos.y - iY;
+								var tW = sBounds.screenWidth + (2 * iX);
+								var tH = sBounds.screenHeight + (2 * iY);
+								boardContext.drawImage(img,
+																				0, 0,
+																				sW, sH,
+																				tX,tY,
+																				tW,tH);
+						}
+						catch(e){
+							passException(e,"drawInk",[ink,img]);
+						}
+					} else {
+						c = ink.canvas = prerenderInk(ink,incCanvasContext);
+						img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
 					}
 			}
 	}

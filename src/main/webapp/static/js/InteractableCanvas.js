@@ -3096,16 +3096,10 @@ var createInteractiveCanvas = function(boardDiv){
             timestamp:Date.now(),
             isHighlighter:isHighlighter
         };
-        var scaledPoints = [];
         var x;
         var y;
         var worldPos;
-        for(var p = 0; p < points.length; p += 3){
-            x = points[p];
-            y = points[p+1];
-            scaledPoints = scaledPoints.concat([x,y,points[p+2]]);
-        }
-        ink.points = scaledPoints;
+        ink.points = points;
         ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
         ink.startingSum = ink.checksum;
         ink.identity = ink.checksum.toFixed(1);
