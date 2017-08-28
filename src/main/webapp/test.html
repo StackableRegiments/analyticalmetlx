@@ -82,6 +82,12 @@
 						break;
 					case "draw":
 						$("#setDrawMode").addClass("activeMode");
+						var color = mode.getColor();
+						var isHighlighter = mode.getIsHighlighter();
+						var size = mode.getSize();
+						$("#inkWidth").val(size);
+						$("#inkColor").val(color);
+						$("#isHighlighter").val(isHighlighter);
 						$("#drawTools").show();
 						break;
 					case "pan":
@@ -100,6 +106,26 @@
 			});
 			$("#setDrawMode").on("click",function(){
 				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
+			});
+			$("#inkColor").on("change",function(e){
+				var value = $(this).val();
+				console.log("changing color:",value,this,e);
+				var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
+				drawMode.setColor(value);
+				//newCanvas.setMode(drawMode);
+			});
+			$("#inkWidth").on("change",function(e){
+				var value = $(this).val();
+				console.log("changing size:",value,this,e);
+				var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
+				drawMode.setSize(value);
+				//newCanvas.setMode(drawMode);
+			});
+			$("#isHighlighter").on("click",function(e){
+				var value = $(this).prop("checked");
+				var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
+				drawMode.setIsHighlighter(value);
+				//newCanvas.setMode(drawMode);
 			});
 			$("#setEraseMode").on("click",function(){
 				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "erase";}));

@@ -3,8 +3,9 @@
 #tools {
 	position:absolute;
 	left:10px;
-	width:20px;
+	width:60px;
 	z-index:100;
+	background:cyan;
 }
 	</style>
 	<div id="tools">
@@ -25,13 +26,14 @@
 -->
 		<button id="setEraseMode" class="fa fa- modeButton">Erase</button>
 		<button id="setDrawMode" class="fa fa- modeButton">Draw</button>
-		<!--
-		<div id="inkTools" class="subTools">
-			<button id="inkColor" class="subTool fa fa-"></button>
-			<button id="inkWidth" class="subTool fa fa-"></button>
-			<button id="eraser" class="subTool fa fa-"></button>
+		<div id="drawTools" class="subTools">
+			<label for="inkColor">color</label>
+			<input type="color" id="inkColor" class="subTool fa fa-"></input>
+			<label for="inkWidth">size</label>
+			<input type="range" min="1" max="100" id="inkWidth" class="subTool fa fa-" width="40px"></input>
+			<label for="isHighlighter">highlighter</label>
+			<input type="checkbox" id="isHighlighter" class="subTool fa fa-"></input>
 		</div>
--->
 		<!--
 		<button id="setTextMode" class="fa fa- modeButton"></button>
 		<div id="textTools" class="subTools">

@@ -2840,6 +2840,26 @@ var createInteractiveCanvas = function(boardDiv){
 			return {
 					name:"draw",
 					mousePressure:mousePressure,
+					setColor:function(newColor){
+						color = newColor;
+						modeChanged(drawMode);
+					},
+					setSize:function(newSize){
+						size = newSize;
+						modeChanged(drawMode);
+					},
+					getColor:function(){
+						return color;
+					},
+					getSize:function(){
+						return size;
+					},
+					getIsHighlighter:function(){
+						return isHighlighter;
+					},
+					setIsHighlighter:function(newIsHighlighter){
+						isHighlighter = newIsHighlighter;
+					},
 					activate:function(){
 							var boardContext = rendererObj.getBoardContext();
 							boardContext.setLineDash([]);
