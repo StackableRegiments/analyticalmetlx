@@ -91,6 +91,9 @@
 			window.InteractiveCanvas = newCanvas;
 			newCanvas.setHistory(mockHistory);
 			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "pan";}));
+			MeTLBus.subscribe("beforeWorkQueueResume","test",function(){});
+			MeTLBus.subscribe("afterWorkQueuePause","test",function(){});
+
 		});
 	</script>
 	<div class="lift:embed?what=_canvas"></div>

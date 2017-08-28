@@ -125,13 +125,13 @@ var createInteractiveCanvas = function(boardDiv){
 					}
 					if (checkIsGesture(pointerEvent)){
 							if (isGesture == false){
-									_.each(trackedTouches,function(series){
-											series.points = [_.last(series.points)];
-									});
+								_.each(trackedTouches,function(series){
+										series.points = [_.last(series.points)];
+								});
 							}
 							isGesture = true;
 					}
-					return {
+					var returnedObj = {
 							"pointerType":pointerEvent.pointerType,
 							"eraser":pointItem.eraser,
 							"x":x,
@@ -139,6 +139,7 @@ var createInteractiveCanvas = function(boardDiv){
 							"z":z,
 							"worldPos":worldPos
 					};
+					return returnedObj;
 			};
 			var releasePoint = function(pointerEvent){
 					var pointId = pointerEvent.originalEvent.pointerId;
@@ -149,7 +150,7 @@ var createInteractiveCanvas = function(boardDiv){
 					var z = pointerEvent.originalEvent.pressure || 0.5;
 					var worldPos = rendererObj.screenToWorld(x,y);
 					if (pointerEvent.originalEvent.pointerType == "touch"){
-							delete trackedTouches[pointId];
+						delete trackedTouches[pointId];
 					}
 					if (isGesture && _.size(trackedTouches) == 0){
 							isGesture = false;
@@ -168,34 +169,37 @@ var createInteractiveCanvas = function(boardDiv){
 					var performGesture = function(){
 							takeControlOfViewbox(true);
 
-							var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 0;}),function(item){
+							var calculationPoints = _.map(_.filter(trackedTouches,function(item){return _.size(item.points) > 1;}),function(item){
 									var first = _.first(item.points);
 									var last = _.last(item.points);
 									return [first,last];
 							});
-							trackedTouches = {};
-							var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
-							var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
+							if (_.size(calculationPoints) > 1){
+								trackedTouches = {};
+								var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
+								var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
 
-							Pan.translate(rendererObj.scaleWorldToScreen(xDelta),rendererObj.scaleWorldToScreen(yDelta));
+								Pan.translate(rendererObj.scaleWorldToScreen(xDelta),rendererObj.scaleWorldToScreen(yDelta));
 
-							var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
-							var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
-							var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
-							var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
-							var prevYScale = prevNorthMost - prevSouthMost;
-							var prevXScale = prevWestMost - prevEastMost;
+								var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
+								var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
+								var prevEastMost =  _.min(_.map(calculationPoints,function(touch){return touch[0].x;}));
+								var prevWestMost =  _.max(_.map(calculationPoints,function(touch){return touch[0].x;}));
+								var prevYScale = prevNorthMost - prevSouthMost;
+								var prevXScale = prevWestMost - prevEastMost;
 
-							var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
-							var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
-							var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
-							var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
-							var yScale = northMost - southMost;
-							var xScale = westMost - eastMost;
+								var southMost = _.min(_.map(calculationPoints,function(touch){return touch[1].y;}));
+								var northMost = _.max(_.map(calculationPoints,function(touch){return touch[1].y;}));
+								var eastMost =  _.min(_.map(calculationPoints,function(touch){return touch[1].x;}));
+								var westMost =  _.max(_.map(calculationPoints,function(touch){return touch[1].x;}));
+								var yScale = northMost - southMost;
+								var xScale = westMost - eastMost;
 
-							var previousScale = (prevXScale + prevYScale)       / 2;
-							var currentScale = (xScale + yScale)        / 2;
-							Zoom.scale(previousScale / currentScale);
+								var previousScale = (prevXScale + prevYScale) / 2;
+								var currentScale = (xScale + yScale) / 2;
+								//console.log("scaling:",previousScale,currentScale,calculationPoints);
+								Zoom.scale(previousScale / currentScale);
+							}
 					};
 					context.bind("pointerdown",function(e){
 							if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && checkIsGesture(e)){
@@ -266,7 +270,7 @@ var createInteractiveCanvas = function(boardDiv){
 							WorkQueue.gracefullyResume();
 							e.preventDefault();
 							if(isDown){
-									pointerOut(e.offsetX,e.offsetY,e);
+								pointerOut(e.offsetX,e.offsetY,e);
 							}
 							isDown = false;
 							finishInteractableStates();
@@ -2868,7 +2872,7 @@ var createInteractiveCanvas = function(boardDiv){
 			var hDelta = requestedHeight - oh;
 			var xDelta = -1 * (wDelta / 2);
 			var yDelta = -1 * (hDelta / 2);
-			TweenController.zoomAndPanViewboxRelative(xDelta,yDelta,wDelta,hDelta,onComplete);
+			TweenController.zoomAndPanViewbox(xDelta,yDelta,wDelta,hDelta,onComplete);
 		};
     return {
         scale:scaleFunc,
