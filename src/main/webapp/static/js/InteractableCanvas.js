@@ -2,27 +2,19 @@ var createInteractiveCanvas = function(boardDiv){
 	var history = {};
 	// link in the renderer, and attach handlers as appropriate
 	var rendererObj = createCanvasRenderer(boardDiv);
-	var statistic = function(category,time,success,exception){
-		console.log("InteractiveCanvasStatistic",category,time,success,exception);
-	};
+	var statistic = function(category,time,success,exception){ };
 	rendererObj.onStatistic(function(c,t,s,e){return statistic(c,t,s,e);});
-	var errorFunc = function(exception,location,parameters){
-	};
+	var errorFunc = function(exception,location,parameters){ };
 	rendererObj.onException(function(e,l,p){return errorFunc(e,l,p);});
-	var renderStarting = function(ctx,elem,history){
-	};
+	var renderStarting = function(ctx,elem,history){ };
 	rendererObj.onRenderStarting(function(c,e,h){return renderStarting(c,e,h);});
-	var renderComplete = function(ctx,elem,history){
-	};
+	var renderComplete = function(ctx,elem,history){ };
 	rendererObj.onRenderComplete(function(c,e,h){return renderComplete(c,e,h);});
-	var viewboxChanged = function(vb,ctx,elem){
-	};
+	var viewboxChanged = function(vb,ctx,elem){ };
 	rendererObj.onViewboxChanged(function(v,c,e){return viewboxChanged(v,c,e);});
-	var scaleChanged = function(s,ctx,elem){
-	};
+	var scaleChanged = function(s,ctx,elem){ };
 	rendererObj.onScaleChanged(function(s,c,e){return scaleChanged(s,c,e);});
-	var dimensionsChanged = function(dims,ctx,elem){
-	};
+	var dimensionsChanged = function(dims,ctx,elem){ };
 	rendererObj.onDimensionsChanged(function(d,c,e){return dimensionsChanged(d,c,e);});
 	var canvasHistoryChanged = function(hist){
 		history = hist;
@@ -38,13 +30,6 @@ var createInteractiveCanvas = function(boardDiv){
 	var postRenderItem = function(item){
 	};
 	rendererObj.onPostRenderItem(function(i,c){return postRenderItem(i,c);});
-	MeTLBus.subscribe("mockHistoryReceived","interactiveCanvas",function(history){
-		if (rendererObj !== undefined){
-			rendererObj.setHistory(history,function(){
-				rendererObj.render();
-			});
-		}
-	});
 	/*
 		RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
 		* */
@@ -192,7 +177,7 @@ var createInteractiveCanvas = function(boardDiv){
 							var xDelta = _.meanBy(calculationPoints,function(i){return i[0].x - i[1].x;});
 							var yDelta = _.meanBy(calculationPoints,function(i){return i[0].y - i[1].y;});
 
-							Pan.translate(scaleWorldToScreen(xDelta),scaleWorldToScreen(yDelta));
+							Pan.translate(rendererObj.scaleWorldToScreen(xDelta),rendererObj.scaleWorldToScreen(yDelta));
 
 							var prevSouthMost = _.min(_.map(calculationPoints,function(touch){return touch[0].y;}));
 							var prevNorthMost = _.max(_.map(calculationPoints,function(touch){return touch[0].y;}));
@@ -504,8 +489,8 @@ var createInteractiveCanvas = function(boardDiv){
 		var newY = Math.min(minY,Math.max(y,maxY - s));
 		return {x:newX,y:newY};	
 		/*
-		var ceiling = scaleScreenToWorld(DeviceConfiguration.headerHeight)+s;
-		var floor = scaleScreenToWorld(DeviceConfiguration.footerHeight);
+		var ceiling = rendererObj.scaleScreenToWorld(DeviceConfiguration.headerHeight)+s;
+		var floor = rendererObj.scaleScreenToWorld(DeviceConfiguration.footerHeight);
 		var clipped = Math.min(viewboxY+viewboxHeight-(floor - s/2),Math.max(y,viewboxY+ceiling));
 		return clipped;
 		*/
@@ -832,7 +817,7 @@ var createInteractiveCanvas = function(boardDiv){
 		var activated = false;
 		var deactivateFunc = function(){
 			resizeFree.activated = false;
-			Modes.select.resizing = false;
+			resizing = false;
 		};
 		return {
 			getActivated:function(){ return activated;},
@@ -890,7 +875,7 @@ var createInteractiveCanvas = function(boardDiv){
 					resized.textIds = _.keys(selected.texts);
 					resized.imageIds = _.keys(selected.images);
 					resized.videoIds = _.keys(selected.videos);
-					var s = scale();
+					var s = rendererObj.getScale();
 					_.each(selected.multiWordTexts,function(word){
 						if(word.doc.save().length > 0){
 							word.doc.width(Math.max(
@@ -1012,7 +997,7 @@ var createInteractiveCanvas = function(boardDiv){
 
 		var echoesToDisregard = {};
 		var createBlankText = function(worldPos,runs){
-				var width = Modes.text.minimumWidth / scale();
+				var width = Modes.text.minimumWidth / rendererObj.getScale();
 				var editor = Modes.text.editorFor({
 						bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
 						identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
@@ -1266,12 +1251,12 @@ var createInteractiveCanvas = function(boardDiv){
 						var caretIndex = editor.doc.selectedRange().start;
 						var cursorY = editor.doc.getCaretCoords(caretIndex);
 						var linesFromTop = Math.floor(cursorY.t / cursorY.h);
-						var linesInBox = Math.floor(scaleScreenToWorld(boardContext.height) / cursorY.h);
+						var linesInBox = Math.floor(rendererObj.scaleScreenToWorld(boardContext.height) / cursorY.h);
 						if(DeviceConfiguration.hasOnScreenKeyboard()){
 								var scrollOffset =  Math.min(linesFromTop,Math.max(0,linesInBox - 2)) * cursorY.h;
 								var docWidth = Math.max(
 										b[2] - b[0],
-										scaleWorldToScreen(10 * cursorY.h));
+										rendererObj.scaleWorldToScreen(10 * cursorY.h));
 								var ratio = boardWidth / boardHeight;
 								var docHeight = docWidth / ratio;
 								DeviceConfiguration.setKeyboard(true);
@@ -1485,7 +1470,7 @@ var createInteractiveCanvas = function(boardDiv){
 												bold:carota.runs.nextInsertFormatting.bold == true,
 												underline:carota.runs.nextInsertFormatting.underline == true,
 												color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-												size:carota.runs.defaultFormatting.newBoxSize / scale()
+												size:carota.runs.defaultFormatting.newBoxSize / rendererObj.getScale()
 										}]);
 										var newDoc = newEditor.doc;
 										newDoc.select(0,1);
@@ -1523,7 +1508,7 @@ var createInteractiveCanvas = function(boardDiv){
 										bold:carota.runs.nextInsertFormatting.bold == true,
 										underline:carota.runs.nextInsertFormatting.underline == true,
 										color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-										size:carota.runs.defaultFormatting.newBoxSize / scale()
+										size:carota.runs.defaultFormatting.newBoxSize / rendererObj.getScale()
 								}]);
 								var newDoc = newEditor.doc;
 								newDoc.select(0,1);
@@ -2217,7 +2202,7 @@ var createInteractiveCanvas = function(boardDiv){
 							selected = _.merge(Modes.select.selected,selected);
 					},
 					handlesAtZoom:function(){
-							var zoom = scale();
+							var zoom = rendererObj.getScale();
 							return Modes.select.resizeHandleSize / zoom;
 					},
 					totalSelectedBounds:function(){
@@ -2279,7 +2264,7 @@ var createInteractiveCanvas = function(boardDiv){
 									if (!(modifiers.ctrl)){
 											var tb = Modes.select.totalSelectedBounds();
 											if(tb.x != Infinity){
-													var threshold = 3 / scale();
+													var threshold = 3 / rendererObj.getScale();
 													var ray = [
 															worldPos.x - threshold,
 															worldPos.y - threshold,
@@ -2613,7 +2598,7 @@ var createInteractiveCanvas = function(boardDiv){
 							var currentPoint = {x:contentOffsetX + worldPos.x,y:contentOffsetY + worldPos.y};
 							var startingWorldPoint = {x:contentOffsetX + startWorldPos.x,y:contentOffsetY + startWorldPos.y};
 							var rect = rectFromTwoPoints(currentPoint,startingWorldPoint);
-							var touchArea = scale() * rect.width * rect.height;
+							var touchArea = rendererObj.getScale() * rect.width * rect.height;
 							if(touchArea < tooSmallToUse){
 									return;
 							}
@@ -2796,16 +2781,19 @@ var createInteractiveCanvas = function(boardDiv){
     var maxZoomOut = 3;
     var maxZoomIn = 0.1;
     var getMaxViewboxSizeFunction = function(){
-        return {
-            width:boardContent.width * maxZoomOut,
-            height:boardContent.height * maxZoomOut
-        }
+			return {
+				width:history.width * maxZoomOut,
+				height:history.height * maxZoomOut
+			};
     };
     var getMinViewboxSizeFunction = function(){
+			var dims = rendererObj.getDimensions();
+			var boardWidth = dims.width;
+			var boardHeight = dims.height;
         return {
-            width:boardWidth * maxZoomIn,
-            height:boardHeight * maxZoomIn
-        }
+					width:boardWidth * maxZoomIn,
+					height:boardHeight * maxZoomIn
+        };
     };
     var constrainRequestedViewboxFunction = function(vb){
         var maxClamped = getMaxViewboxSizeFunction();
@@ -2849,15 +2837,15 @@ var createInteractiveCanvas = function(boardDiv){
 		var scaleFunc = function(scale,ignoreLimits){
 			takeControlOfViewbox(true);
 			var vb = rendererObj.getViewbox();
-			var requestedWidth = viewboxWidth * scale;
-			var requestedHeight = viewboxHeight * scale;
+			var requestedWidth = vb.width * scale;
+			var requestedHeight = vb.height * scale;
 			if(!ignoreLimits){
 					var constrained = constrainRequestedViewboxFunction({height:requestedHeight,width:requestedWidth});
 					requestedWidth = constrained.width;
 					requestedHeight = constrained.height;
 			}
-			var ow = viewboxWidth;
-			var oh = viewboxHeight;
+			var ow = vb.width;
+			var oh = vb.height;
 			var xDelta = (ow - requestedWidth) / 2;
 			var yDelta = (oh - requestedHeight) / 2;
 			var finalX = xDelta + vb.x;
@@ -2867,8 +2855,8 @@ var createInteractiveCanvas = function(boardDiv){
 		var zoomFunc = function(scale,ignoreLimits,onComplete){
 			takeControlOfViewbox(true);
 			var vb = rendererObj.getViewbox();
-			var requestedWidth = viewboxWidth * scale;
-			var requestedHeight = viewboxHeight * scale;
+			var requestedWidth = vb.width * scale;
+			var requestedHeight = vb.height * scale;
 			if(!ignoreLimits){
 					var constrained = constrainRequestedViewboxFunction({height:requestedHeight,width:requestedWidth});
 					requestedWidth = constrained.width;
@@ -2955,7 +2943,7 @@ var createInteractiveCanvas = function(boardDiv){
             onComplete();
         }
         teacherViewUpdated(finalX,finalY,finalWidth,finalHeight);
-        MeTLBus.call("onViewboxChanged");
+				viewboxChanged(rendererObj.getViewbox());
     };
     var teacherViewUpdated = _.throttle(function(x,y,w,h){
         if("Conversations" in window && Conversations.isAuthor() && UserSettings.getIsInteractive()){
@@ -2987,11 +2975,12 @@ var createInteractiveCanvas = function(boardDiv){
             }
             return;
         }
+				var vb = rendererObj.getViewbox();
         var interval = 300;//milis
-        var startX = viewboxX;
-        var startY = viewboxY;
-        var startWidth = viewboxWidth;
-        var startHeight = viewboxHeight;
+        var startX = vb.x;
+        var startY = vb.y;
+        var startWidth = vb.width;
+        var startHeight = vb.height;
         var xDelta = finalX - startX;
         var yDelta = finalY - startY;
         var widthDelta = finalWidth - startWidth;
@@ -3018,8 +3007,7 @@ var createInteractiveCanvas = function(boardDiv){
                 if (onComplete){
                     onComplete();
                 }
-                MeTLBus.call("onViewboxChanged");
-                MeTLBus.call("textBoundsChanged");
+								viewboxChanged(rendererObj.getViewbox());
             }).start();
         var update = function(t){
 					if (tween){
@@ -3126,6 +3114,9 @@ var createInteractiveCanvas = function(boardDiv){
 		onPostRenderItem:function(f){
 			//postRenderItem takes an item and a canvasContext
 			postRenderItem = f;
+		},
+		getHistory:function(){
+			return history;
 		},	
 		setHistory:setHistoryFunc,
 		onHistoryChanged:function(f){

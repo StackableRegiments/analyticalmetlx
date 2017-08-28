@@ -1081,17 +1081,17 @@ var createCanvasRenderer = function(canvasElem){
 					renderCanvasInteractables();
 					renderTint({x:0,y:0,w:boardWidth,h:boardHeight});
 					*/
-					statistic(render,new Date().getTime() - renderStart,true);
+					statistic("render",new Date().getTime() - renderStart,true);
 				}
 				catch(e){
 					passException(e,"renderWithContent",[content]);
-					statistic(render,new Date().getTime() - renderStart,false,e);
+					statistic("render",new Date().getTime() - renderStart,false,e);
 				}
 			}
 			renderComplete(boardContext,canvasElem,boardContent);
 		} catch(e){
 			passException(e,"render",[]);
-			statistic(render,new Date().getTime() - renderStart,false,e);
+			statistic("render",new Date().getTime() - renderStart,false,e);
 		}
 	}
 	var blit = function(content){
@@ -1221,6 +1221,8 @@ var createCanvasRenderer = function(canvasElem){
 		getBoardContext:function(){return boardContext;},
 		screenToWorld:screenToWorld,
 		worldToScreen:worldToScreen,
+		scaleWorldToScreen:scaleWorldToScreen,
+		scaleScreenToWorld:scaleScreenToWorld,
 		getViewbox:function(){
 			return {
 				width:viewboxWidth,
@@ -1241,11 +1243,11 @@ var createCanvasRenderer = function(canvasElem){
 		setViewbox:function(x,y,w,h){
 			viewboxX = x;
 			viewboxY = y;
-			viewboxW = w;
-			viewboxH = h;
+			viewboxWidth = w;
+			viewboxHeight = h;
 			viewboxChanged({
-				width:viewboxW,
-				height:viewboxH,
+				width:viewboxWidth,
+				height:viewboxHeight,
 				x:viewboxX,
 				y:viewboxY
 			});
