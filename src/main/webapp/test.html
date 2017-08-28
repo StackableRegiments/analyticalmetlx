@@ -71,7 +71,10 @@
 			newCanvas.onModeChanged(function(mode){
 				MeTLBus.call("modeChanged",[mode]);
 			});
-			newCanvas.onStatistic(function(category,time,success){
+			newCanvas.onStatistic(function(category,time,success,exception){
+				if (exception !== undefined){
+					console.log("InteractiveCanvasException",category,time,exception);
+				}
 				if ("HealthChecker" in window){
 					HealthChecker.addMeasure(category,time,success);
 				}

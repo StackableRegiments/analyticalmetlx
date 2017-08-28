@@ -1066,17 +1066,15 @@ var createCanvasRenderer = function(canvasElem){
 					renderCanvasInteractables();
 					renderTint({x:0,y:0,w:boardWidth,h:boardHeight});
 					*/
+					statistic(render,new Date().getTime() - renderStart,true);
 				}
 				catch(e){
-					console.log("Render exception with content",e,content);
+					statistic(render,new Date().getTime() - renderStart,false,e);
 				}
 			}
 			renderComplete(boardContext,canvasElem,boardContent);
-			statistic(render,new Date().getTime() - renderStart,true);
 		} catch(e){
-			console.log("exception in render:",e);
-			statistic(render,new Date().getTime() - renderStart,false);
-			throw e;
+			statistic(render,new Date().getTime() - renderStart,false,e);
 		}
 	}
 	var blit = function(content){
@@ -1226,8 +1224,8 @@ var createCanvasRenderer = function(canvasElem){
 	var historyReceived = function(history){
 		console.log("historyReceived",history);
 	};
-	var statistic = function(category,time,success){
-		console.log("canvasStatistic",category,time,success);
+	var statistic = function(category,time,success,exception){
+		console.log("canvasStatistic",category,time,success,exception);
 	};
 	return {
 		setHistory:receiveHistoryFunc,

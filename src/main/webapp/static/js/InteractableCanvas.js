@@ -2,10 +2,10 @@ var createInteractiveCanvas = function(boardDiv){
 	var history = {};
 	// link in the renderer, and attach handlers as appropriate
 	var rendererObj = createCanvasRenderer(boardDiv);
-	var statistic = function(category,time,success){
-		console.log("InteractiveCanvasStatistic",category,time,success);
+	var statistic = function(category,time,success,exception){
+		console.log("InteractiveCanvasStatistic",category,time,success,exception);
 	};
-	rendererObj.onStatistic(function(c,t,s){return statistic(c,t,s);});
+	rendererObj.onStatistic(function(c,t,s,e){return statistic(c,t,s,e);});
 	var renderStarting = function(ctx,elem,history){
 	};
 	rendererObj.onRenderStarting(function(c,e,h){return renderStarting(c,e,h);});
