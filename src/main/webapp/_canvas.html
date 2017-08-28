@@ -1,24 +1,39 @@
 <div>
-	<!--
+	<style>
+#tools {
+	position:absolute;
+	left:10px;
+	width:20px;
+	z-index:100;
+}
+	</style>
 	<div id="tools">
+		<!--
 		<div id="privacyTools">
 			<button id="setPublicMode" class="subTool fa fa-"></button>
 			<button id="setPrivateMode" class="subTool fa fa-"></button>
 		</div>
-		<button id="setSelectMode" class="fa fa-"></button>
+-->
+		<!--
+		<button id="setSelectMode" class="fa fa- modeButton" ></button>
 		<div id="selectTools" class="subTools">
 			<button id="showSelection" class="subTool fa fa-"></button>
 			<button id="hideSelection" class="subTool fa fa-"></button>
 			<button id="deleteSelection" class="subTool fa fa-"></button>
 			<button id="banSelection" class="subTool fa fa-"></button>
 		</div>
-		<button id="setInkMode" class="fa fa-"></button>
+-->
+		<button id="setEraseMode" class="fa fa- modeButton">Erase</button>
+		<button id="setDrawMode" class="fa fa- modeButton">Draw</button>
+		<!--
 		<div id="inkTools" class="subTools">
 			<button id="inkColor" class="subTool fa fa-"></button>
 			<button id="inkWidth" class="subTool fa fa-"></button>
 			<button id="eraser" class="subTool fa fa-"></button>
 		</div>
-		<button id="setTextMode" class="fa fa-"></button>
+-->
+		<!--
+		<button id="setTextMode" class="fa fa- modeButton"></button>
 		<div id="textTools" class="subTools">
 			<button id="textBold" class="subTool fa fa-"></button>
 			<button id="textItalic" class="subTool fa fa-"></button>
@@ -27,27 +42,29 @@
 			<button id="textLarger" class="subTool fa fa-"></button>
 			<button id="textSmaller" class="subTool fa fa-"></button>
 		</div>
-		<button id="setInsertMode" class="fa fa-"></button>
+		<button id="setInsertMode" class="fa fa- modeButton"></button>
 		<div id="insertTools" class="subTools">
 			<button id="insertImage" class="subTool fa fa-"></button>
 			<button id="insertVideo" class="subTool fa fa-"></button>
 		</div>
-		<button id="setZoomMode" class="fa fa-"></button>
+-->
+		<button id="setZoomMode" class="fa fa- modeButton">Zoom</button>
 		<div id="zoomTools" class="subTools">
-			<button id="zoomIn" class="subTool fa fa-"></button>
-			<button id="zoomOut" class="subTool fa fa-"></button>
+			<button id="zoomIn" class="subTool fa fa-">ZoomIn</button>
+			<button id="zoomOut" class="subTool fa fa-">ZoomOut</button>
+<!--
 			<button id="zoomAll" class="subTool fa fa-"></button>
 			<button id="zoomDefault" class="subTool fa fa-"></button>
+-->
 		</div>
-		<button id="setPanMode" class="fa fa-"></button>
+		<button id="setPanMode" class="fa fa-">Pan</button>
 		<div id="panTools" class="subTools">
-			<button id="panLeft" class="subTool fa fa-"></button>
-			<button id="panRight" class="subTool fa fa-"></button>
-			<button id="panUp" class="subTool fa fa-"></button>
-			<button id="panDown" class="subTool fa fa-"><button>
+			<button id="panLeft" class="subTool fa fa-">Left</button>
+			<button id="panRight" class="subTool fa fa-">Right</button>
+			<button id="panUp" class="subTool fa fa-">Up</button>
+			<button id="panDown" class="subTool fa fa-">Down<button>
 		</div>
 	</div>
--->
 	<div id="boardContainer">
 		<canvas id="board" class="fill"></canvas>
 		<div id="textInputInvisibleHost"></div>

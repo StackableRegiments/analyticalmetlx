@@ -1391,9 +1391,6 @@ var createInteractiveCanvas = function(boardDiv){
 						var doubleClickThreshold = 500;
 						Modes.currentMode.deactivate();
 						Modes.currentMode = Modes.text;
-						setActiveMode("#textTools","#insertText");
-						$(".activeBrush").removeClass("activeBrush");
-						MeTLBus.call("onLayoutUpdated");
 						var lastClick = 0;
 						var down = function(x,y,z,worldPos){
 								var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
@@ -2580,9 +2577,8 @@ var createInteractiveCanvas = function(boardDiv){
 	var zoomMode = {
 			name:"zoom",
 			activate:function(){
-					Modes.currentMode.deactivate();
-					Modes.currentMode = Modes.zoom;
-					setActiveMode("#zoomTools","#zoomMode");
+					currentMode.deactivate();
+					currentMode = zoomMode;
 					var marquee = $("<div />",{
 							id:"zoomMarquee"
 					})
@@ -2599,9 +2595,9 @@ var createInteractiveCanvas = function(boardDiv){
 					}
 					var down = function(x,y,z,worldPos){
 							//adding this so that using the zoom marquee results in the autofit being turned off.
-
 							takeControlOfViewbox(true);
-							proportion = boardHeight / boardWidth;
+							var dims = rendererObj.getDimensions();
+							proportion = dims.height / dims.width;
 							startX = x;
 							startY = y;
 							startWorldPos = worldPos;
@@ -2652,10 +2648,12 @@ var createInteractiveCanvas = function(boardDiv){
 							IncludeView.specific(vX,vY,vW,vH);
 					}
 					registerPositionHandlers(down,move,up);
+					modeChanged(zoomMode);
 			},
 			deactivate:function(){
 					$("#zoomMarquee").remove();
 					unregisterPositionHandlers();
+					modeChanged(noneMode);
 			}
 	};
 	var raySpan = 10;
@@ -2806,9 +2804,11 @@ var createInteractiveCanvas = function(boardDiv){
 						eraseUp(x,y,z,worldPos);
 					};
 					registerPositionHandlers(down,move,up);
+					modeChanged(eraseMode);
 			},
 			deactivate:function(){
 					unregisterPositionHandlers();
+					modeChanged(noneMode);
 			}
 		};
 	})();

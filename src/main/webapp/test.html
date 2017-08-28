@@ -69,8 +69,62 @@
 				MeTLBus.call("selectionChanged",[selected]);
 			});
 			newCanvas.onModeChanged(function(mode){
+				$(".subTools").hide();
+				$(".modeButton").removeClass("activeMode");
 				MeTLBus.call("modeChanged",[mode]);
+				switch (mode.name){
+					case "zoom":
+						$("#setZoomMode").addClass("activeMode");
+						$("#zoomTools").show();
+						break;
+					case "pan":
+						$("#setPanMode").addClass("activeMode");
+						$("#panTools").show();
+						break;
+					case "draw":
+						$("#setDrawMode").addClass("activeMode");
+						$("#drawTools").show();
+						break;
+					case "pan":
+						$("#setEraseMode").addClass("activeMode");
+						$("#eraseTools").show();
+						break;
+					default:
+						break;	 
+				}
 			});
+			$("#setZoomMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "zoom";}));
+			});
+			$("#setPanMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "pan";}));
+			});
+			$("#setDrawMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
+			});
+			$("#setEraseMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "erase";}));
+			});
+			$("#zoomIn").on("click",function(){
+				newCanvas.getZoomController().in();
+			});
+			$("#zoomOut").on("click",function(){
+				newCanvas.getZoomController().out();
+			});
+			var panAmount = 50;
+			$("#panLeft").on("click",function(){
+				newCanvas.getPanController().pan(-1 * panAmount,0);
+			});
+			$("#panRight").on("click",function(){
+				newCanvas.getPanController().pan(panAmount,0);
+			});
+			$("#panUp").on("click",function(){
+				newCanvas.getPanController().pan(0,-1 * panAmount);
+			});
+			$("#panDown").on("click",function(){
+				newCanvas.getPanController().pan(0,panAmount);
+			});
+			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
 			newCanvas.onStatistic(function(category,time,success,exception){
 				//console.log("onStatistic",category,time,success,exception);
 				if ("HealthChecker" in window){
@@ -99,7 +153,6 @@
 			});
 			newCanvas.setHistory(mockHistory);
 			newCanvas.setDimensions(DeviceConfiguration.getMeasurements());
-			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "erase";}));
 			MeTLBus.subscribe("beforeWorkQueueResume","test",function(){});
 			MeTLBus.subscribe("afterWorkQueuePause","test",function(){});
 			MeTLBus.subscribe("layoutUpdated","test",function(dims){
