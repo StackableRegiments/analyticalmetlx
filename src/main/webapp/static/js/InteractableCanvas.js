@@ -162,7 +162,7 @@ var createInteractiveCanvas = function(boardDiv){
 					var x = pointerEvent.pageX - o.left;
 					var y = pointerEvent.pageY - o.top;
 					var z = pointerEvent.originalEvent.pressure || 0.5;
-					var worldPos = screenToWorld(x,y);
+					var worldPos = rendererObj.screenToWorld(x,y);
 					if (pointerEvent.originalEvent.pointerType == "touch"){
 							delete trackedTouches[pointId];
 					}
@@ -249,13 +249,13 @@ var createInteractiveCanvas = function(boardDiv){
 									}
 							}
 							isDown = false;
-							Modes.finishInteractableStates();
+							finishInteractableStates();
 					});
 					var pointerOut = function(x,y,e){
 							var point = releasePoint(e);
 							trackedTouches = {};
 							WorkQueue.gracefullyResume();
-							var worldPos = screenToWorld(x,y);
+							var worldPos = rendererObj.screenToWorld(x,y);
 							var worldX = worldPos.x;
 							var worldY = worldPos.y;
 							if(worldX < viewboxX){
@@ -274,7 +274,7 @@ var createInteractiveCanvas = function(boardDiv){
 									}
 							}
 							isDown = false;
-							Modes.finishInteractableStates();
+							finishInteractableStates();
 					}
 					var pointerClose = function(e){
 							var point = releasePoint(e);
@@ -284,7 +284,7 @@ var createInteractiveCanvas = function(boardDiv){
 									pointerOut(e.offsetX,e.offsetY,e);
 							}
 							isDown = false;
-							Modes.finishInteractableStates();
+							finishInteractableStates();
 					};
 					context.bind("pointerout",pointerClose);
 					context.bind("pointerleave",pointerClose);
@@ -297,7 +297,7 @@ var createInteractiveCanvas = function(boardDiv){
 							var x = e.pageX - o.left;
 							var y = e.pageY - o.top;
 							var z = 0.5;
-							var worldPos = screenToWorld(x,y);
+							var worldPos = rendererObj.screenToWorld(x,y);
 							if(noInteractableConsumed(worldPos,"down")){
 									down(x,y,z,worldPos,modifiers(e));
 							}
@@ -309,7 +309,7 @@ var createInteractiveCanvas = function(boardDiv){
 							var x = e.pageX - o.left;
 							var y = e.pageY - o.top;
 							var z = 0.5;
-							var worldPos = screenToWorld(x,y);
+							var worldPos = rendererObj.screenToWorld(x,y);
 							if(noInteractableConsumed(worldPos,"move")){
 									if(isDown){
 											move(x,y,z,worldPos,modifiers(e));
@@ -323,18 +323,18 @@ var createInteractiveCanvas = function(boardDiv){
 							var x = e.pageX - o.left;
 							var y = e.pageY - o.top;
 							var z = 0.5;
-							var worldPos = screenToWorld(x,y);
+							var worldPos = rendererObj.screenToWorld(x,y);
 							if(noInteractableConsumed(worldPos,"up")){
 									if(isDown){
 											up(x,y,z,worldPos,modifiers(e));
 									}
 							}
 							isDown = false;
-							Modes.finishInteractableStates();
+							finishInteractableStates();
 					});
 					var mouseOut = function(x,y,e){
 							WorkQueue.gracefullyResume();
-							var worldPos = screenToWorld(x,y);
+							var worldPos = rendererObj.screenToWorld(x,y);
 							var worldX = worldPos.x;
 							var worldY = worldPos.y;
 							var z = 0.5;
@@ -362,14 +362,14 @@ var createInteractiveCanvas = function(boardDiv){
 									mouseOut(e.offsetX,e.offsetY,e);
 							}
 							isDown = false;
-							Modes.finishInteractableStates();
+							finishInteractableStates();
 					});
 					var touches;
 					var masterTouch;
 					var prevPos;
 					var touchesToWorld = function(touches){
 							return touches.map(function(t){
-									return screenToWorld(t.x,t.y);
+									return rendererObj.screenToWorld(t.x,t.y);
 							});
 					}
 					var averagePos = function(touches){
@@ -396,7 +396,7 @@ var createInteractiveCanvas = function(boardDiv){
 							var touches = offsetTouches(e.originalEvent.touches);
 							if(touches.length == 1){
 									var t = touches[0];
-									var worldPos = screenToWorld(t.x,t.y);
+									var worldPos = rendererObj.screenToWorld(t.x,t.y);
 									isDown = true;
 									var z = 0.5;
 									if(noInteractableConsumed(worldPos,"down")){
@@ -418,7 +418,7 @@ var createInteractiveCanvas = function(boardDiv){
 							case 0 : break;
 							case 1:
 									var t = touches[0];
-									var worldPos = screenToWorld(t.x,t.y);
+									var worldPos = rendererObj.screenToWorld(t.x,t.y);
 									if(noInteractableConsumed(worldPos,"move")){
 											if(isDown){
 													var z = 0.5;
@@ -443,7 +443,7 @@ var createInteractiveCanvas = function(boardDiv){
 							var t = e.originalEvent.changedTouches[0];
 							var x = t.pageX - o.left;
 							var y = t.pageY - o.top;
-							var worldPos = screenToWorld(x,y);
+							var worldPos = rendererObj.screenToWorld(x,y);
 							if(noInteractableConsumed(worldPos,"up")){
 									if(isDown){
 											var z = 0.5;
@@ -456,7 +456,7 @@ var createInteractiveCanvas = function(boardDiv){
 									}
 							}
 							isDown = false;
-							Modes.finishInteractableStates();
+							finishInteractableStates();
 					});
 					var previousScale = 1.0;
 					var changeFactor = 0.1;
@@ -589,8 +589,8 @@ var createInteractiveCanvas = function(boardDiv){
 			},
 			render:function(canvasContext){
 				if(bounds){
-					var tl = worldToScreen(bounds[0],bounds[1]);
-					var br = worldToScreen(bounds[2],bounds[3]);
+					var tl = rendererObj.worldToScreen(bounds[0],bounds[1]);
+					var br = rendererObj.worldToScreen(bounds[2],bounds[3]);
 					var size = br.x - tl.x;
 					var x = tl.x;
 					var y = tl.y;
@@ -659,8 +659,8 @@ var createInteractiveCanvas = function(boardDiv){
                     video.bounds[3] + h
                 ];
 
-                var tl = worldToScreen(bounds[0],bounds[1]);
-                var br = worldToScreen(bounds[2],bounds[3]);
+                var tl = rendererObj.worldToScreen(bounds[0],bounds[1]);
+                var br = rendererObj.worldToScreen(bounds[2],bounds[3]);
                 var width = br.x - tl.x;
                 var height = br.y - tl.y;
 
@@ -802,8 +802,8 @@ var createInteractiveCanvas = function(boardDiv){
 			},
 			render:function(canvasContext){
 				if(bounds){
-					var tl = worldToScreen(bounds[0],bounds[1]);
-					var br = worldToScreen(bounds[2],bounds[3]);
+					var tl = rendererObj.worldToScreen(bounds[0],bounds[1]);
+					var br = rendererObj.worldToScreen(bounds[2],bounds[3]);
 					var size = br.x - tl.x;
 					var inset = size / 10;
 					var xOffset = -1 * size;
@@ -911,8 +911,8 @@ var createInteractiveCanvas = function(boardDiv){
 			},
 			render:function(canvasContext){
 				if(bounds){
-					var tl = worldToScreen(bounds[0],bounds[1]);
-					var br = worldToScreen(bounds[2],bounds[3]);
+					var tl = rendererObj.worldToScreen(bounds[0],bounds[1]);
+					var br = rendererObj.worldToScreen(bounds[2],bounds[3]);
 					var size = br.x - tl.x;
 					var inset = size / 10;
 					var xOffset = -1 * size;
@@ -1512,7 +1512,7 @@ var createInteractiveCanvas = function(boardDiv){
 				handleDrop:function(html,x,y){
 						if (html.length > 0){
 								var newRuns = carota.html.parse(html,{});
-								var worldPos = screenToWorld(x,y);
+								var worldPos = rendererObj.screenToWorld(x,y);
 								Modes.text.activate();
 								var clickTime = Date.now();
 								var sel;
@@ -1716,7 +1716,7 @@ var createInteractiveCanvas = function(boardDiv){
 							$("#videoTools").show();
 							var x = 10;
 							var y = 10;
-							var worldPos = screenToWorld(x,y);
+							var worldPos = rendererObj.screenToWorld(x,y);
 							currentVideo = {
 									"type":"imageDefinition",
 									"screenX":x,
@@ -1980,7 +1980,7 @@ var createInteractiveCanvas = function(boardDiv){
 							currentMode = imageMode;
 							var x = 10;
 							var y = 10;
-							var worldPos = screenToWorld(x,y);
+							var worldPos = rendererObj.screenToWorld(x,y);
 							currentImage = {
 									"type":"imageDefinition",
 									"screenX":x,
@@ -1991,7 +1991,7 @@ var createInteractiveCanvas = function(boardDiv){
 							modeChanged(imageMode);
 					},
 					handleDroppedSrc:function(src,x,y){
-							var worldPos = screenToWorld(x,y);
+							var worldPos = rendererObj.screenToWorld(x,y);
 							var thisCurrentImage = {
 									"type":"imageDefinition",
 									"screenX":x,
@@ -2009,7 +2009,7 @@ var createInteractiveCanvas = function(boardDiv){
 							var processFile = function(file,sender){
 									try {
 											if (file != undefined && file != null && "type" in file && file.type.indexOf("image") == 0 && !_.some(processed,function(i){return i == file;})){
-													var worldPos = screenToWorld(x,y + yOffset);
+													var worldPos = rendererObj.screenToWorld(x,y + yOffset);
 													var thisCurrentImage = {
 															"type":"imageDefinition",
 															"screenX":x,
@@ -2051,13 +2051,11 @@ var createInteractiveCanvas = function(boardDiv){
 			var originX;
 			var originY;
 			var down = function(x,y,z){
-				console.log("panDown",x,y,z);
 				takeControlOfViewbox(true);
 				originX = x;
 				originY = y;
 			}
 			var move = function(x,y,z){
-				console.log("panMove",x,y,z);
 				var xDelta = x - originX;
 				var yDelta = y - originY;
 				Pan.translate(-1 * xDelta,-1 * yDelta);
@@ -2065,7 +2063,6 @@ var createInteractiveCanvas = function(boardDiv){
 				originY = y;
 			}
 			var up = function(x,y,z){
-				console.log("panUp",x,y,z);
 			}
 			registerPositionHandlers(down,move,up);
 			modeChanged(panMode);
@@ -2239,8 +2236,8 @@ var createInteractiveCanvas = function(boardDiv){
 							_.forEach(Modes.select.selected.videos,incorporate);
 							totalBounds.width = totalBounds.x2 - totalBounds.x;
 							totalBounds.height = totalBounds.y2 - totalBounds.y;
-							totalBounds.tl = worldToScreen(totalBounds.x,totalBounds.y);
-							totalBounds.br = worldToScreen(totalBounds.x2,totalBounds.y2);
+							totalBounds.tl = rendererObj.worldToScreen(totalBounds.x,totalBounds.y);
+							totalBounds.br = rendererObj.worldToScreen(totalBounds.x2,totalBounds.y2);
 							return totalBounds;
 					},
 					offset:{x:0,y:0},
@@ -2685,8 +2682,8 @@ var createInteractiveCanvas = function(boardDiv){
 							if(erasing || modifiers.eraser){
 									var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
 									var markAsDeleted = function(bounds){
-											var tl = worldToScreen(bounds[0],bounds[1]);
-											var br = worldToScreen(bounds[2],bounds[3]);
+											var tl = rendererObj.worldToScreen(bounds[0],bounds[1]);
+											var br = rendererObj.worldToScreen(bounds[2],bounds[3]);
 											boardContext.fillRect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
 									}
 									var deleteInRay = function(coll){
@@ -2784,14 +2781,14 @@ var createInteractiveCanvas = function(boardDiv){
 
 	var Pan = {
     pan:function(xDelta,yDelta){
-        takeControlOfViewbox(true);
-	    var s = scale();
-        TweenController.panViewboxRelative(xDelta / s, yDelta / s);
-    },
-        translate:function(xDelta,yDelta){
-        takeControlOfViewbox(true);
+			takeControlOfViewbox(true);
 	    var s = rendererObj.getScale();
-        TweenController.translateViewboxRelative(xDelta / s, yDelta / s);
+			TweenController.panViewboxRelative(xDelta / s, yDelta / s);
+    },
+		translate:function(xDelta,yDelta){
+			takeControlOfViewbox(true);
+	    var s = rendererObj.getScale();
+			TweenController.translateViewboxRelative(xDelta / s, yDelta / s);
     }
 	}
 	var Zoom = (function(){
@@ -2904,37 +2901,38 @@ var createInteractiveCanvas = function(boardDiv){
     };
     var translateViewboxFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
 			var vb = rendererObj.getViewbox();
-        return instantAlterViewboxFunction(xDelta,yDelta,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+			return instantAlterViewboxFunction(xDelta,yDelta,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var panViewboxRelativeFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
 			var vb = rendererObj.getViewbox();
-        return easingAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+			return easingAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var translateViewboxRelativeFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
 			var vb = rendererObj.getViewbox();
-        return instantAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+			return instantAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var zoomAndPanViewboxFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
 			var vb = rendererObj.getViewbox();
-        return easingAlterViewboxFunction(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable);
+			return easingAlterViewboxFunction(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable);
     };
     var zoomAndPanViewboxRelativeFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
 			var vb = rendererObj.getViewbox();
-        return easingAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,widthDelta + vb.width,heightDelta + vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+			return easingAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,widthDelta + vb.width,heightDelta + vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var scaleAndTranslateViewboxFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
 			var vb = rendererObj.getViewbox();
-        return instantAlterViewboxFunction(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox);
+			return instantAlterViewboxFunction(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var scaleAndTranslateViewboxRelativeFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
 			var vb = rendererObj.getViewbox();
-        return instantAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,widthDelta + vb.width,heightDelta + vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+			return instantAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,widthDelta + vb.width,heightDelta + vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
     };
     var updateRequestedPosition = function(){
-        requestedViewboxX = viewboxX;
-        requestedViewboxY = viewboxY;
-        requestedViewboxWidth = viewboxWidth;
-        requestedViewboxHeight = viewboxHeight;
+			var vb = rendererObj.getViewbox();
+        requestedViewboxX = vb.x;
+        requestedViewboxY = vb.y;
+        requestedViewboxWidth = vb.width;
+        requestedViewboxHeight = vb.height;
     };
     var throttleSpeed = 30;
     var instantAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
@@ -3133,6 +3131,8 @@ var createInteractiveCanvas = function(boardDiv){
 		onHistoryChanged:function(f){
 			historyChanged = f;
 		},
+		getZoomController:function(){return Zoom},
+		getPanController:function(){return Pan},
 		alertSnapshot:function(){
 			var dims = rendererObj.getDimensions();
 			var win = window.open();
