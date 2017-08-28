@@ -2695,8 +2695,14 @@ var createInteractiveCanvas = function(boardDiv){
 						WorkQueue.gracefullyResume();
 						var newRect = rectFromTwoPoints(worldPos,startWorldPos);//[Math.min(startWorldPos.x,worldPos.x),Math.min(startWorldPos.y,worldPos.y),Math.abs(startWorldPos.x - worldPos.x),Math.abs(startWorldPos.y - worldPos.y)];
 						var aspectConstrained = aspectConstrainedRect(newRect);
+						var constrained = constrainRequestedViewboxFunction({
+							x:aspectConstrained.left,
+							y:aspectConstrained.top,
+							width:aspectConstrained.width,
+							height:aspectConstrained.height
+						});	
 						marquee.hide();
-						TweenController.zoomAndPanViewbox(aspectConstrained.left,aspectConstrained.top,aspectConstrained.width,aspectConstrained.height);
+						TweenController.zoomAndPanViewbox(constrained.x,constrained.y,constrained.width,constrained.height);
 					}
 					registerPositionHandlers(down,move,up);
 					modeChanged(zoomMode);
@@ -2878,65 +2884,67 @@ var createInteractiveCanvas = function(boardDiv){
 			TweenController.translateViewboxRelative(xDelta / s, yDelta / s);
     }
 	}
+  var constrainRequestedViewboxFunction = function(vb){
+		var maxClamped = getMaxViewboxSizeFunction();
+		var minClamped = getMinViewboxSizeFunction();
+		var outW = undefined;
+		var outH = undefined;
+		var outX = undefined;
+		var outY = undefined;
+		if ("width" in vb){
+				outW = vb.width;
+				if (outW > maxClamped.width){
+						outW = maxClamped.width;
+				}
+				if (outW < minClamped.width){
+						outW = minClamped.width;
+				}
+		}
+		if ("height" in vb){
+				outH = vb.height;
+				if (outH > maxClamped.height){
+						outH = maxClamped.height;
+				}
+				if (outH < minClamped.height){
+						outH = minClamped.height;
+				}
+		}
+		if ("x" in vb){
+				outX = vb.x;
+				if (outW != vb.width){
+						outX +=  (vb.width - outW) / 2;
+				}
+		}
+		if ("y" in vb && outH){
+				outY = vb.y;
+				if (outH != vb.height){
+						outY += (vb.height - outH) / 2;
+				}
+		}
+		return {width:outW,height:outH,x:outX,y:outY};
+	}
+	var getMaxViewboxSizeFunction = function(){
+		return {
+			width:history.width * maxZoomOut,
+			height:history.height * maxZoomOut
+		};
+	};
+	var getMinViewboxSizeFunction = function(){
+		var dims = rendererObj.getDimensions();
+		var boardWidth = dims.width;
+		var boardHeight = dims.height;
+			return {
+				width:boardWidth * maxZoomIn,
+				height:boardHeight * maxZoomIn
+			};
+	};
+	var maxZoomOut = 3;
+	var maxZoomIn = 0.1;
+
 	var Zoom = (function(){
     var zoomFactor = 1.2;
-    var maxZoomOut = 3;
-    var maxZoomIn = 0.1;
-    var getMaxViewboxSizeFunction = function(){
-			return {
-				width:history.width * maxZoomOut,
-				height:history.height * maxZoomOut
-			};
-    };
-    var getMinViewboxSizeFunction = function(){
-			var dims = rendererObj.getDimensions();
-			var boardWidth = dims.width;
-			var boardHeight = dims.height;
-        return {
-					width:boardWidth * maxZoomIn,
-					height:boardHeight * maxZoomIn
-        };
-    };
-    var constrainRequestedViewboxFunction = function(vb){
-        var maxClamped = getMaxViewboxSizeFunction();
-        var minClamped = getMinViewboxSizeFunction();
-        var outW = undefined;
-        var outH = undefined;
-        var outX = undefined;
-        var outY = undefined;
-        if ("width" in vb){
-            outW = vb.width;
-            if (outW > maxClamped.width){
-                outW = maxClamped.width;
-            }
-            if (outW < minClamped.width){
-                outW = minClamped.width;
-            }
-        }
-        if ("height" in vb){
-            outH = vb.height;
-            if (outH > maxClamped.height){
-                outH = maxClamped.height;
-            }
-            if (outH < minClamped.height){
-                outH = minClamped.height;
-            }
-        }
-        if ("x" in vb){
-            outX = vb.x;
-            if (outW != vb.width){
-                outX +=  (vb.width - outW) / 2;
-            }
-        }
-        if ("y" in vb && outH){
-            outY = vb.y;
-            if (outH != vb.height){
-                outY += (vb.height - outH) / 2;
-            }
-        }
-        return {width:outW,height:outH,x:outX,y:outY};
-    }
-		var scaleFunc = function(scale,ignoreLimits){
+
+ 		var scaleFunc = function(scale,ignoreLimits){
 			takeControlOfViewbox(true);
 			var vb = rendererObj.getViewbox();
 			var requestedWidth = vb.width * scale;
