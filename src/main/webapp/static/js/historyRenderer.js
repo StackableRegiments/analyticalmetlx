@@ -107,7 +107,10 @@ var createCanvasRenderer = function(canvasElem){
 	}
 
 	var determineCanvasConstants = _.once(function(){
-			var currentDevice = DeviceConfiguration.getCurrentDevice();
+		var currentDevice = "browser";
+		if ("DeviceConfiguration" in window && "getCurrentDevice" in DeviceConfiguration){
+			currentDevice = DeviceConfiguration.getCurrentDevice();
+		}
 			var maxX = 32767;//2147483647;
 			var maxY = 32767;//2147483647;
 			if (currentDevice == "browser"){
@@ -608,6 +611,7 @@ var createCanvasRenderer = function(canvasElem){
 					render();
 					break;
 				case "image":
+					var image = stanza;
 					image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
 					incorporateBoardBounds(image.bounds);
 					var dataImage = new Image();
