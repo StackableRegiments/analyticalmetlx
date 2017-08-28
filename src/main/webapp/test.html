@@ -82,14 +82,15 @@
 			});
 			newCanvas.onPreRenderItem(function(item,ctx){
 				console.log("preRender",item,ctx);
-				return item.type == "ink";
-				//return true;
+				//return item.type == "ink";
+				return true;
 			});
 			newCanvas.onPostRenderItem(function(item,ctx){
 				console.log("postRender",item,ctx);
 			});
 			window.InteractiveCanvas = newCanvas;
 			newCanvas.setHistory(mockHistory);
+			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "pan";}));
 		});
 	</script>
 	<div class="lift:embed?what=_canvas"></div>

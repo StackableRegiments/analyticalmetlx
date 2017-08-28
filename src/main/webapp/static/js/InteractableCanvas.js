@@ -62,6 +62,11 @@ var createInteractiveCanvas = function(boardDiv){
 			});
 			WorkQueue.gracefullyResume();
 	}
+	var takeControlOfViewbox = function(control){
+    if(control){
+			MeTLBus.unsubscribe("onBoardContentChanged","autoZooming");
+		}
+	};
 	var registerPositionHandlers = function(down,move,up){
 			var isDown = false;
 
@@ -74,7 +79,7 @@ var createInteractiveCanvas = function(boardDiv){
 							worldPos.y + touchTolerance
 					];
 					var unconsumed = true;
-					_.each(Modes.canvasInteractables,function(category,label){
+					_.each(canvasInteractables,function(category,label){
 							_.each(category,function(interactable){
 									if(interactable != undefined && event in interactable){
 											if(interactable.activated || intersectRect(worldRay,interactable.getBounds())){
@@ -114,7 +119,7 @@ var createInteractiveCanvas = function(boardDiv){
 					var x = pointerEvent.pageX - o.left;
 					var y = pointerEvent.pageY - o.top;
 					var z = pointerEvent.originalEvent.pressure || 0.5;
-					var worldPos = screenToWorld(x,y);
+					var worldPos = rendererObj.screenToWorld(x,y);
 					var newPoint = {
 							"x":worldPos.x,
 							"y":worldPos.y,
@@ -1502,7 +1507,7 @@ var createInteractiveCanvas = function(boardDiv){
 						};
 						textColors = getTextColors();
 						updateControlState(carota.runs.defaultFormatting);
-						registerPositionHandlers(board,down,move,up);
+						registerPositionHandlers(down,move,up);
 				},
 				handleDrop:function(html,x,y){
 						if (html.length > 0){
@@ -2042,23 +2047,27 @@ var createInteractiveCanvas = function(boardDiv){
 		name:"pan",
 		activate:function(){
 			currentMode.deactivate();
-			currentMode = Modes.pan;
+			currentMode = panMode;
 			var originX;
 			var originY;
 			var down = function(x,y,z){
+				console.log("panDown",x,y,z);
 				takeControlOfViewbox(true);
 				originX = x;
 				originY = y;
 			}
 			var move = function(x,y,z){
+				console.log("panMove",x,y,z);
 				var xDelta = x - originX;
 				var yDelta = y - originY;
 				Pan.translate(-1 * xDelta,-1 * yDelta);
 				originX = x;
 				originY = y;
 			}
-			var up = function(x,y,z){}
-			registerPositionHandlers(board,down,move,up);
+			var up = function(x,y,z){
+				console.log("panUp",x,y,z);
+			}
+			registerPositionHandlers(down,move,up);
 			modeChanged(panMode);
 		},
 		deactivate:function(){
@@ -2537,7 +2546,7 @@ var createInteractiveCanvas = function(boardDiv){
 							Modes.select.dragging = false;
 							updateAdministerContentVisualState();
 							Modes.select.resizing = false;
-							registerPositionHandlers(board,down,move,up);
+							registerPositionHandlers(down,move,up);
 					},
 					deactivate:function(){
 							unregisterPositionHandlers(board);
@@ -2626,7 +2635,7 @@ var createInteractiveCanvas = function(boardDiv){
 							var vH = constrained.height;
 							IncludeView.specific(vX,vY,vW,vH);
 					}
-					registerPositionHandlers(board,down,move,up);
+					registerPositionHandlers(down,move,up);
 			},
 			deactivate:function(){
 					$("#zoomMarquee").remove();
@@ -2744,7 +2753,7 @@ var createInteractiveCanvas = function(boardDiv){
 							}
 							currentMode.deactivate();
 							currentMode = drawMode;
-							registerPositionHandlers(board,down,move,up);
+							registerPositionHandlers(down,move,up);
 							modeChanged(drawMode);
 					},
 					deactivate:function(){
@@ -2763,7 +2772,7 @@ var createInteractiveCanvas = function(boardDiv){
 					var move = function(x,y,z,worldPos){
 					};
 					var up = function(x,y,z,worldPos){};
-					registerPositionHandlers(board,down,move,up);
+					registerPositionHandlers(down,move,up);
 			},
 			deactivate:function(){
 					unregisterPositionHandlers(board);
@@ -2771,6 +2780,283 @@ var createInteractiveCanvas = function(boardDiv){
 		};
 	})();
 	var availableModes = [noneMode,drawMode,panMode,zoomMode];
+	var currentMode = noneMode;
+
+	var Pan = {
+    pan:function(xDelta,yDelta){
+        takeControlOfViewbox(true);
+	    var s = scale();
+        TweenController.panViewboxRelative(xDelta / s, yDelta / s);
+    },
+        translate:function(xDelta,yDelta){
+        takeControlOfViewbox(true);
+	    var s = rendererObj.getScale();
+        TweenController.translateViewboxRelative(xDelta / s, yDelta / s);
+    }
+	}
+	var Zoom = (function(){
+    var zoomFactor = 1.2;
+    var maxZoomOut = 3;
+    var maxZoomIn = 0.1;
+    var getMaxViewboxSizeFunction = function(){
+        return {
+            width:boardContent.width * maxZoomOut,
+            height:boardContent.height * maxZoomOut
+        }
+    };
+    var getMinViewboxSizeFunction = function(){
+        return {
+            width:boardWidth * maxZoomIn,
+            height:boardHeight * maxZoomIn
+        }
+    };
+    var constrainRequestedViewboxFunction = function(vb){
+        var maxClamped = getMaxViewboxSizeFunction();
+        var minClamped = getMinViewboxSizeFunction();
+        var outW = undefined;
+        var outH = undefined;
+        var outX = undefined;
+        var outY = undefined;
+        if ("width" in vb){
+            outW = vb.width;
+            if (outW > maxClamped.width){
+                outW = maxClamped.width;
+            }
+            if (outW < minClamped.width){
+                outW = minClamped.width;
+            }
+        }
+        if ("height" in vb){
+            outH = vb.height;
+            if (outH > maxClamped.height){
+                outH = maxClamped.height;
+            }
+            if (outH < minClamped.height){
+                outH = minClamped.height;
+            }
+        }
+        if ("x" in vb){
+            outX = vb.x;
+            if (outW != vb.width){
+                outX +=  (vb.width - outW) / 2;
+            }
+        }
+        if ("y" in vb && outH){
+            outY = vb.y;
+            if (outH != vb.height){
+                outY += (vb.height - outH) / 2;
+            }
+        }
+        return {width:outW,height:outH,x:outX,y:outY};
+    }
+		var scaleFunc = function(scale,ignoreLimits){
+			takeControlOfViewbox(true);
+			var vb = rendererObj.getViewbox();
+			var requestedWidth = viewboxWidth * scale;
+			var requestedHeight = viewboxHeight * scale;
+			if(!ignoreLimits){
+					var constrained = constrainRequestedViewboxFunction({height:requestedHeight,width:requestedWidth});
+					requestedWidth = constrained.width;
+					requestedHeight = constrained.height;
+			}
+			var ow = viewboxWidth;
+			var oh = viewboxHeight;
+			var xDelta = (ow - requestedWidth) / 2;
+			var yDelta = (oh - requestedHeight) / 2;
+			var finalX = xDelta + vb.x;
+			var finalY = yDelta + vb.y;
+			TweenController.scaleAndTranslateViewbox(finalX,finalY,requestedWidth,requestedHeight);
+		};
+		var zoomFunc = function(scale,ignoreLimits,onComplete){
+			takeControlOfViewbox(true);
+			var vb = rendererObj.getViewbox();
+			var requestedWidth = viewboxWidth * scale;
+			var requestedHeight = viewboxHeight * scale;
+			if(!ignoreLimits){
+					var constrained = constrainRequestedViewboxFunction({height:requestedHeight,width:requestedWidth});
+					requestedWidth = constrained.width;
+					requestedHeight = constrained.height;
+			}
+			var ow = vb.width;
+			var oh = vb.height;
+			var wDelta = requestedWidth - ow;
+			var hDelta = requestedHeight - oh;
+			var xDelta = -1 * (wDelta / 2);
+			var yDelta = -1 * (hDelta / 2);
+			TweenController.zoomAndPanViewboxRelative(xDelta,yDelta,wDelta,hDelta,onComplete);
+		};
+    return {
+        scale:scaleFunc,
+        zoom:zoomFunc,
+        out:function(){
+            zoomFunc(zoomFactor);
+        },
+        "in":function(){
+            zoomFunc(1 / zoomFactor);
+        },
+        constrainRequestedViewbox:constrainRequestedViewboxFunction
+    };
+	})();
+	var TweenController = (function(){
+    var panViewboxFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+			var vb = rendererObj.getViewbox();
+			return easingAlterViewboxFunction(xDelta,yDelta,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var translateViewboxFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+			var vb = rendererObj.getViewbox();
+        return instantAlterViewboxFunction(xDelta,yDelta,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var panViewboxRelativeFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+			var vb = rendererObj.getViewbox();
+        return easingAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var translateViewboxRelativeFunction = function(xDelta,yDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+			var vb = rendererObj.getViewbox();
+        return instantAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,vb.width,vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var zoomAndPanViewboxFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
+			var vb = rendererObj.getViewbox();
+        return easingAlterViewboxFunction(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable);
+    };
+    var zoomAndPanViewboxRelativeFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+			var vb = rendererObj.getViewbox();
+        return easingAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,widthDelta + vb.width,heightDelta + vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var scaleAndTranslateViewboxFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+			var vb = rendererObj.getViewbox();
+        return instantAlterViewboxFunction(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var scaleAndTranslateViewboxRelativeFunction = function(xDelta,yDelta,widthDelta,heightDelta,onComplete,shouldAvoidUpdatingRequestedViewbox){
+			var vb = rendererObj.getViewbox();
+        return instantAlterViewboxFunction(xDelta + vb.x,yDelta + vb.y,widthDelta + vb.width,heightDelta + vb.height,onComplete,shouldAvoidUpdatingRequestedViewbox);
+    };
+    var updateRequestedPosition = function(){
+        requestedViewboxX = viewboxX;
+        requestedViewboxY = viewboxY;
+        requestedViewboxWidth = viewboxWidth;
+        requestedViewboxHeight = viewboxHeight;
+    };
+    var throttleSpeed = 30;
+    var instantAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox){
+        if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
+            if (onComplete){
+                onComplete();
+            }
+            return;
+        }
+        if(tween){
+            tween.stop();
+        }
+        tween = false;
+				rendererObj.setViewbox(finalX,finalY,finalWidth,finalHeight);
+				rendererObj.render();
+        if (!shouldAvoidUpdatingRequestedViewbox){
+            updateRequestedPosition();
+        }
+        if (onComplete){
+            onComplete();
+        }
+        teacherViewUpdated(finalX,finalY,finalWidth,finalHeight);
+        MeTLBus.call("onViewboxChanged");
+    };
+    var teacherViewUpdated = _.throttle(function(x,y,w,h){
+        if("Conversations" in window && Conversations.isAuthor() && UserSettings.getIsInteractive()){
+            var ps = [x,y,w,h,Date.now(),Conversations.getCurrentSlideJid(),MeTLBus.check("onBoardContentChanged","autoZooming")];
+            if(w <= 0 || h <= 0){
+                return;
+            }
+            if(_.some(ps,function(p){
+                return typeof(p) == "undefined" || isNaN(p);
+            })){
+                return;
+            };
+            sendStanza({
+                author:UserSettings.getUsername(),
+                timestamp:Date.now(),
+                type:"command",
+                command:"/TEACHER_VIEW_MOVED",
+                parameters:ps.map(function(p){
+                    return p.toString();
+                })
+            });
+        }
+    },300);
+    var tween;
+    var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
+        if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
+            if (onComplete){
+                onComplete();
+            }
+            return;
+        }
+        var interval = 300;//milis
+        var startX = viewboxX;
+        var startY = viewboxY;
+        var startWidth = viewboxWidth;
+        var startHeight = viewboxHeight;
+        var xDelta = finalX - startX;
+        var yDelta = finalY - startY;
+        var widthDelta = finalWidth - startWidth;
+        var heightDelta = finalHeight - startHeight;
+        var hasChanged = function(){
+            return (finalX != undefined && finalY != undefined && finalWidth > 0 && finalHeight > 0) && (xDelta != 0 || yDelta != 0 || widthDelta != 0 || heightDelta != 0);
+        };
+        if (tween){
+            tween.stop();
+            tween = false;
+        }
+        tween = new TWEEN.Tween({x:0,y:0,w:0,h:0})
+            .to({x:xDelta,y:yDelta,w:widthDelta,h:heightDelta}, interval)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .onUpdate(function(){
+								rendererObj.setViewbox(startX + this.x,startY + this.y,startWidth + this.w,startHeight + this.h);
+            }).onComplete(function(){
+                tween = false;
+								rendererObj.setViewbox(finalX,finalY,finalWidth,finalHeight);
+								rendererObj.render();
+                if (!shouldAvoidUpdatingRequestedViewbox){
+                    updateRequestedPosition();
+                }
+                if (onComplete){
+                    onComplete();
+                }
+                MeTLBus.call("onViewboxChanged");
+                MeTLBus.call("textBoundsChanged");
+            }).start();
+        var update = function(t){
+					if (tween){
+						TWEEN.update();
+						rendererObj.render();
+						requestAnimationFrame(update);
+					}
+        };
+        requestAnimationFrame(update);
+        if("Conversations" in window && Conversations.isAuthor()){
+            if(notFollowable || shouldAvoidUpdatingRequestedViewbox){
+                //console.log("not following viewbox update");
+            }
+            else if (hasChanged()){
+                //console.log("sending viewbox update");
+                teacherViewUpdated(finalX,finalY,finalWidth,finalHeight);
+            }
+        }
+    };
+    return {
+        panViewbox:panViewboxFunction,
+        translateViewbox:translateViewboxFunction,
+        zoomAndPanViewbox:zoomAndPanViewboxFunction,
+        scaleAndTranslateViewbox:scaleAndTranslateViewboxFunction,
+        panViewboxRelative:panViewboxRelativeFunction,
+        translateViewboxRelative:translateViewboxRelativeFunction,
+        zoomAndPanViewboxRelative:zoomAndPanViewboxRelativeFunction,
+        scaleAndTranslateViewboxRelative:scaleAndTranslateViewboxRelativeFunction,
+        immediateView:function(){
+            return [viewboxX, viewboxY, viewboxX+viewboxWidth, viewboxY+viewboxHeight];
+        }
+    }
+	})();
+
+
 	var selectionChanged = function(selected){
 		console.log("selectionChanged",selected);
 	};
@@ -2788,9 +3074,19 @@ var createInteractiveCanvas = function(boardDiv){
 	return {
 		boardElem:boardDiv,
 		renderer:rendererObj,
+		render:function(){
+			if (rendererObj !== undefined){
+				renderObj.render();
+			}
+		},
 		getMode:function(){return currentMode;},
 		getAvailableModes:function(){
 			return availableModes;
+		},
+		setMode:function(mode){
+			if (mode !== undefined && "activate" in mode){
+				mode.activate();
+			}
 		},
 		getSelected:function(){
 			return selected;

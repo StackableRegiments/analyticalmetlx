@@ -1,3 +1,57 @@
+var intersectRect = function(r1, r2) {//Left,top,right,bottom
+		if (typeof(r1) != "undefined" && typeof(r2) != "undefined"){
+				return !(r2[0] > r1[2] ||
+								 r2[2] < r1[0] ||
+								 r2[1] > r1[3] ||
+								 r2[3] < r1[1]);
+		} else {
+				return false;
+		}
+};
+var overlapRect = function(r1,r2){
+		if(!intersectRect(r1,r2)){
+				return 0;
+		}
+		return (Math.max(r1[0], r2[0]) - Math.min(r1[2], r2[2])) * (Math.max(r1[1], r2[1]) - Math.min(r1[3], r2[3]));
+};
+var rectFromTwoPoints = function(pointA,pointB,minimumSideLength){
+		minimumSideLength = minimumSideLength || 0;
+		var topLeft = {x:0,y:0};
+		var bottomRight = {x:0,y:0};
+		if (pointA.x < pointB.x){
+				topLeft.x = pointA.x;
+				bottomRight.x = pointB.x;
+		} else {
+				topLeft.x = pointB.x;
+				bottomRight.x = pointA.x;
+		}
+		if (pointA.y < pointB.y){
+				topLeft.y = pointA.y;
+				bottomRight.y = pointB.y;
+		} else {
+				topLeft.y = pointB.y;
+				bottomRight.y = pointA.y;
+		}
+		var width = bottomRight.x - topLeft.x;
+		var height = bottomRight.y - topLeft.y;
+		if(width < minimumSideLength){
+				bottomRight.x += minimumSideLength - width;
+				width = bottomRight.x - topLeft.x;
+		}
+		if(height < minimumSideLength){
+				bottomRight.y += minimumSideLength - height;
+				height = bottomRight.y - topLeft.y;
+		}
+		return {
+				left:topLeft.x,
+				top:topLeft.y,
+				right:bottomRight.x,
+				bottom:bottomRight.y,
+				width:width,
+				height:height
+		};
+};
+
 var createCanvasRenderer = function(canvasElem){
 	var boardContext = canvasElem[0].getContext("2d");
 	var boardContent = {};
@@ -521,60 +575,6 @@ var createCanvasRenderer = function(canvasElem){
 						}
 					});
 			}
-	};
-
-	var intersectRect = function(r1, r2) {//Left,top,right,bottom
-			if (typeof(r1) != "undefined" && typeof(r2) != "undefined"){
-					return !(r2[0] > r1[2] ||
-									 r2[2] < r1[0] ||
-									 r2[1] > r1[3] ||
-									 r2[3] < r1[1]);
-			} else {
-					return false;
-			}
-	};
-	var overlapRect = function(r1,r2){
-			if(!intersectRect(r1,r2)){
-					return 0;
-			}
-			return (Math.max(r1[0], r2[0]) - Math.min(r1[2], r2[2])) * (Math.max(r1[1], r2[1]) - Math.min(r1[3], r2[3]));
-	};
-	var rectFromTwoPoints = function(pointA,pointB,minimumSideLength){
-			minimumSideLength = minimumSideLength || 0;
-			var topLeft = {x:0,y:0};
-			var bottomRight = {x:0,y:0};
-			if (pointA.x < pointB.x){
-					topLeft.x = pointA.x;
-					bottomRight.x = pointB.x;
-			} else {
-					topLeft.x = pointB.x;
-					bottomRight.x = pointA.x;
-			}
-			if (pointA.y < pointB.y){
-					topLeft.y = pointA.y;
-					bottomRight.y = pointB.y;
-			} else {
-					topLeft.y = pointB.y;
-					bottomRight.y = pointA.y;
-			}
-			var width = bottomRight.x - topLeft.x;
-			var height = bottomRight.y - topLeft.y;
-			if(width < minimumSideLength){
-					bottomRight.x += minimumSideLength - width;
-					width = bottomRight.x - topLeft.x;
-			}
-			if(height < minimumSideLength){
-					bottomRight.y += minimumSideLength - height;
-					height = bottomRight.y - topLeft.y;
-			}
-			return {
-					left:topLeft.x,
-					top:topLeft.y,
-					right:bottomRight.x,
-					bottom:bottomRight.y,
-					width:width,
-					height:height
-			};
 	};
 
 
@@ -1219,6 +1219,8 @@ var createCanvasRenderer = function(canvasElem){
 		render:renderFunc,
 		getBoardContent:function(){return boardContent;},
 		getBoardContext:function(){return boardContext;},
+		screenToWorld:screenToWorld,
+		worldToScreen:worldToScreen,
 		getViewbox:function(){
 			return {
 				width:viewboxWidth,
