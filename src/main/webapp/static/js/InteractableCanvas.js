@@ -22,6 +22,11 @@ var createInteractiveCanvas = function(boardDiv){
 			after(hist);
 		}
 	};
+
+	var setImageSourceCalcFunc = function(image){return image.source;};
+	rendererObj.setImageSourceCalculationFunction(function(image){return setImageSourceCalcFunc(image)});
+	var setVideoSourceCalcFunc = function(video){return video.source};
+	rendererObj.setVideoSourceCalculationFunction(function(video){return setVideoSourceCalcFunc(video)});
 	var historyChanged = function(history){ };
 	rendererObj.onHistoryChanged(function(h){return canvasHistoryChanged(h,historyChanged);});
 	rendererObj.onHistoryUpdated(function(h){return canvasHistoryChanged(h);});
@@ -3306,6 +3311,12 @@ var createInteractiveCanvas = function(boardDiv){
 			stanzaAvailable = f;
 		},
 		addStanza:addStanzaFunc,	
+		setImageSourceCalculationFunction:function(f){
+			setImageSourceCalcFunc = f;
+		},
+		setVideoSourceCalculationFunction:function(f){
+			setVideoSourceCalcFunc = f;
+		},
 		getZoomController:function(){return Zoom},
 		getPanController:function(){return Pan},
 		alertSnapshot:function(){

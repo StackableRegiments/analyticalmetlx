@@ -4,64 +4,74 @@
 	<script data-lift="with-resource-id" src="static/js/InteractableCanvas.js"></script>
 	<script src="static/js/stable/Tween.js"></script>
 	<script type="text/javascript">
+		var mockInk = {
+			type:"ink",
+			timestamp:2,
+			identity:"2",
+			thickness:5,
+			points:[50,50,50,100,100,50,100,50,50,50,50,50],
+			color:["000000",255],
+			isHighlighter:false,
+			target:"presentationSpace",
+			author:"test",
+			privacy:"PUBLIC"
+		};
+		var mockText = {
+			type:"text",
+			timestamp:1,
+			identity:"1",
+			x:20,
+			y:20,
+			width:100,
+			height:30,
+			color:["000000",255],
+			text:"what about this",
+			font:"arial",
+			size:12,
+			weight:"regular",
+			style:"normal",
+			target:"presentationSpace",
+			author:"test",
+			privacy:"PUBLIC"
+		};
+		var mockImage = {
+			type:"image",
+			timestamp:3,
+			identity:"3",
+			x:10,
+			y:10,
+			width:160,
+			height:120,
+			target:"presentationSpace",
+			author:"test",
+			privacy:"PUBLIC",
+			source:"/static/images/insert.png"
+		};
 		var mockHistory = {
 			type:"history",
-			inks:{
-				"2":{
-					type:"ink",
-					timestamp:2,
-					identity:"2",
-					thickness:5,
-					points:[50,50,50,100,100,50,100,50,50,50,50,50],
-					color:["000000",255],
-					isHighlighter:false,
-					target:"presentationSpace",
-					author:"test",
-					privacy:"PUBLIC"
-				}
-			},
-			highlighters:[],
-			texts:{
-				"1":{
-					type:"text",
-					timestamp:1,
-					identity:"1",
-					x:20,
-					y:20,
-					width:100,
-					height:30,
-					color:["000000",255],
-					text:"what about this",
-					font:"arial",
-					size:12,
-					weight:"regular",
-					style:"normal",
-					target:"presentationSpace",
-					author:"test",
-					privacy:"PUBLIC"
-				}
-			},
+			inks:{},
+			highlighters:{},
+			texts:{},
 			multiWordTexts:{},
-		 	images:{
-				/*
-				"3":{
-					type:"image",
-					timestamp:3,
-					identity:"3",
-					x:100,
-					y:100,
-					width:160,
-					height:120,
-					target:"presentationSpace",
-					author:"test",
-					privacy:"PUBLIC"
-				}
-				*/
-			},
+			images:{},
 			videos:{}
-		}
+		};
+		mockHistory.inks[mockInk.identity] = mockInk;
+		mockHistory.texts[mockText.identity] = mockText;
+		mockHistory.images[mockImage.identity] = mockImage;
+		var stanzas = [mockText,mockInk,mockImage];
 		$(function(){
 			var newCanvas = createInteractiveCanvas($("#board"));
+			/*
+			newCanvas.setImageSourceCalculationFunction(function(image){
+				var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
+				return sprintf("/proxyImageUrl/%s?source=%s",urlEncodeSlideName(slide),encodeURIComponent(image.source.trim()));
+			});
+			newCanvas.setVideoSourceCalculationFunction(function(video){
+				var slide = video.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",video.slide,video.author) : video.slide;
+				return sprintf("/videoProxy/%s/%s",urlEncodeSlideName(slide),encodeURIComponent(video.identity.trim()));
+			});
+			*/
 			newCanvas.onSelectionChanged(function(selected){
 				MeTLBus.call("selectionChanged",[selected]);
 			});
@@ -167,6 +177,7 @@
 				stanza.target = "presentationSpace";
 				stanza.slide = "thisSlide";
 				console.log("test.html stanza:",stanza);
+				stanzas.push(stanza);
 				newCanvas.addStanza(stanza);
 			});
 			newCanvas.setHistory(mockHistory);

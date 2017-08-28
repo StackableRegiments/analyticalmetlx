@@ -68,7 +68,14 @@ var unpix = function(str){
 
 var createCanvasRenderer = function(canvasElem){
 	var boardContext = canvasElem[0].getContext("2d");
-	var boardContent = {};
+	var boardContent = {
+		inks:{},
+		highlighters:{},
+		texts:{},
+		multiWordTexts:{},
+		images:{},
+		videos:{}
+	};
 	var pressureSimilarityThreshold = 32,
     viewboxX = 0,
     viewboxY = 0,
@@ -621,11 +628,12 @@ var createCanvasRenderer = function(canvasElem){
 							incorporateBoardBounds(image.bounds);
 						}
 						prerenderImage(image);
+						calculateImageBounds(image);
 						boardContent.images[stanza.identity] = stanza;
 						render();
 					};
 					dataImage.onError = function(error){
-						passException(error,"preRenderHistory:imageDataLoad",[dataImage,image]);
+						passException(error,"addStanza:imageDataLoad",[dataImage,image]);
 					};
 					dataImage.src = url;
 					break;
@@ -739,12 +747,10 @@ var createCanvasRenderer = function(canvasElem){
 			return newSlideName;
 	}
 	var calculateImageSource = function(image){
-			var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
-			return sprintf("/proxyImageUrl/%s?source=%s",urlEncodeSlideName(slide),encodeURIComponent(image.source.trim()));
+		return image.source;
 	}
 	var calculateVideoSource = function(video){
-			var slide = video.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",video.slide,video.author) : video.slide;
-			return sprintf("/videoProxy/%s/%s",urlEncodeSlideName(slide),encodeURIComponent(video.identity.trim()));
+		return video.source;
 	}
 	var calculateTextBounds = function(text){
 			text.bounds = [text.x,text.y,text.x + text.width, text.y + (text.runs.length * text.size * 1.25)];
@@ -802,26 +808,30 @@ var createCanvasRenderer = function(canvasElem){
 			incorporateBoardBounds(text.bounds);
 	}
 	var prerenderImage = function(image) {
-			var canvas = $("<canvas/>")[0];
-			image.canvas = canvas;
-			canvas.width = image.width;
-			canvas.height = image.height;
-			var borderW = canvas.width * 0.10;
-			var borderH = canvas.height * 0.10;
-			canvas.width = image.width + borderW;
-			canvas.height = image.height + borderH;
-			var context = canvas.getContext("2d");
-			context.drawImage(image.imageData,borderW / 2,borderH / 2,image.width, image.height);
-			if(image.privacy.toUpperCase() == "PRIVATE"){
-					context.globalAlpha = 0.2;
-					context.fillStyle = "red";
-					context.fillRect(
-							0,0,
-							canvas.width,
-							canvas.height);
-					context.globalAlpha = 1.0;
-			}
-			delete image.imageData;
+		console.log("prerenderImage",image);
+		var canvas = $("<canvas/>")[0];
+		image.canvas = canvas;
+		canvas.width = image.width;
+		canvas.height = image.height;
+
+		var borderW = canvas.width * 0.10;
+		var borderH = canvas.height * 0.10;
+		canvas.width = image.width + borderW;
+		canvas.height = image.height + borderH;
+		var context = canvas.getContext("2d");
+		context.drawImage(image.imageData,borderW / 2,borderH / 2,image.width, image.height);
+		/*
+		if(image.privacy.toUpperCase() == "PRIVATE"){
+				context.globalAlpha = 0.2;
+				context.fillStyle = "red";
+				context.fillRect(
+						0,0,
+						canvas.width,
+						canvas.height);
+				context.globalAlpha = 1.0;
+		}
+		*/
+		delete image.imageData;
 	}
 	var prerenderVideo = function(video){
 			if (!("video" in video)){
@@ -1295,9 +1305,12 @@ var createCanvasRenderer = function(canvasElem){
 
 	var renderImages = function(images,rendered,viewBounds){
 			_.each(images,function(image,id){
+				console.log("renderImage 1",image);
 					try{
 						if (preRenderItem(image)){
+							console.log("renderImage 2",image);
 							if(intersectRect(image.bounds,viewBounds)){
+								console.log("renderImage 3",image);
 									drawImage(image);
 									postRenderItem(image,boardContext);
 									rendered.push(image);
@@ -1390,6 +1403,7 @@ var createCanvasRenderer = function(canvasElem){
 	}
 
 	var drawImage = function(image){
+		console.log("drawImage",image);
 			try{
 					if (image.canvas != undefined){
 							var sBounds = screenBounds(image.bounds);
@@ -1556,6 +1570,7 @@ var createCanvasRenderer = function(canvasElem){
 	var preRenderHistory = function(history,afterFunc){
 		var start = new Date().getTime();
 		try {
+			console.log("prerender 0");
 			history.multiWordTexts = _.pickBy(history.multiWordTexts,isUsable);
 			history.texts = _.pickBy(history.texts,isUsable);
 			history.images = _.pickBy(history.images,isUsable);
@@ -1579,9 +1594,11 @@ var createCanvasRenderer = function(canvasElem){
 			_.forEach(boardContent.texts,function(text,i){
 				prerenderText(text,true);
 			});
+			/*
 			_.forEach(boardContent.images,function(image,i){
 				prerenderImage(image,true);
 			});
+			*/
 			_.forEach(boardContent.videos,function(video,i){
 				prerenderVideo(video,true);
 			});
@@ -1591,6 +1608,7 @@ var createCanvasRenderer = function(canvasElem){
 			viewboxWidth = boardContent.maxX - boardContent.minX;
 			viewboxHeight = boardContent.maxY - boardContent.minY;
 
+			console.log("prerender 2");
 			var startRender = function(){
 				if (boardContent.minX == Infinity){
 					boardContent.minX = 0;
@@ -1603,9 +1621,12 @@ var createCanvasRenderer = function(canvasElem){
 					afterFunc();
 				}
 			}
+			console.log("prerender 3");
 			if (_.size(boardContent.images) == 0){
+				console.log("no images");
 				startRender();
 			} else {
+				console.log("images");
 				var loaded = 0;
 				var limit = _.size(boardContent.images);
 				_.forEach(boardContent.images,function(image){
@@ -1624,6 +1645,7 @@ var createCanvasRenderer = function(canvasElem){
 							image.height = dataImage.naturalHeight;
 							shouldReCalcBounds = true;
 						}
+						calculateImageBounds(image);
 						if (shouldReCalcBounds){
 							image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
 							incorporateBoardBounds(image.bounds);
@@ -1645,6 +1667,7 @@ var createCanvasRenderer = function(canvasElem){
 				});
 			}
 		} catch(e){
+			passException(e,"preRenderHistory",[boardContent]);
 			statistic("preRenderHistory",new Date().getTime() - start,false,e);
 		}
 	};
@@ -1781,6 +1804,12 @@ var createCanvasRenderer = function(canvasElem){
 		onPostDeleteItem:function(f){
 			postDeleteItem = f;
 		},	
+		setImageSourceCalculationFunction:function(f){
+			calculateImageSource = f;
+		},
+		setVideoSourceCalculationFunction:function(f){
+			calculateVideoSource = f;
+		},
 		getDataURI:function(){
 			return canvasElem[0].toDataURL();
 		}
