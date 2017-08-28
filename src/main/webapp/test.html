@@ -1,5 +1,7 @@
 <div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
-	<script data-lift="with-resource-id" src="static/js/Canvas.js"></script>
+	<script data-lift="with-resource-id" src="static/js/carota-debug.js"></script>
+	<script data-lift="with-resource-id" src="static/js/historyRenderer.js"></script>
+	<script data-lift="with-resource-id" src="static/js/InteractableCanvas.js"></script>
 
 	<script type="text/javascript">
 		var mockHistory = {
@@ -59,7 +61,18 @@
 			videos:[]
 		}
 		$(function(){
-				MeTLBus.call("mockHistoryReceived",[mockHistory]);
+			var newCanvas = createInteractiveCanvas($("#board"));
+			newCanvas.onStanza = function(s){
+				sendStanza(s);
+			};
+			newCanvas.onSelectionChanged = function(selected){
+				MeTLBus.call("selectionChanged",[selected]);
+			};
+			newCanvas.onModeChanged = function(mode){
+				MeTLBus.call("modeChanged",[mode]);
+			};
+			newCanvas.setHistory(mockHistory);
+			window.InteractiveCanvas = newCanvas;
 		});
 	</script>
 	<div class="lift:embed?what=_canvas"></div>
