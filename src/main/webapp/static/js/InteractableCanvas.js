@@ -2692,42 +2692,11 @@ var createInteractiveCanvas = function(boardDiv){
 							updateMarquee(marquee,{x:constrainedRect.right,y:constrainedRect.bottom},{x:constrainedRect.left,y:constrainedRect.top});
 					}
 					var up = function(x,y,z,worldPos){
-							WorkQueue.gracefullyResume();
-							var newRect = rectFromTwoPoints(worldPos,startWorldPos);//[Math.min(startWorldPos.x,worldPos.x),Math.min(startWorldPos.y,worldPos.y),Math.abs(startWorldPos.x - worldPos.x),Math.abs(startWorldPos.y - worldPos.y)];
-							var aspectConstrained = aspectConstrainedRect(newRect);
-							console.log("up",newRect,aspectConstrained);
-							marquee.hide();
-							TweenController.zoomAndPanViewbox(aspectConstrained.left,aspectConstrained.top,aspectConstrained.width,aspectConstrained.height);
-							/*
-
-							var touchWidth = 50;
-							var tooSmallToUse = touchWidth * touchWidth;
-							marquee.hide();
-
-							var currentPoint = {x:contentOffsetX + worldPos.x,y:contentOffsetY + worldPos.y};
-							var startingWorldPoint = {x:contentOffsetX + startWorldPos.x,y:contentOffsetY + startWorldPos.y};
-							var rect = rectFromTwoPoints(currentPoint,startingWorldPoint);
-							var touchArea = rendererObj.getScale() * rect.width * rect.height;
-							if(touchArea < tooSmallToUse){
-									return;
-							}
-							var hAlign = "left";
-							var vAlign = "top";
-							if (currentPoint.x == rect.left){
-									hAlign = "right";
-							}
-							if (currentPoint.y == rect.top){
-									vAlign = "bottom";
-							}
-							startWorldPos = undefined;
-
-							var constrained = aspectConstrainedRect(rect,hAlign,vAlign);
-							var vX = constrained.left;
-							var vY = constrained.top;
-							var vW = constrained.width;
-							var vH = constrained.height;
-							IncludeView.specific(vX,vY,vW,vH);
-							*/
+						WorkQueue.gracefullyResume();
+						var newRect = rectFromTwoPoints(worldPos,startWorldPos);//[Math.min(startWorldPos.x,worldPos.x),Math.min(startWorldPos.y,worldPos.y),Math.abs(startWorldPos.x - worldPos.x),Math.abs(startWorldPos.y - worldPos.y)];
+						var aspectConstrained = aspectConstrainedRect(newRect);
+						marquee.hide();
+						TweenController.zoomAndPanViewbox(aspectConstrained.left,aspectConstrained.top,aspectConstrained.width,aspectConstrained.height);
 					}
 					registerPositionHandlers(down,move,up);
 					modeChanged(zoomMode);
@@ -3102,7 +3071,6 @@ var createInteractiveCanvas = function(boardDiv){
     },300);
     var tween;
     var easingAlterViewboxFunction = function(finalX,finalY,finalWidth,finalHeight,onComplete,shouldAvoidUpdatingRequestedViewbox,notFollowable){
-			console.log("easingAlterViewboxFunction",finalX,finalY,finalWidth,finalHeight,rendererObj.getViewbox());
         if (isNaN(finalX) || isNaN(finalY) || isNaN(finalWidth) || isNaN(finalHeight)){
             if (onComplete){
                 onComplete();

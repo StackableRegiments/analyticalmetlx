@@ -71,7 +71,6 @@
 			newCanvas.onModeChanged(function(mode){
 				$(".subTools").hide();
 				$(".modeButton").removeClass("activeMode");
-				MeTLBus.call("modeChanged",[mode]);
 				switch (mode.name){
 					case "zoom":
 						$("#setZoomMode").addClass("activeMode");
@@ -126,7 +125,6 @@
 			});
 			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
 			newCanvas.onStatistic(function(category,time,success,exception){
-				//console.log("onStatistic",category,time,success,exception);
 				if ("HealthChecker" in window){
 					HealthChecker.addMeasure(category,time,success);
 				}
@@ -135,12 +133,9 @@
 				console.log("InteractiveCanvasException",caller,exception,params);
 			});
 			newCanvas.onPreRenderItem(function(item,ctx){
-				//console.log("preRender",item,ctx);
-				//return item.type == "ink";
 				return true;
 			});
 			newCanvas.onPostRenderItem(function(item,ctx){
-				//console.log("postRender",item,ctx);
 			});
 			window.InteractiveCanvas = newCanvas;
 			newCanvas.onStanzaAvailable(function(stanza){
