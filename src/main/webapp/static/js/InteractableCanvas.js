@@ -989,7 +989,7 @@ var createInteractiveCanvas = function(boardDiv){
 			currentMode = Modes.none;
 		},
 		deactivate:function(){
-			unregisterPositionHandlers(board);
+			unregisterPositionHandlers();
 		}
 	};													 
 	var currentModes = noneMode;
@@ -1541,7 +1541,7 @@ var createInteractiveCanvas = function(boardDiv){
 				},
 				deactivate:function(){
 						DeviceConfiguration.setKeyboard(false);
-						unregisterPositionHandlers(board);
+						unregisterPositionHandlers();
 						_.each(boardContent.multiWordTexts,function(t){
 								t.doc.isActive = false;
 								if(t.doc.documentRange().plainText().trim().length == 0){
@@ -2057,7 +2057,7 @@ var createInteractiveCanvas = function(boardDiv){
 			modeChanged(panMode);
 		},
 		deactivate:function(){
-			unregisterPositionHandlers(board);
+			unregisterPositionHandlers();
 			modeChanged(noneMode);
 		}
 	};
@@ -2535,7 +2535,7 @@ var createInteractiveCanvas = function(boardDiv){
 							registerPositionHandlers(down,move,up);
 					},
 					deactivate:function(){
-							unregisterPositionHandlers(board);
+							unregisterPositionHandlers();
 							clearSelectionFunction();
 							$("#delete").unbind("click");
 							$("#resize").unbind("click");
@@ -2625,118 +2625,126 @@ var createInteractiveCanvas = function(boardDiv){
 			},
 			deactivate:function(){
 					$("#zoomMarquee").remove();
-					unregisterPositionHandlers(board);
+					unregisterPositionHandlers();
 			}
 	};
+	var deleted = [];
+	var eraseDown = function(x,y,z,worldPos,modifiers){
+		deleted = [];
+	};
+	var eraseMove = function(x,y,z,worldPos,modifiers){
+		var boardContext = rendererObj.getBoardContext();
+		var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
+		var markAsDeleted = function(bounds){
+				var tl = rendererObj.worldToScreen(bounds[0],bounds[1]);
+				var br = rendererObj.worldToScreen(bounds[2],bounds[3]);
+				boardContext.fillRect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
+		}
+		var deleteInRay = function(coll){
+			$.each(coll,function(i,item){
+				if (intersectRect(item.bounds,ray) && preDeleteItem(item)){
+					delete coll[item.identity];
+					deleted.push(item);
+					markAsDeleted(item.bounds);
+					postDeleteItem(item);
+				}
+			})
+		}
+		boardContext.globalAlpha = 0.4;
+		boardContext.fillStyle = "red";
+		deleteInRay(boardContent.inks);
+		deleteInRay(boardContent.highlighters);
+		boardContext.globalAlpha = 1.0;
+	};
+	var eraseUp = function(x,y,z,worldPos,modifiers){
+		var deleteTransform = batchTransform();
+		deleteTransform.isDeleted = true;
+		deleteTransform.inkIds = _.map(deleted,function(stanza){return stanza.identity;});
+		_.forEach(deleted,function(stanza){
+			MeTLBus.call("onCanvasContentDeleted",[stanza]);
+		});
+		sendStanza(deleteTransform);
+	};
+
 	var drawMode = (function(){
 			var erasing = false;
 			var isHighlighter = false;
-			var color = "#000000";
-			var up = function(){};
-			var down = function(){};
-			var move = function(){};
-
+			var color = "black";
+			var size = 10;
 			var mousePressure = 256;
-			$(function(){
-					var currentStroke = [];
-					var isDown = false;
-					var resumeWork;
-					down = function(x,y,z,worldPos,modifiers){
-							deleted = [];
-							isDown = true;
-							if(!erasing && !modifiers.eraser){
-									boardContext.strokeStyle = color;
-									boardContext.fillStyle = color;
-									if (isHighlighter){
-											boardContext.globalAlpha = 0.4;
-									} else {
-											boardContext.globalAlpha = 1.0;
-									}
-									currentStroke = [worldPos.x, worldPos.y, mousePressure * z];
-									trail.x = x;
-									trail.y = y;
-									boardContext.beginPath();
-									var newWidth = Modes.draw.drawingAttributes.width * z;
-									boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
-									boardContext.fill();
-							} else {
-							}
-					};
-					var raySpan = 10;
-					var deleted = [];
-					var trail = {};
-					move = function(x,y,z,worldPos,modifiers){
-							x = Math.round(x);
-							y = Math.round(y);
-							if(erasing || modifiers.eraser){
-									var ray = [worldPos.x - raySpan, worldPos.y - raySpan, worldPos.x + raySpan, worldPos.y + raySpan];
-									var markAsDeleted = function(bounds){
-											var tl = rendererObj.worldToScreen(bounds[0],bounds[1]);
-											var br = rendererObj.worldToScreen(bounds[2],bounds[3]);
-											boardContext.fillRect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
-									}
-									var deleteInRay = function(coll){
-											$.each(coll,function(i,item){
-													if(item.author == UserSettings.getUsername() && intersectRect(item.bounds,ray)){
-															delete coll[item.identity];
-															deleted.push(item);
-															markAsDeleted(item.bounds);
-													}
-											})
-									}
+			var currentStroke = [];
+			var isDown = false;
+			var resumeWork;
+			var down = function(x,y,z,worldPos,modifiers){
+					isDown = true;
+					if(!erasing && !modifiers.eraser){
+							var boardContext = rendererObj.getBoardContext();
+							boardContext.strokeStyle = color;
+							boardContext.fillStyle = color;
+							if (isHighlighter){
 									boardContext.globalAlpha = 0.4;
-									boardContext.fillStyle = "red";
-									deleteInRay(boardContent.inks);
-									deleteInRay(boardContent.highlighters);
+							} else {
 									boardContext.globalAlpha = 1.0;
 							}
-							else{
-									var newWidth = Modes.draw.drawingAttributes.width * z;
-									boardContext.beginPath();
-									boardContext.lineCap = "round";
-									boardContext.lineWidth = newWidth;
-									var lastPoint = _.takeRight(currentStroke,3);
-									boardContext.moveTo(trail.x,trail.y);
-									boardContext.lineTo(x,y);
-									boardContext.stroke();
-									currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
-							}
+							currentStroke = [worldPos.x, worldPos.y, mousePressure * z];
 							trail.x = x;
 							trail.y = y;
-					};
-					up = function(x,y,z,worldPos,modifiers){
-							isDown = false;
-							if(erasing || modifiers.eraser){
-									var deleteTransform = batchTransform();
-									deleteTransform.isDeleted = true;
-									deleteTransform.inkIds = _.map(deleted,function(stanza){return stanza.identity;});
-									_.forEach(deleted,function(stanza){
-											MeTLBus.call("onCanvasContentDeleted",[stanza]);
-									});
-									sendStanza(deleteTransform);
-							} else {
-									var newWidth = Modes.draw.drawingAttributes.width * z;
-									boardContext.lineWidth = newWidth;
-									boardContext.beginPath();
-									boardContext.lineWidth = newWidth;
-									boardContext.lineCap = "round";
-									boardContext.moveTo(trail.x,trail.y);
-									boardContext.lineTo(x,y);
-									boardContext.stroke();
-									currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
-									strokeCollected(currentStroke);
-							}
-							boardContext.globalAlpha = 1.0;
-					};
-			});
+							boardContext.beginPath();
+							var newWidth = size * z;
+							boardContext.arc(x,y,newWidth/2,0,Math.PI*2);
+							boardContext.fill();
+					} else {
+					}
+			};
+			var raySpan = 10;
+			var deleted = [];
+			var trail = {};
+			var move = function(x,y,z,worldPos,modifiers){
+					x = Math.round(x);
+					y = Math.round(y);
+					if(erasing || modifiers.eraser){
+						return eraseMove(x,y,z,worldPos,modifiers);
+					}
+					else{
+							var boardContext = rendererObj.getBoardContext();
+							var newWidth = size * z;
+							boardContext.beginPath();
+							boardContext.lineCap = "round";
+							boardContext.lineWidth = newWidth;
+							var lastPoint = _.takeRight(currentStroke,3);
+							boardContext.moveTo(trail.x,trail.y);
+							boardContext.lineTo(x,y);
+							boardContext.stroke();
+							currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
+					}
+					trail.x = x;
+					trail.y = y;
+			};
+			var up = function(x,y,z,worldPos,modifiers){
+					isDown = false;
+					if(erasing || modifiers.eraser){
+						eraseUp(x,y,z,worldPos,modifiers);
+					} else {
+							var boardContext = rendererObj.getBoardContext();
+							var newWidth = size * z;
+							boardContext.lineWidth = newWidth;
+							boardContext.beginPath();
+							boardContext.lineWidth = newWidth;
+							boardContext.lineCap = "round";
+							boardContext.moveTo(trail.x,trail.y);
+							boardContext.lineTo(x,y);
+							boardContext.stroke();
+							currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
+							//strokeCollected(currentStroke);
+					}
+					boardContext.globalAlpha = 1.0;
+			};
 			return {
 					name:"draw",
 					mousePressure:mousePressure,
 					activate:function(){
+							var boardContext = rendererObj.getBoardContext();
 							boardContext.setLineDash([]);
-							if(Modes.currentMode == Modes.draw){
-									return;
-							}
 							currentMode.deactivate();
 							currentMode = drawMode;
 							registerPositionHandlers(down,move,up);
@@ -2744,28 +2752,36 @@ var createInteractiveCanvas = function(boardDiv){
 					},
 					deactivate:function(){
 							WorkQueue.gracefullyResume();
-							unregisterPositionHandlers(board);
+							unregisterPositionHandlers();
 							modeChanged(noneMode);
 					}
 			};
 	})();
 	var eraseMode = (function(){
+		var isDown = false;
 		return {
 			activate:function(){
 					currentMode.deactivate();
 					currentMode = eraseMode;
-					var down = function(x,y,z,worldPos){};
-					var move = function(x,y,z,worldPos){
+					var down = function(x,y,z,worldPos,modifiers){
+						isDown = true;
+						eraseDown(x,y,z,worldPos,modifiers)
 					};
-					var up = function(x,y,z,worldPos){};
+					var move = function(x,y,z,worldPos,modifiers){
+						eraseMove(x,y,z,worldPos,modifiers)
+					};
+					var up = function(x,y,z,worldPos,modifiers){
+						isDown = false;
+						eraseUp(x,y,z,worldPos);
+					};
 					registerPositionHandlers(down,move,up);
 			},
 			deactivate:function(){
-					unregisterPositionHandlers(board);
+					unregisterPositionHandlers();
 			}
 		};
 	})();
-	var availableModes = [noneMode,drawMode,panMode,zoomMode];
+	var availableModes = [noneMode,drawMode,eraseMode,panMode,zoomMode];
 	var currentMode = noneMode;
 
 	var Pan = {
@@ -3047,6 +3063,16 @@ var createInteractiveCanvas = function(boardDiv){
 	})();
 
 
+	var preSelectItem = function(item){
+		return true;
+	};
+	var preDeleteItem = function(item){
+		return true;
+	};
+	var postSelectItem = function(item){
+	};
+	var postDeleteItem = function(item){
+	};
 	var selectionChanged = function(selected){
 		console.log("selectionChanged",selected);
 	};

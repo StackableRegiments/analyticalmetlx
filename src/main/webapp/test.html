@@ -91,7 +91,7 @@
 			window.InteractiveCanvas = newCanvas;
 			newCanvas.setHistory(mockHistory);
 			newCanvas.setDimensions(DeviceConfiguration.getMeasurements());
-			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "pan";}));
+			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
 			MeTLBus.subscribe("beforeWorkQueueResume","test",function(){});
 			MeTLBus.subscribe("afterWorkQueuePause","test",function(){});
 			MeTLBus.subscribe("layoutUpdated","test",function(dims){
