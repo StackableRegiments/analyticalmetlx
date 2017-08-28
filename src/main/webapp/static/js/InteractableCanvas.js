@@ -204,44 +204,58 @@ var createInteractiveCanvas = function(boardDiv){
 								Zoom.scale(previousScale / currentScale);
 							}
 					};
+					var gatherMissedEvents = function(action,e){
+						if ("getCoalescedEvents" in e){
+							var missedEvents = e.getCoalescedEvents();
+							_.forEach(missedEvents,function(pointerEvent){
+								console.log("catching up pointerEvent",pointerEvent);
+								action(pointerEvent);
+							});
+						} else {
+							action(e);
+						}
+					};
 					context.bind("pointerdown",function(e){
-							if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && checkIsGesture(e)){
-									isGesture = true;
+						if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && checkIsGesture(e)){
+							isGesture = true;
+						}
+						var point = updatePoint(e);
+						e.preventDefault();
+						WorkQueue.pause();
+						if (!checkIsGesture(e) && !isGesture){
+							isDown = true;
+							if(noInteractableConsumed(point.worldPos,"down")){
+								down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
 							}
-							var point = updatePoint(e);
-							e.preventDefault();
-							WorkQueue.pause();
-							if (!checkIsGesture(e) && !isGesture){
-									isDown = true;
-									if(noInteractableConsumed(point.worldPos,"down")){
-											down(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
-									}
-							}
+						}
 					});
-					context.bind("pointermove",function(e){
-							var point = updatePoint(e);
-							e.preventDefault();
-							if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && (checkIsGesture(e) || isGesture)){
-									performGesture();
-							} else {
-									if(noInteractableConsumed(point.worldPos,"move")){
-											if(isDown){
-													move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
-											}
-									}
+					var pointerMove = function(e){
+						var point = updatePoint(e);
+						e.preventDefault();
+						if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && (checkIsGesture(e) || isGesture)){
+							performGesture();
+						} else {
+							if(noInteractableConsumed(point.worldPos,"move")){
+								if(isDown){
+									move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+								}
 							}
+						}
+					};
+					context.bind("pointermove",function(e){
+						gatherMissedEvents(pointerMove,e);
 					});
 					context.bind("pointerup",function(e){
-							var point = releasePoint(e);
-							WorkQueue.gracefullyResume();
-							e.preventDefault();
-							if(noInteractableConsumed(point.worldPos,"up")){
-									if(isDown && !isGesture){
-											up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
-									}
-							}
-							isDown = false;
-							finishInteractableStates();
+						var point = releasePoint(e);
+						WorkQueue.gracefullyResume();
+						e.preventDefault();
+						if(noInteractableConsumed(point.worldPos,"up")){
+								if(isDown && !isGesture){
+										up(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+								}
+						}
+						isDown = false;
+						finishInteractableStates();
 					});
 					var pointerOut = function(x,y,e){
 							var vb = rendererObj.getViewbox();
