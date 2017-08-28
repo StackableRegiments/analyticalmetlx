@@ -62,9 +62,6 @@
 		}
 		$(function(){
 			var newCanvas = createInteractiveCanvas($("#board"));
-			newCanvas.onStanza = function(s){
-				sendStanza(s);
-			};
 			newCanvas.onSelectionChanged(function(selected){
 				MeTLBus.call("selectionChanged",[selected]);
 			});
