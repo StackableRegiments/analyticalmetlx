@@ -3066,12 +3066,17 @@ var createInteractiveCanvas = function(boardDiv){
 		renderer:rendererObj,
 		render:function(){
 			if (rendererObj !== undefined){
-				renderObj.render();
+				rendererObj.render();
 			}
 		},
 		getMode:function(){return currentMode;},
 		getAvailableModes:function(){
 			return availableModes;
+		},
+		setDimensions:function(dims){
+			if (rendererObj !== undefined){
+				rendererObj.setDimensions(dims);
+			}
 		},
 		setMode:function(mode){
 			if (mode !== undefined && "activate" in mode){

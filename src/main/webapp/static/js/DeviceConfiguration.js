@@ -58,18 +58,15 @@ var DeviceConfiguration = (function(){
         }
         return {width: w, height: h};
     };
-    var dropPx = function(str){
-        var value = parseInt(str.split("px")[0]);
-        return isNaN(value) ? 0 : value;
-    };
-    var initialized = false;
-		var updateMeasurements = function(){
+		var windowUpdateSpeed = 100;
+		var updateMeasurements = _.throttle(function(){
 			var dims = getDeviceDimensions();
 			var o = getOrientation();
 			screenWidth = dims.width;
 			screenHeight = dims.height;
 			orientation = o;
-		};
+			MeTLBus.call("layoutUpdated",[getMeasurementsFunc()]);
+		},windowUpdateSpeed,{leading:true,trailing:true});
 		var getMeasurementsFunc = function(){
 			return {
 				width:screenWidth,
@@ -78,20 +75,21 @@ var DeviceConfiguration = (function(){
 			};
 		};
     $(function(){
-        // set up orientation and resize handlers
-        var w = $(window);
-        if (window.orientation){
-            w.on("orientationchange",updateMeasurements);
-        }
-        w.resize(updateMeasurements);
-				updateMeasurements();
+			// set up orientation and resize handlers
+			var w = $(window);
+			if (window.orientation){
+					w.on("orientationchange",updateMeasurements);
+			}
+			w.resize(updateMeasurements);
+			tryToDetermineCurrentDevice();
+			updateMeasurements();
     });
     return {
-        getCurrentDevice:returnCurrentDeviceFunction,
-        setCurrentDevice:alterCurrentDeviceFunction,
-        getIdentity:function(){
-            return identity;
-        },
-				getMeasurements:getMeasurementsFunc
+			getCurrentDevice:returnCurrentDeviceFunction,
+			setCurrentDevice:alterCurrentDeviceFunction,
+			getIdentity:function(){
+				return identity;
+			},
+			getMeasurements:getMeasurementsFunc
 		};
 })();

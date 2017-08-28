@@ -55,8 +55,6 @@ var rectFromTwoPoints = function(pointA,pointB,minimumSideLength){
 var createCanvasRenderer = function(canvasElem){
 	var boardContext = canvasElem[0].getContext("2d");
 	var boardContent = {};
-	var requestedViewboxWidth = 0,requestedViewboxHeight = 0,requestedViewboxX = 0,requestedViewboxY = 0;
-
 	var pressureSimilarityThreshold = 32,
     viewboxX = 0,
     viewboxY = 0,
@@ -447,7 +445,7 @@ var createCanvasRenderer = function(canvasElem){
 			var yOffset = 0;
 			var runs = [];
 			var breaking = false;
-			$.each(text.text.split(''),function(i,c){
+			_.each(text.text.split(''),function(c,i){
 					if(c.match(newline)){
 							runs.push(""+run);
 							run = "";
@@ -496,7 +494,7 @@ var createCanvasRenderer = function(canvasElem){
 					return font;
 			}
 
-			$.each(text.runs,function(ri,run){
+			_.each(text.runs,function(run,ri){
 					var underline = function(){
 							var lines = text.height/(text.size * 1.25);
 							var range = _.range(text.size, text.height, text.height/lines);
@@ -525,7 +523,7 @@ var createCanvasRenderer = function(canvasElem){
 
 	var renderInks = function(inks,rendered,viewBounds){
 			if (inks != undefined){
-					$.each(inks,function(i,ink){
+					_.each(inks,function(ink,i){
 							try{
 								if (preRenderItem(ink,boardContext)){
 									if(intersectRect(ink.bounds,viewBounds)){
@@ -544,7 +542,7 @@ var createCanvasRenderer = function(canvasElem){
 	var renderRichTexts = function(texts,rendered,viewBounds){
 		return;
 			if(texts){
-					$.each(texts,function(i,text){
+					_.each(texts,function(text,i){
 						if (preRenderItem(text,boardContext)){
 							if(text.doc){
 									if(!text.bounds){
@@ -564,7 +562,7 @@ var createCanvasRenderer = function(canvasElem){
 		return;
 			if (videos){
 					//Modes.clearCanvasInteractables("videos");
-					$.each(videos,function(i,video){
+					_.each(videos,function(video,i){
 						if (preRenderItem(video,boardContext)){
 							if (intersectRect(video.bounds,viewBounds)){
 									drawVideo(video);
@@ -592,7 +590,7 @@ var createCanvasRenderer = function(canvasElem){
 			});
 	};
 	var renderTexts = function(texts,rendered,viewBounds){
-			$.each(texts,function(i,text){
+			_.each(texts,function(text,i){
 				if (preRenderItem(text,boardContext)){
 					if(intersectRect(text.bounds,viewBounds)){
 							drawText(text);
@@ -825,7 +823,7 @@ var createCanvasRenderer = function(canvasElem){
 	};
 
 	var renderImages = function(images,rendered,viewBounds){
-			$.each(images,function(id,image){
+			_.each(images,function(image,id){
 					try{
 						if (preRenderItem(image)){
 							if(intersectRect(image.bounds,viewBounds)){
@@ -1056,39 +1054,39 @@ var createCanvasRenderer = function(canvasElem){
 	var render = function(){
 		var renderStart = new Date().getTime();
 		try {
-			var content = boardContent;
-			clearBoard({x:0,y:0,w:boardWidth,h:boardHeight});
-			boardWidth = $(canvasElem).width();
-			boardHeight = $(canvasElem).height();
-			canvasElem.width(boardWidth);
-			canvasElem.height(boardHeight);	
-			canvasElem.attr("width",boardWidth);
-			canvasElem.attr("height",boardHeight);	
-			canvasElem[0].width = boardWidth;
-			canvasElem[0].height = boardHeight;	
-			renderStarting(boardContext,canvasElem,boardContent);
-			if(content){
-				try{
-					visibleBounds = [];
-					var rendered = [];
-					var viewBounds = [boardContent.minX,boardContent.minY,boardContent.maxX,boardContent.maxY];
-					renderImages(content.images,rendered,viewBounds);
-					renderImmediateContent(content,rendered,viewBounds);
-					/*
-					renderSelectionOutlines();
-					renderSelectionGhosts();
-					renderContentIdentification(rendered);
-					renderCanvasInteractables();
-					renderTint({x:0,y:0,w:boardWidth,h:boardHeight});
-					*/
-					statistic("render",new Date().getTime() - renderStart,true);
+			if (boardContent !== undefined){
+				var content = boardContent;
+				clearBoard({x:0,y:0,w:boardWidth,h:boardHeight});
+				canvasElem.width(boardWidth);
+				canvasElem.height(boardHeight);	
+				canvasElem.attr("width",boardWidth);
+				canvasElem.attr("height",boardHeight);	
+				canvasElem[0].width = boardWidth;
+				canvasElem[0].height = boardHeight;	
+				renderStarting(boardContext,canvasElem,boardContent);
+				if(content){
+					try{
+						visibleBounds = [];
+						var rendered = [];
+						var viewBounds = [viewboxX,viewboxY,viewboxX + viewboxWidth,viewboxY + viewboxHeight];//[boardContent.minX,boardContent.minY,boardContent.maxX,boardContent.maxY];
+						renderImages(content.images,rendered,viewBounds);
+						renderImmediateContent(content,rendered,viewBounds);
+						/*
+						renderSelectionOutlines();
+						renderSelectionGhosts();
+						renderContentIdentification(rendered);
+						renderCanvasInteractables();
+						renderTint({x:0,y:0,w:boardWidth,h:boardHeight});
+						*/
+						statistic("render",new Date().getTime() - renderStart,true);
+					}
+					catch(e){
+						passException(e,"renderWithContent",[content]);
+						statistic("render",new Date().getTime() - renderStart,false,e);
+					}
 				}
-				catch(e){
-					passException(e,"renderWithContent",[content]);
-					statistic("render",new Date().getTime() - renderStart,false,e);
-				}
+				renderComplete(boardContext,canvasElem,boardContent);
 			}
-			renderComplete(boardContext,canvasElem,boardContent);
 		} catch(e){
 			passException(e,"render",[]);
 			statistic("render",new Date().getTime() - renderStart,false,e);
@@ -1212,7 +1210,16 @@ var createCanvasRenderer = function(canvasElem){
 	var preRenderItem = function(item,ctx){
 		return true;
 	};
-	var postRenderItem = function(item,ctx){
+	var postRenderItem = function(item,ctx){ };
+	var setDimensionsFunc = function(dims){
+		console.log("historyRenderer setDimensions",dims);
+		if (dims !== undefined && "width" in dims && "height" in dims){
+			if (dims.width !== boardWidth || dims.height != boardHeight){
+				boardWidth = dims.width;
+				boardHeight = dims.height;
+			};
+			blit();
+		}
 	};
 	return {
 		setHistory:receiveHistoryFunc,
@@ -1237,6 +1244,7 @@ var createCanvasRenderer = function(canvasElem){
 				height:boardHeight
 			};
 		},
+		setDimensions:setDimensionsFunc,
 		getScale:function(){
 			return scale();
 		},
