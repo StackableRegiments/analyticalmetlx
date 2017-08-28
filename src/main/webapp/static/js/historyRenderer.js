@@ -132,7 +132,6 @@ var createCanvasRenderer = function(canvasElem){
 					scaleX:outputScaleX,
 					scaleY:outputScaleY
 			};
-			console.log("determineScaling",inX,inY,returnObj);
 			return returnObj;
 	}
 
@@ -252,6 +251,7 @@ var createCanvasRenderer = function(canvasElem){
 				default:
 					break;	
 			}
+			historyUpdated(boardContent);
 		}
 	};
 	var prerenderInk = function(ink,onBoard){
@@ -1269,13 +1269,13 @@ var createCanvasRenderer = function(canvasElem){
 	var dimensionsChanged = function(dims,ctx,elem){ };
 	var scaleChanged = function(scale,ctx,elem){ };
 	var historyReceived = function(history){ };
+	var historyUpdated = function(history){ };
 	var statistic = function(category,time,success,exception){ };
 	var preRenderItem = function(item,ctx){
 		return true;
 	};
 	var postRenderItem = function(item,ctx){ };
 	var setDimensionsFunc = function(dims){
-		console.log("historyRenderer setDimensions",dims);
 		if (dims !== undefined && "width" in dims && "height" in dims){
 			if (dims.width !== boardWidth || dims.height != boardHeight){
 				boardWidth = dims.width;
@@ -1326,6 +1326,9 @@ var createCanvasRenderer = function(canvasElem){
 		},
 		onHistoryChanged:function(f){
 			historyReceived = f;
+		},
+		onHistoryUpdated:function(f){
+			historyUpdated = f;
 		},
 		onException:function(f){
 			passException = f;

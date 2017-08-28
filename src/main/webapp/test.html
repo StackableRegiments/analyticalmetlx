@@ -90,11 +90,11 @@
 			});
 			window.InteractiveCanvas = newCanvas;
 			newCanvas.onStanzaAvailable(function(stanza){
-				console.log("stanza created:",stanza);
 				stanza.author = "testUser";
 				stanza.privacy = "PUBLIC";
 				stanza.target = "presentationSpace";
 				stanza.slide = "thisSlide";
+				console.log("test.html stanza:",stanza);
 				newCanvas.addStanza(stanza);
 			});
 			newCanvas.setHistory(mockHistory);

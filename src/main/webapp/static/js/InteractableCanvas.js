@@ -16,13 +16,16 @@ var createInteractiveCanvas = function(boardDiv){
 	rendererObj.onScaleChanged(function(s,c,e){return scaleChanged(s,c,e);});
 	var dimensionsChanged = function(dims,ctx,elem){ };
 	rendererObj.onDimensionsChanged(function(d,c,e){return dimensionsChanged(d,c,e);});
-	var canvasHistoryChanged = function(hist){
+	var canvasHistoryChanged = function(hist,after){
 		history = hist;
-		historyChanged(hist);
+		if (after !== undefined){
+			after(hist);
+		}
 	};
-	var historyChanged = function(history){
-	};
-	rendererObj.onHistoryChanged(function(h){return canvasHistoryChanged(h);});
+	var historyChanged = function(history){ };
+	rendererObj.onHistoryChanged(function(h){return canvasHistoryChanged(h,historyChanged);});
+	rendererObj.onHistoryUpdated(function(h){return canvasHistoryChanged(h);});
+
 	var preRenderItem = function(item,ctx){
 		return true;
 	};
@@ -3089,36 +3092,29 @@ var createInteractiveCanvas = function(boardDiv){
 	};
 	var strokeCollected = function(points,color,thickness,isHighlighter){
     if(points.length > 0) {
-        var ink = {
-            thickness : rendererObj.scaleScreenToWorld(thickness),
-            color:[color,255],
-            type:"ink",
-            timestamp:Date.now(),
-            isHighlighter:isHighlighter
-        };
-        var x;
-        var y;
-        var worldPos;
-        ink.points = points;
-        ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
-        ink.startingSum = ink.checksum;
-        ink.identity = ink.checksum.toFixed(1);
-				/*
-        calculateInkBounds(ink);
-        prerenderInk(ink);
-        if(ink.isHighlighter){
-            boardContent.highlighters[ink.identity] = ink;
-        }
-        else{
-            boardContent.inks[ink.identity] = ink;
-        }
-				*/
-        stanzaAvailable(ink);
+			var ink = {
+				thickness : rendererObj.scaleScreenToWorld(thickness),
+				color:[color,255],
+				type:"ink",
+				timestamp:Date.now(),
+				isHighlighter:isHighlighter
+			};
+			var x;
+			var y;
+			var worldPos;
+			ink.points = points;
+			ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
+			ink.startingSum = ink.checksum;
+			ink.identity = ink.checksum.toFixed(1);
+			stanzaAvailable(ink);
     }
 	};
 	var stanzaAvailable = function(stanza){};
 	var addStanzaFunc = function(stanza){
-		rendererObj.addStanza(stanza);
+		if (stanza !== undefined && "type" in stanza){
+
+			rendererObj.addStanza(stanza);
+		}
 	};
 	return {
 		boardElem:boardDiv,
