@@ -72,6 +72,7 @@
 				MeTLBus.call("modeChanged",[mode]);
 			});
 			newCanvas.onStatistic(function(category,time,success,exception){
+				console.log("onStatistic",category,time,success,exception);
 				if ("HealthChecker" in window){
 					HealthChecker.addMeasure(category,time,success);
 				}
@@ -79,8 +80,15 @@
 			newCanvas.onError(function(exception,caller,params){
 				console.log("InteractiveCanvasException",caller,exception,params);
 			});
-			newCanvas.setHistory(mockHistory);
+			newCanvas.onPreRenderItem(function(item,ctx){
+				console.log("preRender",item,ctx);
+				return true;
+			});
+			newCanvas.onPostRenderItem(function(item,ctx){
+				console.log("postRender",item,ctx);
+			});
 			window.InteractiveCanvas = newCanvas;
+			newCanvas.setHistory(mockHistory);
 		});
 	</script>
 	<div class="lift:embed?what=_canvas"></div>

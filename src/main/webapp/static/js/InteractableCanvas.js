@@ -31,6 +31,13 @@ var createInteractiveCanvas = function(boardDiv){
 	var historyChanged = function(history){
 	};
 	rendererObj.onHistoryChanged(function(h){return canvasHistoryChanged(h);});
+	var preRenderItem = function(item,ctx){
+		return true;
+	};
+	rendererObj.onPreRenderItem(function(i,c){return preRenderItem(i,c);});
+	var postRenderItem = function(item){
+	};
+	rendererObj.onPostRenderItem(function(i,c){return postRenderItem(i,c);});
 	MeTLBus.subscribe("mockHistoryReceived","interactiveCanvas",function(history){
 		if (rendererObj !== undefined){
 			rendererObj.setHistory(history,function(){
@@ -2818,6 +2825,14 @@ var createInteractiveCanvas = function(boardDiv){
 		onRenderComplete:function(f){
 			renderComplete = f;
 		},
+		onPreRenderItem:function(f){
+			//preRenderItem takes an item and a canvasContext and returns whether to continue rendering the item
+			preRenderItem = f;
+		},
+		onPostRenderItem:function(f){
+			//postRenderItem takes an item and a canvasContext
+			postRenderItem = f;
+		},	
 		setHistory:setHistoryFunc,
 		onHistoryChanged:function(f){
 			historyChanged = f;

@@ -473,10 +473,13 @@ var createCanvasRenderer = function(canvasElem){
 			if (inks != undefined){
 					$.each(inks,function(i,ink){
 							try{
+								if (preRenderItem(ink,boardContext)){
 									if(intersectRect(ink.bounds,viewBounds)){
 											drawInk(ink);
+											postRenderItem(ink,boardContext);
 											rendered.push(ink);
 									}
+								}
 							}
 							catch(e){
 									passException(e,"renderInks",[i,ink]);
@@ -488,28 +491,34 @@ var createCanvasRenderer = function(canvasElem){
 		return;
 			if(texts){
 					$.each(texts,function(i,text){
+						if (preRenderItem(text,boardContext)){
 							if(text.doc){
 									if(!text.bounds){
 											text.doc.invalidateBounds();
 									}
 									if(intersectRect(text.bounds,viewBounds)){
 											drawMultiwordText(text);
+											postRenderItem(text,boardContext);
 											rendered.push(text);
 									}
 							}
+						}
 					});
 			}
 	};
 	var renderVideos = function(videos,rendered,viewBounds){
 		return;
 			if (videos){
-					Modes.clearCanvasInteractables("videos");
+					//Modes.clearCanvasInteractables("videos");
 					$.each(videos,function(i,video){
+						if (preRenderItem(video,boardContext)){
 							if (intersectRect(video.bounds,viewBounds)){
-									drawVideo(video,canvasContext);
+									drawVideo(video);
 									//Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
+									postRenderItem(video,boardContext);
 									rendered.push(video);
 							}
+						}
 					});
 			}
 	};
@@ -584,10 +593,13 @@ var createCanvasRenderer = function(canvasElem){
 	};
 	var renderTexts = function(texts,rendered,viewBounds){
 			$.each(texts,function(i,text){
+				if (preRenderItem(text,boardContext)){
 					if(intersectRect(text.bounds,viewBounds)){
 							drawText(text);
+							postRenderItem(text,boardContext);
 							rendered.push(text);
 					}
+				}
 			});
 	};
 	var renderImmediateContent = function(content,rendered,viewBounds){
@@ -815,10 +827,13 @@ var createCanvasRenderer = function(canvasElem){
 	var renderImages = function(images,rendered,viewBounds){
 			$.each(images,function(id,image){
 					try{
+						if (preRenderItem(image)){
 							if(intersectRect(image.bounds,viewBounds)){
 									drawImage(image);
+									postRenderItem(image,boardContext);
 									rendered.push(image);
 							}
+						}
 					}
 					catch(e){
 						passException(e,"renderImages",[i,image]);
@@ -1086,8 +1101,6 @@ var createCanvasRenderer = function(canvasElem){
 	var preRenderHistory = function(history,afterFunc){
 		var start = new Date().getTime();
 		try {
-			var canvasContext = canvasElem[0].getContext("2d");
-			
 			history.multiWordTexts = _.pickBy(history.multiWordTexts,isUsable);
 			history.texts = _.pickBy(history.texts,isUsable);
 			history.images = _.pickBy(history.images,isUsable);
@@ -1130,7 +1143,7 @@ var createCanvasRenderer = function(canvasElem){
 				if (boardContent.minY == Infinity){
 					boardContent.minY = 0;
 				} 
-				statistic("preRenderHistory",new Date().getTime() - start,false,e);
+				statistic("preRenderHistory",new Date().getTime() - start,true);
 				if (afterFunc !== undefined){
 					afterFunc();
 				}
@@ -1194,11 +1207,13 @@ var createCanvasRenderer = function(canvasElem){
 	var viewboxChanged = function(vb,ctx,elem){ };
 	var dimensionsChanged = function(dims,ctx,elem){ };
 	var scaleChanged = function(scale,ctx,elem){ };
-	var renderFilterFunc = function(s){
-		return true;
-	};
 	var historyReceived = function(history){ };
 	var statistic = function(category,time,success,exception){ };
+	var preRenderItem = function(item,ctx){
+		return true;
+	};
+	var postRenderItem = function(item,ctx){
+	};
 	return {
 		setHistory:receiveHistoryFunc,
 		render:renderFunc,
@@ -1257,7 +1272,8 @@ var createCanvasRenderer = function(canvasElem){
 		onScaleChanged:function(f){
 			scaleChanged = f;
 		},
-		renderFilter:renderFilterFunc,
+		onPreRenderItem:preRenderItem,
+		onPostRenderItem:postRenderItem,	
 		getDataURI:function(){
 			return canvasElem[0].toDataURL();
 		}
