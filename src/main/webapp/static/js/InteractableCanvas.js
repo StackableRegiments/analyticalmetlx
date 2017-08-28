@@ -204,7 +204,7 @@ var createInteractiveCanvas = function(boardDiv){
 								Zoom.scale(previousScale / currentScale);
 							}
 					};
-					var gatherMissedEvents = function(action,e){
+					var actOnMissedEvents = function(action,e){
 						if ("getCoalescedEvents" in e){
 							var missedEvents = e.getCoalescedEvents();
 							_.forEach(missedEvents,function(pointerEvent){
@@ -229,21 +229,20 @@ var createInteractiveCanvas = function(boardDiv){
 							}
 						}
 					});
-					var pointerMove = function(e){
-						var point = updatePoint(e);
-						e.preventDefault();
-						if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && (checkIsGesture(e) || isGesture)){
-							performGesture();
-						} else {
-							if(noInteractableConsumed(point.worldPos,"move")){
-								if(isDown){
-									move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+					context.bind("pointermove",function(e){
+						actOnMissedEvents(function(e){
+							var point = updatePoint(e);
+							e.preventDefault();
+							if ((e.originalEvent.pointerType == e.POINTER_TYPE_TOUCH || e.originalEvent.pointerType == "touch") && (checkIsGesture(e) || isGesture)){
+								performGesture();
+							} else {
+								if(noInteractableConsumed(point.worldPos,"move")){
+									if(isDown){
+										move(point.x,point.y,point.z,point.worldPos,modifiers(e,point.eraser));
+									}
 								}
 							}
-						}
-					};
-					context.bind("pointermove",function(e){
-						gatherMissedEvents(pointerMove,e);
+						},e);
 					});
 					context.bind("pointerup",function(e){
 						var point = releasePoint(e);

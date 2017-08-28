@@ -120,19 +120,19 @@ var createCanvasRenderer = function(canvasElem){
 			return {x:maxX,y:maxY};
 	});
 
-	var determineScaling = function(inX,inY){
-			var outputX = inX;
-			var outputY = inY;
+	var determineScaling = function(inX,inY,highQualityMultiplier){
+			var outputX = inX * highQualityMultiplier;
+			var outputY = inY * highQualityMultiplier;
 			var outputScaleX = 1.0;
 			var outputScaleY = 1.0;
 			var canvasConstants = determineCanvasConstants();
 			var maxX = canvasConstants.x;
 			var maxY = canvasConstants.y;
-			if (inX > maxX){
-					outputScaleX = maxX / inX;
-					outputX = inX * outputScaleX;
+			if (outputX > maxX){
+					outputScaleX = maxX / outputX;
+					outputX = outputX * outputScaleX;
 					outputScaleY = outputScaleX;
-					outputY = inY * outputScaleX;
+					outputY = outputY * outputScaleX;
 			}
 			if (outputY > maxY){
 					outputScaleY = maxY / outputY;
@@ -143,8 +143,8 @@ var createCanvasRenderer = function(canvasElem){
 			var returnObj = {
 					width:outputX,
 					height:outputY,
-					scaleX:outputScaleX,
-					scaleY:outputScaleY
+					scaleX:outputScaleX * highQualityMultiplier,
+					scaleY:outputScaleY * highQualityMultiplier
 			};
 			return returnObj;
 	}
@@ -645,6 +645,7 @@ var createCanvasRenderer = function(canvasElem){
 			historyUpdated(boardContent);
 		}
 	};
+	var highQualityMultiplier = 4;
 	var prerenderInk = function(ink,onBoard){
 			if(!isUsable(ink)){
 					if(ink.identity in boardContent.inks){
@@ -659,11 +660,15 @@ var createCanvasRenderer = function(canvasElem){
 			if(onBoard){
 					incorporateBoardBounds(ink.bounds);
 			}
-			var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
-			var rawWidth = ink.bounds[2] - ink.bounds[0] + (ink.thickness);
-			var rawHeight = ink.bounds[3] - ink.bounds[1] + (ink.thickness);
+			//var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
+			var rawWidth = (ink.bounds[2] - ink.bounds[0] + (ink.thickness));
+			var rawHeight = (ink.bounds[3] - ink.bounds[1] + (ink.thickness));
 
-			var scaleMeasurements = determineScaling(rawWidth,rawHeight);
+			var scaleMeasurements = determineScaling(rawWidth,rawHeight,highQualityMultiplier);
+
+			var scaleX = scaleMeasurements.scaleX;
+			var scaleY = scaleMeasurements.scaleY;
+
 			var canvas = $("<canvas />",{
 					width:scaleMeasurements.width,
 					height:scaleMeasurements.height
@@ -672,17 +677,18 @@ var createCanvasRenderer = function(canvasElem){
 			var context = canvas.getContext("2d");
 			canvas.width = scaleMeasurements.width;
 			canvas.height = scaleMeasurements.height;
-			var rawPoints = ink.points;
+			var rawPoints = _.clone(ink.points);
 			var points = [];
 			var x,y,pr,p;
 			for (p = 0; p < rawPoints.length; p += 3){
-					points.push(rawPoints[p] * scaleMeasurements.scaleX);
-					points.push(rawPoints[p + 1] * scaleMeasurements.scaleY);
+					points.push(rawPoints[p] * scaleX);
+					points.push(rawPoints[p + 1] * scaleY);
 					points.push(rawPoints[p + 2] / 256);
 			}
-			var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2)) * scaleMeasurements.scaleX;
-			var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2)) * scaleMeasurements.scaleY;
-			var scaledThickness = ink.thickness * scaleMeasurements.scaleX;
+			var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2)) * scaleX;
+			var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2)) * scaleY;
+			var scaledThickness = ink.thickness * scaleX;
+			/*
 			if(isPrivate){
 					x = points[0] + contentOffsetX;
 					y = points[1] + contentOffsetY;
@@ -703,6 +709,7 @@ var createCanvasRenderer = function(canvasElem){
 					}
 					context.globalAlpha = 1.0;
 			}
+			*/
 			context.strokeStyle = ink.color[0];
 			context.fillStyle = ink.color[0];
 			x = points[0] + contentOffsetX;
@@ -921,13 +928,22 @@ var createCanvasRenderer = function(canvasElem){
 			});
 			text.runs = runs;
 			calculateTextBounds(text);
-			var rawWidth = text.bounds[2] - text.bounds[0];
-			var rawHeight = text.bounds[3] - text.bounds[1];
-			var scaleMeasurements = determineScaling(rawWidth,rawHeight);
-			canvas.width = scaleMeasurements.width;
-			canvas.height = scaleMeasurements.height;
+			var rawWidth = (text.bounds[2] - text.bounds[0]);
+			var rawHeight = (text.bounds[3] - text.bounds[1]);
+			var scaleMeasurements = determineScaling(rawWidth,rawHeight,highQualityMultiplier);
+			
+			var scaleX = scaleMeasurements.scaleX;
+			var scaleY = scaleMeasurements.scaleY;
+			
+			var contentOffsetX = 0;
+			var contentOffsetY = 0;
+
+			canvas.width = scaleMeasurements.width + contentOffsetX;
+			canvas.height = scaleMeasurements.height + contentOffsetY;
 
 			text.height = rawHeight;
+
+			/*
 			if(text.privacy.toUpperCase() == "PRIVATE"){
 					context.globalAlpha = 0.2;
 					context.fillStyle = "red";
@@ -937,21 +953,21 @@ var createCanvasRenderer = function(canvasElem){
 							scaleMeasurements.height);
 					context.globalAlpha = 1.0;
 			}
+			*/
 			context.fillStyle = text.color[0];
 			context.textBaseline = "top";
 			function generateTextFont(text) {
-					var font = text.font;
+					var font = px(text.size * scaleY) + " " + text.font;
 					if(text.weight == "bold")
 							font = font + ' bold';
 					if(text.style == "italic")
 							font = font + ' italic';
-
 					return font;
 			}
 
 			_.each(text.runs,function(run,ri){
 					var underline = function(){
-							var lines = text.height/(text.size * 1.25);
+							var lines = text.height/(text.size * 1.25 * scaleY);
 							var range = _.range(text.size, text.height, text.height/lines);
 							_.each(range, function(y){
 									context.beginPath();
@@ -963,11 +979,11 @@ var createCanvasRenderer = function(canvasElem){
 									context.stroke();
 							});
 					};
-					var _yOffset = ri * text.size * 1.25;
+					var _yOffset = ri * text.size * 1.25 * scaleY;
 					context.font = generateTextFont(text);
 					context.fillText(run,
-													 contentOffsetX * scaleMeasurements.scaleX,
-													 (contentOffsetY + _yOffset) * scaleMeasurements.scaleY,
+													 contentOffsetX * scaleX,
+													 (contentOffsetY + _yOffset),
 													 scaleMeasurements.width);
 					if(text.decoration == "underline")
 							underline();
