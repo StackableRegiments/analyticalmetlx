@@ -72,12 +72,12 @@
 				MeTLBus.call("modeChanged",[mode]);
 			});
 			newCanvas.onStatistic(function(category,time,success,exception){
-				if (exception !== undefined){
-					console.log("InteractiveCanvasException",category,time,exception);
-				}
 				if ("HealthChecker" in window){
 					HealthChecker.addMeasure(category,time,success);
 				}
+			});
+			newCanvas.onError(function(exception,caller,params){
+				console.log("InteractiveCanvasException",caller,exception,params);
 			});
 			newCanvas.setHistory(mockHistory);
 			window.InteractiveCanvas = newCanvas;

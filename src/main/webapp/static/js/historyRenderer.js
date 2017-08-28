@@ -479,7 +479,7 @@ var createCanvasRenderer = function(canvasElem){
 									}
 							}
 							catch(e){
-									console.log("ink render failed for",e,ink.canvas,ink.identity,ink);
+									passException(e,"renderInks",[i,ink]);
 							}
 					});
 			}
@@ -821,7 +821,7 @@ var createCanvasRenderer = function(canvasElem){
 							}
 					}
 					catch(e){
-							console.log("image render failed for",e,image.identity,image);
+						passException(e,"renderImages",[i,image]);
 					}
 			});
 	};
@@ -844,7 +844,7 @@ var createCanvasRenderer = function(canvasElem){
 					var r = rect == undefined ? {x:0,y:0,w:boardWidth,h:boardHeight} : rect;
 					boardContext.clearRect(r.x,r.y,r.w,r.h);
 			} catch(e){
-					console.log("exception while clearing board:",e,rect);
+				passException(e,"clearBoard",[rect]);
 			}
 	}
 	var isInClearSpace = function(bounds){
@@ -931,7 +931,7 @@ var createCanvasRenderer = function(canvasElem){
 					}
 			}
 			catch(e){
-					console.log("drawImage exception",e);
+				passException(e,"drawImage",[image]);
 			}
 	}
 
@@ -946,7 +946,7 @@ var createCanvasRenderer = function(canvasElem){
 					}
 			}
 			catch(e){
-					console.log("drawMultiwordText exception",e);
+				passException(e,"drawMutliwordText",[item]);
 			}
 	}
 	var drawText = function(text){
@@ -962,7 +962,7 @@ var createCanvasRenderer = function(canvasElem){
 					}
 			}
 			catch(e){
-					console.log("drawText exception",e);
+				passException(e,"drawText",[text]);
 			}
 	}
 	var drawInk = function(ink){
@@ -997,7 +997,7 @@ var createCanvasRenderer = function(canvasElem){
 																					tW,tW);
 							}
 							catch(e){
-									console.log("Exception in drawInk",e);
+								passException(e,"drawInk",[ink,img]);
 							}
 					}
 					else{
@@ -1069,23 +1069,22 @@ var createCanvasRenderer = function(canvasElem){
 					statistic(render,new Date().getTime() - renderStart,true);
 				}
 				catch(e){
+					passException(e,"renderWithContent",[content]);
 					statistic(render,new Date().getTime() - renderStart,false,e);
 				}
 			}
 			renderComplete(boardContext,canvasElem,boardContent);
 		} catch(e){
+			passException(e,"render",[]);
 			statistic(render,new Date().getTime() - renderStart,false,e);
 		}
 	}
 	var blit = function(content){
-			try {
-					render();
-			} catch(e){
-					console.log("exception in blit:",e);
-			}
+		render();
 	};
 
 	var preRenderHistory = function(history,afterFunc){
+		var start = new Date().getTime();
 		try {
 			var canvasContext = canvasElem[0].getContext("2d");
 			
@@ -1131,21 +1130,7 @@ var createCanvasRenderer = function(canvasElem){
 				if (boardContent.minY == Infinity){
 					boardContent.minY = 0;
 				} 
-				/* //removing this bit because I haven't yet thought through the issue
-				if (loadSlidesAtNativeZoom){
-					requestedViewboxX = 0;
-					requestedViewboxY = 0;
-					requestedViewboxWidth = boardWidth;
-					requestedViewboxHeight = boardHeight;	
-				} else {
-				// set zoom to include all content. 
-					requestedViewboxX = boardContent.minX;
-					requestedViewboxY = boardContent.minY;
-					requestedViewboxWidth = boardContent.width;
-					requestedVIewboxHeight = boardContent.height;
-				}
-				 */
-
+				statistic("preRenderHistory",new Date().getTime() - start,false,e);
 				if (afterFunc !== undefined){
 					afterFunc();
 				}
@@ -1182,7 +1167,7 @@ var createCanvasRenderer = function(canvasElem){
 						}
 					};
 					dataImage.onError = function(error){
-						console.log("Data image load error",image,e);
+						passException(error,"preRenderHistory:imageDataLoad",[dataImage,image]);
 						limit -= 1;
 						if (loaded >= limit){
 							_.defer(startRender);
@@ -1192,7 +1177,7 @@ var createCanvasRenderer = function(canvasElem){
 				});
 			}
 		} catch(e){
-			console.log("exception during render",e);
+			statistic("preRenderHistory",new Date().getTime() - start,false,e);
 		}
 	};
 
@@ -1203,30 +1188,17 @@ var createCanvasRenderer = function(canvasElem){
 		historyReceived(history);
 		preRenderHistory(history,blit);
 	};
-	var renderStarting = function(ctx,elem,history){
-		console.log("renderStarting",ctx,elem,history);
-	};
-	var renderComplete = function(ctx,elem,history){
-		console.log("renderComplete",ctx,elem,history);
-	};
-	var viewboxChanged = function(vb,ctx,elem){
-		console.log("viewboxChanged",vb,ctx,elem);
-	};
-	var dimensionsChanged = function(dims,ctx,elem){
-		console.log("dimensionsChanged",dims,ctx,elem);
-	};
-	var scaleChanged = function(scale,ctx,elem){
-		console.log("scaleChanged",scale,ctx,elem);
-	};
+	var passException = function(e,loc,params){ };
+	var renderStarting = function(ctx,elem,history){ };
+	var renderComplete = function(ctx,elem,history){ };
+	var viewboxChanged = function(vb,ctx,elem){ };
+	var dimensionsChanged = function(dims,ctx,elem){ };
+	var scaleChanged = function(scale,ctx,elem){ };
 	var renderFilterFunc = function(s){
 		return true;
 	};
-	var historyReceived = function(history){
-		console.log("historyReceived",history);
-	};
-	var statistic = function(category,time,success,exception){
-		console.log("canvasStatistic",category,time,success,exception);
-	};
+	var historyReceived = function(history){ };
+	var statistic = function(category,time,success,exception){ };
 	return {
 		setHistory:receiveHistoryFunc,
 		render:renderFunc,
@@ -1263,6 +1235,9 @@ var createCanvasRenderer = function(canvasElem){
 		},
 		onHistoryChanged:function(f){
 			historyReceived = f;
+		},
+		onException:function(f){
+			passException = f;
 		},
 		onRenderStarting:function(f){
 			renderStarting = f;

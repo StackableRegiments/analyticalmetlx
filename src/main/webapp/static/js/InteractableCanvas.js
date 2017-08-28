@@ -6,6 +6,9 @@ var createInteractiveCanvas = function(boardDiv){
 		console.log("InteractiveCanvasStatistic",category,time,success,exception);
 	};
 	rendererObj.onStatistic(function(c,t,s,e){return statistic(c,t,s,e);});
+	var errorFunc = function(exception,location,parameters){
+	};
+	rendererObj.onException(function(e,l,p){return errorFunc(e,l,p);});
 	var renderStarting = function(ctx,elem,history){
 	};
 	rendererObj.onRenderStarting(function(c,e,h){return renderStarting(c,e,h);});
@@ -2796,6 +2799,9 @@ var createInteractiveCanvas = function(boardDiv){
 		},
 		onStatistic:function(f){
 			statistic = f;
+		},
+		onError:function(f){
+			errorFunc = f;
 		},
 		onViewboxChanged:function(f){
 			viewboxChanged = f;
