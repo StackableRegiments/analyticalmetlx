@@ -2669,7 +2669,7 @@ var createInteractiveCanvas = function(boardDiv){
 	var drawMode = (function(){
 			var erasing = false;
 			var isHighlighter = false;
-			var color = "black";
+			var color = "#808080";
 			var size = 10;
 			var mousePressure = 256;
 			var currentStroke = [];
@@ -2735,7 +2735,7 @@ var createInteractiveCanvas = function(boardDiv){
 							boardContext.lineTo(x,y);
 							boardContext.stroke();
 							currentStroke = currentStroke.concat([worldPos.x,worldPos.y,mousePressure * z]);
-							//strokeCollected(currentStroke);
+							strokeCollected(currentStroke,color,size,isHighlighter);
 					}
 					boardContext.globalAlpha = 1.0;
 			};
@@ -3087,6 +3087,45 @@ var createInteractiveCanvas = function(boardDiv){
 			rendererObj.render();
 		});
 	};
+	var strokeCollected = function(points,color,thickness,isHighlighter){
+    if(points.length > 0) {
+        var ink = {
+            thickness : rendererObj.scaleScreenToWorld(thickness),
+            color:[color,255],
+            type:"ink",
+            timestamp:Date.now(),
+            isHighlighter:isHighlighter
+        };
+        var scaledPoints = [];
+        var x;
+        var y;
+        var worldPos;
+        for(var p = 0; p < points.length; p += 3){
+            x = points[p];
+            y = points[p+1];
+            scaledPoints = scaledPoints.concat([x,y,points[p+2]]);
+        }
+        ink.points = scaledPoints;
+        ink.checksum = ink.points.reduce(function(a,b){return a+b},0);
+        ink.startingSum = ink.checksum;
+        ink.identity = ink.checksum.toFixed(1);
+				/*
+        calculateInkBounds(ink);
+        prerenderInk(ink);
+        if(ink.isHighlighter){
+            boardContent.highlighters[ink.identity] = ink;
+        }
+        else{
+            boardContent.inks[ink.identity] = ink;
+        }
+				*/
+        stanzaAvailable(ink);
+    }
+	};
+	var stanzaAvailable = function(stanza){};
+	var addStanzaFunc = function(stanza){
+		rendererObj.addStanza(stanza);
+	};
 	return {
 		boardElem:boardDiv,
 		renderer:rendererObj,
@@ -3152,11 +3191,15 @@ var createInteractiveCanvas = function(boardDiv){
 		},
 		getHistory:function(){
 			return history;
-		},	
+		},
 		setHistory:setHistoryFunc,
 		onHistoryChanged:function(f){
 			historyChanged = f;
 		},
+		onStanzaAvailable:function(f){
+			stanzaAvailable = f;
+		},
+		addStanza:addStanzaFunc,	
 		getZoomController:function(){return Zoom},
 		getPanController:function(){return Pan},
 		alertSnapshot:function(){

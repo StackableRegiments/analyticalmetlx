@@ -190,6 +190,63 @@ var createCanvasRenderer = function(canvasElem){
 			return boundsOk && sizeOk && textOk; //&& availableToMe;
 	}
 
+	var addStanzaFunc = function(stanza){
+		if (stanza !== undefined && "type" in stanza){
+			switch (stanza.type) {
+				case "ink":
+					prerenderInk(stanza,true);
+					boardContent.inks[stanza.identity] = stanza;
+					render();
+					break;
+				case "text":
+					prerenderText(stanza,true);
+					boardContent.texts[stanza.identity] = stanza;
+					render();
+					break;
+				case "image":
+					image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
+					incorporateBoardBounds(image.bounds);
+					var dataImage = new Image();
+					image.imageData = dataImage;
+					var url = calculateImageSource(image,true);
+					dataImage.onload = function(data){
+						var shouldReCalcBounds = false;
+						if (image.width == 0){
+							image.width = dataImage.naturalWidth;
+							shouldReCalcBounds = true;
+						}
+						if (image.height == 0){
+							image.height = dataImage.naturalHeight;
+							shouldReCalcBounds = true;
+						}
+						if (shouldReCalcBounds){
+							image.bounds = [image.x,image.y,image.x+image.width,image.y+image.height];
+							incorporateBoardBounds(image.bounds);
+						}
+						prerenderImage(image);
+						boardContent.images[stanza.identity] = stanza;
+						render();
+					};
+					dataImage.onError = function(error){
+						passException(error,"preRenderHistory:imageDataLoad",[dataImage,image]);
+					};
+					dataImage.src = url;
+					break;
+				case "multiWordText":
+					prerenderMultiwordText(stanza,true);
+					boardContent.multiWordTexts[stanza.identity] = stanza;
+					render();
+					break;
+				case "video":
+					prerenderVideo(stanza,true);
+					boardContent.videos[stanza.identity] = stanza;
+					render();
+					break;
+				default:
+					break;	
+			}
+		}
+	};
 	var prerenderInk = function(ink,onBoard){
 			if(!isUsable(ink)){
 					if(ink.identity in boardContent.inks){
@@ -1223,6 +1280,7 @@ var createCanvasRenderer = function(canvasElem){
 	};
 	return {
 		setHistory:receiveHistoryFunc,
+		addStanza:addStanzaFunc,	
 		render:renderFunc,
 		getBoardContent:function(){return boardContent;},
 		getBoardContext:function(){return boardContext;},
