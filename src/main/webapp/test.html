@@ -82,7 +82,8 @@
 			});
 			newCanvas.onPreRenderItem(function(item,ctx){
 				console.log("preRender",item,ctx);
-				return true;
+				return item.type == "ink";
+				//return true;
 			});
 			newCanvas.onPostRenderItem(function(item,ctx){
 				console.log("postRender",item,ctx);

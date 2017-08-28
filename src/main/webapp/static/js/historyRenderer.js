@@ -1272,8 +1272,12 @@ var createCanvasRenderer = function(canvasElem){
 		onScaleChanged:function(f){
 			scaleChanged = f;
 		},
-		onPreRenderItem:preRenderItem,
-		onPostRenderItem:postRenderItem,	
+		onPreRenderItem:function(f){
+			preRenderItem = f;
+		},
+		onPostRenderItem:function(f){
+			postRenderItem = f
+		},	
 		getDataURI:function(){
 			return canvasElem[0].toDataURL();
 		}
