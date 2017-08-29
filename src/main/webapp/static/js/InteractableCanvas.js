@@ -856,25 +856,26 @@ var createInteractiveCanvas = function(boardDiv){
 			activated = false;
 			resizing = false;
 		};
+		var rehomeFunc = function(root){
+			if(!activated){
+				var s = handlesAtZoom();
+				var inPos = clipToInteractableSpace(root.x2,root.y2);
+				var x = inPos.x;
+				var y = inPos.y;
+				var width = root.x2 - root.x;
+				var center = root.x + (s / 2);
+				bounds = [
+					x,
+					y - s,
+					x + s,
+					y
+				];
+			}
+		};
 		return {
 			getActivated:function(){ return activated;},
 			getBounds:function(){return bounds;},
-			rehome : function(root){
-				if(!activated){
-					var s = handlesAtZoom();
-					var inPos = clipToInteractableSpace(root.x2,root.y2);
-					var x = inPos.x;
-					var y = inPos.y;
-					var width = root.x2 - root.x;
-					var center = root.x + (s / 2);
-					bounds = [
-						x,
-						y - s,
-						x + s,
-						y
-					];
-				}
-			},
+			rehome : rehomeFunc,
 			down:function(worldPos){
 				activated = true;
 				dragging = false;
@@ -889,7 +890,7 @@ var createInteractiveCanvas = function(boardDiv){
 			move:function(worldPos){
 				if(activated){
 					var s = handlesAtZoom();
-					resizeFree.bounds = [
+					bounds = [
 						worldPos.x - s,
 						worldPos.y - s,
 						worldPos.x + s,
