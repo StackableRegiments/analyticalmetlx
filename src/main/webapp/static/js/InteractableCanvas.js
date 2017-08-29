@@ -3325,7 +3325,6 @@ var createInteractiveCanvas = function(boardDiv){
 			manualMove.rehome(totalBounds);
 			resizeFree.rehome(totalBounds);
 			resizeAspectLocked.rehome(totalBounds);
-			rendererObj.render();
 		}
 	}
 	var selectionChanged = function(selected){

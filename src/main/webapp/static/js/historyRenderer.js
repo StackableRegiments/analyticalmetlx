@@ -518,7 +518,6 @@ var createCanvasRenderer = function(canvasElem){
 							text.y = text.y + offsetY;
 
 							text.size = text.size * transform.yScale;
-							text.font = sprintf("%spx %s",text.size,text.family);
 							if(isUsable(text)){
 								prerenderText(text);
 								calculateTextBounds(text);
