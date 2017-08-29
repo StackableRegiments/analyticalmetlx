@@ -553,14 +553,7 @@ var createInteractiveCanvas = function(boardDiv){
 					var inPos = clipToInteractableSpace(root.x,root.y);
 					var x = inPos.x;
 					var y = inPos.y;
-					var width = root.x2 - root.x;
-					var center = root.x + (s / 2);
-					bounds = [
-						center - (s / 2),
-						y - s,
-						center + (s / 2),
-						y
-					];
+					bounds = [ x - s, y - s, x, y];
 				}
 			},
 			down:function(worldPos){
@@ -887,63 +880,63 @@ var createInteractiveCanvas = function(boardDiv){
 				aspectLocked = false;
 				var root = totalSelectedBounds();
 				selectionOffset = {x:root.x2,y:root.y2};
+				//really?!?
 				rendererObj.render();
 				return false;
 			},
 			move:function(worldPos){
-					if(activated){
-						var s = handlesAtZoom();
-						resizeFree.bounds = [
-							worldPos.x - s,
-							worldPos.y - s,
-							worldPos.x + s,
-							worldPos.y + s
-						];
-						selectionOffset = {x:worldPos.x,y:worldPos.y};
-						rendererObj.render();
-					}
-					return false;
+				if(activated){
+					var s = handlesAtZoom();
+					resizeFree.bounds = [
+						worldPos.x - s,
+						worldPos.y - s,
+						worldPos.x + s,
+						worldPos.y + s
+					];
+					selectionOffset = {x:worldPos.x,y:worldPos.y};
+					rendererObj.render();
+				}
+				return false;
 			},
 			deactivate:deactivateFunc,
 			up:function(worldPos){
-					deactivateFunc();
-					var resized = batchTransform();
-					var totalBounds = totalSelectedBounds();
-					var originalWidth = totalBounds.x2 - totalBounds.x;
-					var originalHeight = totalBounds.y2 - totalBounds.y;
-					var requestedWidth = worldPos.x - totalBounds.x;
-					var requestedHeight = worldPos.y - totalBounds.y;
-					resized.xScale = requestedWidth / originalWidth;
-					resized.yScale = requestedHeight / originalHeight;
-					resized.xOrigin = totalBounds.x;
-					resized.yOrigin = totalBounds.y;
-					resized.inkIds = _.keys(selected.inks);
-					resized.textIds = _.keys(selected.texts);
-					resized.imageIds = _.keys(selected.images);
-					resized.videoIds = _.keys(selected.videos);
-					var s = rendererObj.getScale();
-					/*
-					_.each(selected.multiWordTexts,function(word){
-						if(word.doc.save().length > 0){
-							word.doc.width(Math.max(
-								word.doc.width() * resized.xScale,
-								Modes.text.minimumWidth / s
-							));
-							word.doc.updateCanvas();
-							sendRichText(word);
-						}
-					});
-					*/
-					rendererObj.render();
-					/*
-					registerTracker(resized.identity,function(){
-							MeTLBus.call("onSelectionChanged");
-							rendererObj.render();
-					});
-					*/
-					rendererObj.render();
-					stanzaAvailable(resized);
-					return false;
+				deactivateFunc();
+				var resized = batchTransform();
+				var totalBounds = totalSelectedBounds();
+				var originalWidth = totalBounds.x2 - totalBounds.x;
+				var originalHeight = totalBounds.y2 - totalBounds.y;
+				var requestedWidth = worldPos.x - totalBounds.x;
+				var requestedHeight = worldPos.y - totalBounds.y;
+				resized.xScale = requestedWidth / originalWidth;
+				resized.yScale = requestedHeight / originalHeight;
+				resized.xOrigin = totalBounds.x;
+				resized.yOrigin = totalBounds.y;
+				resized.inkIds = _.keys(selected.inks);
+				resized.textIds = _.keys(selected.texts);
+				resized.imageIds = _.keys(selected.images);
+				resized.videoIds = _.keys(selected.videos);
+				/*
+				var s = rendererObj.getScale();
+				_.each(selected.multiWordTexts,function(word){
+					if(word.doc.save().length > 0){
+						word.doc.width(Math.max(
+							word.doc.width() * resized.xScale,
+							Modes.text.minimumWidth / s
+						));
+						word.doc.updateCanvas();
+						sendRichText(word);
+					}
+				});
+				*/
+				/*
+				registerTracker(resized.identity,function(){
+						MeTLBus.call("onSelectionChanged");
+						rendererObj.render();
+				});
+				*/
+				rendererObj.render();
+				stanzaAvailable(resized);
+				return false;
 			},
 			render:function(canvasContext){
 				if(bounds){
