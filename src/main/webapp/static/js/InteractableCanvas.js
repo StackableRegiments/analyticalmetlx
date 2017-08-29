@@ -21,6 +21,10 @@ var createInteractiveCanvas = function(boardDiv){
 	rendererObj.onDimensionsChanged(function(d,c,e){return dimensionsChanged(d,c,e);});
 	var canvasHistoryChanged = function(hist,after){
 		history = hist;
+		clearCanvasInteractables("video");
+		_.forEach(history.videos,function(video){
+			pushCanvasInteractableFunc("video",videoControlInteractable(video));
+		});
 		updateSelectionWhenBoardChanges();
 		if (after !== undefined){
 			after(hist);
@@ -646,7 +650,7 @@ var createInteractiveCanvas = function(boardDiv){
         up: function(worldPos){
             deactivateFunc();
 
-            var bw = Modes.select.handlesAtZoom();
+            var bw = handlesAtZoom();
 
             var position = (worldPos.x - video.x); // this is a 0 - video.width value to describe where the click landed.
             if (position < bw){
@@ -667,8 +671,8 @@ var createInteractiveCanvas = function(boardDiv){
         getBounds:function(){return bounds;},
         deactivate:deactivateFunc,
         render:function(canvasContext){
-            if (video.identity in boardContent.videos){
-                var h = Modes.select.handlesAtZoom();
+            if (video.identity in history.videos){
+                var h = handlesAtZoom();
                 var x = video.bounds[0];
                 var y = video.bounds[1];
                 bounds = [

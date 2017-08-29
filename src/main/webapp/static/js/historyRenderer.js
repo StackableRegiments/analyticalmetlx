@@ -758,10 +758,6 @@ var createCanvasRenderer = function(canvasElem){
 		boardContext.lineTo(tl.x,tl.y);
 		boardContext.stroke();
 	};
-	var urlEncodeSlideName = function(slideName){
-			var newSlideName = btoa(slideName);
-			return newSlideName;
-	}
 	var calculateImageSource = function(image){
 		return image.source;
 	}
@@ -849,70 +845,72 @@ var createCanvasRenderer = function(canvasElem){
 		delete image.imageData;
 	}
 	var prerenderVideo = function(video){
-			if (!("video" in video)){
-					var vid = $("<video/>",{
-							src:calculateVideoSource(video)
-					});
-					video.video = vid[0];
-					video.getState = function(){
-							return {
-									paused:vid[0].paused,
-									ended:vid[0].ended,
-									currentTime:vid[0].currentTime,
-									duration:vid[0].duration,
-									muted:vid[0].muted,
-									volume:vid[0].volume,
-									readyState:vid[0].readyState,
-									played:vid[0].played,
-									buffered:vid[0].buffered,
-									playbackRate:vid[0].playbackRate,
-									loop:vid[0].loop
-							};
-					};
-					video.seek = function(newPosition){
-							vid[0].currentTime = Math.min(vid[0].duration,Math.max(0,newPosition));
-							if (vid[0].paused){
-									video.play();
-							}
-					};
-					video.muted = function(newState){
-							if (newState != undefined){
-									vid[0].muted = newState;
-							}
-							return vid[0].muted;
-					};
-					video.play = function(){
-							var paintVideoFunc = function(){
-									if (video.video.paused || video.video.ended){
-											return false;
-									} else {
-											requestAnimationFrame(function(){
-													blit();
-													paintVideoFunc();
-											});
-											return true;
-									}
-							};
-							video.video.addEventListener("play",function(){
-									paintVideoFunc();
-							},false);
-							if (video.video.paused || video.video.ended){
-									video.video.play();
-							}
-					};
-					video.destroy = function(){
-							video.video.removeAttribute("src");
-							video.video.load();
-					};
-					video.pause = function(){
-							if (!video.video.paused){
-									video.video.pause();
-							}
-					};
-			}
-			if (!("bounds" in video)){
-					calculateVideoBounds(video);
-			}
+		if (!("video" in video)){
+			var vid = $("<video/>",{
+				preload:"auto",
+				src:calculateVideoSource(video)
+			});
+			video.video = vid[0];
+			video.getState = function(){
+				return {
+					paused:vid[0].paused,
+					ended:vid[0].ended,
+					currentTime:vid[0].currentTime,
+					duration:vid[0].duration,
+					muted:vid[0].muted,
+					volume:vid[0].volume,
+					readyState:vid[0].readyState,
+					played:vid[0].played,
+					buffered:vid[0].buffered,
+					playbackRate:vid[0].playbackRate,
+					loop:vid[0].loop
+				};
+			};
+			video.seek = function(newPosition){
+				vid[0].currentTime = Math.min(vid[0].duration,Math.max(0,newPosition));
+				if (vid[0].paused){
+					video.play();
+				}
+			};
+			video.muted = function(newState){
+				if (newState != undefined){
+					vid[0].muted = newState;
+				}
+				return vid[0].muted;
+			};
+			video.play = function(){
+				var paintVideoFunc = function(){
+					if (video.video.paused || video.video.ended){
+						return false;
+					} else {
+						requestAnimationFrame(function(){
+							blit();
+							paintVideoFunc();
+						});
+						return true;
+					}
+				};
+				video.video.addEventListener("play",function(){
+					paintVideoFunc();
+				},false);
+				if (video.video.paused || video.video.ended){
+					video.video.play();
+				}
+			};
+			video.destroy = function(){
+				video.video.removeAttribute("src");
+				video.video.load();
+			};
+			video.pause = function(){
+				if (!video.video.paused){
+					video.video.pause();
+				}
+			};
+		}
+		if (!("bounds" in video)){
+			calculateVideoBounds(video);
+		}
+		return video;
 	}
 	var prerenderText = function(text){
 			var canvas = $("<canvas />")[0];
@@ -1055,20 +1053,19 @@ var createCanvasRenderer = function(canvasElem){
 			}
 	};
 	var renderVideos = function(videos,rendered,viewBounds){
-		return;
-			if (videos){
-					//Modes.clearCanvasInteractables("videos");
-					_.each(videos,function(video,i){
-						if (preRenderItem(video,boardContext)){
-							if (intersectRect(video.bounds,viewBounds)){
-									drawVideo(video);
-									//Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-									postRenderItem(video,boardContext);
-									rendered.push(video);
-							}
-						}
-					});
-			}
+		if (videos){
+			//Modes.clearCanvasInteractables("videos");
+			_.each(videos,function(video,i){
+				if (preRenderItem(video,boardContext)){
+					if (intersectRect(video.bounds,viewBounds)){
+							drawVideo(video);
+							//Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
+							postRenderItem(video,boardContext);
+							rendered.push(video);
+					}
+				}
+			});
+		}
 	};
 
 	var renderTexts = function(texts,rendered,viewBounds){
@@ -1083,11 +1080,11 @@ var createCanvasRenderer = function(canvasElem){
 			});
 	};
 	var renderImmediateContent = function(content,rendered,viewBounds){
-			renderVideos(content.videos,rendered,viewBounds);
-			renderInks(content.highlighters,rendered,viewBounds);
-			renderTexts(content.texts,rendered,viewBounds);
-			renderRichTexts(content.multiWordTexts,rendered,viewBounds);
-			renderInks(content.inks,rendered,viewBounds);
+		renderVideos(content.videos,rendered,viewBounds);
+		renderInks(content.highlighters,rendered,viewBounds);
+		renderTexts(content.texts,rendered,viewBounds);
+		renderRichTexts(content.multiWordTexts,rendered,viewBounds);
+		renderInks(content.inks,rendered,viewBounds);
 	};
 
 	var proportion = function(width,height){
@@ -1500,8 +1497,10 @@ var createCanvasRenderer = function(canvasElem){
 		blit();
 	};
 	var receiveHistoryFunc = function(history){
-		historyReceived(history);
-		preRenderHistory(history,blit);
+		preRenderHistory(history,function(){
+			historyReceived(history);
+			blit();
+		});
 	};
 	var passException = function(e,loc,params){ };
 	var renderStarting = function(ctx,elem,history){ };
