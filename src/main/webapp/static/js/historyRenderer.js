@@ -1376,13 +1376,6 @@ var createCanvasRenderer = function(canvasElem){
 						var viewBounds = [viewboxX,viewboxY,viewboxX + viewboxWidth,viewboxY + viewboxHeight];
 						renderImages(content.images,rendered,viewBounds);
 						renderImmediateContent(content,rendered,viewBounds);
-						/*
-						renderSelectionOutlines();
-						renderSelectionGhosts();
-						renderContentIdentification(rendered);
-						renderCanvasInteractables();
-						renderTint({x:0,y:0,w:boardWidth,h:boardHeight});
-						*/
 
 						//REMOVE ME FIX ME drawViewbox
 						renderViewbox();
@@ -1644,6 +1637,11 @@ var createCanvasRenderer = function(canvasElem){
 		},
 		getDataURI:function(){
 			return canvasElem[0].toDataURL();
-		}
+		},
+		drawImage:drawImage,
+		drawInk:drawInk,
+		drawText:drawText,
+		drawMultiwordText:drawMultiwordText,
+		drawVideo:drawVideo
 	};
 };

@@ -761,6 +761,7 @@ var createInteractiveCanvas = function(boardDiv){
 				dragging = false;
 				resizing = true;
 				activated = true;
+				selectionWorldOrigin = worldPos;
 				var root = totalSelectedBounds();
 				selectionoffset = {x:root.x2,y:root.y2};
 				rehomeFunc(root);
@@ -878,9 +879,9 @@ var createInteractiveCanvas = function(boardDiv){
 				dragging = false;
 				resizing = true;
 				aspectLocked = false;
+				selectionWorldOrigin = worldPos;
 				var root = totalSelectedBounds();
 				selectionOffset = {x:root.x2,y:root.y2};
-				//really?!?
 				rendererObj.render();
 				return false;
 			},
@@ -2208,7 +2209,6 @@ var createInteractiveCanvas = function(boardDiv){
 				}
 			};
 
-	var selectMarqueeWorldOrigin = {x:0,y:0};
 	var selectMode = (function(){
 			var clearSelectionFunction = function(){
 					selected = {images:{},texts:{},inks:{},multiWordTexts:{},videos:{}};
@@ -2250,7 +2250,7 @@ var createInteractiveCanvas = function(boardDiv){
 							originPoint = {x:x,y:y};
 							marqueeOriginX = x;
 							marqueeOriginY = y;
-							selectMarqueeWorldOrigin = worldPos;
+							selectionWorldOrigin = worldPos;
 							if (!(modifiers.ctrl)){
 									var tb = totalSelectedBounds();
 									if(tb.x != Infinity){
@@ -2312,8 +2312,8 @@ var createInteractiveCanvas = function(boardDiv){
 								return stanza && null !== stanza && 'undefined' !== stanza;
 						};
 						try{
-							var xDelta = worldPos.x - selectMarqueeWorldOrigin.x;
-							var yDelta = worldPos.y - selectMarqueeWorldOrigin.y;
+							var xDelta = worldPos.x - selectionWorldOrigin.x;
+							var yDelta = worldPos.y - selectionWorldOrigin.y;
 							var dragThreshold = 15;
 							if(Math.abs(xDelta) + Math.abs(yDelta) < dragThreshold){
 									dragging = false;
@@ -2341,7 +2341,7 @@ var createInteractiveCanvas = function(boardDiv){
 									dragging = false;
 									stanzaAvailable(moved);
 							} else {
-								var selectionRect = rectFromTwoPoints(selectMarqueeWorldOrigin,worldPos,2);
+								var selectionRect = rectFromTwoPoints(selectionWorldOrigin,worldPos,2);
 								var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
 								var intersected = {
 										images:{},
@@ -3159,43 +3159,43 @@ var createInteractiveCanvas = function(boardDiv){
 			canvasContext.restore();
 	};
 	var renderSelectionGhosts = function(canvasContext){
-		return;
-			var zero = Modes.select.marqueeWorldOrigin;
-			if(Modes.select.dragging){
+			var zero = selectionWorldOrigin;
+			if(dragging){
 					canvasContext.save();
-					var s = scale();
-					var x = Modes.select.offset.x - zero.x;
-					var y = Modes.select.offset.y - zero.y;
-					var screenOffset = worldToScreen(x,y);
-					var relativeOffset = worldToScreen(0,0);
+					var s = rendererObj.getScale();
+					var x = selectionOffset.x - zero.x;
+					var y = selectionOffset.y - zero.y;
+					var screenOffset = rendererObj.worldToScreen(x,y);
+					var relativeOffset = rendererObj.worldToScreen(0,0);
 					canvasContext.translate(
 							screenOffset.x - relativeOffset.x,
 							screenOffset.y - relativeOffset.y);
 					canvasContext.globalAlpha = 0.7;
-					_.forEach(Modes.select.selected,function(category,name){
+					_.forEach(selected,function(category,name){
 							_.forEach(category,function(item){
 									switch(name){
 									case "images":
-											drawImage(item);
+											rendererObj.drawImage(item);
 											break;
 									case "videos":
-											drawVideo(item);
+											rendererObj.drawVideo(item);
 											break;
 									case "texts":
-											drawText(item);
+											rendererObj.drawText(item);
 											break;
 									case "multiWordTexts":
-											drawMultiwordText(item);
+											rendererObj.drawMultiwordText(item);
 											break;
 									case "inks":
-											drawInk(item);
+											rendererObj.drawInk(item);
 											break;
 									}
 							});
 					});
 					canvasContext.restore();
 			}
-			else if(Modes.select.resizing){
+		return;
+		/*	else*/ if(Modes.select.resizing){
 					var totalBounds = Modes.select.totalSelectedBounds();
 					var originalWidth = totalBounds.x2 - totalBounds.x;
 					var originalHeight = totalBounds.y2 - totalBounds.y;
@@ -3295,7 +3295,7 @@ var createInteractiveCanvas = function(boardDiv){
 
 	var interactableCanvasRender = function(context){
 		renderSelectionOutlines(context);
-		//renderSelectionGhosts();
+		renderSelectionGhosts(context);
 		//renderContentIdentification(rendered);
 		renderCanvasInteractables(context);
 		//renderTint({x:0,y:0,w:boardWidth,h:boardHeight});
