@@ -118,12 +118,21 @@
 			});
 			*/
 			newCanvas.onSelectionChanged(function(selected){
-				MeTLBus.call("selectionChanged",[selected]);
+				console.log("selectionChanged",selected);
+				if (_.some(selected,function(category,categoryName){ return _.size(category) > 0; })){
+					$("#deleteSelection").show();
+				} else {
+					$("#deleteSelection").hide();
+				}
 			});
 			newCanvas.onModeChanged(function(mode){
 				$(".subTools").hide();
 				$(".modeButton").removeClass("activeMode");
 				switch (mode.name){
+					case "select":
+						$("#setSelectMode").addClass("activeMode");
+						$("#selectTools").show();
+						break;
 					case "zoom":
 						$("#setZoomMode").addClass("activeMode");
 						$("#zoomTools").show();
@@ -158,6 +167,13 @@
 			});
 			$("#setDrawMode").on("click",function(){
 				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
+			});
+			$("#setSelectMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "select";}));
+			});
+			$("#deleteSelection").on("click",function(){
+				var selectMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "select"});
+				selectMode.deleteSelection();
 			});
 			$("#inkColor").on("change",function(e){
 				var value = $(this).val();
@@ -214,6 +230,13 @@
 				return true;
 			});
 			newCanvas.onPostRenderItem(function(item,ctx){
+			});
+			newCanvas.onPreSelectItem(function(item){
+//				console.log("preSelect",item);
+				return true;
+			});
+			newCanvas.onPostSelectItem(function(item){
+//				console.log("postSelect",item);
 			});
 			window.InteractiveCanvas = newCanvas;
 			newCanvas.onStanzaAvailable(function(stanza){

@@ -1440,7 +1440,7 @@ var createInteractiveCanvas = function(boardDiv){
 										}
 								});
 								var sel;
-								Modes.select.clearSelection();
+								selectMode.clearSelection();
 								if (oldEditor){
 										var deleteTransform = batchTransform();
 										deleteTransform.isDeleted = true;
@@ -1530,7 +1530,7 @@ var createInteractiveCanvas = function(boardDiv){
 								Modes.text.activate();
 								var clickTime = Date.now();
 								var sel;
-								Modes.select.clearSelection();
+								selectMode.clearSelection();
 								var newEditor = createBlankText(worldPos,[{
 										text:" ",
 										italic:carota.runs.nextInsertFormatting.italic == true,
@@ -1574,7 +1574,7 @@ var createInteractiveCanvas = function(boardDiv){
 								}
 						});
 						/*Necessary to ensure that no carets or marquees remain on the editors*/
-						Modes.select.clearSelection();
+						selectMode.clearSelection();
 						blit();
 				}
 		}
@@ -1666,7 +1666,7 @@ var createInteractiveCanvas = function(boardDiv){
 															newY - insertMargin,
 															newW + insertMargin * 2,
 															newH + insertMargin * 2);
-													Modes.select.clearSelection();
+													selectMode.clearSelection();
 													Modes.select.selected.videos[videoStanza.identity] = boardContent.videos[videoStanza.identity];
 													MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
 											});
@@ -1942,7 +1942,7 @@ var createInteractiveCanvas = function(boardDiv){
 															newY - insertMargin,
 															newW + insertMargin * 2,
 															newH + insertMargin * 2);
-													Modes.select.clearSelection();
+													selectMode.clearSelection();
 													Modes.select.selected.images[imageStanza.identity] = boardContent.images[imageStanza.identity];
 													MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
 											});
@@ -2105,52 +2105,29 @@ var createInteractiveCanvas = function(boardDiv){
 			isDeleted:false
 		}
 	}
+	var totalSelectedBounds = function(){
+		var totalBounds = {x:Infinity,y:Infinity,x2:-Infinity,y2:-Infinity};
+		var incorporate = function(item){
+				var bounds = item.bounds;
+				totalBounds.x = Math.min(totalBounds.x,bounds[0]);
+				totalBounds.y = Math.min(totalBounds.y,bounds[1]);
+				totalBounds.x2 = Math.max(totalBounds.x2,bounds[2]);
+				totalBounds.y2 = Math.max(totalBounds.y2,bounds[3]);
+		};
+		_.forEach(selected.inks,incorporate);
+		_.forEach(selected.texts,incorporate);
+		_.forEach(selected.images,incorporate);
+		_.forEach(selected.multiWordTexts,incorporate);
+		_.forEach(selected.videos,incorporate);
+		totalBounds.width = totalBounds.x2 - totalBounds.x;
+		totalBounds.height = totalBounds.y2 - totalBounds.y;
+		totalBounds.tl = rendererObj.worldToScreen(totalBounds.x,totalBounds.y);
+		totalBounds.br = rendererObj.worldToScreen(totalBounds.x2,totalBounds.y2);
+		return totalBounds;
+	};
 
+	var selectMarqueeWorldOrigin = {x:0,y:0};
 	var selectMode = (function(){
-			var isAdministeringContent = false;
-			var updateSelectionVisualState = function(sel){
-					if(sel){
-							selected = sel;
-							var shouldShowButtons = function(){
-									if ("images" in sel && _.size(sel.images) > 0){
-											return true;
-									} else if ("inks" in sel && _.size(sel.inks) > 0){
-											return true;
-									} else if ("texts" in sel && _.size(sel.texts) > 0){
-											return true;
-									} else if ("multiWordTexts" in sel && _.size(sel.multiWordTexts) > 0){
-											return true;
-									} else if ("videos" in sel && _.size(sel.videos) > 0){
-											return true;
-									} else {
-											return false;
-									}
-							}
-							if (shouldShowButtons()){
-									$("#delete").removeClass("disabledButton");
-									$("#resize").removeClass("disabledButton");
-									if (isAdministeringContent){
-											$("#ban").removeClass("disabledButton");
-											$("#delete").addClass("disabledButton");
-									} else {
-											$("#ban").addClass("disabledButton");
-											$("#delete").removeClass("disabledButton");
-									}
-							} else {
-									$("#delete").addClass("disabledButton");
-									$("#resize").addClass("disabledButton");
-									$("#ban").addClass("disabledButton");
-							}
-							if ("Conversations" in window && Conversations.shouldModifyConversation()){
-									$("#ban").show();
-							} else {
-									$("#ban").hide();
-							}
-							if (Modes.currentMode == Modes.select){
-									$("#selectionAdorner").empty();
-							}
-					}
-			};
 			var clearSelectionFunction = function(){
 					selected = {images:{},texts:{},inks:{},multiWordTexts:{},videos:{}};
 					selectionChanged(selected);
@@ -2192,8 +2169,8 @@ var createInteractiveCanvas = function(boardDiv){
 					_.forEach(selectionCategories,function(category){
 							var selCatName = category.selCatName;
 							var boardCatName = category.boardCatName;
-							if (Modes && Modes.select && Modes.select.selected && selCatName in Modes.select.selected){
-									var cat = Modes.select.selected[selCatName];
+							if (selected && selCatName in selected){
+									var cat = selected[selCatName];
 									_.forEach(cat,function(i){
 											if (category.filterFunc(i)) {
 													if (cat && boardCatName in boardContent && i && i.identity in boardContent[boardCatName]) {
@@ -2207,391 +2184,340 @@ var createInteractiveCanvas = function(boardDiv){
 							}
 					});
 					if(changed){
-							MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
+						selectionChanged(selected);
 					}
 			},100);
 
 			var deleteSelectionFunction = function(){
-				if (selected != undefined && !isAdministeringContent){
+				if (selected != undefined){
 					var deleteTransform = batchTransform();
 					deleteTransform.isDeleted = true;
-					if ("inks" in Modes.select.selected){
-							deleteTransform.inkIds = _.keys(Modes.select.selected.inks);
+					if ("inks" in selected){
+							deleteTransform.inkIds = _.keys(selected.inks);
 					}
-					if ("texts" in Modes.select.selected){
-							deleteTransform.textIds = _.keys(Modes.select.selected.texts);
+					if ("texts" in selected){
+							deleteTransform.textIds = _.keys(selected.texts);
 					}
-					if ("images" in Modes.select.selected){
-							deleteTransform.imageIds = _.keys(Modes.select.selected.images);
+					if ("images" in selected){
+							deleteTransform.imageIds = _.keys(selected.images);
 					}
-					if ("multiWordTexts" in Modes.select.selected){
-							deleteTransform.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
+					if ("multiWordTexts" in selected){
+							deleteTransform.multiWordTextIds = _.keys(selected.multiWordTexts);
 					}
-					if ("videos" in Modes.select.selected){
-							deleteTransform.videoIds = _.keys(Modes.select.selected.videos);
+					if ("videos" in selected){
+							deleteTransform.videoIds = _.keys(selected.videos);
 					}
 					stanzaAvailable(deleteTransform);
-					_.forEach(_.union(Modes.select.selected.inks,Modes.select.selected.texts,Modes.select.selected.images,Modes.select.selected.multiWordTexts,Modes.select.selected.videos),function(stanza){
-							MeTLBus.call("onCanvasContentDeleted",[stanza]);
-					});
 					clearSelectionFunction();
 				}
 			};
 			return {
-					name:"select",
-					isAdministeringContent:function(){return isAdministeringContent;},
-					selected:{
-							images:{},
-							texts:{},
-							inks:{},
-							multiWordTexts:{},
-							videos:{}
-					},
-					setSelection:function(selected){
-							selected = _.merge(Modes.select.selected,selected);
-					},
-					handlesAtZoom:function(){
-							var zoom = rendererObj.getScale();
-							return Modes.select.resizeHandleSize / zoom;
-					},
-					totalSelectedBounds:function(){
-							var totalBounds = {x:Infinity,y:Infinity,x2:-Infinity,y2:-Infinity};
-							var incorporate = function(item){
-									var bounds = item.bounds;
-									totalBounds.x = Math.min(totalBounds.x,bounds[0]);
-									totalBounds.y = Math.min(totalBounds.y,bounds[1]);
-									totalBounds.x2 = Math.max(totalBounds.x2,bounds[2]);
-									totalBounds.y2 = Math.max(totalBounds.y2,bounds[3]);
-							};
-							_.forEach(Modes.select.selected.inks,incorporate);
-							_.forEach(Modes.select.selected.texts,incorporate);
-							_.forEach(Modes.select.selected.images,incorporate);
-							_.forEach(Modes.select.selected.multiWordTexts,incorporate);
-							_.forEach(Modes.select.selected.videos,incorporate);
-							totalBounds.width = totalBounds.x2 - totalBounds.x;
-							totalBounds.height = totalBounds.y2 - totalBounds.y;
-							totalBounds.tl = rendererObj.worldToScreen(totalBounds.x,totalBounds.y);
-							totalBounds.br = rendererObj.worldToScreen(totalBounds.x2,totalBounds.y2);
-							return totalBounds;
-					},
-					offset:{x:0,y:0},
-					marqueeWorldOrigin:{x:0,y:0},
-					resizing:false,
-					dragging:false,
-					aspectLocked:false,
-					clearSelection:clearSelectionFunction,
-					deleteSelection:deleteSelectionFunction,
-					activate:function(){
-							currentMode.deactivate();
-							currentMode = selectMode;
-							var originPoint = {x:0,y:0};
-							var marqueeOriginX;
-							var marqueeOriginY;
-							var marquee = $("<div/>",{
-									id:"selectMarquee"
-							});
-							var adorner = $("#selectionAdorner");
-							$("#delete").bind("click",function(){
-							});
-							var threshold = 30;
-							//$("#Administercontent").unbind("click").bind("click",administerContentFunction);
-							//$("#ban").bind("click",banContentFunction);
-							var categories = function(func){
-									func("images");
-									func("texts");
-									func("multiWordTexts");
-									func("inks");
-									func("videos");
-							}
-							var down = function(x,y,z,worldPos,modifiers){
-									Modes.select.resizing = false;
-									Modes.select.dragging = false;
-									originPoint = {x:x,y:y};
-									marqueeOriginX = x;
-									marqueeOriginY = y;
-									Modes.select.marqueeWorldOrigin = worldPos;
-									if (!(modifiers.ctrl)){
-											var tb = Modes.select.totalSelectedBounds();
-											if(tb.x != Infinity){
-													var threshold = 3 / rendererObj.getScale();
-													var ray = [
-															worldPos.x - threshold,
-															worldPos.y - threshold,
-															worldPos.x + threshold,
-															worldPos.y + threshold
-													];
-													var isDragHandle = function(property){
-															return _.some(Modes.select.selected[property],function(el){
-																	if (el){
-																			return intersectRect(el.bounds,ray);
-																	} else {
-																			return false;
-																	}
-															});
-													}
-													Modes.select.dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
-											}
-									}
-									if(Modes.select.dragging){
-											Modes.select.offset = worldPos;
-											updateStatus("SELECT -> DRAG");
-
-									}
-									else if(Modes.select.resizing){
-											updateStatus("SELECT -> RESIZE");
-									}
-									else{
-											adorner.empty();
-											adorner.append(marquee);
-											marquee.show();
-											updateMarquee(marquee,originPoint,originPoint);
-									}
-							};
-							var move = function(x,y,z,worldPos,modifiers){
-									var currentPoint = {x:x,y:y};
-									Modes.select.offset = worldPos;
-									if(Modes.select.dragging){
-											blit();
-									}
-									else if(Modes.select.resizing){
-											blit();
-									}
-									else{
-											updateMarquee(marquee,originPoint,currentPoint);
-									}
-							};
-							var up = function(x,y,z,worldPos,modifiers){
-									WorkQueue.gracefullyResume();
-
-									function getMostRecentStanza(stanzas,prefix) {
-											var topSelectedItem = null;
-											if (_.size(stanzas) > 0) {
-													topSelectedItem = _.reverse(_.sortBy(stanzas, 'timestamp'))[0];
-											}
-											return topSelectedItem;
-									}
-									function hasValue(stanza) {
-											return stanza && null !== stanza && 'undefined' !== stanza;
-									}
-
-									try{
-											var xDelta = worldPos.x - Modes.select.marqueeWorldOrigin.x;
-											var yDelta = worldPos.y - Modes.select.marqueeWorldOrigin.y;
-											var dragThreshold = 15;
-											if(Math.abs(xDelta) + Math.abs(yDelta) < dragThreshold){
-													Modes.select.dragging = false;
-											}
-											if(Modes.select.dragging){
-													var root = Modes.select.totalSelectedBounds();
-													_.each(Modes.select.selected.multiWordTexts,function(text,id){
-															Modes.text.echoesToDisregard[id] = true;
-													});
-													Modes.text.mapSelected(function(box){
-															box.doc.position.x += xDelta;
-															box.doc.position.y += yDelta;
-															box.doc.invalidateBounds();
-													});
-													var moved = batchTransform();
-													moved.xTranslate = xDelta;
-													moved.yTranslate = yDelta;
-													moved.inkIds = _.keys(Modes.select.selected.inks);
-													moved.textIds = _.keys(Modes.select.selected.texts);
-													moved.imageIds = _.keys(Modes.select.selected.images);
-													moved.videoIds = _.keys(Modes.select.selected.videos);
-													moved.multiWordTextIds = _.keys(Modes.select.selected.multiWordTexts);
-													Modes.select.dragging = false;
-													registerTracker(moved.identity,function(){
-															MeTLBus.call("onSelectionChanged");
-															blit();
-													});
-													stanzaAvailable(moved);
-											}
-											else{
-													var selectionRect = rectFromTwoPoints(Modes.select.marqueeWorldOrigin,worldPos,2);
-													var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
-													var intersected = {
-															images:{},
-															texts:{},
-															inks:{},
-															multiWordTexts:{},
-															videos:{}
-													};
-													var intersectAuthors = {};
-													var intersections = {};
-													var intersectCategory = function(category){
-															$.each(boardContent[category],function(i,item){
-																	if (!("bounds" in item)){
-																			if ("type" in item){
-																					switch(item.type){
-																					case "text":
-																							prerenderText(item);
-																							break;
-																					case "image":
-																							prerenderImage(item);
-																							break;
-																					case "ink":
-																							prerenderInk(item);
-																							break;
-																					case "video":
-																							prerenderVideo(item);
-																							break;
-																					case "multiWordText":
-																							prerenderMultiwordText(item);
-																							break;
-																					default:
-																							item.bounds = [NaN,NaN,NaN,NaN];
-																					}
-																			}
-																	}
-																	var b = item.bounds;
-																	var selectionThreshold = 1;
-																	var overlap = overlapRect(selectionBounds,item.bounds);
-																	if(overlap >= selectionThreshold){
-																			incrementKey(intersectAuthors,item.author);
-																			incrementKey(intersections,"any");
-																			if (isAdministeringContent){
-																					if(item.author != UserSettings.getUsername()){
-																							intersected[category][item.identity] = item;
-																					}
-																			} else {
-																					if(item.author == UserSettings.getUsername()){
-																							intersected[category][item.identity] = item;
-																					}
-																			}
-																	}
-															});
-													};
-													categories(intersectCategory);
-													$.each(boardContent.highlighters,function(i,item){
-															if(intersectRect(item.bounds,selectionBounds)){
-																	incrementKey(intersectAuthors,item.author);
-																	if (isAdministeringContent){
-																			if(item.author != UserSettings.getUsername()){
-																					intersected.inks[item.identity] = item;
-																			}
-																	} else {
-																			if(item.author == UserSettings.getUsername()){
-																					intersected.inks[item.identity] = item;
-																			}
-																	}
-															}
-													});
-													/*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
-													var toggleCategory = function(category){
-															$.each(intersected[category],function(id,item){
-																	if (!(category in Modes.select.selected)){
-																			Modes.select.selected[category] = [];
-																	}
-																	if(category in Modes.select.selected && id in Modes.select.selected[category]){
-																			delete Modes.select.selected[category][id];
-																	} else {
-																			Modes.select.selected[category][id] = item;
-																	}
-															});
-													};
-													categories(toggleCategory);
-													if(!intersections.any){
-															Modes.select.clearSelection();
-													}
-/*                                var status = sprintf("-----\nPreviously selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
-																							 _.keys(Modes.select.selected.images).length,
-																							 _.keys(Modes.select.selected.texts).length,
-																							 _.keys(Modes.select.selected.multiWordTexts).length,
-																							 _.keys(Modes.select.selected.inks).length,
-																							 _.keys(Modes.select.selected.videos).length);
-													$.each(intersectAuthors,function(author,count){
-															status += sprintf("%s:%s ",author, count);
-													});
-													console.log(status);*/
-
-													// A single click generates a selectionRect of (2,2).
-													if( selectionRect.width <= 2 && selectionRect.height <= 2) {
-															// Select only the top canvasContent in order (top to bottom):
-															// ink, richtext, text, highlighter, video, image
-
-															var normalInks = _.filter(intersected.inks, function (ink) {
-																	return !ink.isHighlighter;
-															});
-															var topNormalInk = getMostRecentStanza(normalInks, "ink");
-															if (hasValue(topNormalInk)) {
-																	Modes.select.clearSelection();
-																	Modes.select.selected.inks[topNormalInk.id] = topNormalInk;
-															}
-															else {
-																	var topMultiWordText = getMostRecentStanza(intersected.multiWordTexts, "multiWordText");
-																	if (hasValue(topMultiWordText)) {
-																			Modes.select.clearSelection();
-																			Modes.select.selected.multiWordTexts[topMultiWordText.id] = topMultiWordText;
-																	}
-																	else {
-																			var topText = getMostRecentStanza(intersected.texts, "text");
-																			if (hasValue(topText)) {
-																					Modes.select.clearSelection();
-																					Modes.select.selected.texts[topText.id] = topText;
-																			}
-																			else {
-																					var highlighters = _.filter(intersected.inks, function (ink) {
-																							return ink.isHighlighter;
-																					});
-																					var topHighlighter = getMostRecentStanza(highlighters, "highlighter");
-																					if (hasValue(topHighlighter)) {
-																							Modes.select.clearSelection();
-																							Modes.select.selected.inks[topHighlighter.id] = topHighlighter;
-																					}
-																					else {
-																							var topVideo = getMostRecentStanza(intersected.videos, "video");
-																							if (hasValue(topVideo)) {
-																									Modes.select.clearSelection();
-																									Modes.select.selected.videos[topVideo.id] = topVideo;
-																							}
-																							else {
-																									var topImage = getMostRecentStanza(intersected.images, "image");
-																									if (hasValue(topImage)) {
-																											Modes.select.clearSelection();
-																											Modes.select.selected.images[topImage.id] = topImage;
-																									}
-																							}
-																					}
-																			}
-																	}
-															}
-
-/*                                    console.log(sprintf("Newly selected %s images, %s texts, %s rich texts, %s inks, %s videos ",
-																	_.keys(Modes.select.selected.images).length,
-																	_.keys(Modes.select.selected.texts).length,
-																	_.keys(Modes.select.selected.multiWordTexts).length,
-																	_.keys(Modes.select.selected.inks).length,
-																	_.keys(Modes.select.selected.videos).length));*/
-													}
-													MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
-											}
-											marquee.css(
-													{width:0,height:0}
-											).hide();
-											blit();
-									}
-									catch(e){
-											console.log("Selection up ex",e);
-									}
-							};
-							Modes.select.dragging = false;
-							updateAdministerContentVisualState();
-							Modes.select.resizing = false;
-							registerPositionHandlers(down,move,up);
-					},
-					deactivate:function(){
-							unregisterPositionHandlers();
-							clearSelectionFunction();
-							$("#delete").unbind("click");
-							$("#resize").unbind("click");
-							$("#selectionAdorner").empty();
-							$("#selectMarquee").hide();
-							updateAdministerContentVisualState();
-							blit();
-							blit();
+				name:"select",
+				setSelection:function(selected){
+						selected = _.merge(selected,selected);
+				},
+				offset:{x:0,y:0},
+				resizing:false,
+				dragging:false,
+				aspectLocked:false,
+				clearSelection:clearSelectionFunction,
+				deleteSelection:deleteSelectionFunction,
+				activate:function(){
+					currentMode.deactivate();
+					currentMode = selectMode;
+					var originPoint = {x:0,y:0};
+					var marqueeOriginX;
+					var marqueeOriginY;
+					var marquee = $("<div/>",{
+							id:"selectMarquee"
+					});
+					var adorner = $("#selectionAdorner");
+					var threshold = 30;
+					var categories = function(func){
+							func("images");
+							func("texts");
+							func("multiWordTexts");
+							func("inks");
+							func("videos");
 					}
+					var down = function(x,y,z,worldPos,modifiers){
+							resizing = false;
+							dragging = false;
+							originPoint = {x:x,y:y};
+							marqueeOriginX = x;
+							marqueeOriginY = y;
+							selectMarqueeWorldOrigin = worldPos;
+							if (!(modifiers.ctrl)){
+									var tb = totalSelectedBounds();
+									if(tb.x != Infinity){
+											var threshold = 3 / rendererObj.getScale();
+											var ray = [
+													worldPos.x - threshold,
+													worldPos.y - threshold,
+													worldPos.x + threshold,
+													worldPos.y + threshold
+											];
+											var isDragHandle = function(property){
+													return _.some(selected[property],function(el){
+															if (el){
+																	return intersectRect(el.bounds,ray);
+															} else {
+																	return false;
+															}
+													});
+											}
+											dragging = _.some(["images","texts","inks","multiWordTexts","videos"],isDragHandle);
+									}
+							}
+							if(dragging){
+									selectionOffset = worldPos;
+							}
+							else if(resizing){
+							}
+							else{
+									adorner.empty();
+									adorner.append(marquee);
+									marquee.show();
+									updateMarquee(marquee,originPoint,originPoint);
+							}
+					};
+					var move = function(x,y,z,worldPos,modifiers){
+							var currentPoint = {x:x,y:y};
+							selectionOffset = worldPos;
+							if(dragging){
+								rendererObj.render();
+							}
+							else if(resizing){
+								rendererObj.render();
+							}
+							else{
+								updateMarquee(marquee,originPoint,currentPoint);
+							}
+					};
+					var up = function(x,y,z,worldPos,modifiers){
+						WorkQueue.gracefullyResume();
+
+						var getMostRecentStanza = function(stanzas,prefix) {
+								var topSelectedItem = null;
+								if (_.size(stanzas) > 0) {
+										topSelectedItem = _.reverse(_.sortBy(stanzas, 'timestamp'))[0];
+								}
+								return topSelectedItem;
+						}
+						var hasValue = function(stanza) {
+								return stanza && null !== stanza && 'undefined' !== stanza;
+						};
+						try{
+							var xDelta = worldPos.x - selectMarqueeWorldOrigin.x;
+							var yDelta = worldPos.y - selectMarqueeWorldOrigin.y;
+							var dragThreshold = 15;
+							if(Math.abs(xDelta) + Math.abs(yDelta) < dragThreshold){
+									dragging = false;
+							}
+							if(dragging){
+									var root = totalSelectedBounds();
+									_.each(selected.multiWordTexts,function(text,id){
+											//Modes.text.echoesToDisregard[id] = true;
+									});
+									/*
+									Modes.text.mapSelected(function(box){
+											box.doc.position.x += xDelta;
+											box.doc.position.y += yDelta;
+											box.doc.invalidateBounds();
+									});
+									*/
+									var moved = batchTransform();
+									moved.xTranslate = xDelta;
+									moved.yTranslate = yDelta;
+									moved.inkIds = _.keys(selected.inks);
+									moved.textIds = _.keys(selected.texts);
+									moved.imageIds = _.keys(selected.images);
+									moved.videoIds = _.keys(selected.videos);
+									moved.multiWordTextIds = _.keys(selected.multiWordTexts);
+									dragging = false;
+									stanzaAvailable(moved);
+							} else {
+								var selectionRect = rectFromTwoPoints(selectMarqueeWorldOrigin,worldPos,2);
+								var selectionBounds = [selectionRect.left,selectionRect.top,selectionRect.right,selectionRect.bottom];
+								var intersected = {
+										images:{},
+										texts:{},
+										inks:{},
+										multiWordTexts:{},
+										videos:{}
+								};
+								var intersections = {};
+								var intersectCategory = function(category){
+										_.forEach(history[category],function(item,i){
+											/*
+												if (!("bounds" in item)){
+														if ("type" in item){
+																switch(item.type){
+																case "text":
+																		prerenderText(item);
+																		break;
+																case "image":
+																		prerenderImage(item);
+																		break;
+																case "ink":
+																		prerenderInk(item);
+																		break;
+																case "video":
+																		prerenderVideo(item);
+																		break;
+																case "multiWordText":
+																		prerenderMultiwordText(item);
+																		break;
+																default:
+																		item.bounds = [NaN,NaN,NaN,NaN];
+																}
+														}
+												}
+												*/
+												var b = item.bounds;
+												var selectionThreshold = 1;
+												var overlap = overlapRect(selectionBounds,item.bounds);
+												if(overlap >= selectionThreshold){
+													intersected[category][item.identity] = item;
+												}
+										});
+								};
+								categories(intersectCategory);
+								_.forEach(history.highlighters,function(item,i){
+									if(item !== undefined && intersectRect(item.bounds,selectionBounds)){
+										intersected.inks[item.identity] = item;
+									}
+								});
+								/*Default behaviour is now to toggle rather than clear.  Ctrl-clicking doesn't do anything different*/
+								var toggleCategory = function(category){
+									_.forEach(intersected[category],function(item,id){
+										if (!(category in selected)){
+											selected[category] = {};
+										}
+										if(category in selected && id in selected[category]){
+											delete selected[category][id];
+										} else {
+											if (item !== undefined && preSelectItem(item)){
+												selected[category][id] = item;
+												postSelectItem(item);
+											}
+										}
+									});
+								};
+								categories(toggleCategory);
+								if(_.size(intersected) == 0){
+										selectMode.clearSelection();
+								}
+
+								// A single click generates a selectionRect of (2,2).
+								if( selectionRect.width <= 2 && selectionRect.height <= 2) {
+									// Select only the top canvasContent in order (top to bottom):
+									// ink, richtext, text, highlighter, video, image
+
+									var normalInks = _.filter(intersected.inks, function (ink) {
+											return !ink.isHighlighter;
+									});
+									var topNormalInk = getMostRecentStanza(normalInks, "ink");
+									if (hasValue(topNormalInk)) {
+										selectMode.clearSelection();
+										if (preSelectItem(topNormalInk)){
+											selected.inks[topNormalInk.id] = topNormalInk;
+											postSelectItem(topNormalInk);
+										}
+									}
+									else {
+										var topMultiWordText = getMostRecentStanza(intersected.multiWordTexts, "multiWordText");
+										if (hasValue(topMultiWordText)) {
+											selectMode.clearSelection();
+											if (preSelectItem(topMultiWordText)){
+												selected.multiWordTexts[topMultiWordText.id] = topMultiWordText;
+												postSelectItem(topMultiWordText);
+											}
+										}
+										else {
+											var topText = getMostRecentStanza(intersected.texts, "text");
+											if (hasValue(topText)) {
+												selectMode.clearSelection();
+												if (preSelectItem(topText)){
+													selected.texts[topText.id] = topText;
+													postSelectItem(topText);
+												}
+											}
+											else {
+												var highlighters = _.filter(intersected.inks, function (ink) {
+														return ink.isHighlighter;
+												});
+												var topHighlighter = getMostRecentStanza(highlighters, "highlighter");
+												if (hasValue(topHighlighter)) {
+													selectMode.clearSelection();
+													if (preSelectItem(topHighlighter)){
+														selected.inks[topHighlighter.id] = topHighlighter;
+														postSelectItem(topHighlighter);
+													}
+												}
+												else {
+													var topVideo = getMostRecentStanza(intersected.videos, "video");
+													if (hasValue(topVideo)) {
+														selectMode.clearSelection();
+														if (preSelectItem(topVideo)){
+															selected.videos[topVideo.id] = topVideo;
+															postSelectItem(topVideo);
+														}
+													}
+													else {
+														var topImage = getMostRecentStanza(intersected.images, "image");
+														if (hasValue(topImage)) {
+															selectMode.clearSelection();
+															if (preSelectItem(topImage)){
+																selected.images[topImage.id] = topImage;
+																postSelectItem(topImage);
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+								selectionChanged(selected);
+							}
+							marquee.css(
+								{width:0,height:0}
+							).hide();
+							rendererObj.render();
+						}
+						catch(e){
+							errorFunc(e,"selection up",[x,y,z,worldPos,modifiers]);
+						}
+					};
+					dragging = false;
+					resizing = false;
+					registerPositionHandlers(down,move,up);
+				},
+				deactivate:function(){
+					unregisterPositionHandlers();
+					clearSelectionFunction();
+					rendererObj.render();
+				}
 			}
 	})();
+	var updateMarquee = function(marquee,pointA,pointB){
+		var rect = rectFromTwoPoints(pointA,pointB);
+		var selectionAdorner = $("#selectionAdorner");
+		if (!(jQuery.contains(selectionAdorner,marquee))){
+				selectionAdorner.append(marquee);
+		}
+		if (!(marquee.is(":visible"))){
+				marquee.show();
+		}
+		marquee.css({
+				left:px(rect.left),
+				top:px(rect.top),
+				width:px(rect.width),
+				height:px(rect.height)
+		});
+	}
+
 	var zoomMode = {
 			name:"zoom",
 			activate:function(){
@@ -2666,22 +2592,6 @@ var createInteractiveCanvas = function(boardDiv){
 						return dims;
 					}
 
-					function updateMarquee(marquee,pointA,pointB){
-						var rect = rectFromTwoPoints(pointA,pointB);
-						var selectionAdorner = $("#selectionAdorner");
-						if (!(jQuery.contains(selectionAdorner,marquee))){
-								selectionAdorner.append(marquee);
-						}
-						if (!(marquee.is(":visible"))){
-								marquee.show();
-						}
-						marquee.css({
-								left:px(rect.left),
-								top:px(rect.top),
-								width:px(rect.width),
-								height:px(rect.height)
-						});
-					}
 					var down = function(x,y,z,worldPos){
 							//adding this so that using the zoom marquee results in the autofit being turned off.
 							takeControlOfViewbox(true);
@@ -2907,7 +2817,7 @@ var createInteractiveCanvas = function(boardDiv){
 			}
 		};
 	})();
-	var availableModes = [noneMode,drawMode,eraseMode,panMode,zoomMode];
+	var availableModes = [noneMode,drawMode,eraseMode,panMode,zoomMode,selectMode];
 	var currentMode = noneMode;
 
 	var Pan = {
@@ -3299,6 +3209,18 @@ var createInteractiveCanvas = function(boardDiv){
 		onPostRenderItem:function(f){
 			//postRenderItem takes an item and a canvasContext
 			postRenderItem = f;
+		},
+		onPreSelectItem:function(f){
+			preRenderItem = f;
+		},
+		onPostSelectItem:function(f){
+			postRenderItem = f;
+		},
+		onPreDeleteItem:function(f){
+			preDeleteItem = f;
+		},
+		onPostDeleteItem:function(f){
+			postDeleteItem = f;
 		},
 		getHistory:function(){
 			return history;

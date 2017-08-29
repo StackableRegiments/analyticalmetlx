@@ -825,7 +825,6 @@ var createCanvasRenderer = function(canvasElem){
 			incorporateBoardBounds(text.bounds);
 	}
 	var prerenderImage = function(image) {
-		console.log("prerenderImage",image);
 		var canvas = $("<canvas/>")[0];
 		image.canvas = canvas;
 		canvas.width = image.width;
@@ -1322,12 +1321,9 @@ var createCanvasRenderer = function(canvasElem){
 
 	var renderImages = function(images,rendered,viewBounds){
 			_.each(images,function(image,id){
-				console.log("renderImage 1",image);
 					try{
 						if (preRenderItem(image)){
-							console.log("renderImage 2",image);
 							if(intersectRect(image.bounds,viewBounds)){
-								console.log("renderImage 3",image);
 									drawImage(image);
 									postRenderItem(image,boardContext);
 									rendered.push(image);
@@ -1420,7 +1416,6 @@ var createCanvasRenderer = function(canvasElem){
 	}
 
 	var drawImage = function(image){
-		console.log("drawImage",image);
 			try{
 					if (image.canvas != undefined){
 							var sBounds = screenBounds(image.bounds);
@@ -1601,7 +1596,6 @@ var createCanvasRenderer = function(canvasElem){
 	var preRenderHistory = function(history,afterFunc){
 		var start = new Date().getTime();
 		try {
-			console.log("prerender 0");
 			history.multiWordTexts = _.pickBy(history.multiWordTexts,isUsable);
 			history.texts = _.pickBy(history.texts,isUsable);
 			history.images = _.pickBy(history.images,isUsable);
@@ -1639,7 +1633,6 @@ var createCanvasRenderer = function(canvasElem){
 			viewboxWidth = boardContent.maxX - boardContent.minX;
 			viewboxHeight = boardContent.maxY - boardContent.minY;
 
-			console.log("prerender 2");
 			var startRender = function(){
 				if (boardContent.minX == Infinity){
 					boardContent.minX = 0;
@@ -1652,12 +1645,9 @@ var createCanvasRenderer = function(canvasElem){
 					afterFunc();
 				}
 			}
-			console.log("prerender 3");
 			if (_.size(boardContent.images) == 0){
-				console.log("no images");
 				startRender();
 			} else {
-				console.log("images");
 				var loaded = 0;
 				var limit = _.size(boardContent.images);
 				_.forEach(boardContent.images,function(image){
