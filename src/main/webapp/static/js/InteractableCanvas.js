@@ -501,6 +501,9 @@ var createInteractiveCanvas = function(boardDiv){
 			}
 	}
 
+	var interactableAttrs = {
+		opacity:0
+	};
 	var selected = {};
 	var	aspectLocked = true;
 	var dragging = false;
@@ -513,16 +516,18 @@ var createInteractiveCanvas = function(boardDiv){
 		var zoom = rendererObj.getScale();
 		return resizeHandleSize / zoom;
 	};
-	var clipToInteractableSpace = function(x,y){
+	var clipToInteractableSpace = function(worldX,worldY){
 		var s = handlesAtZoom();
+		var screen = rendererObj.worldToScreen(worldX,worldY);
 		var minX = 0;
 		var minY = 0;
 		var dims = rendererObj.getDimensions();
 		var maxX = dims.width;
 		var maxY = dims.height;
-		var newX = Math.min(minX,Math.max(x,maxX - s));
-		var newY = Math.min(minY,Math.max(y,maxY - s));
-		return {x:newX,y:newY};	
+		var newX = Math.max(minX + s,Math.min(screen.x,maxX - s));
+		var newY = Math.max(minY + s,Math.min(screen.y,maxY - s));
+		var worldPos = rendererObj.screenToWorld(newX,newY);
+		return {x:worldPos.x,y:worldPos.y};	
 		/*
 		var ceiling = rendererObj.scaleScreenToWorld(DeviceConfiguration.headerHeight)+s;
 		var floor = rendererObj.scaleScreenToWorld(DeviceConfiguration.footerHeight);
@@ -545,14 +550,15 @@ var createInteractiveCanvas = function(boardDiv){
 			rehome:function(root){
 				if(!activated){
 					var s = handlesAtZoom();
-					var x = root.x;
-					var y = clipToInteractableSpace(x,root.y).y;
+					var inPos = clipToInteractableSpace(root.x,root.y);
+					var x = inPos.x;
+					var y = inPos.y;
 					var width = root.x2 - root.x;
-					var center = root.x + s / 2;
+					var center = root.x + (s / 2);
 					bounds = [
-						center - s / 2,
+						center - (s / 2),
 						y - s,
-						center + s / 2,
+						center + (s / 2),
 						y
 					];
 				}
@@ -567,6 +573,7 @@ var createInteractiveCanvas = function(boardDiv){
 			},
 			move:function(worldPos){
 				if(activated){
+					var s = handlesAtZoom();
 					bounds = [
 						worldPos.x - s,
 						worldPos.y,
@@ -587,7 +594,7 @@ var createInteractiveCanvas = function(boardDiv){
 				moved.xTranslate = xDelta;
 				moved.yTranslate = yDelta;
 				moved.inkIds = _.keys(selected.inks);
-				moved.textIds = _.keys(elected.texts);
+				moved.textIds = _.keys(selected.texts);
 				moved.imageIds = _.keys(selected.images);
 				moved.videoIds = _.keys(selected.videos);
 				moved.multiWordTextIds = _.keys(selected.multiWordTexts);
@@ -595,16 +602,15 @@ var createInteractiveCanvas = function(boardDiv){
 					echoesToDisregard[id] = true;
 				});
 				dragging = false;
+				/*
 				text.mapSelected(function(box){
 					box.doc.position.x += xDelta;
 					box.doc.position.y += yDelta;
 					box.doc.invalidateBounds();
 				});
+				*/
 				stanzaAvailable(moved);
-				registerTracker(moved.identity,function(){
-					MeTLBus.call("onSelectionChanged");
-					rendererObj.render();
-				});
+				rendererObj.render();
 				return false;
 			},
 			render:function(canvasContext){
@@ -614,7 +620,8 @@ var createInteractiveCanvas = function(boardDiv){
 					var size = br.x - tl.x;
 					var x = tl.x;
 					var y = tl.y;
-					Context.globalAlpha = attrs.opacity;
+					console.log("rendering manualMove",bounds,tl,br,size,selected);
+					canvasContext.globalAlpha = interactableAttrs.opacity;
 					canvasContext.setLineDash([]);
 					canvasContext.strokeStyle = "black";
 					canvasContext.fillStyle = "white";
@@ -769,6 +776,7 @@ var createInteractiveCanvas = function(boardDiv){
 			},
 			move:function(worldPos){
 				if(activated){
+					var s = handlesAtZoom();
 					bounds = [
 						worldPos.x - s,
 						bounds[1],
@@ -814,9 +822,6 @@ var createInteractiveCanvas = function(boardDiv){
 						text.doc.updateCanvas();
 						rendererObj.render();
 				});
-				registerTracker(resized.identity,function(){
-						MeTLBus.call("onSelectionChanged");
-				});
 				stanzaAvailable(resized);
 				return false;
 			},
@@ -829,7 +834,7 @@ var createInteractiveCanvas = function(boardDiv){
 					var xOffset = -1 * size;
 					var yOffset = -1 * size;
 					var rot = 90;
-					canvasContext.globalAlpha = attrs.opacity;
+					canvasContext.globalAlpha = interactableAttrs.opacity;
 					canvasContext.setLineDash([]);
 					canvasContext.strokeStyle = "black";
 					canvasContext.fillStyle = "white";
@@ -882,6 +887,7 @@ var createInteractiveCanvas = function(boardDiv){
 			},
 			move:function(worldPos){
 					if(activated){
+						var s = handlesAtZoom();
 						resizeFree.bounds = [
 							worldPos.x - s,
 							worldPos.y - s,
@@ -938,7 +944,7 @@ var createInteractiveCanvas = function(boardDiv){
 					var xOffset = -1 * size;
 					var yOffset = -1 * size;
 					var rot = 90;
-					canvasContext.globalAlpha = attrs.opacity;
+					canvasContext.globalAlpha = interactableAttrs.opacity;
 					canvasContext.setLineDash([]);
 					canvasContext.strokeStyle = "black";
 					canvasContext.fillStyle = "white";
@@ -966,6 +972,7 @@ var createInteractiveCanvas = function(boardDiv){
 	pushCanvasInteractableFunc("resizeFree",resizeFree);
 	pushCanvasInteractableFunc("resizeAspectLocked",resizeAspectLocked);
 
+	/*
 	MeTLBus.subscribe("textBoundsChanged","selectionHandles",function(textId,bounds){
 		if(textId in selected.multiWordTexts){
 			var totalBounds = totalSelectedBounds();
@@ -975,19 +982,7 @@ var createInteractiveCanvas = function(boardDiv){
 			rendererObj.render();
 		}
 	});
-	MeTLBus.subscribe("onSelectionChanged","selectionHandles",function(){
-		var totalBounds = totalSelectedBounds();
-		if(totalBounds.x == Infinity){
-			attrs.opacity = 0;
-		}
-		else{
-			attrs.opacity = 1;
-			manualMove.rehome(totalBounds);
-			resizeFree.rehome(totalBounds);
-			resizeAspectLocked.rehome(totalBounds);
-			rendererObj.render();
-		}
-	});
+	*/
 
 	var getCanvasInteractables = function(){
 		return _.mapValues(canvasInteractables,function(interactables){
@@ -2126,6 +2121,7 @@ var createInteractiveCanvas = function(boardDiv){
 		totalBounds.height = totalBounds.y2 - totalBounds.y;
 		totalBounds.tl = rendererObj.worldToScreen(totalBounds.x,totalBounds.y);
 		totalBounds.br = rendererObj.worldToScreen(totalBounds.x2,totalBounds.y2);
+		console.log("total selected bounds",totalBounds,selected);
 		return totalBounds;
 	};
 
@@ -2424,7 +2420,7 @@ var createInteractiveCanvas = function(boardDiv){
 									if (hasValue(topNormalInk)) {
 										selectMode.clearSelection();
 										if (preSelectItem(topNormalInk)){
-											selected.inks[topNormalInk.id] = topNormalInk;
+											selected.inks[topNormalInk.identity] = topNormalInk;
 											postSelectItem(topNormalInk);
 										}
 									}
@@ -2433,7 +2429,7 @@ var createInteractiveCanvas = function(boardDiv){
 										if (hasValue(topMultiWordText)) {
 											selectMode.clearSelection();
 											if (preSelectItem(topMultiWordText)){
-												selected.multiWordTexts[topMultiWordText.id] = topMultiWordText;
+												selected.multiWordTexts[topMultiWordText.identity] = topMultiWordText;
 												postSelectItem(topMultiWordText);
 											}
 										}
@@ -2442,7 +2438,7 @@ var createInteractiveCanvas = function(boardDiv){
 											if (hasValue(topText)) {
 												selectMode.clearSelection();
 												if (preSelectItem(topText)){
-													selected.texts[topText.id] = topText;
+													selected.texts[topText.identity] = topText;
 													postSelectItem(topText);
 												}
 											}
@@ -2454,7 +2450,7 @@ var createInteractiveCanvas = function(boardDiv){
 												if (hasValue(topHighlighter)) {
 													selectMode.clearSelection();
 													if (preSelectItem(topHighlighter)){
-														selected.inks[topHighlighter.id] = topHighlighter;
+														selected.inks[topHighlighter.identity] = topHighlighter;
 														postSelectItem(topHighlighter);
 													}
 												}
@@ -2463,7 +2459,7 @@ var createInteractiveCanvas = function(boardDiv){
 													if (hasValue(topVideo)) {
 														selectMode.clearSelection();
 														if (preSelectItem(topVideo)){
-															selected.videos[topVideo.id] = topVideo;
+															selected.videos[topVideo.identity] = topVideo;
 															postSelectItem(topVideo);
 														}
 													}
@@ -2472,7 +2468,7 @@ var createInteractiveCanvas = function(boardDiv){
 														if (hasValue(topImage)) {
 															selectMode.clearSelection();
 															if (preSelectItem(topImage)){
-																selected.images[topImage.id] = topImage;
+																selected.images[topImage.identity] = topImage;
 																postSelectItem(topImage);
 															}
 														}
@@ -3279,17 +3275,16 @@ var createInteractiveCanvas = function(boardDiv){
 			}
 	};
 	
-var renderCanvasInteractables = function(canvasContext){
-	return;
-		_.each(Modes.canvasInteractables,function(category){
-				_.each(category,function(interactable){
-						if (interactable != undefined && "render" in interactable){
-								canvasContext.save();
-								canvasContext.lineWidth = 1;
-								interactable.render(canvasContext);
-								canvasContext.restore();
-						}
-				});
+	var renderCanvasInteractables = function(canvasContext){
+		_.each(canvasInteractables,function(category){
+			_.each(category,function(interactable){
+				if (interactable != undefined && "render" in interactable){
+					canvasContext.save();
+					canvasContext.lineWidth = 1;
+					interactable.render(canvasContext);
+					canvasContext.restore();
+				}
+			});
 		});
 	};
 
@@ -3297,7 +3292,7 @@ var renderCanvasInteractables = function(canvasContext){
 		renderSelectionOutlines(context);
 		//renderSelectionGhosts();
 		//renderContentIdentification(rendered);
-		//renderCanvasInteractables();
+		renderCanvasInteractables(context);
 		//renderTint({x:0,y:0,w:boardWidth,h:boardHeight});
 	};
 
@@ -3311,8 +3306,22 @@ var renderCanvasInteractables = function(canvasContext){
 	};
 	var postDeleteItem = function(item){
 	};
-	var selectionChanged = function(selected){
+	var selectionChangedOuter = function(selected){
 		console.log("selectionChanged",selected);
+	};
+	var selectionChanged = function(selected){
+		var totalBounds = totalSelectedBounds();
+		if(totalBounds.x == Infinity){
+			interactableAttrs.opacity = 0;
+		}
+		else{
+			interactableAttrs.opacity = 1;
+			manualMove.rehome(totalBounds);
+			resizeFree.rehome(totalBounds);
+			resizeAspectLocked.rehome(totalBounds);
+			rendererObj.render();
+		}
+		selectionChangedOuter(selected);
 	};
 	var modeChanged = function(m){
 		console.log("modeChanged",m);
@@ -3374,7 +3383,7 @@ var renderCanvasInteractables = function(canvasContext){
 			return selected;
 		},
 		onSelectionChanged:function(f){
-			selectionChanged = f;
+			selectionChangedOuter = f;
 		},
 		onModeChanged:function(f){
 			modeChanged = f;
