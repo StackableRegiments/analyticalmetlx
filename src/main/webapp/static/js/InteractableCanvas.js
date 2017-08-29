@@ -9,7 +9,10 @@ var createInteractiveCanvas = function(boardDiv){
 	var renderStarting = function(ctx,elem,history){ };
 	rendererObj.onRenderStarting(function(c,e,h){return renderStarting(c,e,h);});
 	var renderComplete = function(ctx,elem,history){ };
-	rendererObj.onRenderComplete(function(c,e,h){return renderComplete(c,e,h);});
+	rendererObj.onRenderComplete(function(c,e,h){
+		interactableCanvasRender(c);
+		return renderComplete(c,e,h);
+	});
 	var viewboxChanged = function(vb,ctx,elem){ };
 	rendererObj.onViewboxChanged(function(v,c,e){return viewboxChanged(v,c,e);});
 	var scaleChanged = function(s,ctx,elem){ };
@@ -3102,6 +3105,201 @@ var createInteractiveCanvas = function(boardDiv){
     }
 	})();
 
+	var renderSelectionOutlines = function(canvasContext){
+			var size = resizeHandleSize;
+			canvasContext.save();
+			canvasContext.lineWidth = 1;
+			var multipleItems = [];
+			_.forEach(selected,function(category){
+				_.forEach(category,function(item){
+					var bounds = item.bounds;
+					var tl = rendererObj.worldToScreen(bounds[0],bounds[1]);
+					var br = rendererObj.worldToScreen(bounds[2],bounds[3]);
+					multipleItems.push([tl,br]);
+					if(bounds){
+						canvasContext.setLineDash([5]);
+						canvasContext.strokeStyle = "blue";
+						canvasContext.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+					}
+				});
+			});
+			var tb = totalSelectedBounds();
+			if(multipleItems.length > 0){
+					canvasContext.strokeStyle = "blue";
+					canvasContext.strokeWidth = 3;
+					canvasContext.strokeRect(tb.tl.x,tb.tl.y,tb.br.x - tb.tl.x,tb.br.y - tb.tl.y);
+			}
+			canvasContext.restore();
+	};
+	var renderContentIdentification = function(canvasContext,rendered){
+		return;
+			canvasContext.save();
+			if(Modes.select.isAdministeringContent()){
+					var visibleUsers = _.groupBy(rendered,"author");
+					var pad = 3;
+					_.each(visibleUsers,function(content,user){
+							var userBounds = _.reduce(_.map(content,"bounds"),mergeBounds);
+							var tl = worldToScreen(userBounds[0],userBounds[1]);
+							canvasContext.strokeStyle = "black";
+							canvasContext.lineWidth = 0.1;
+							_.each(content,function(c){
+									canvasContext.beginPath();
+									canvasContext.moveTo(tl.x,tl.y);
+									var cB = worldToScreen(c.bounds[0],c.bounds[1]);
+									canvasContext.lineTo(cB.x,cB.y);
+									canvasContext.stroke();
+							});
+							canvasContext.fillStyle = "black";
+							canvasContext.fillRect(tl.x - pad,tl.y,canvasContext.measureText(user).width + pad * 2,14);
+							canvasContext.fillStyle = "white";
+							canvasContext.fillText(user,tl.x,tl.y+10);
+					});
+			}
+			canvasContext.restore();
+	};
+	var renderSelectionGhosts = function(canvasContext){
+		return;
+			var zero = Modes.select.marqueeWorldOrigin;
+			if(Modes.select.dragging){
+					canvasContext.save();
+					var s = scale();
+					var x = Modes.select.offset.x - zero.x;
+					var y = Modes.select.offset.y - zero.y;
+					var screenOffset = worldToScreen(x,y);
+					var relativeOffset = worldToScreen(0,0);
+					canvasContext.translate(
+							screenOffset.x - relativeOffset.x,
+							screenOffset.y - relativeOffset.y);
+					canvasContext.globalAlpha = 0.7;
+					_.forEach(Modes.select.selected,function(category,name){
+							_.forEach(category,function(item){
+									switch(name){
+									case "images":
+											drawImage(item);
+											break;
+									case "videos":
+											drawVideo(item);
+											break;
+									case "texts":
+											drawText(item);
+											break;
+									case "multiWordTexts":
+											drawMultiwordText(item);
+											break;
+									case "inks":
+											drawInk(item);
+											break;
+									}
+							});
+					});
+					canvasContext.restore();
+			}
+			else if(Modes.select.resizing){
+					var totalBounds = Modes.select.totalSelectedBounds();
+					var originalWidth = totalBounds.x2 - totalBounds.x;
+					var originalHeight = totalBounds.y2 - totalBounds.y;
+					var requestedWidth = Modes.select.offset.x - totalBounds.x;
+					var requestedHeight = Modes.select.offset.y - totalBounds.y;
+					var xScale = requestedWidth / originalWidth;
+					var yScale = requestedHeight / originalHeight;
+					var transform = function(x,y,func){
+							canvasContext.save();
+							canvasContext.globalAlpha = 0.7;
+							canvasContext.translate(x,y);
+							canvasContext.scale(xScale,yScale);
+							canvasContext.translate(-x,-y);
+							func();
+							canvasContext.restore();
+					};
+					var noop = function(){};
+					_.forEach(Modes.select.selected,function(category,name){
+							_.forEach(category,function(item){
+									var bounds = item.bounds;
+									var screenPos = worldToScreen(bounds[0],bounds[1]);
+									var x = screenPos.x;
+									var y = screenPos.y;
+									switch(name){
+									case "images":
+											transform(x,y,function(){
+													drawImage(item);
+											});
+											break;
+									case "videos":
+											transform(x,y,function(){
+													drawVideo(item);
+											});
+											break;
+									case "texts":
+											transform(x,y,function(){
+													drawText(item);
+											});
+											break;
+									case "multiWordTexts":
+											if(Modes.select.aspectLocked){
+													transform(x,y,function(){
+															drawMultiwordText(item);
+													});
+											}
+											else{
+													canvasContext.save();
+													canvasContext.translate(x,y);
+													canvasContext.globalAlpha = 0.7;
+													var s = scale();
+													canvasContext.scale(s,s);
+													var scaledText = carota.editor.create({
+															querySelector:function(){
+																	return {
+																			addEventListener:noop
+																	}
+															},
+															handleEvent:noop
+													}, canvasContext, noop, _.cloneDeep(item));
+													scaledText.position = {x:bounds[0],y:bounds[1]};
+													scaledText.load(item.doc.save());
+													delete scaledText.canvas;
+													var fullRange = scaledText.documentRange();
+													var nominatedWidth = Math.max(
+															item.doc.width() * xScale,
+															Modes.text.minimumWidth / scale()
+													);
+													scaledText.width(nominatedWidth);
+													scaledText.updateCanvas();
+													carota.editor.paint(board[0],scaledText);
+													canvasContext.restore();
+											}
+											break;
+									case "inks":
+											transform(x,y,function(){
+													drawInk(item);
+											});
+											break;
+									}
+							});
+					});
+			}
+	};
+	
+var renderCanvasInteractables = function(canvasContext){
+	return;
+		_.each(Modes.canvasInteractables,function(category){
+				_.each(category,function(interactable){
+						if (interactable != undefined && "render" in interactable){
+								canvasContext.save();
+								canvasContext.lineWidth = 1;
+								interactable.render(canvasContext);
+								canvasContext.restore();
+						}
+				});
+		});
+	};
+
+	var interactableCanvasRender = function(context){
+		renderSelectionOutlines(context);
+		//renderSelectionGhosts();
+		//renderContentIdentification(rendered);
+		//renderCanvasInteractables();
+		//renderTint({x:0,y:0,w:boardWidth,h:boardHeight});
+	};
 
 	var preSelectItem = function(item){
 		return true;
