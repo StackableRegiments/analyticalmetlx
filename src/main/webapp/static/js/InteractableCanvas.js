@@ -741,8 +741,9 @@ var createInteractiveCanvas = function(boardDiv){
 		var rehomeFunc = function(root){
 			if(!activated){
 				var s = handlesAtZoom();
-				var x = root.x2;
-				var y = clipToInteractableSpace(x,root.y).y - s;
+				var inPos = clipToInteractableSpace(root.x2,root.y);
+				var x = inPos.x;
+				var y = inPos.y;
 				bounds = [
 					x,
 					y,
@@ -810,6 +811,7 @@ var createInteractiveCanvas = function(boardDiv){
 				resized.imageIds = _.keys(selected.images);
 				resized.videoIds = _.keys(selected.videos);
 				resized.multiWordTextIds = _.keys(selected.multiWordTexts);
+				/*
 				_.each(selected.multiWordTexts,function(text,id){
 						Modes.text.echoesToDisregard[id] = true;
 						var range = text.doc.documentRange();
@@ -821,6 +823,7 @@ var createInteractiveCanvas = function(boardDiv){
 						text.doc.updateCanvas();
 						rendererObj.render();
 				});
+				*/
 				stanzaAvailable(resized);
 				return false;
 			},
@@ -855,7 +858,7 @@ var createInteractiveCanvas = function(boardDiv){
 		var bounds = undefined;
 		var activated = false;
 		var deactivateFunc = function(){
-			resizeFree.activated = false;
+			activated = false;
 			resizing = false;
 		};
 		return {
@@ -864,8 +867,11 @@ var createInteractiveCanvas = function(boardDiv){
 			rehome : function(root){
 				if(!activated){
 					var s = handlesAtZoom();
-					var x = root.x2;
-					var y = clipToInteractableSpace(x,root.y2).y;
+					var inPos = clipToInteractableSpace(root.x2,root.y2);
+					var x = inPos.x;
+					var y = inPos.y;
+					var width = root.x2 - root.x;
+					var center = root.x + (s / 2);
 					bounds = [
 						x,
 						y - s,
@@ -916,6 +922,7 @@ var createInteractiveCanvas = function(boardDiv){
 					resized.imageIds = _.keys(selected.images);
 					resized.videoIds = _.keys(selected.videos);
 					var s = rendererObj.getScale();
+					/*
 					_.each(selected.multiWordTexts,function(word){
 						if(word.doc.save().length > 0){
 							word.doc.width(Math.max(
@@ -926,11 +933,15 @@ var createInteractiveCanvas = function(boardDiv){
 							sendRichText(word);
 						}
 					});
+					*/
 					rendererObj.render();
+					/*
 					registerTracker(resized.identity,function(){
 							MeTLBus.call("onSelectionChanged");
 							rendererObj.render();
 					});
+					*/
+					rendererObj.render();
 					stanzaAvailable(resized);
 					return false;
 			},
