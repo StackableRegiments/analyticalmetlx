@@ -21,6 +21,7 @@ var createInteractiveCanvas = function(boardDiv){
 	rendererObj.onDimensionsChanged(function(d,c,e){return dimensionsChanged(d,c,e);});
 	var canvasHistoryChanged = function(hist,after){
 		history = hist;
+		updateSelectionWhenBoardChanges();
 		if (after !== undefined){
 			after(hist);
 		}
@@ -2125,67 +2126,62 @@ var createInteractiveCanvas = function(boardDiv){
 		return totalBounds;
 	};
 
-	var selectMarqueeWorldOrigin = {x:0,y:0};
-	var selectMode = (function(){
-			var clearSelectionFunction = function(){
-					selected = {images:{},texts:{},inks:{},multiWordTexts:{},videos:{}};
-					selectionChanged(selected);
-			};
-			var selectionCategories = [
-					{
-							selCatName:"inks",
-							boardCatName:"inks",
-							filterFunc:function(i){return !i.isHighlighter;}
-					},
-					{
-							selCatName:"inks",
-							boardCatName:"highlighters",
-							filterFunc:function(i){return i.isHighlighter;}
-					},
-					{
-							selCatName:"images",
-							boardCatName:"images",
-							filterFunc:function(i){return true;}
-					},
-					{
-							selCatName:"texts",
-							boardCatName:"texts",
-							filterFunc:function(i){return true;}
-					},
-					{
-							selCatName:"multiWordTexts",
-							boardCatName:"multiWordTexts",
-							filterFunc:function(i){return true;}
-					},
-					{
-							selCatName:"videos",
-							boardCatName:"videos",
-							filterFunc:function(i){return true;}
-					}
-			]; // this is necessary to fix a bug which comes up in the next bit, which results in the onSelectionChanged firing repeatedly, because inks are checked twice and highlighters don't appear in inks, and inks don't appear in highlighters.
-			var updateSelectionWhenBoardChanges = _.debounce(function(){
-					var changed = false;
-					_.forEach(selectionCategories,function(category){
-							var selCatName = category.selCatName;
-							var boardCatName = category.boardCatName;
-							if (selected && selCatName in selected){
-									var cat = selected[selCatName];
-									_.forEach(cat,function(i){
-											if (category.filterFunc(i)) {
-													if (cat && boardCatName in boardContent && i && i.identity in boardContent[boardCatName]) {
-															cat[i.identity] = boardContent[boardCatName][i.identity];
-													} else {
-															changed = true;
-															delete cat[i.identity];
-													}
-											}
-									});
+		var selectionCategories = [
+				{
+						selCatName:"inks",
+						boardCatName:"inks",
+						filterFunc:function(i){return !i.isHighlighter;}
+				},
+				{
+						selCatName:"inks",
+						boardCatName:"highlighters",
+						filterFunc:function(i){return i.isHighlighter;}
+				},
+				{
+						selCatName:"images",
+						boardCatName:"images",
+						filterFunc:function(i){return true;}
+				},
+				{
+						selCatName:"texts",
+						boardCatName:"texts",
+						filterFunc:function(i){return true;}
+				},
+				{
+						selCatName:"multiWordTexts",
+						boardCatName:"multiWordTexts",
+						filterFunc:function(i){return true;}
+				},
+				{
+						selCatName:"videos",
+						boardCatName:"videos",
+						filterFunc:function(i){return true;}
+				}
+		]; // this is necessary to fix a bug which comes up in the next bit, which results in the onSelectionChanged firing repeatedly, because inks are checked twice and highlighters don't appear in inks, and inks don't appear in highlighters.
+		var updateSelectionWhenBoardChanges = function(){
+				var changed = false;
+				_.forEach(selectionCategories,function(category){
+					var selCatName = category.selCatName;
+					var boardCatName = category.boardCatName;
+					if (selected && selCatName in selected){
+						var cat = selected[selCatName];
+						_.forEach(cat,function(i){
+							if (category.filterFunc(i)) {
+								if (cat && boardCatName in history && i && i.identity in history[boardCatName]) {
+									cat[i.identity] = history[boardCatName][i.identity];
+								} else {
+									changed = true;
+									delete cat[i.identity];
+								}
 							}
-					});
-					if(changed){
-						selectionChanged(selected);
+						});
 					}
-			},100);
+				});
+				rehomeInteractablesToSelection();
+				if(changed){
+					selectionChanged(selected);
+				}
+		};
 
 			var deleteSelectionFunction = function(){
 				if (selected != undefined){
@@ -2210,6 +2206,14 @@ var createInteractiveCanvas = function(boardDiv){
 					clearSelectionFunction();
 				}
 			};
+
+	var selectMarqueeWorldOrigin = {x:0,y:0};
+	var selectMode = (function(){
+			var clearSelectionFunction = function(){
+					selected = {images:{},texts:{},inks:{},multiWordTexts:{},videos:{}};
+					selectionChanged(selected);
+			};
+
 			return {
 				name:"select",
 				setSelection:function(selected){
@@ -3309,7 +3313,8 @@ var createInteractiveCanvas = function(boardDiv){
 	var selectionChangedOuter = function(selected){
 		console.log("selectionChanged",selected);
 	};
-	var selectionChanged = function(selected){
+
+	var rehomeInteractablesToSelection = function(){
 		var totalBounds = totalSelectedBounds();
 		if(totalBounds.x == Infinity){
 			interactableAttrs.opacity = 0;
@@ -3321,6 +3326,9 @@ var createInteractiveCanvas = function(boardDiv){
 			resizeAspectLocked.rehome(totalBounds);
 			rendererObj.render();
 		}
+	}
+	var selectionChanged = function(selected){
+		rehomeInteractablesToSelection();
 		selectionChangedOuter(selected);
 	};
 	var modeChanged = function(m){
