@@ -744,8 +744,21 @@ var createCanvasRenderer = function(canvasElem){
 					context.stroke();
 			}
 			return true;
-	}
+	};
 
+	var renderViewbox = function(){
+		boardContext.strokeStyle = "#FF0000";
+		boardContext.beginPath();
+		var tl = worldToScreen(viewboxX,viewboxY);
+		var br = worldToScreen(viewboxX + viewboxWidth, viewboxY + viewboxHeight);
+		boardContext.lineWidth = 2;
+		boardContext.moveTo(tl.x,tl.y);
+		boardContext.lineTo(br.x,tl.y);
+		boardContext.lineTo(br.x,br.y);
+		boardContext.lineTo(tl.x,br.y);
+		boardContext.lineTo(tl.x,tl.y);
+		boardContext.stroke();
+	};
 	var urlEncodeSlideName = function(slideName){
 			var newSlideName = btoa(slideName);
 			return newSlideName;
@@ -1526,6 +1539,16 @@ var createCanvasRenderer = function(canvasElem){
 			}
 	}
 
+	var adaptViewboxToCanvas = function(){
+		//this readjusts the viewbox to include the visible canvas
+		var tl = screenToWorld(0,0);
+		var br = screenToWorld(boardWidth,boardHeight);
+		viewboxX = tl.x;
+		viewboxY = tl.y;
+		viewboxWidth = br.x - tl.x;
+		viewboxHeight = br.y - tl.y;
+	};
+
 	var render = function(){
 		var renderStart = new Date().getTime();
 		try {
@@ -1543,7 +1566,8 @@ var createCanvasRenderer = function(canvasElem){
 					try{
 						visibleBounds = [];
 						var rendered = [];
-						var viewBounds = [viewboxX,viewboxY,viewboxX + viewboxWidth,viewboxY + viewboxHeight];//[boardContent.minX,boardContent.minY,boardContent.maxX,boardContent.maxY];
+						adaptViewboxToCanvas();
+						var viewBounds = [viewboxX,viewboxY,viewboxX + viewboxWidth,viewboxY + viewboxHeight];
 						renderImages(content.images,rendered,viewBounds);
 						renderImmediateContent(content,rendered,viewBounds);
 						/*
@@ -1553,6 +1577,9 @@ var createCanvasRenderer = function(canvasElem){
 						renderCanvasInteractables();
 						renderTint({x:0,y:0,w:boardWidth,h:boardHeight});
 						*/
+
+						//REMOVE ME FIX ME drawViewbox
+						renderViewbox();
 						statistic("render",new Date().getTime() - renderStart,true);
 					}
 					catch(e){
