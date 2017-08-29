@@ -819,6 +819,7 @@ var createInteractiveCanvas = function(boardDiv){
 				});
 				*/
 				stanzaAvailable(resized);
+				rendererObj.render();
 				return false;
 			},
 			render:function(canvasContext){
@@ -3159,125 +3160,124 @@ var createInteractiveCanvas = function(boardDiv){
 			canvasContext.restore();
 	};
 	var renderSelectionGhosts = function(canvasContext){
-			var zero = selectionWorldOrigin;
-			if(dragging){
-					canvasContext.save();
-					var s = rendererObj.getScale();
-					var x = selectionOffset.x - zero.x;
-					var y = selectionOffset.y - zero.y;
-					var screenOffset = rendererObj.worldToScreen(x,y);
-					var relativeOffset = rendererObj.worldToScreen(0,0);
-					canvasContext.translate(
-							screenOffset.x - relativeOffset.x,
-							screenOffset.y - relativeOffset.y);
-					canvasContext.globalAlpha = 0.7;
-					_.forEach(selected,function(category,name){
-							_.forEach(category,function(item){
-									switch(name){
-									case "images":
-											rendererObj.drawImage(item);
-											break;
-									case "videos":
-											rendererObj.drawVideo(item);
-											break;
-									case "texts":
-											rendererObj.drawText(item);
-											break;
-									case "multiWordTexts":
-											rendererObj.drawMultiwordText(item);
-											break;
-									case "inks":
-											rendererObj.drawInk(item);
-											break;
-									}
-							});
+		var zero = selectionWorldOrigin;
+		if(dragging){
+			canvasContext.save();
+			var s = rendererObj.getScale();
+			var x = selectionOffset.x - zero.x;
+			var y = selectionOffset.y - zero.y;
+			var screenOffset = rendererObj.worldToScreen(x,y);
+			var relativeOffset = rendererObj.worldToScreen(0,0);
+			canvasContext.translate(
+					screenOffset.x - relativeOffset.x,
+					screenOffset.y - relativeOffset.y);
+			canvasContext.globalAlpha = 0.7;
+			_.forEach(selected,function(category,name){
+					_.forEach(category,function(item){
+							switch(name){
+							case "images":
+									rendererObj.drawImage(item);
+									break;
+							case "videos":
+									rendererObj.drawVideo(item);
+									break;
+							case "texts":
+									rendererObj.drawText(item);
+									break;
+							case "multiWordTexts":
+									rendererObj.drawMultiwordText(item);
+									break;
+							case "inks":
+									rendererObj.drawInk(item);
+									break;
+							}
 					});
-					canvasContext.restore();
-			}
-		return;
-		/*	else*/ if(Modes.select.resizing){
-					var totalBounds = Modes.select.totalSelectedBounds();
-					var originalWidth = totalBounds.x2 - totalBounds.x;
-					var originalHeight = totalBounds.y2 - totalBounds.y;
-					var requestedWidth = Modes.select.offset.x - totalBounds.x;
-					var requestedHeight = Modes.select.offset.y - totalBounds.y;
-					var xScale = requestedWidth / originalWidth;
-					var yScale = requestedHeight / originalHeight;
-					var transform = function(x,y,func){
-							canvasContext.save();
-							canvasContext.globalAlpha = 0.7;
-							canvasContext.translate(x,y);
-							canvasContext.scale(xScale,yScale);
-							canvasContext.translate(-x,-y);
-							func();
-							canvasContext.restore();
-					};
-					var noop = function(){};
-					_.forEach(Modes.select.selected,function(category,name){
-							_.forEach(category,function(item){
-									var bounds = item.bounds;
-									var screenPos = worldToScreen(bounds[0],bounds[1]);
-									var x = screenPos.x;
-									var y = screenPos.y;
-									switch(name){
-									case "images":
-											transform(x,y,function(){
-													drawImage(item);
-											});
-											break;
-									case "videos":
-											transform(x,y,function(){
-													drawVideo(item);
-											});
-											break;
-									case "texts":
-											transform(x,y,function(){
-													drawText(item);
-											});
-											break;
-									case "multiWordTexts":
-											if(Modes.select.aspectLocked){
-													transform(x,y,function(){
-															drawMultiwordText(item);
-													});
-											}
-											else{
-													canvasContext.save();
-													canvasContext.translate(x,y);
-													canvasContext.globalAlpha = 0.7;
-													var s = scale();
-													canvasContext.scale(s,s);
-													var scaledText = carota.editor.create({
-															querySelector:function(){
-																	return {
-																			addEventListener:noop
-																	}
-															},
-															handleEvent:noop
-													}, canvasContext, noop, _.cloneDeep(item));
-													scaledText.position = {x:bounds[0],y:bounds[1]};
-													scaledText.load(item.doc.save());
-													delete scaledText.canvas;
-													var fullRange = scaledText.documentRange();
-													var nominatedWidth = Math.max(
-															item.doc.width() * xScale,
-															Modes.text.minimumWidth / scale()
-													);
-													scaledText.width(nominatedWidth);
-													scaledText.updateCanvas();
-													carota.editor.paint(board[0],scaledText);
-													canvasContext.restore();
-											}
-											break;
-									case "inks":
-											transform(x,y,function(){
-													drawInk(item);
-											});
-											break;
-									}
+			});
+			canvasContext.restore();
+		} else if(resizing){
+			var totalBounds = totalSelectedBounds();
+			var originalWidth = totalBounds.x2 - totalBounds.x;
+			var originalHeight = totalBounds.y2 - totalBounds.y;
+			var requestedWidth = selectionOffset.x - totalBounds.x;
+			var requestedHeight = selectionOffset.y - totalBounds.y;
+			var xScale = requestedWidth / originalWidth;
+			var yScale = requestedHeight / originalHeight;
+			var transform = function(x,y,func){
+				canvasContext.save();
+				canvasContext.globalAlpha = 0.7;
+				canvasContext.translate(x,y);
+				canvasContext.scale(xScale,yScale);
+				canvasContext.translate(-x,-y);
+				func();
+				canvasContext.restore();
+			};
+			var noop = function(){};
+			_.forEach(selected,function(category,name){
+				_.forEach(category,function(item){
+					var bounds = item.bounds;
+					var screenPos = rendererObj.worldToScreen(bounds[0],bounds[1]);
+					var x = screenPos.x;
+					var y = screenPos.y;
+					switch(name){
+						case "images":
+							transform(x,y,function(){
+								rendererObj.drawImage(item);
 							});
-					});
-			}
+							break;
+						case "videos":
+							transform(x,y,function(){
+								rendererObj.drawVideo(item);
+							});
+							break;
+						case "texts":
+							transform(x,y,function(){
+								rendererObj.drawText(item);
+							});
+							break;
+						case "multiWordTexts":
+							if(aspectLocked){
+								transform(x,y,function(){
+									rendererObj.drawMultiwordText(item);
+								});
+							} else {
+								canvasContext.save();
+								canvasContext.translate(x,y);
+								canvasContext.globalAlpha = 0.7;
+								var s = scale();
+								canvasContext.scale(s,s);
+								/*
+								var scaledText = carota.editor.create({
+									querySelector:function(){
+										return {
+											addEventListener:noop
+										}
+									},
+									handleEvent:noop
+								}, canvasContext, noop, _.cloneDeep(item));
+								scaledText.position = {x:bounds[0],y:bounds[1]};
+								scaledText.load(item.doc.save());
+								delete scaledText.canvas;
+								var fullRange = scaledText.documentRange();
+								var nominatedWidth = Math.max(
+										item.doc.width() * xScale,
+										Modes.text.minimumWidth / scale()
+								);
+								scaledText.width(nominatedWidth);
+								scaledText.updateCanvas();
+								carota.editor.paint(board[0],scaledText);
+								canvasContext.restore();
+								*/
+							}
+							break;
+						case "inks":
+							transform(x,y,function(){
+								rendererObj.drawInk(item);
+							});
+							break;
+					}
+				});
+			});
+		}
 	};
 	
 	var renderCanvasInteractables = function(canvasContext){
