@@ -209,7 +209,6 @@ var createInteractiveCanvas = function(boardDiv){
 
 								var previousScale = (prevXScale + prevYScale) / 2;
 								var currentScale = (xScale + yScale) / 2;
-								//console.log("scaling:",previousScale,currentScale,calculationPoints);
 								Zoom.scale(previousScale / currentScale);
 							}
 					};
@@ -621,7 +620,6 @@ var createInteractiveCanvas = function(boardDiv){
 					var size = br.x - tl.x;
 					var x = tl.x;
 					var y = tl.y;
-					console.log("rendering manualMove",bounds,tl,br,size,selected);
 					canvasContext.globalAlpha = interactableAttrs.opacity;
 					canvasContext.setLineDash([]);
 					canvasContext.strokeStyle = "black";
@@ -2122,7 +2120,6 @@ var createInteractiveCanvas = function(boardDiv){
 		totalBounds.height = totalBounds.y2 - totalBounds.y;
 		totalBounds.tl = rendererObj.worldToScreen(totalBounds.x,totalBounds.y);
 		totalBounds.br = rendererObj.worldToScreen(totalBounds.x2,totalBounds.y2);
-		console.log("total selected bounds",totalBounds,selected);
 		return totalBounds;
 	};
 
