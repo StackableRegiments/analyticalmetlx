@@ -170,6 +170,9 @@
 						$("#setEraseMode").addClass("activeMode");
 						$("#eraseTools").show();
 						break;
+					case "richText":
+						$("#setRichTextMode").addClass("activeMode");
+						$("#richTextTools").show();	
 					default:
 						break;	 
 				}
@@ -210,6 +213,9 @@
 			});
 			$("#setEraseMode").on("click",function(){
 				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "erase";}));
+			});
+			$("#setRichTextMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}));
 			});
 			$("#zoomIn").on("click",function(){
 				newCanvas.getZoomController().in();

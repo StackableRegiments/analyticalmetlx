@@ -1685,7 +1685,12 @@ var createCanvasRenderer = function(canvasElem){
 		drawInk:drawInk,
 		drawText:drawText,
 		drawMultiwordText:drawMultiwordText,
-		drawVideo:drawVideo
+		drawVideo:drawVideo,
+		prerenderInk:prerenderInk,
+		prerenderText:prerenderText,
+		prerenderImage:prerenderImage,
+		prerenderVideo:prerenderVideo,
+		prerenderMultiwordText:prerenderMultiwordText
 	};
 	return rendererObj;
 };

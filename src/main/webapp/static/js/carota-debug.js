@@ -521,7 +521,7 @@ var carotaTest = function(historyRenderer){
                         return !!(code && (code.block || code.eof));
                     };
                     var createPrototype = function(renderer,callback,minimumWidth,minimumHeight){
-											return {
+											return node.derive({
                         invalidateBounds: function(){
 													var bounds = this.frame.bounds();
 													var pos = this.position;
@@ -935,7 +935,7 @@ var carotaTest = function(historyRenderer){
                             }
                         },
                         type: 'document'
-											};
+											});
                     };
 
                     exports = module.exports = function(stanza,renderer, callback, minimumWidth,minimumHeight) {

@@ -981,7 +981,6 @@ var createInteractiveCanvas = function(boardDiv){
 						));
 						word.doc.updateCanvas();
 						stanzaAvailable(richTextEditorToStanza(word));
-						//sendRichText(word);
 					}
 				});
 				/*
@@ -1079,568 +1078,7 @@ var createInteractiveCanvas = function(boardDiv){
 	};													 
 	var currentModes = noneMode;
 	var minimumTextWidth = 240;
-	var textMode = (function(){
-		var texts = [];
-		var noop = function(){};
-		var fontFamilySelector, fontSizeSelector, fontColorSelector, fontBoldSelector, fontItalicSelector, fontUnderlineSelector, justifySelector,
-				presetFitToText,presetRunToEdge,presetNarrow,presetWiden,presetCenterOnScreen,presetFullscreen,fontOptionsToggle,fontOptions,fontLargerSelector,fontSmallerSelector;
 
-		var echoesToDisregard = {};
-		var createBlankText = function(worldPos,runs){
-				var width = Modes.text.minimumWidth / rendererObj.getScale();
-				var editor = Modes.text.editorFor({
-						bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
-						identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
-						privacy:Privacy.getCurrentPrivacy(),
-						slide:Conversations.getCurrentSlideJid(),
-						target:"presentationSpace",
-						requestedWidth:width,
-						width:width,
-						height:0,
-						x:worldPos.x,
-						y:worldPos.y,
-						type:"multiWordText",
-						author:UserSettings.getUsername(),
-						words:[]
-				});
-				editor.doc.load(runs);
-				return editor;
-		};
-		var toggleFormattingProperty = function(prop){
-				return function(){
-						var matched = false;
-						_.each(boardContent.multiWordTexts,function(t){
-								if(t.doc.isActive){
-										matched = true;
-										var selRange = t.doc.selectedRange();
-										/*General would interfere with specific during setFormatting*/
-										carota.runs.nextInsertFormatting = {};
-										selRange.setFormatting(prop, selRange.getFormatting()[prop] !== true);
-										t.doc.updateCanvas();
-										if(t.doc.save().length > 0){
-												sendRichText(t);
-										}
-								}
-						});
-						if(!matched){
-								carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-								var intention = carota.runs.nextInsertFormatting[prop] = !carota.runs.nextInsertFormatting[prop];
-								var target = $(sprintf(".font%sSelector",_.capitalize(prop)));
-								target.toggleClass("active",intention);
-						}
-						blit();
-				}
-		}
-		var setFormattingProperty = function(prop,newValue){
-				return function(){
-						var matched = false;
-						newValue = newValue || $(this).val();
-						_.each(boardContent.multiWordTexts,function(t){
-								if(t.doc.isActive){
-										matched = true;
-										/*General would interfere with specific during setFormatting*/
-										carota.runs.nextInsertFormatting = {};
-										t.doc.selectedRange().setFormatting(prop,newValue);
-										carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-										carota.runs.nextInsertFormatting[prop] = newValue;
-										t.doc.updateCanvas();
-										t.doc.claimFocus();/*Focus might have left when a control was clicked*/
-										if(t.doc.save().length > 0){
-												sendRichText(t);
-										}
-								}
-						});
-						if(!matched){
-								carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-								carota.runs.nextInsertFormatting[prop] = newValue;
-						}
-						blit();
-				}
-		};
-		var scaleEditor = function(d,factor){
-				var originalRange = d.selectedRange();
-				var refStart = 0;
-				var sizes = [];
-				var refSize = carota.runs.defaultFormatting.size;
-				d.runs(function(referenceRun) {
-						var runLength = _.size(referenceRun.text);
-						var newEnd = refStart + runLength;
-						d.select(refStart,newEnd,true);
-						var size = d.selectedRange().getFormatting().size || refSize;
-						_.each(_.range(refStart,newEnd),function(){
-								sizes.push(size);
-						});
-						refStart = newEnd;
-						refSize = size;
-				},d.range(0,originalRange.end));
-				refStart = originalRange.start;
-				d.runs(function(runToAlter){
-						var refEnd = refStart + runToAlter.text.length;
-						d.select(refStart,refEnd,true);
-						d.selectedRange().setFormatting("size",sizes[refStart] * factor);
-						refStart = refEnd;
-				},d.range(originalRange.start,originalRange.end));
-				d.select(originalRange.start,originalRange.end,true);
-				d.invalidateBounds();
-				return sizes;
-		};
-		var scaleCurrentSelection = function(factor){
-				return function(){
-						_.each(boardContent.multiWordTexts,function(t){
-								var d = t.doc;
-								if(d.isActive){
-										var sizes = scaleEditor(d,factor);
-										if(factor > 1){
-												carota.runs.defaultFormatting.newBoxSize = _.max(sizes);
-										}
-										else{
-												carota.runs.defaultFormatting.newBoxSize = _.min(sizes);
-										}
-								}
-						});
-				};
-		};
-		$(function(){
-				fontBoldSelector = $(".fontBoldSelector");
-				fontItalicSelector = $(".fontItalicSelector");
-				fontUnderlineSelector = $(".fontUnderlineSelector");
-
-				fontOptions= $("#textDropdowns");
-				fontOptionsToggle = $("#fontOptions");
-				fontFamilySelector = $("#fontFamilySelector");
-				fontSizeSelector = $("#fontSizeSelector");
-				fontColorSelector = $("#fontColorSelector");
-				fontLargerSelector = $("#fontLarger");
-				fontSmallerSelector = $("#fontSmaller");
-				justifySelector = $("#justifySelector");
-				presetFitToText = $("#presetFitToText");
-				presetRunToEdge = $("#presetRunToEdge");
-				presetNarrow = $("#presetNarrow");
-				presetWiden = $("#presetWiden");
-				presetFullscreen = $("#presetFullscreen");
-				presetCenterOnScreen = $("#presetCenterOnScreen");
-				var fontFamilyOptionTemplate = fontFamilySelector.find(".fontFamilyOption").clone();
-				var fontSizeOptionTemplate = fontSizeSelector.find(".fontSizeOption").clone();
-				var fontColorOptionTemplate = fontColorSelector.find(".fontColorOption").clone();
-				/*
-				Fonts.getAllFamilies().map(function(family){
-						fontFamilySelector.append(fontFamilyOptionTemplate.clone().attr("value",family).text(family));
-				});
-				Fonts.getAllSizes().map(function(size){
-						fontSizeSelector.append(fontSizeOptionTemplate.clone().attr("value",size).text(size));
-				});
-				Colors.getAllNamedColors().map(function(color){
-						fontColorSelector.append(fontColorOptionTemplate.clone().attr("value",color.rgb).text(color.name));
-				});
-				*/
-				fontLargerSelector.on("click",scaleCurrentSelection(1.2));
-				fontSmallerSelector.click(scaleCurrentSelection(0.8));
-				fontBoldSelector.click(toggleFormattingProperty("bold"));
-				fontItalicSelector.click(toggleFormattingProperty("italic"));
-				fontUnderlineSelector.click(toggleFormattingProperty("underline"));
-				var colorCodes = {
-						red:"#ff0000",
-						blue:"#0000ff",
-						black:"#000000",
-						yellow:"#ffff00",
-						green:"#00ff00"
-				};
-				var colors = ["red","blue","black","yellow","green"];
-				_.each(colors,function(color){
-						var subject = color;
-						$(sprintf("#%sText",color)).click(function(){
-								$("#textTools .fa-tint").removeClass("active");
-								$(this).addClass("active");
-								Modes.text.refocussing = true;
-								setFormattingProperty("color",[colorCodes[subject],255])();
-						});
-				});
-		});
-		var mapSelected = function(f){
-				var sel = Modes.select.selected.multiWordTexts;
-				_.each(boardContent.multiWordTexts,function(t){
-						if(t.identity in sel){
-								f(t);
-						}
-				});
-		};
-		var setV = function(context,selector,prop){
-				var isToggled = (context[prop] == true);
-				if(isToggled){
-						carota.runs.nextInsertFormatting[prop] = isToggled;
-				}
-				selector.toggleClass("active",isToggled);
-		};
-		var setIf = function(context,selector,prop,value){
-				var equal = _.isEqual(context[prop],value);
-				if(prop in context){
-						if(equal){
-								carota.runs.nextInsertFormatting[prop] = value;
-						}
-				}
-				selector.toggleClass("active",equal);
-		}
-		var getTextColors = function(){
-				return [
-						$("#blackText"),
-						$("#redText"),
-						$("#blueText"),
-						$("#yellowText"),
-						$("#greenText")
-				]
-		};
-		var textColors = getTextColors();
-		var updateControlState = function(context){
-				carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-				setV(context,fontBoldSelector,"bold");
-				setV(context,fontItalicSelector,"italic");
-				setV(context,fontUnderlineSelector,"underline");
-				setIf(context,textColors[0],"color",["#000000",255]);
-				setIf(context,textColors[1],"color",["#ff0000",255]);
-				setIf(context,textColors[2],"color",["#0000ff",255]);
-				setIf(context,textColors[3],"color",["#ffff00",255]);
-				setIf(context,textColors[4],"color",["#00ff00",255]);
-		}
-		return {
-				name:"text",
-				echoesToDisregard:{},
-				minimumWidth:240,
-				minimumHeight:function(){
-						return resizeHandleSize * 3;
-				},
-				default:{
-						fontSize:12,
-						bold:false,
-						underline:false,
-						italic:false,
-						color:["#000000",255]
-				},
-				invalidateSelectedBoxes:function(){
-						Modes.text.mapSelected(function(box){
-								box.doc.invalidateBounds()
-						});
-				},
-				getSelectedRanges:function(){
-						return _.map(boardContent.multiWordTexts,function(t){
-								var r = t.doc.selectedRange();
-								return {identity:t.identity,start:r.start,end:r.end,text:r.plainText()};
-						});
-				},
-				getLinesets:function(){
-						return _.map(boardContent.multiWordTexts,function(t){
-								t.doc.layout();
-								return _.map(t.doc.frame.lines,function(l){
-										return l.positionedWords.length;
-								});
-						});
-				},
-				mapSelected:mapSelected,
-				scaleEditor:scaleEditor,
-				scrollToCursor:function(editor){
-						var b = editor.bounds;
-						var caretIndex = editor.doc.selectedRange().start;
-						var cursorY = editor.doc.getCaretCoords(caretIndex);
-						var linesFromTop = Math.floor(cursorY.t / cursorY.h);
-						var linesInBox = Math.floor(rendererObj.scaleScreenToWorld(boardContext.height) / cursorY.h);
-						if(DeviceConfiguration.hasOnScreenKeyboard()){
-								var scrollOffset =  Math.min(linesFromTop,Math.max(0,linesInBox - 2)) * cursorY.h;
-								var docWidth = Math.max(
-										b[2] - b[0],
-										rendererObj.scaleWorldToScreen(10 * cursorY.h));
-								var ratio = boardWidth / boardHeight;
-								var docHeight = docWidth / ratio;
-								DeviceConfiguration.setKeyboard(true);
-								TweenController.zoomAndPanViewbox(
-										b[0],
-										b[1] - scrollOffset + cursorY.t,
-										docWidth,
-										docHeight);
-						}
-						else{
-								var boxTop = b[1];
-								var boxOffset = boxTop - viewboxY;
-								var margin = 8;
-								var freeLinesFromBoxTop = Math.floor((viewboxHeight - boxOffset) / cursorY.h) - margin;
-								var takenLinesFromBoxTop = Math.floor(cursorY.t / cursorY.h);
-								var adjustment = Math.max(0,takenLinesFromBoxTop - freeLinesFromBoxTop) * cursorY.h;
-								if(adjustment != 0){
-										TweenController.zoomAndPanViewbox(
-												viewboxX,
-												viewboxY + adjustment,
-												viewboxWidth,
-												viewboxHeight);
-								}
-						}
-				},
-				refocussing:false,
-				editorFor: function(t){
-						var editor = boardContent.multiWordTexts[t.identity];
-						if(!editor){
-								editor = boardContent.multiWordTexts[t.identity] = t;
-						}
-						if(!editor.doc){
-								var isAuthor = t.author == UserSettings.getUsername();
-								editor.doc = carota.editor.create(
-										$("<div />",{id:sprintf("t_%s",t.identity)}).appendTo($("#textInputInvisibleHost"))[0],
-										board[0],
-										t);
-								if(isAuthor){
-										var onChange = _.debounce(function(){
-												var source = boardContent.multiWordTexts[editor.identity];
-												if(source){
-														source.target = "presentationSpace";
-														source.slide = Conversations.getCurrentSlideJid();
-														source.audiences = ContentFilter.getAudiences();
-														sendRichText(source);
-														/*This is important to the zoom strategy*/
-														incorporateBoardBounds(editor.bounds);
-												}
-										},1000);
-										MeTLBus.subscribe("beforeChangingAudience",t.identity,function(){
-												onChange.flush();
-												MeTLBus.unsubscribe("beforeChangingAudience",t.identity);
-										});
-										MeTLBus.subscribe("beforeLeavingSlide",t.identity,function(){
-												onChange.flush();
-												MeTLBus.unsubscribe("beforeLeavingSlide",t.identity);
-										});
-										editor.doc.contentChanged(onChange);
-										editor.doc.contentChanged(function(){//This one isn't debounced so it scrolls as we type and stays up to date
-												Modes.text.scrollToCursor(editor);
-												blit();
-										});
-										editor.doc.selectionChanged(function(formatReport,canMoveViewport){
-												if(Modes.text.refocussing){
-														Modes.text.refocussing = false;
-												}
-												else{
-														var format = formatReport();
-														updateControlState(format,getTextColors());
-														blit();
-												}
-										});
-								}
-						}
-						editor.doc.position = {x:t.x,y:t.y};
-						editor.doc.width(t.width);
-						return editor;
-				},
-				oldEditorAt : function(x,y,z,worldPos){
-						var threshold = 10;
-						var me = UserSettings.getUsername();
-						var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-						var texts = _.values(boardContent.texts).filter(function(text){
-								var intersects = intersectRect(text.bounds,ray)
-								return intersects && (text.author == me);
-						});
-						if(texts.length > 0){
-								return texts[0];
-						}
-						else{
-								return false;
-						}
-				},
-				editorAt : function(x,y,z,worldPos){
-						var threshold = 10;
-						var me = UserSettings.getUsername();
-						var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
-						var texts = _.values(boardContent.multiWordTexts).filter(function(text){
-								var intersects = intersectRect(text.bounds,ray)
-								return intersects && (text.author == me);
-						}).filter(ContentFilter.exposes);
-						if(texts.length > 0){
-								return texts[0];
-						}
-						else{
-								return false;
-						}
-				},
-				contextFor : function(editor,worldPos){
-						var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
-						var node = editor.byCoordinate(relativePos.x,relativePos.y);
-						return {
-								node:node,
-								relativePos:relativePos
-						}
-				},
-				activate:function(){
-						var doubleClickThreshold = 500;
-						Modes.currentMode.deactivate();
-						Modes.currentMode = Modes.text;
-						var lastClick = 0;
-						var down = function(x,y,z,worldPos){
-								var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
-								if (editor){
-										editor.isActive = true;
-										editor.caretVisible = true;
-										editor.mousedownHandler(Modes.text.contextFor(editor,worldPos).node);
-								};
-						}
-						var move = function(x,y,z,worldPos){
-								var editor = Modes.text.editorAt(x,y,z,worldPos).doc;
-								if (editor){
-										editor.mousemoveHandler(Modes.text.contextFor(editor,worldPos).node);
-								}
-						};
-						var up = function(x,y,z,worldPos){
-								var clickTime = Date.now();
-								var oldEditor = Modes.text.oldEditorAt(x,y,z,worldPos);
-								var editor = Modes.text.editorAt(x,y,z,worldPos);
-								_.each(boardContent.multiWordTexts,function(t){
-										t.doc.isActive = t.doc.identity == editor.identity;
-										if((t.doc.selection.start + t.doc.selection.end) > 0 && t.doc.identity != editor.identity){
-												t.doc.select(0,0);
-												t.doc.updateCanvas();
-										}
-										if(t.doc.documentRange().plainText().trim().length == 0){
-												delete boardContent.multiWordTexts[t.identity];
-												blit();
-										}
-								});
-								var sel;
-								selectMode.clearSelection();
-								if (oldEditor){
-										var deleteTransform = batchTransform();
-										deleteTransform.isDeleted = true;
-										if ("texts" in Modes.select.selected){
-												deleteTransform.textIds = [oldEditor.identity];
-										}
-										stanzaAvailable(deleteTransform);
-
-										var newEditor = createBlankText({x:oldEditor.x,y:oldEditor.y},[{
-												text: oldEditor.text,
-												italic: oldEditor.style == "italic",
-												bold: oldEditor.weight == "bold",
-												underline: oldEditor.decoration == "underline",
-												color: oldEditor.color,
-												size: oldEditor.size
-										}]);
-										var newDoc = newEditor.doc;
-										newDoc.select(0,1);
-										boardContent.multiWordTexts[newEditor.identity] = newEditor;
-										sel = {multiWordTexts:{}};
-										sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-										Modes.select.setSelection(sel);
-										editor = newEditor;
-
-										var source = newEditor;
-										source.privacy = Privacy.getCurrentPrivacy();
-										source.target = "presentationSpace";
-										source.slide = Conversations.getCurrentSlideJid();
-										sendRichText(source);
-										/*This is important to the zoom strategy*/
-										incorporateBoardBounds(editor.bounds);
-
-										var node = newDoc.byOrdinal(0);
-										newDoc.mousedownHandler(node);
-										newDoc.mouseupHandler(node);
-
-								} else if (editor){
-										var doc = editor.doc;
-										var context = Modes.text.contextFor(doc,worldPos);
-										if(clickTime - lastClick <= doubleClickThreshold){
-												doc.dblclickHandler(context.node);
-										}
-										else{
-												doc.mouseupHandler(context.node);
-										}
-										lastClick = clickTime;
-										sel = {
-												multiWordTexts:{}
-										};
-										sel.multiWordTexts[editor.identity] = editor;
-										Modes.select.setSelection(sel);
-								} else {
-										var newEditor = createBlankText(worldPos,[{
-												text:" ",
-												italic:carota.runs.nextInsertFormatting.italic == true,
-												bold:carota.runs.nextInsertFormatting.bold == true,
-												underline:carota.runs.nextInsertFormatting.underline == true,
-												color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-												size:carota.runs.defaultFormatting.newBoxSize / rendererObj.getScale()
-										}]);
-										var newDoc = newEditor.doc;
-										newDoc.select(0,1);
-										boardContent.multiWordTexts[newEditor.identity] = newEditor;
-										sel = {multiWordTexts:{}};
-										sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-										Modes.select.setSelection(sel);
-										editor = newEditor;
-										var node = newDoc.byOrdinal(0);
-										newDoc.mousedownHandler(node);
-										newDoc.mouseupHandler(node);
-								}
-								editor.doc.invalidateBounds();
-								editor.doc.isActive = true;
-								/*
-								MeTLBus.subscribe("historyReceived","ClearMultiTextEchoes",function(){
-										Modes.text.echoesToDisregard = {};
-								});
-								MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
-								*/
-						};
-						textColors = getTextColors();
-						updateControlState(carota.runs.defaultFormatting);
-						registerPositionHandlers(down,move,up);
-				},
-				handleDrop:function(html,x,y){
-						if (html.length > 0){
-								var newRuns = carota.html.parse(html,{});
-								var worldPos = rendererObj.screenToWorld(x,y);
-								Modes.text.activate();
-								var clickTime = Date.now();
-								var sel;
-								selectMode.clearSelection();
-								var newEditor = createBlankText(worldPos,[{
-										text:" ",
-										italic:carota.runs.nextInsertFormatting.italic == true,
-										bold:carota.runs.nextInsertFormatting.bold == true,
-										underline:carota.runs.nextInsertFormatting.underline == true,
-										color:carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-										size:carota.runs.defaultFormatting.newBoxSize / rendererObj.getScale()
-								}]);
-								var newDoc = newEditor.doc;
-								newDoc.select(0,1);
-								boardContent.multiWordTexts[newEditor.identity] = newEditor;
-								sel = {multiWordTexts:{}};
-								sel.multiWordTexts[newEditor.identity] = boardContent.multiWordTexts[newEditor.identity];
-								Modes.select.setSelection(sel);
-								editor = newEditor;
-								var node = newDoc.byOrdinal(0);
-								newDoc.mousedownHandler(node);
-								newDoc.mouseupHandler(node);
-								editor.doc.invalidateBounds();
-								editor.doc.isActive = true;
-								editor.doc.load(newRuns);
-								/*
-								MeTLBus.subscribe("historyReceived","ClearMultiTextEchoes",function(){
-										Modes.text.echoesToDisregard = {};
-								});
-*/
-								Modes.text.scrollToCursor(editor);
-								var source = boardContent.multiWordTexts[editor.identity];
-								source.privacy = Privacy.getCurrentPrivacy();
-								source.target = "presentationSpace";
-								source.slide = Conversations.getCurrentSlideJid();
-								sendRichText(source);
-								MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
-						};
-				},
-				deactivate:function(){
-						DeviceConfiguration.setKeyboard(false);
-						unregisterPositionHandlers();
-						_.each(boardContent.multiWordTexts,function(t){
-								t.doc.isActive = false;
-								if(t.doc.documentRange().plainText().trim().length == 0){
-										delete boardContent.multiWordTexts[t.identity];
-								}
-						});
-						/*Necessary to ensure that no carets or marquees remain on the editors*/
-						selectMode.clearSelection();
-						blit();
-				}
-		}
-})();
 	var videoMode = (function(){
 			var noop = function(){};
 			var currentVideo = {};
@@ -2881,8 +2319,6 @@ var createInteractiveCanvas = function(boardDiv){
 			}
 		};
 	})();
-	var availableModes = [noneMode,drawMode,eraseMode,panMode,zoomMode,selectMode];
-	var currentMode = noneMode;
 
 	var Pan = {
     pan:function(xDelta,yDelta){
@@ -3427,32 +2863,179 @@ var createInteractiveCanvas = function(boardDiv){
 		}
 	};
 
-	var richText = (function(){
+	var minimumTextHeight = resizeHandleSize * 3;
+	var richTextMode = (function(){
 		var texts = [];
 		var echoesToDisregard = {};
-		var minimumWidth = 100; //guessing right now
 		var createBlankText = function(worldPos,runs){
-			var width = minimumWidth / rendererObj.getScale();
-			var editor = editorFor({
+			var width = minimumTextWidth / rendererObj.getScale();
+			var identity = sprintf("%s_%s",Date.now(),_.uniqueId());
+			var stanza = rendererObj.prerenderMultiwordText({
 				bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
-				identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
-				privacy:Privacy.getCurrentPrivacy(),
-				slide:Conversations.getCurrentSlideJid(),
-				target:"presentationSpace",
+				identity:identity,
 				requestedWidth:width,
 				width:width,
 				height:0,
 				x:worldPos.x,
 				y:worldPos.y,
 				type:"multiWordText",
-				author:UserSettings.getUsername(),
 				words:[]
 			});
+			var editor = stanza;
 			editor.doc.load(runs);
 			return editor;
-	};
+		};
+		var defaultTextAttrs = {
+			fontSize:12,
+			bold:false,
+			underline:false,
+			italic:false,
+			color:["#000000",255]
+		};
+		var editorFor = function(t){
+			if (preSelectItem(t)){
+				var editor = history.multiWordTexts[t.identity];
+				if(!editor){
+					editor = history.multiWordTexts[t.identity] = t;
+				}
+				if (!editor.doc){
+					t = prerenderMultiwordText(t);
+					editor = t.editor;
+				}
+				var onChange = function(){
+					var source = history.multiWordTexts[editor.identity];
+					if (source && source.editor && source.editor.doc){
+						var stanza = richTextEditorToStanza(source);
+						stanzaAvailable(stanza);
+					}
+				};
+				editor.doc.contentChanged(onChange);
+				editor.doc.selectionChanged(function(formatReport,canMoveViewport){
+					// not sure what I need to do with this yet.  This'll be about updating controls for what's current under the selection, I'd think.
+				});
+				editor.doc.position = {x:t.x,y:t.y};
+				editor.doc.width(t.width);
+				postSelectItem(t);
+			}
+		};
+		var editorAt = function(x,y,z,worldPos){
+			var threshold = 10;
+			var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
+			var texts = _.values(history.multiWordTexts).filter(function(text){
+				var intersects = intersectRect(text.bounds,ray)
+				return intersects && preSelectItem(text) && preRenderItem(text);
+			});
+			if(texts.length > 0){
+				return texts[0];
+			}
+			else{
+				return false;
+			}
+		};
+		var editorContextFor = function(editor,worldPos){
+			var relativePos = {x:worldPos.x - editor.position.x, y:worldPos.y - editor.position.y};
+			var node = editor.byCoordinate(relativePos.x,relativePos.y);
+			return {
+				node:node,
+				relativePos:relativePos
+			}
+		};
+		return {
+			name:"richText",
+			activate:function(){
+				var doubleClickThreshold = 500;
+				currentMode.deactivate();
+				currentMode = richTextMode;
+				modeChanged(richTextMode);
+				var lastClick = 0;
+				var down = function(x,y,z,worldPos){
+					var editor = editorAt(x,y,z,worldPos).doc;
+					if (editor){
+						editor.isActive = true;
+						editor.caretVisible = true;
+						editor.mousedownHandler(editorContextFor(editor,worldPos).node);
+					};
+				}
+				var move = function(x,y,z,worldPos){
+					var editor = editorAt(x,y,z,worldPos).doc;
+					if (editor){
+							editor.mousemoveHandler(editorContextFor(editor,worldPos).node);
+					}
+				};
+				var up = function(x,y,z,worldPos){
+					var clickTime = Date.now();
+					var oldEditor = editorAt(x,y,z,worldPos);
+					var editor = editorAt(x,y,z,worldPos);
+					_.each(history.multiWordTexts,function(t){
+						t.doc.isActive = t.doc.identity == editor.identity;
+						if((t.doc.selection.start + t.doc.selection.end) > 0 && t.doc.identity != editor.identity){
+							t.doc.select(0,0);
+							t.doc.updateCanvas();
+						}
+						if(t.doc.documentRange().plainText().trim().length == 0){
+							delete history.multiWordTexts[t.identity];
+							rendererObj.render();
+						}
+					});
+					var sel;
+					selectMode.clearSelection();
+					if (editor){
+						var doc = editor.doc;
+						var context = editorContextFor(doc,worldPos);
+						if(clickTime - lastClick <= doubleClickThreshold){
+							doc.dblclickHandler(context.node);
+						} else{
+							doc.mouseupHandler(context.node);
+						}
+						lastClick = clickTime;
+						sel = {
+							multiWordTexts:{}
+						};
+						sel.multiWordTexts[editor.identity] = editor;
+						selectMode.setSelection(sel);
+					} else {
+						var newEditor = createBlankText(worldPos,[{
+							text:" ",
+							italic:false, //carota.runs.nextInsertFormatting.italic == true,
+							bold:false, //carota.runs.nextInsertFormatting.bold == true,
+							underline:false, //carota.runs.nextInsertFormatting.underline == true,
+							color:"#FFFFFF",//carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+							size:12 / rendererObj.getScale()//carota.runs.defaultFormatting.newBoxSize / scale()
+						}]);
+						var newDoc = newEditor.doc;
+						newDoc.select(0,1);
+						history.multiWordTexts[newEditor.identity] = newEditor;
+						sel = {multiWordTexts:{}};
+						sel.multiWordTexts[newEditor.identity] = history.multiWordTexts[newEditor.identity];
+						selectMode.setSelection(sel);
+						editor = newEditor;
+						var node = newDoc.byOrdinal(0);
+						newDoc.mousedownHandler(node);
+						newDoc.mouseupHandler(node);
+					}
+					editor.doc.invalidateBounds();
+					editor.doc.isActive = true;
+				};
+				registerPositionHandlers(down,move,up);
+			},
+			deactivate:function(){
+				unregisterPositionHandlers();
+				_.each(history.multiWordTexts,function(t){
+						t.doc.isActive = false;
+						if(t.doc.documentRange().plainText().trim().length == 0){
+								delete history.multiWordTexts[t.identity];
+						}
+				});
+				/*Necessary to ensure that no carets or marquees remain on the editors*/
+				selectMode.clearSelection();
+				rendererObj.render();
+				modeChanged(noneMode);
+			}
+		};
 	})();
 
+	var availableModes = [noneMode,drawMode,eraseMode,panMode,zoomMode,selectMode,richTextMode];
+	var currentMode = noneMode;
 	return {
 		boardElem:boardDiv,
 		renderer:rendererObj,
