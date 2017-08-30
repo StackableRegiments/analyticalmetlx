@@ -523,7 +523,6 @@ var carotaTest = function(historyRenderer){
                     var createPrototype = function(renderer,callback,minimumWidth,minimumHeight){
 											return {
                         invalidateBounds: function(){
-													console.log("carota invalidate bounds",this.stanza);
 													var bounds = this.frame.bounds();
 													var pos = this.position;
 													var result = [

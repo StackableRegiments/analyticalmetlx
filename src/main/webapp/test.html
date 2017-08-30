@@ -134,7 +134,6 @@
 			});
 			*/
 			newCanvas.onSelectionChanged(function(selected){
-				console.log("selectionChanged",selected);
 				if (_.some(selected,function(category,categoryName){ return _.size(category) > 0; })){
 					$("#deleteSelection").show();
 				} else {
@@ -193,14 +192,12 @@
 			});
 			$("#inkColor").on("change",function(e){
 				var value = $(this).val();
-				console.log("changing color:",value,this,e);
 				var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
 				drawMode.setColor(value);
 				//newCanvas.setMode(drawMode);
 			});
 			$("#inkWidth").on("change",function(e){
 				var value = $(this).val();
-				console.log("changing size:",value,this,e);
 				var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
 				drawMode.setSize(value);
 				//newCanvas.setMode(drawMode);
@@ -261,7 +258,7 @@
 				stanza.target = "presentationSpace";
 				stanza.slide = "thisSlide";
 				stanza.timestamp = new Date().getTime();
-				console.log("test.html stanza:",stanza);
+				//console.log("test.html stanza:",stanza);
 				stanzas.push(stanza);
 				newCanvas.addStanza(stanza);
 			});
@@ -269,7 +266,6 @@
 				var gutter = 10;
 				var header = $("#metlHeaderContainer");
 				var headerHeight = header.height();
-				console.log("header",header,headerHeight);
 				return {
 					width:dims.width - gutter,
 					height:dims.height - headerHeight - gutter
@@ -282,7 +278,6 @@
 			MeTLBus.subscribe("layoutUpdated","test",function(dims){
 					var reduced = reduceCanvas(dims);
 				newCanvas.setDimensions(reduced);
-				console.log("layoutUpdated",dims,reduced,newCanvas.renderer.getDimensions(),newCanvas.renderer.getViewbox());
 			});
 		});
 		var popAudit = function(){
