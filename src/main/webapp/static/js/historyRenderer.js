@@ -81,8 +81,6 @@ var createCanvasRenderer = function(canvasElem){
     viewboxY = 0,
     viewboxWidth = 80,//why wouldnt this be device size
     viewboxHeight = 60,
-    contentOffsetX = 0,
-    contentOffsetY = 0,
     boardWidth = 0,
     boardHeight = 0;
 
@@ -763,15 +761,13 @@ var createCanvasRenderer = function(canvasElem){
 	};
 	var renderCanvasEdges = function(){
 		boardContext.strokeStyle = "#0000FF";
-		var tl = worldToScreen(0,0);
-		var br = worldToScreen(boardWidth,boardHeight);
 		boardContext.beginPath();
 		boardContext.lineWidth = 2;
-		boardContext.moveTo(tl.x,tl.y);
-		boardContext.lineTo(br.x,tl.y);
-		boardContext.lineTo(br.x,br.y);
-		boardContext.lineTo(tl.x,br.y);
-		boardContext.lineTo(tl.x,tl.y);
+		boardContext.moveTo(0,0);
+		boardContext.lineTo(0,boardWidth);
+		boardContext.lineTo(boardHeight,boardWidth);
+		boardContext.lineTo(boardHeight,0);
+		boardContext.lineTo(0,0);
 		boardContext.stroke();
 	};
 	var calculateImageSource = function(image){
@@ -1138,7 +1134,7 @@ var createCanvasRenderer = function(canvasElem){
 			return (width / height) / (targetWidth / targetHeight);
 	}
 	var scaleScreenToWorld = function(i){
-			var p = proportion(boardWidth,boardHeight);
+			var p = proportion(viewboxWidth,viewboxHeight);//boardWidth,boardHeight);
 			var scale;
 			if(p > 1){//Viewbox wider than board
 					scale = viewboxWidth / boardWidth;
@@ -1149,7 +1145,7 @@ var createCanvasRenderer = function(canvasElem){
 			return i * scale;
 	}
 	var scaleWorldToScreen = function(i){
-			var p = proportion(boardWidth,boardHeight);
+			var p = proportion(viewboxWidth,viewboxHeight);//boardWidth,boardHeight);
 			var scale;
 			if(p > 1){//Viewbox wider than board
 					scale = viewboxWidth / boardWidth;
@@ -1390,11 +1386,12 @@ var createCanvasRenderer = function(canvasElem){
 		//this readjusts the viewbox to include the visible canvas
 		var tl = screenToWorld(0,0);
 		var br = screenToWorld(boardWidth,boardHeight);
-
+/*
 		viewboxX = tl.x;
 		viewboxY = tl.y;
 		viewboxWidth = br.x - tl.x;
 		viewboxHeight = br.y - tl.y;
+*/
 	};
 
 	var render = function(){
@@ -1420,8 +1417,8 @@ var createCanvasRenderer = function(canvasElem){
 						renderImmediateContent(content,rendered,viewBounds);
 
 						//REMOVE ME FIX ME drawViewbox
+						//renderCanvasEdges();
 						renderViewbox();
-						renderCanvasEdges();
 						statistic("render",new Date().getTime() - renderStart,true);
 					}
 					catch(e){
@@ -1476,10 +1473,6 @@ var createCanvasRenderer = function(canvasElem){
 			});
 			boardContent.width = boardContent.maxX - boardContent.minX;
 			boardContent.height = boardContent.maxY - boardContent.minY;
-
-			viewboxWidth = boardContent.maxX - boardContent.minX;
-			viewboxHeight = boardContent.maxY - boardContent.minY;
-
 			var startRender = function(){
 				if (boardContent.minX == Infinity){
 					boardContent.minX = 0;
@@ -1487,6 +1480,7 @@ var createCanvasRenderer = function(canvasElem){
 				if (boardContent.minY == Infinity){
 					boardContent.minY = 0;
 				} 
+				rendererObj.setViewbox(boardContent.minX,boardContent.minY,boardContent.maxX - boardContent.minX,boardContent.maxY - boardContent.minY);
 				statistic("preRenderHistory",new Date().getTime() - start,true);
 				if (afterFunc !== undefined){
 					afterFunc();

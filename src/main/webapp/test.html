@@ -122,7 +122,7 @@
 		mockHistory.multiWordTexts[mockMultiWordText.identity] = mockMultiWordText;
 		var stanzas = [mockText,mockInk,mockImage,mockVideo];
 		$(function(){
-			var newCanvas = createInteractiveCanvas($("#board"));
+			var newCanvas = createInteractiveCanvas($("#testBoard"));
 			/*
 			newCanvas.setImageSourceCalculationFunction(function(image){
 				var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
@@ -266,16 +266,23 @@
 				newCanvas.addStanza(stanza);
 			});
 			var reduceCanvas = function(dims){
-				dims.width - 20;
-				dims.height - 120;
-				return dims;
+				var gutter = 10;
+				var header = $("#metlHeaderContainer");
+				var headerHeight = header.height();
+				console.log("header",header,headerHeight);
+				return {
+					width:dims.width - gutter,
+					height:dims.height - headerHeight - gutter
+				};
 			};
 			newCanvas.setHistory(mockHistory);
 			newCanvas.setDimensions(reduceCanvas(DeviceConfiguration.getMeasurements()));
 			MeTLBus.subscribe("beforeWorkQueueResume","test",function(){});
 			MeTLBus.subscribe("afterWorkQueuePause","test",function(){});
 			MeTLBus.subscribe("layoutUpdated","test",function(dims){
-				newCanvas.setDimensions(reduceCanvas(dims));
+					var reduced = reduceCanvas(dims);
+				newCanvas.setDimensions(reduced);
+				console.log("layoutUpdated",dims,reduced,newCanvas.renderer.getDimensions(),newCanvas.renderer.getViewbox());
 			});
 		});
 		var popAudit = function(){
