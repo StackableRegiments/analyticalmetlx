@@ -345,28 +345,36 @@ object Importer extends Logger {
   def onUpdate(id:ImportDescription):Unit = {
     com.metl.comet.MeTLConversationSearchActorManager ! id
   }
-  val config = ServerConfiguration.default
-  val exportSerializer = new ExportXmlSerializer(config)
-  def importExportedConversation(xml:NodeSeq):Box[Conversation] = {
+  protected val config: ServerConfiguration = ServerConfiguration.default
+  protected val exportSerializer = new ExportXmlSerializer(config)
+  def importExportedConversation(xml:NodeSeq,tag:Box[String],rewrittenUsername:Option[String] = Empty):Box[Conversation] = {
     for (
       historyMap <- (xml \ "histories").headOption.map(hNodes => Map((hNodes \ "history").map(h => {
         val hist = exportSerializer.toHistory(h)
         (hist.jid,hist)
       }):_*));
-      conversation <- (xml \ "conversation").headOption.map(c => exportSerializer.toConversation(c));
-      remoteConv = importExportedConversation(Globals.currentUser.is,conversation,historyMap)
+      conversation <- (xml \ "conversation").headOption.map(c => {
+        trace("Importing exported conversation %s %s: \n%s".format(xml \\ "jid", xml \\ "created", c))
+        exportSerializer.toConversation(c)
+      });
+      remoteConv = importExportedConversation(rewrittenUsername,tag,conversation,historyMap)
     ) yield {
       remoteConv
     }
   }
-  protected def importExportedConversation(onBehalfOfUser:String,oldConv:Conversation,histories:Map[String,History]):Conversation = {
-    val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
+  protected def importExportedConversation(rewrittenUsername:Option[String],tag:Box[String],oldConv:Conversation,histories:Map[String,History]):Conversation = {
+    val newAuthor = rewrittenUsername.getOrElse(oldConv.author)
+    val now = new java.util.Date()
+    val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(now),newAuthor)
     val newConvWithOldSlides = newConv.copy(
-      lastAccessed = new java.util.Date().getTime,
+      created = oldConv.created,
+      lastAccessed = oldConv.lastAccessed,
+      tag = tag.openOr("Imported by %s @ %s".format(Globals.currentUser.is,now)),
       slides = oldConv.slides.map(s => s.copy(
         groupSet = Nil,
         id = s.id - oldConv.jid + newConv.jid,
-        audiences = Nil
+        audiences = Nil,
+        author = newAuthor
       ))
     )
     val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
@@ -375,22 +383,30 @@ object Importer extends Logger {
       val offset = remoteConv.jid - oldConv.jid
       val serverName = remoteConv.server.name
       val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
-        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,oldAuthor))
+        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,newAuthor))
         case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset))
         case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString))
         case _ => None
       }
       newRoom.foreach(nr => {
+        // swap this back in when the stanzas support adjustAuthor as a method
+        val newHistory = h._2/*rewrittenUsername.map(newUser => {
+          val nh = new History(h._2.jid,h._2.xScale,h._2.yScale,h._2.xOffset,h._2.yOffset)
+          h._2.getAll.foreach(stanza => nh.addStanza(stanza.adjustAuthor(newUser))
+          nh
+        }).getOrElse(h._2)
+        */
         ServerSideBackgroundWorker ! CopyContent(
           remoteConv.server,
-          h._2,
+          newHistory,
           nr
         )
       })
     })
+    trace("Imported exported conversation: " + remoteConv.jid + ", " + remoteConv.title)
     remoteConv
   }
-  def importConversation(title:String,filename:String,bytes:Array[Byte],author:String):Box[Conversation] = {
+  def importConversationAsAuthor(title:String, filename:String, bytes:Array[Byte], author:String):Box[Conversation] = {
     val importId = nextFuncName
     onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("ready to create conversation",1,2)),None))
     try {
@@ -516,21 +532,25 @@ class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with L
     case RoomLeaveAcknowledged(server,room) => {}
     case CopyContent(config,oldContent,newLoc) => {
       val room = MeTLXConfiguration.getRoom(newLoc.getJid,config.name,newLoc)
+      val slideId = newLoc match {
+        case p:PrivateSlideRoom => p.slideId.toString
+        case _ => newLoc.getJid
+      }
       room ! JoinRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
       oldContent.getAll.sortWith((a,b) => a.timestamp < b.timestamp).foreach(stanza => {
         room ! ArchiveToServerMeTLStanza(stanza match {
-          case m:MeTLInk => m.copy(slide = newLoc.getJid)
-          case m:MeTLImage => m.copy(slide = newLoc.getJid)
-          case m:MeTLText => m.copy(slide = newLoc.getJid)
-          case m:MeTLVideo => m.copy(slide = newLoc.getJid)
-          case m:MeTLMultiWordText => m.copy(slide = newLoc.getJid)
-          case m:MeTLMoveDelta => m.copy(slide = newLoc.getJid)
-          case m:MeTLDirtyInk => m.copy(slide = newLoc.getJid)
-          case m:MeTLDirtyText => m.copy(slide = newLoc.getJid)
-          case m:MeTLDirtyVideo => m.copy(slide = newLoc.getJid)
-          case m:MeTLUndeletedCanvasContent => m.copy(slide = newLoc.getJid)
-          case m:MeTLSubmission => tryo(newLoc.getJid.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
-          case m:MeTLUnhandledCanvasContent => m.copy(slide = newLoc.getJid)
+          case m:MeTLInk => m.copy(slide = slideId)
+          case m:MeTLImage => m.copy(slide = slideId)
+          case m:MeTLText => m.copy(slide = slideId)
+          case m:MeTLVideo => m.copy(slide = slideId)
+          case m:MeTLMultiWordText => m.copy(slide = slideId)
+          case m:MeTLMoveDelta => m.copy(slide = slideId)
+          case m:MeTLDirtyInk => m.copy(slide = slideId)
+          case m:MeTLDirtyText => m.copy(slide = slideId)
+          case m:MeTLDirtyVideo => m.copy(slide = slideId)
+          case m:MeTLUndeletedCanvasContent => m.copy(slide = slideId)
+          case m:MeTLSubmission => tryo(slideId.toInt).map(ns => m.copy(slideJid = ns)).getOrElse(m)
+          case m:MeTLUnhandledCanvasContent => m.copy(slide = slideId)
           case m:MeTLQuiz => m
           case s:MeTLStanza => s
         })
@@ -670,13 +690,15 @@ class ExportXmlSerializer(config:ServerConfiguration) extends GenericXmlSerializ
     val c = parseCanvasContent(input)
     val title = getStringByName(input,"title")
     val imageBytes = Full(base64Decode(getStringByName(input,"imageBytes"))).map(ib => downscaleImage(ib,"submission: %s".format(c.identity)))
-    val url = imageBytes.map(ib => config.postResource(c.slide.toString,nextFuncName,ib)).getOrElse("unknown")
+    val urlBox = imageBytes.map(ib => config.postResource(c.slide.toString,nextFuncName,ib))
+    val newId = urlBox.getOrElse(c.identity)
+    val url = urlBox.getOrElse("unknown")
     val blacklist = getXmlByName(input,"blacklist").map(bl => {
       val username = getStringByName(bl,"username")
       val highlight = getColorByName(bl,"highlight")
       SubmissionBlacklistedPerson(username,highlight)
     }).toList
-    MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,c.identity,m.audiences)
+    MeTLSubmission(config,m.author,m.timestamp,title,c.slide.toInt,url,imageBytes,blacklist,c.target,c.privacy,newId,m.audiences)
   })
   override def fromSubmission(input:MeTLSubmission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSubmission", {
     canvasContentToXml("screenshotSubmission",input,List(

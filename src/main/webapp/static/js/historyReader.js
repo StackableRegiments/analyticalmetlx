@@ -688,7 +688,7 @@ var renderCanvasInteractables = function(canvasContext){
         });
     });
 };
-var renderTexts = function(texts,rendered,viewBounds){
+var renderTexts = function(texts,canvasContext,rendered,viewBounds){
     $.each(texts,function(i,text){
         if(intersectRect(text.bounds,viewBounds)){
             drawText(text,canvasContext);
@@ -699,7 +699,7 @@ var renderTexts = function(texts,rendered,viewBounds){
 var renderImmediateContent = function(canvasContext,content,rendered,viewBounds){
     renderVideos(content.videos,canvasContext,rendered,viewBounds);
     renderInks(content.highlighters,canvasContext,rendered,viewBounds);
-    renderTexts(content.texts,rendered,viewBounds);
+    renderTexts(content.texts,canvasContext,rendered,viewBounds);
     renderRichTexts(content.multiWordTexts,canvasContext,rendered,viewBounds);
     renderInks(content.inks,canvasContext,rendered,viewBounds);
     Progress.call("postRender");

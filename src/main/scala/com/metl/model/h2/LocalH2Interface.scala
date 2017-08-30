@@ -10,8 +10,10 @@ import net.liftweb.mapper._
 import net.liftweb.common._
 
 import scala.compat.Platform.EOL
-import _root_.net.liftweb.mapper.{ConnectionManager, DB, DefaultConnectionIdentifier, Schemifier, StandardDBVendor}
+import _root_.net.liftweb.mapper.{DB => _, DefaultConnectionIdentifier => _, Schemifier => _, StandardDBVendor => _, _}
 import _root_.java.sql.{Connection, DriverManager}
+import java.time.format.DateTimeFormatter
+import java.time._
 
 import com.metl.model.Globals
 import com.metl.model.Globals._
@@ -184,6 +186,31 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       })
       versionNumber.intValue(7).save
       info("upgraded db to set all slides to exposed, because they were previously defaulting to false and we didn't mean that.")
+      versionNumber
+    }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
+    DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 8).map(versionNumber => {
+      info("upgrading db to set all future conversation-created dates to 1/7/2016, because they were created by erroneous C# clients and are being reset to the data origin date.")
+      val defaultZoneId = ZoneId.of("America/New_York")
+      // Origin date is 1 July 2016
+      val zonedDateTime = ZonedDateTime.of(LocalDate.of(2016,7,1),LocalTime.of(0,0),defaultZoneId)
+      val originDateString = zonedDateTime.format(DateTimeFormatter.ofPattern("EEE MMM dd kk:mm:ss z yyyy"))
+      val originDateLong = Instant.from(zonedDateTime).toEpochMilli
+      val nowPlusADay = Instant.from(ZonedDateTime.now(defaultZoneId).plusDays(1)).toEpochMilli
+      val futureConversationCreateds = H2Conversation.findAll.filter(_.creation > nowPlusADay)
+      trace("found %s future conversation createds".format(futureConversationCreateds.length))
+      futureConversationCreateds.foreach(h2Conv => {
+        trace("updating %s created to %s".format(h2Conv.jid,originDateString))
+        h2Conv.created(originDateString).save
+        h2Conv.creation(originDateLong).save
+      })
+      val futureConversationLastAccesseds = H2Conversation.findAll.filter(_.lastAccessed > nowPlusADay)
+      trace("found %s future conversation last accesseds".format(futureConversationLastAccesseds.length))
+      futureConversationLastAccesseds.foreach(h2Conv => {
+        trace("updating %s last accessed to %s".format(h2Conv.jid,originDateString))
+        h2Conv.lastAccessed(originDateLong).save
+      })
+      versionNumber.intValue(8).save
+      info("upgraded db to set all future conversation-created dates to 1/7/2016, because they were created by erroneous C# clients and are being reset to the data origin date.")
       versionNumber
     }).foreach(versionNumber => info("using dbSchema version: %s".format(versionNumber.intValue.get)))
     true
