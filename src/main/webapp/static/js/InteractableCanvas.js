@@ -2922,11 +2922,13 @@ var createInteractiveCanvas = function(boardDiv){
 					};
 					editor.doc.contentChanged(onChange);
 					editor.doc.selectionChanged(function(formatReport,canMoveViewport){
+						notifyTextAttributes();
 						//console.log("selectionChanged:",formatReport());
 						// not sure what I need to do with this yet.  This'll be about updating controls for what's current under the selection, I'd think.
 					});
 					editor.doc.position = {x:t.x,y:t.y};
 					editor.doc.width(t.width);
+					notifyTextAttributes();
 					postSelectItem(t);
 				}
 			}
@@ -2964,6 +2966,10 @@ var createInteractiveCanvas = function(boardDiv){
 		};
 		var currentEditor = undefined;
 		var textAttributesChanged = function(family,size,color,bold,italic,underline){ };
+		var notifyTextAttributes = function(){
+			var attrs = getCurrentEditorFormatOrDefault();
+			textAttributesChanged(attrs.font,attrs.size,attrs.color,attrs.bold,attrs.italic,attrs.underline);
+		};
 		var updateCurrentEditorFormat = function(category,value){
 			console.log("currentEditor",currentEditor);
 			if (currentEditor !== undefined){
@@ -2977,11 +2983,10 @@ var createInteractiveCanvas = function(boardDiv){
 					rendererObj.render();
 					stanzaAvailable(richTextEditorToStanza(currentEditor));
 				}
-			} else {
-				defaultTextAttrs[category] = value;
-				carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
-				carota.runs.nextInsertFormatting[category] = value;
 			}
+			defaultTextAttrs[category] = value;
+			carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+			carota.runs.nextInsertFormatting[category] = value;
 		};	
 		var getCurrentEditorFormatOrDefault = function(){
 			if (currentEditor !== undefined){
@@ -3045,6 +3050,7 @@ var createInteractiveCanvas = function(boardDiv){
 				updateCurrentEditorFormat("bold",b);
 			},
 			onTextAttributesChanged:function(f){
+				//supply a function with the following arguments function(family,size,color,bold,italic,underline){ }
 				textAttributesChanged = f;
 			},	
 			activate:function(){
@@ -3089,6 +3095,7 @@ var createInteractiveCanvas = function(boardDiv){
 					if (editor){
 						var doc = editor.doc;
 						var context = editorContextFor(doc,worldPos);
+						currentEditor = doc;
 						if(clickTime - lastClick <= doubleClickThreshold){
 							doc.dblclickHandler(context.node);
 						} else{
@@ -3103,14 +3110,15 @@ var createInteractiveCanvas = function(boardDiv){
 					} else {
 						var newEditor = createBlankText(worldPos,[{
 							text:" ",
-							font:defaultTextAttrs.font,
-							italic:defaultTextAttrs.italic, //carota.runs.nextInsertFormatting.italic == true,
-							bold:defaultTextAttrs.bold, //carota.runs.nextInsertFormatting.bold == true,
-							underline:defaultTextAttrs.underline, //carota.runs.nextInsertFormatting.underline == true,
-							color:defaultTextAttrs.color,//carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-							size:defaultTextAttrs.size / rendererObj.getScale()//carota.runs.defaultFormatting.newBoxSize / scale()
+							font:carota.runs.nextInsertFormatting.font || defaultTextAttrs.font,
+							italic:carota.runs.nextInsertFormatting.italic || defaultTextAttrs.italic,
+							bold:carota.runs.nextInsertFormatting.bold || defaultTextAttrs.bold,
+							underline:carota.runs.nextInsertFormatting.underline || defaultTextAttrs.underline,
+							color:carota.runs.nextInsertFormatting.color || defaultTextAttrs.color || carota.runs.defaultFormatting.color,
+							size:(carota.runs.defaultFormatting.newBoxSize || defaultTextAttrs.size) / rendererObj.getScale()
 						}]);
 						var newDoc = newEditor.doc;
+						currentEditor = newDoc;
 						var editor = editorFor(newEditor);
 						newDoc.select(0,1);
 						console.log("created",newEditor,newDoc);

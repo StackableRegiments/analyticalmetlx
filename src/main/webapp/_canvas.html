@@ -3,7 +3,7 @@
 #tools {
 	position:absolute;
 	left:10px;
-	width:60px;
+	width:160px;
 	z-index:100;
 	background:cyan;
 }
@@ -33,12 +33,12 @@
 		<button id="setEraseMode" class="fa fa- modeButton">Erase</button>
 		<button id="setDrawMode" class="fa fa- modeButton">Draw</button>
 		<div id="drawTools" class="subTools">
-			<label for="inkColor">color</label>
 			<input type="color" id="inkColor" class="subTool fa fa-"></input>
-			<label for="inkWidth">size</label>
+			<label for="inkColor">color</label>
 			<input type="range" min="1" max="100" id="inkWidth" class="subTool fa fa-" width="40px"></input>
-			<label for="isHighlighter">highlighter</label>
+			<label for="inkWidth">size</label>
 			<input type="checkbox" id="isHighlighter" class="subTool fa fa-"></input>
+			<label for="isHighlighter">highlighter</label>
 		</div>
 		<!--
 		<button id="setTextMode" class="fa fa- modeButton"></button>
@@ -74,6 +74,18 @@
 		</div>
 		<button id="setRichTextMode" class="fa fa-">Text</button>
 		<div id="richTextTools" class="subTools">
+			<label for="textFont">font</label>
+			<select id="textFont" class="subTool"></select>
+			<label for="textSize">size</label>
+			<select id="textSize" class="subTool"></select>
+			<label for="textColor">color</label>
+			<select id="textColor" class="subTool"></select>
+			<input type="checkbox" id="isBold" class="subTool fa fa-"></input>
+			<label for="isBold">bold</label>
+			<input type="checkbox" id="isItalic" class="subTool fa fa-"></input>
+			<label for="isItalic">italic</label>
+			<input type="checkbox" id="isUnderline" class="subTool fa fa-"></input>
+			<label for="isUnderline">underline</label>
 		</div>
 	</div>
 	<div id="boardContainer">

@@ -217,6 +217,92 @@
 			$("#setRichTextMode").on("click",function(){
 				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}));
 			});
+			var fonts = ["arial","verdana","garamond","wingdings","times new roman"];
+			var sizes = [8,10,12,14,16,20,24,30,36,48];
+			var colors = [
+			{
+				name:"black",
+				code:"#000000"
+			},
+			{
+				name:"red",
+				code:"#FF0000"
+			},	
+			{
+				name:"green",
+				code:"#00FF00"
+			},
+			{
+				name:"blue",
+				code:"#0000FF"
+			},	
+			{
+				name:"white",
+				code:"#FFFFFF"
+			}];
+			var respondToTextAttributes = function(attrs){
+				console.log("responding to textAttrs",attrs);
+				var tempFonts = _.clone(fonts);
+				var tempSizes = _.clone(sizes);
+				var tempColors = _.clone(colors);
+				var fontSelector = $("#textFont");
+				var sizeSelector = $("#textSize");
+				var colorSelector = $("#textColor");
+				var boldSelector = $("#isBold");
+				var italicSelector = $("#isItalic");
+				var underlineSelector = $("#isUnderline");	
+
+				var updateSelect = function(select,collection,optionFunc,newValue,method,valueMutator){
+					if (newValue){
+						collection.push(newValue);
+					}
+					select.unbind("change").html(_.map(collection,function(item){
+						var i = optionFunc(item);
+						return $("<option/>",{
+							value:i.value,
+							text:i.name
+						});
+					})).on("change",function(){
+						var value = $(this).val();
+						var vm = valueMutator || function(v){return v;};
+						_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](vm(value));
+					});
+					if (newValue){
+						select.val(newValue);
+					}
+				}
+				updateSelect(fontSelector,tempFonts,function(font){return {name:font,value:font};},attrs.font,"setFont");
+				updateSelect(sizeSelector,tempSizes,function(size){return {name:size,value:size};},attrs.size,"setFontSize");
+				var color = undefined;
+				if (attrs.color && attrs.color[0]){
+					color = attrs.color[0];
+				}
+				updateSelect(colorSelector,tempColors,function(c){return {name:c.name,value:c.code};},color,"setFontColor",function(c){return [c,255];});
+				var updateCheckbox = function(cb,newValue,method){
+					cb.unbind("click").on("click",function(){
+						var value = $(this).prop("checked");
+						_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
+					});
+					if (newValue === true || newValue === false){
+						console.log("setting",method,newValue);
+						cb.prop("checked",newValue);
+					}
+				};
+				updateCheckbox(boldSelector,attrs.bold,"setFontBold");
+				updateCheckbox(italicSelector,attrs.italic,"setFontItalic");
+				updateCheckbox(underlineSelector,attrs.underline,"setFontUnderline");
+			};
+			_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}).onTextAttributesChanged(function(font,size,color,bold,italic,underline){
+				respondToTextAttributes({
+					font:font,
+					size:size,
+					color:color,
+					bold:bold,
+					italic:italic,
+					underline:underline
+				});	
+			});
+			respondToTextAttributes(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}).getFontAttributes());
 			$("#zoomIn").on("click",function(){
 				newCanvas.getZoomController().in();
 			});
