@@ -861,12 +861,14 @@ var carotaTest = function(historyRenderer){
                                 ctx.restore();
                             }
                         },
+												/*
 												draw: function(ctx,rect){
 													// not sure what to do with this yet!
 													if (this.frame){
 														this.frame.draw(ctx,rect);
 													};
 												},
+												*/
                         notifySelectionChanged: function(canMoveViewport) {
                             var self = this;
                             var getFormatting = function() {

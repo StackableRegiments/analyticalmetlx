@@ -19,6 +19,11 @@ var createInteractiveCanvas = function(boardDiv){
 	rendererObj.onScaleChanged(function(s,c,e){return scaleChanged(s,c,e);});
 	var dimensionsChanged = function(dims,ctx,elem){ };
 	rendererObj.onDimensionsChanged(function(d,c,e){return dimensionsChanged(d,c,e);});
+	var canvasStanzaAdded = function(stanza,after){
+		// do things locally to the new stanza first
+		after(stanza);
+	};
+	var stanzaAdded = function(stanza){};
 	var canvasHistoryChanged = function(hist,after){
 		history = hist;
 		clearCanvasInteractables("video");
@@ -38,6 +43,9 @@ var createInteractiveCanvas = function(boardDiv){
 	var historyChanged = function(history){ };
 	rendererObj.onHistoryChanged(function(h){return canvasHistoryChanged(h,historyChanged);});
 	rendererObj.onHistoryUpdated(function(h){return canvasHistoryChanged(h);});
+	rendererObj.onStanzaAdded(function(s){
+		return canvasStanzaAdded(s,stanzaAdded);
+	});
 
 	var preRenderItem = function(item,ctx){
 		return true;
@@ -876,7 +884,7 @@ var createInteractiveCanvas = function(boardDiv){
 		var bounds = t.bounds;
 		var text = t.doc.save();
 		var w = t.doc.width();
-		return {
+		var stanza = {
 			timestamp:-1,
 			tag:"_",
 			identity:t.identity,
@@ -901,6 +909,8 @@ var createInteractiveCanvas = function(boardDiv){
 				};
 			})
 		};
+		console.log("richTextEditorToStanza",t,stanza);
+		return stanza;
 	}
 
 	var resizeFree = (function(){
@@ -2875,15 +2885,14 @@ var createInteractiveCanvas = function(boardDiv){
 				identity:identity,
 				requestedWidth:width,
 				width:width,
-				height:0,
+				height:minimumTextHeight,
 				x:worldPos.x,
 				y:worldPos.y,
 				type:"multiWordText",
 				words:[]
 			});
-			var editor = stanza;
-			editor.doc.load(runs);
-			return editor;
+			stanza.doc.load(runs);
+			return stanza;
 		};
 		var defaultTextAttrs = {
 			fontSize:12,
@@ -2893,30 +2902,33 @@ var createInteractiveCanvas = function(boardDiv){
 			color:["#000000",255]
 		};
 		var editorFor = function(t){
-			if (preSelectItem(t)){
+			if (t !== undefined){
 				var editor = history.multiWordTexts[t.identity];
-				if(!editor){
-					editor = history.multiWordTexts[t.identity] = t;
-				}
-				if (!editor.doc){
-					t = prerenderMultiwordText(t);
-					editor = t.editor;
-				}
-				var onChange = function(){
-					var source = history.multiWordTexts[editor.identity];
-					if (source && source.editor && source.editor.doc){
-						var stanza = richTextEditorToStanza(source);
-						stanzaAvailable(stanza);
+				if (editor !== undefined && preSelectItem(editor)){
+					if(!editor){
+						editor = history.multiWordTexts[t.identity] = richTextEditorToStanza(t);
 					}
-				};
-				editor.doc.contentChanged(onChange);
-				editor.doc.selectionChanged(function(formatReport,canMoveViewport){
-					// not sure what I need to do with this yet.  This'll be about updating controls for what's current under the selection, I'd think.
-				});
-				editor.doc.position = {x:t.x,y:t.y};
-				editor.doc.width(t.width);
-				postSelectItem(t);
+					if (!editor.doc){
+						editor = prerenderMultiwordText(t);
+					}
+					var onChange = function(){
+						var source = history.multiWordTexts[editor.identity];
+						console.log("onChange",editor,source);
+						if (source && source.doc){
+							var stanza = richTextEditorToStanza(source);
+							stanzaAvailable(stanza);
+						}
+					};
+					editor.doc.contentChanged(onChange);
+					editor.doc.selectionChanged(function(formatReport,canMoveViewport){
+						// not sure what I need to do with this yet.  This'll be about updating controls for what's current under the selection, I'd think.
+					});
+					editor.doc.position = {x:t.x,y:t.y};
+					editor.doc.width(t.width);
+					postSelectItem(t);
+				}
 			}
+			return t;
 		};
 		var editorAt = function(x,y,z,worldPos){
 			var threshold = 10;
@@ -2940,6 +2952,14 @@ var createInteractiveCanvas = function(boardDiv){
 				relativePos:relativePos
 			}
 		};
+		var disableOtherEditors = function(editor){
+			_.forEach(history.multiWordTexts,function(mwt){
+				if (mwt.identity != editor.identity){
+					mwt.isActive = false;
+					mwt.caretVisible = false;
+				}
+			});
+		};
 		return {
 			name:"richText",
 			activate:function(){
@@ -2948,21 +2968,22 @@ var createInteractiveCanvas = function(boardDiv){
 				currentMode = richTextMode;
 				modeChanged(richTextMode);
 				var lastClick = 0;
-				var down = function(x,y,z,worldPos){
+				var down = function(x,y,z,worldPos,modifiers){
 					var editor = editorAt(x,y,z,worldPos).doc;
 					if (editor){
+						disableOtherEditors(editor);
 						editor.isActive = true;
 						editor.caretVisible = true;
 						editor.mousedownHandler(editorContextFor(editor,worldPos).node);
 					};
 				}
-				var move = function(x,y,z,worldPos){
+				var move = function(x,y,z,worldPos,modifiers){
 					var editor = editorAt(x,y,z,worldPos).doc;
 					if (editor){
 							editor.mousemoveHandler(editorContextFor(editor,worldPos).node);
 					}
 				};
-				var up = function(x,y,z,worldPos){
+				var up = function(x,y,z,worldPos,modifiers){
 					var clickTime = Date.now();
 					var oldEditor = editorAt(x,y,z,worldPos);
 					var editor = editorAt(x,y,z,worldPos);
@@ -3003,7 +3024,9 @@ var createInteractiveCanvas = function(boardDiv){
 							size:12 / rendererObj.getScale()//carota.runs.defaultFormatting.newBoxSize / scale()
 						}]);
 						var newDoc = newEditor.doc;
+						var editor = editorFor(newEditor);
 						newDoc.select(0,1);
+						console.log("created",newEditor,newDoc);
 						history.multiWordTexts[newEditor.identity] = newEditor;
 						sel = {multiWordTexts:{}};
 						sel.multiWordTexts[newEditor.identity] = history.multiWordTexts[newEditor.identity];
@@ -3114,6 +3137,9 @@ var createInteractiveCanvas = function(boardDiv){
 		setHistory:setHistoryFunc,
 		onHistoryChanged:function(f){
 			historyChanged = f;
+		},
+		onStanzaAdded:function(f){
+			stanzaAdded = f;
 		},
 		onStanzaAvailable:function(f){
 			stanzaAvailable = f;

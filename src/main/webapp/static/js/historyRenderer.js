@@ -654,7 +654,7 @@ var createCanvasRenderer = function(canvasElem){
 				default:
 					break;	
 			}
-			historyUpdated(boardContent);
+			stanzaAdded(stanza);
 		}
 	};
 	var highQualityMultiplier = 4;
@@ -1553,6 +1553,7 @@ var createCanvasRenderer = function(canvasElem){
 	var scaleChanged = function(scale,ctx,elem){ };
 	var historyReceived = function(history){ };
 	var historyUpdated = function(history){ };
+	var stanzaAdded = function(stanza){ };
 	var statistic = function(category,time,success,exception){ };
 	var preRenderItem = function(item,ctx){
 		return true;
@@ -1624,6 +1625,9 @@ var createCanvasRenderer = function(canvasElem){
 		},
 		onHistoryUpdated:function(f){
 			historyUpdated = f;
+		},
+		onStanzaAdded:function(f){
+			stanzaAdded = f;
 		},
 		onException:function(f){
 			passException = f;

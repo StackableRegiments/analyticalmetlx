@@ -236,7 +236,7 @@
 			$("#panDown").on("click",function(){
 				newCanvas.getPanController().pan(0,panAmount);
 			});
-			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
+			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}));
 			newCanvas.onStatistic(function(category,time,success,exception){
 				if ("HealthChecker" in window){
 					HealthChecker.addMeasure(category,time,success);
@@ -264,7 +264,7 @@
 				stanza.target = "presentationSpace";
 				stanza.slide = "thisSlide";
 				stanza.timestamp = new Date().getTime();
-				//console.log("test.html stanza:",stanza);
+				console.log("test.html stanza:",stanza);
 				stanzas.push(stanza);
 				newCanvas.addStanza(stanza);
 			});
