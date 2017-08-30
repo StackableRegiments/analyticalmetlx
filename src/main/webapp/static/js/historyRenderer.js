@@ -761,6 +761,19 @@ var createCanvasRenderer = function(canvasElem){
 		boardContext.lineTo(tl.x,tl.y);
 		boardContext.stroke();
 	};
+	var renderCanvasEdges = function(){
+		boardContext.strokeStyle = "#0000FF";
+		var tl = worldToScreen(0,0);
+		var br = worldToScreen(boardWidth,boardHeight);
+		boardContext.beginPath();
+		boardContext.lineWidth = 2;
+		boardContext.moveTo(tl.x,tl.y);
+		boardContext.lineTo(br.x,tl.y);
+		boardContext.lineTo(br.x,br.y);
+		boardContext.lineTo(tl.x,br.y);
+		boardContext.lineTo(tl.x,tl.y);
+		boardContext.stroke();
+	};
 	var calculateImageSource = function(image){
 		return image.source;
 	}
@@ -845,17 +858,11 @@ var createCanvasRenderer = function(canvasElem){
 	};
 
 	var prerenderMultiwordText = function(text){
-		console.log("prmwt 1",text);
 		var editor = textEditorFor(text).doc;
-		console.log("prmwt 2",text);
 		editor.load(text.words);
-		console.log("prmwt 3",text);
 		editor.invalidateBounds();
-		console.log("prmwt 4",text);
 		editor.updateCanvas();
-		console.log("prmwt 5",text);
 		incorporateBoardBounds(editor.stanza.bounds);
-		console.log("prmwt 6",text);
 		return editor.stanza;
 	}
 	var prerenderImage = function(image) {
@@ -1383,6 +1390,7 @@ var createCanvasRenderer = function(canvasElem){
 		//this readjusts the viewbox to include the visible canvas
 		var tl = screenToWorld(0,0);
 		var br = screenToWorld(boardWidth,boardHeight);
+
 		viewboxX = tl.x;
 		viewboxY = tl.y;
 		viewboxWidth = br.x - tl.x;
@@ -1413,6 +1421,7 @@ var createCanvasRenderer = function(canvasElem){
 
 						//REMOVE ME FIX ME drawViewbox
 						renderViewbox();
+						renderCanvasEdges();
 						statistic("render",new Date().getTime() - renderStart,true);
 					}
 					catch(e){

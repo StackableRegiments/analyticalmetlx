@@ -265,12 +265,17 @@
 				stanzas.push(stanza);
 				newCanvas.addStanza(stanza);
 			});
+			var reduceCanvas = function(dims){
+				dims.width - 20;
+				dims.height - 120;
+				return dims;
+			};
 			newCanvas.setHistory(mockHistory);
-			newCanvas.setDimensions(DeviceConfiguration.getMeasurements());
+			newCanvas.setDimensions(reduceCanvas(DeviceConfiguration.getMeasurements()));
 			MeTLBus.subscribe("beforeWorkQueueResume","test",function(){});
 			MeTLBus.subscribe("afterWorkQueuePause","test",function(){});
 			MeTLBus.subscribe("layoutUpdated","test",function(dims){
-				newCanvas.setDimensions(dims);
+				newCanvas.setDimensions(reduceCanvas(dims));
 			});
 		});
 		var popAudit = function(){
