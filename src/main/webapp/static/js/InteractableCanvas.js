@@ -2973,9 +2973,9 @@ var createInteractiveCanvas = function(boardDiv){
 				currentEditor.updateCanvas();
 				currentEditor.claimFocus();
 				if (currentEditor.save().length > 0){
+					rendererObj.render();
 					stanzaAvailable(richTextEditorToStanza(currentEditor));
 				}
-				//carota.runs.nextInsertFormatting[category] = value;
 			} else {
 				defaultTextAttrs[category] = value;
 				carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
