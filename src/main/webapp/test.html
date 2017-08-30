@@ -84,12 +84,12 @@
 			target:"presentationSpace",
 			words:[
 				{
-					text:"red",
+					text:"red ",
 					bold:false,
 					underline:false,
 					italic:true,
 					justify:"left",
-					color:["FF0000",255],
+					color:["#FF0000",255],
 					font:"arial",
 					size:12	
 				},
@@ -99,17 +99,17 @@
 					underline:true,
 					italic:false,
 					justify:"left",
-					color:["00FF00",255],
+					color:["#00FF00",255],
 					font:"arial",
 					size:10	
 				},
 				{
-					text:"blue",
+					text:" blue",
 					bold:true,
 					underline:false,
 					italic:false,
 					justify:"left",
-					color:["0000FF",255],
+					color:["#0000FF",255],
 					font:"arial",
 					size:14	
 				}
@@ -119,6 +119,7 @@
 		mockHistory.texts[mockText.identity] = mockText;
 		mockHistory.images[mockImage.identity] = mockImage;
 		mockHistory.videos[mockVideo.identity] = mockVideo;
+		mockHistory.multiWordTexts[mockMultiWordText.identity] = mockMultiWordText;
 		var stanzas = [mockText,mockInk,mockImage,mockVideo];
 		$(function(){
 			var newCanvas = createInteractiveCanvas($("#board"));

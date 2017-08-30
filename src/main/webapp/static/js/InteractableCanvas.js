@@ -3370,6 +3370,33 @@ var createInteractiveCanvas = function(boardDiv){
 			rendererObj.addStanza(stanza);
 		}
 	};
+/*
+	var richText = (function(){
+		var texts = [];
+		var echoesToDisregard = {};
+		var minimumWidth = 100; //guessing right now
+		var createBlankText = function(worldPos,runs){
+			var width = minimumWidth / rendererObj.getScale();
+			var editor = editorFor({
+				bounds:[worldPos.x,worldPos.y,worldPos.x,worldPos.y],
+				identity:sprintf("%s_%s_%s",UserSettings.getUsername(),Date.now(),_.uniqueId()),
+				privacy:Privacy.getCurrentPrivacy(),
+				slide:Conversations.getCurrentSlideJid(),
+				target:"presentationSpace",
+				requestedWidth:width,
+				width:width,
+				height:0,
+				x:worldPos.x,
+				y:worldPos.y,
+				type:"multiWordText",
+				author:UserSettings.getUsername(),
+				words:[]
+			});
+			editor.doc.load(runs);
+			return editor;
+	};
+	})();
+*/
 	return {
 		boardElem:boardDiv,
 		renderer:rendererObj,

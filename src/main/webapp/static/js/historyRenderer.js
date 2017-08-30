@@ -130,7 +130,7 @@ var createCanvasRenderer = function(canvasElem){
 			return {x:maxX,y:maxY};
 	});
 
-	var determineScaling = function(inX,inY,highQualityMultiplier){
+	var determineScaling = function(inX,inY){
 			var outputX = inX * highQualityMultiplier;
 			var outputY = inY * highQualityMultiplier;
 			var outputScaleX = 1.0;
@@ -675,7 +675,7 @@ var createCanvasRenderer = function(canvasElem){
 			var rawWidth = (ink.bounds[2] - ink.bounds[0] + (ink.thickness));
 			var rawHeight = (ink.bounds[3] - ink.bounds[1] + (ink.thickness));
 
-			var scaleMeasurements = determineScaling(rawWidth,rawHeight,highQualityMultiplier);
+			var scaleMeasurements = determineScaling(rawWidth,rawHeight);
 
 			var scaleX = scaleMeasurements.scaleX;
 			var scaleY = scaleMeasurements.scaleY;
@@ -812,12 +812,32 @@ var createCanvasRenderer = function(canvasElem){
 	var scale = function(){
 			return Math.min(boardWidth / viewboxWidth, boardHeight / viewboxHeight);
 	}
+
+	var textEditorFor = function(t){
+		var editor = boardContent.multiWordTexts[t.identity];
+		if(!editor){
+				editor = boardContent.multiWordTexts[t.identity] = t;
+		}
+		if(!editor.doc){
+			var minimumWidth = 100;
+			var minimumHeight = 30;
+			editor.doc = carota.editor.create(
+				$("<div />",{id:sprintf("t_%s",t.identity)}).appendTo($("#textInputInvisibleHost"))[0],
+				canvasElem[0],
+				t,
+				rendererObj,
+				minimumWidth,minimumHeight);
+			editor.doc.position = {x:t.x,y:t.y};
+			editor.doc.width(t.width);
+			return editor;
+		} 
+	};
+
 	var prerenderMultiwordText = function(text){
-		return; // will need to fix this
-			var editor = Modes.text.editorFor(text).doc;
-			editor.load(text.words);
-			editor.updateCanvas();
-			incorporateBoardBounds(text.bounds);
+		var editor = textEditorFor(text).doc;
+		editor.load(text.words);
+		editor.updateCanvas();
+		incorporateBoardBounds(text.bounds);
 	}
 	var prerenderImage = function(image) {
 		var canvas = $("<canvas/>")[0];
@@ -953,7 +973,7 @@ var createCanvasRenderer = function(canvasElem){
 			calculateTextBounds(text);
 			var rawWidth = (text.bounds[2] - text.bounds[0]);
 			var rawHeight = (text.bounds[3] - text.bounds[1]);
-			var scaleMeasurements = determineScaling(rawWidth,rawHeight,highQualityMultiplier);
+			var scaleMeasurements = determineScaling(rawWidth,rawHeight);
 			
 			var scaleX = scaleMeasurements.scaleX;
 			var scaleY = scaleMeasurements.scaleY;
@@ -1034,23 +1054,22 @@ var createCanvasRenderer = function(canvasElem){
 			}
 	};
 	var renderRichTexts = function(texts,rendered,viewBounds){
-		return;
-			if(texts){
-					_.each(texts,function(text,i){
-						if (preRenderItem(text,boardContext)){
-							if(text.doc){
-									if(!text.bounds){
-											text.doc.invalidateBounds();
-									}
-									if(intersectRect(text.bounds,viewBounds)){
-											drawMultiwordText(text);
-											postRenderItem(text,boardContext);
-											rendered.push(text);
-									}
-							}
+		if(texts){
+			_.each(texts,function(text,i){
+				if (preRenderItem(text,boardContext)){
+					if(text.doc){
+						if(!text.bounds){
+							text.doc.invalidateBounds();
 						}
-					});
-			}
+						if(intersectRect(text.bounds,viewBounds)){
+							drawMultiwordText(text);
+							postRenderItem(text,boardContext);
+							rendered.push(text);
+						}
+					}
+				}
+			});
+		}
 	};
 	var renderVideos = function(videos,rendered,viewBounds){
 		if (videos){
@@ -1224,15 +1243,15 @@ var createCanvasRenderer = function(canvasElem){
 
 	var drawImage = function(image){
 			try{
-					if (image.canvas != undefined){
-							var sBounds = screenBounds(image.bounds);
-							visibleBounds.push(image.bounds);
-							if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
-									var borderW = sBounds.screenWidth * 0.10;
-									var borderH = sBounds.screenHeight * 0.10;
-									boardContext.drawImage(multiStageRescale(image.canvas,sBounds.screenWidth,sBounds.screenHeight,image), sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
-							}
+				if (image.canvas != undefined){
+					var sBounds = screenBounds(image.bounds);
+					visibleBounds.push(image.bounds);
+					if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+						var borderW = sBounds.screenWidth * 0.10;
+						var borderH = sBounds.screenHeight * 0.10;
+						boardContext.drawImage(multiStageRescale(image.canvas,sBounds.screenWidth,sBounds.screenHeight,image), sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
 					}
+				}
 			}
 			catch(e){
 				passException(e,"drawImage",[image]);
@@ -1241,13 +1260,14 @@ var createCanvasRenderer = function(canvasElem){
 
 	var drawMultiwordText = function(item){
 			try {
-					if(item.doc && item.doc.canvas){
-							var sBounds = screenBounds(item.bounds);
-							visibleBounds.push(item.bounds);
-							if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
-									boardContext.drawImage(multiStageRescale(item.doc.canvas,sBounds.screenWidth,sBounds.screenHeight,item), sBounds.screenPos.x, sBounds.screenPos.y, sBounds.screenWidth,sBounds.screenHeight);
-							}
+				if(item.doc && item.doc.canvas){
+					var sBounds = screenBounds(item.bounds);
+					visibleBounds.push(item.bounds);
+					console.log("drawMultiWordText",item,sBounds,item.doc.canvas);
+					if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+						boardContext.drawImage(multiStageRescale(item.doc.canvas,sBounds.screenWidth,sBounds.screenHeight,item), sBounds.screenPos.x, sBounds.screenPos.y, sBounds.screenWidth,sBounds.screenHeight);
 					}
+				}
 			}
 			catch(e){
 				passException(e,"drawMutliwordText",[item]);
@@ -1414,7 +1434,7 @@ var createCanvasRenderer = function(canvasElem){
 				prerenderInk(ink,true);
 			});
 			_.forEach(boardContent.multiWordTexts,function(text,i){
-				prerenderMultiWordText(text,true);
+				prerenderMultiwordText(text,true);
 			});
 			_.forEach(boardContent.texts,function(text,i){
 				prerenderText(text,true);
@@ -1536,7 +1556,7 @@ var createCanvasRenderer = function(canvasElem){
 			blit();
 		}
 	};
-	return {
+	var rendererObj = {
 		setHistory:receiveHistoryFunc,
 		addStanza:addStanzaFunc,	
 		render:renderFunc,
@@ -1636,10 +1656,13 @@ var createCanvasRenderer = function(canvasElem){
 		getDataURI:function(){
 			return canvasElem[0].toDataURL();
 		},
+		determineCanvasConstants:determineCanvasConstants,
+		determineScaling:determineScaling,
 		drawImage:drawImage,
 		drawInk:drawInk,
 		drawText:drawText,
 		drawMultiwordText:drawMultiwordText,
 		drawVideo:drawVideo
 	};
+	return rendererObj;
 };
