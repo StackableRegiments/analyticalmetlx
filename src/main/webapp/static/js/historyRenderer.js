@@ -316,7 +316,7 @@ var createCanvasRenderer = function(canvasElem){
 				}
 			});
 			_.forEach(transform.multiWordTextIds,function(id,i){
-				if(id in Modes.text.echoesToDisregard) return;
+//				if(id in Modes.text.echoesToDisregard) return;
 				var cand = boardContent.multiWordTexts[id];
 				if (cand !== undefined){
 					relevantMultiWordTexts.push(cand);
@@ -550,6 +550,7 @@ var createCanvasRenderer = function(canvasElem){
 						}
 						postTransformItem(multiWordText,transform);
 					} else {
+						var text = multiWordText;
 						if (transform.xScale != 1 || transform.yScale != 1){
 							var newWidth = (text.width || text.requestedWidth) * transform.xScale;
 							text.requestedWidth = newWidth;
@@ -569,7 +570,7 @@ var createCanvasRenderer = function(canvasElem){
 							transformBounds.incorporateBounds(text.bounds);
 						}
 						if (transform.xTranslate != 0 || transform.yTranslate != 0){
-							if(text.id in Modes.text.echoesToDisregard) return;
+//							if(text.id in Modes.text.echoesToDisregard) return;
 							var doc = text.doc;
 							doc.position.x += transform.xTranslate;
 							doc.position.y += transform.yTranslate;

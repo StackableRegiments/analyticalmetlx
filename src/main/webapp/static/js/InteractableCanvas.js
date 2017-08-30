@@ -595,9 +595,11 @@ var createInteractiveCanvas = function(boardDiv){
 				moved.imageIds = _.keys(selected.images);
 				moved.videoIds = _.keys(selected.videos);
 				moved.multiWordTextIds = _.keys(selected.multiWordTexts);
+				/*
 				_.each(moved.multiWordTextIds,function(id){
 					echoesToDisregard[id] = true;
 				});
+				*/
 				dragging = false;
 				/*
 				text.mapSelected(function(box){
@@ -1522,10 +1524,12 @@ var createInteractiveCanvas = function(boardDiv){
 								}
 								editor.doc.invalidateBounds();
 								editor.doc.isActive = true;
+								/*
 								MeTLBus.subscribe("historyReceived","ClearMultiTextEchoes",function(){
 										Modes.text.echoesToDisregard = {};
 								});
 								MeTLBus.call("onSelectionChanged",[Modes.select.selected]);
+								*/
 						};
 						textColors = getTextColors();
 						updateControlState(carota.runs.defaultFormatting);
@@ -1560,9 +1564,11 @@ var createInteractiveCanvas = function(boardDiv){
 								editor.doc.invalidateBounds();
 								editor.doc.isActive = true;
 								editor.doc.load(newRuns);
+								/*
 								MeTLBus.subscribe("historyReceived","ClearMultiTextEchoes",function(){
 										Modes.text.echoesToDisregard = {};
 								});
+*/
 								Modes.text.scrollToCursor(editor);
 								var source = boardContent.multiWordTexts[editor.identity];
 								source.privacy = Privacy.getCurrentPrivacy();
@@ -3248,7 +3254,7 @@ var createInteractiveCanvas = function(boardDiv){
 								canvasContext.save();
 								canvasContext.translate(x,y);
 								canvasContext.globalAlpha = 0.7;
-								var s = scale();
+								var s = rendererObj.getScale();
 								canvasContext.scale(s,s);
 								/*
 								var scaledText = carota.editor.create({
@@ -3370,7 +3376,7 @@ var createInteractiveCanvas = function(boardDiv){
 			rendererObj.addStanza(stanza);
 		}
 	};
-/*
+
 	var richText = (function(){
 		var texts = [];
 		var echoesToDisregard = {};
@@ -3396,7 +3402,7 @@ var createInteractiveCanvas = function(boardDiv){
 			return editor;
 	};
 	})();
-*/
+
 	return {
 		boardElem:boardDiv,
 		renderer:rendererObj,
