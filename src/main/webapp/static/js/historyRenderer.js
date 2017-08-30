@@ -826,6 +826,14 @@ var createCanvasRenderer = function(canvasElem){
 				canvasElem[0],
 				t,
 				rendererObj,
+				function(eventName,eventParams){
+					//do nothing with this yet.  This could receive:
+					//"boundsChanged",[carotaEditorId,carotaEditor,t,newBounds = t.bounds] //already changed by the time the callback is triggered
+					//"loaded",[carotaEditorId,carotaEditor,t,]
+					//"textInserted",[carotaEditorId,carotaEditor,t,newText]
+					//"selectionChanged",[carotaEditorId,carotaEditor,t,selectionStart,selectionEnd]
+					//"undo",[carotaEditorId,carotaEditor,t]
+				},
 				minimumWidth,minimumHeight);
 			editor.doc.position = {x:t.x,y:t.y};
 			editor.doc.width(t.width);
@@ -1263,7 +1271,6 @@ var createCanvasRenderer = function(canvasElem){
 				if(item.doc && item.doc.canvas){
 					var sBounds = screenBounds(item.bounds);
 					visibleBounds.push(item.bounds);
-					console.log("drawMultiWordText",item,sBounds,item.doc.canvas);
 					if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
 						boardContext.drawImage(multiStageRescale(item.doc.canvas,sBounds.screenWidth,sBounds.screenHeight,item), sBounds.screenPos.x, sBounds.screenPos.y, sBounds.screenWidth,sBounds.screenHeight);
 					}

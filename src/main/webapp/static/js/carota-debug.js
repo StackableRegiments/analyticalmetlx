@@ -521,7 +521,7 @@ var carotaTest = function(historyRenderer){
                         return !!(code && (code.block || code.eof));
                     };
                     //var prototype = node.derive((function(){
-                    var createPrototype = function(renderer,minimumWidth,minimumHeight){
+                    var createPrototype = function(renderer,callback,minimumWidth,minimumHeight){
 											return {
                         invalidateBounds: function(){
                             var bounds = this.frame.bounds();
@@ -533,7 +533,7 @@ var carotaTest = function(historyRenderer){
                                 pos.y + bounds.h];
                             this.bounds = result;
                             this.stanza.bounds = this.bounds;
-                            MeTLBus.call("textBoundsChanged",[this.identity,this.bounds]);
+														callback("boundsChanged",[this.identity,this,this.stanza,this.bounds]);
                         },
                         load: function(runs) {
                             var self = this;
@@ -548,6 +548,7 @@ var carotaTest = function(historyRenderer){
                                 .all();
                             this.words.push(word());/*EOF*/
                             this.layout();
+														callback("loaded",[this.identity,this,this.stanza]);
                         },
                         layout: function() {
                             this.frame = null;
@@ -612,6 +613,7 @@ var carotaTest = function(historyRenderer){
                         insert: function(text, canMoveViewport) {
                             var insertLength = this.selectedRange().setText(text);
                             this.select(this.selection.end + insertLength, null, canMoveViewport);
+														callback("textInserted",[this.identity,this,this.stanza,text]);
                         },
                         modifyInsertFormatting: function(attribute, value) {
                             carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
@@ -884,6 +886,7 @@ var carotaTest = function(historyRenderer){
                             );
                             carota.runs.nextInsertFormatting = {};
                             this.selectionJustChanged = true;
+														callback("selectionChanged",[this.identity,this,this.stanza,ordinal, ordinalEnd]);
                         },
                         performUndo: function(redo) {
                             var fromStack = redo ? this.redo : this.undo,
@@ -898,6 +901,7 @@ var carotaTest = function(historyRenderer){
                                 this.updateCanvas();
                                 this.contentChanged.fire();
                             }
+														callback("undo",[this.identity,this,this.stanza]);
                         },
                         canUndo: function(redo) {
                             return redo ? !!this.redo.length : !!this.undo.length;
@@ -934,8 +938,8 @@ var carotaTest = function(historyRenderer){
 											};
                     };
 
-                    exports = module.exports = function(stanza,renderer, minimumWidth,minimumHeight) {
-                        var doc = createPrototype(renderer,minimumWidth,minimumHeight);
+                    exports = module.exports = function(stanza,renderer, callback, minimumWidth,minimumHeight) {
+                        var doc = createPrototype(renderer,callback,minimumWidth,minimumHeight);
                         doc.stanza = stanza;
 												doc.renderer = renderer;
                         doc.position = {x:stanza.x,y:stanza.y};
@@ -981,7 +985,7 @@ var carotaTest = function(historyRenderer){
                     var rect = require('./rect');
                     var selectDragStart = null;
 
-                    exports.create = function(host,externalCanvas,stanza,rendererObj,minimumWidth,minimumHeight) {
+                    exports.create = function(host,externalCanvas,stanza,rendererObj,callback,minimumWidth,minimumHeight) {
 											var renderer = rendererObj;
 											host.innerHTML =
 												'<div class="carotaTextArea" style="overflow: hidden; position: absolute; height: 0;">' +
@@ -992,7 +996,7 @@ var carotaTest = function(historyRenderer){
 
 											var textAreaDiv = host.querySelector('.carotaTextArea'),
 												textArea = host.querySelector('textarea'),
-												doc = carotaDoc(stanza,renderer,minimumWidth,minimumHeight),
+												doc = carotaDoc(stanza,renderer,callback,minimumWidth,minimumHeight),
 												keyboardSelect = 0,
 												keyboardX = null, nextKeyboardX = null,
 												focusChar = null,
@@ -1401,12 +1405,10 @@ var carotaTest = function(historyRenderer){
 
                     var createPrototype = function(rendererObj,minimumWidth,minimumHeight){
 											var scaledWidth = function(){
-													return rendererObj.scaleWorldToScreen(minimumWidth);
+												return rendererObj.scaleWorldToScreen(minimumWidth);
 											};
 											var scaledHeight = function(){
-												var sh = rendererObj.scaleWorldToScreen(minimumHeight);
-												console.log("frame scaledHeight",minimumHeight,sh);
-												return sh;
+												return rendererObj.scaleWorldToScreen(minimumHeight);
 											};
 											return node.derive({
                         bounds: function() {
