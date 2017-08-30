@@ -640,9 +640,7 @@ var createCanvasRenderer = function(canvasElem){
 					dataImage.src = url;
 					break;
 				case "multiWordText":
-					console.log("add mwt",stanza);
 					var newStanza = prerenderMultiwordText(stanza,true);
-					console.log("add mwt postPreRender",stanza);
 					boardContent.multiWordTexts[stanza.identity] = newStanza;
 					render();
 					break;

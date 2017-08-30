@@ -909,7 +909,6 @@ var createInteractiveCanvas = function(boardDiv){
 				};
 			})
 		};
-		console.log("richTextEditorToStanza",t,stanza);
 		return stanza;
 	}
 
@@ -3012,7 +3011,7 @@ var createInteractiveCanvas = function(boardDiv){
 						sel = {
 							multiWordTexts:{}
 						};
-						sel.multiWordTexts[editor.identity] = editor;
+						sel.multiWordTexts[editor.identity] = editorFor(editor);
 						selectMode.setSelection(sel);
 					} else {
 						var newEditor = createBlankText(worldPos,[{
