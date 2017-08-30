@@ -882,8 +882,8 @@ var createInteractiveCanvas = function(boardDiv){
 	var richTextEditorToStanza = function(t){
 		if(!t.bounds) t.doc.invalidateBounds();
 		var bounds = t.bounds;
-		var text = t.doc.save();
-		var w = t.doc.width();
+		var text = t.save();
+		var w = t.width();
 		var stanza = {
 			timestamp:-1,
 			tag:"_",
@@ -989,7 +989,8 @@ var createInteractiveCanvas = function(boardDiv){
 							minimumTextWidth / s
 						));
 						word.doc.updateCanvas();
-						stanzaAvailable(richTextEditorToStanza(word));
+						rendererObj.render();
+						stanzaAvailable(richTextEditorToStanza(word.doc));
 					}
 				});
 				/*
@@ -2894,11 +2895,12 @@ var createInteractiveCanvas = function(boardDiv){
 			return stanza;
 		};
 		var defaultTextAttrs = {
-			fontSize:12,
+			font:"arial",
+			size:12,
 			bold:false,
 			underline:false,
 			italic:false,
-			color:["#000000",255]
+			color:["#000000",255],
 		};
 		var editorFor = function(t){
 			if (t !== undefined){
@@ -2914,12 +2916,13 @@ var createInteractiveCanvas = function(boardDiv){
 						var source = history.multiWordTexts[editor.identity];
 						console.log("onChange",editor,source);
 						if (source && source.doc){
-							var stanza = richTextEditorToStanza(source);
+							var stanza = richTextEditorToStanza(source.doc);
 							stanzaAvailable(stanza);
 						}
 					};
 					editor.doc.contentChanged(onChange);
 					editor.doc.selectionChanged(function(formatReport,canMoveViewport){
+						//console.log("selectionChanged:",formatReport());
 						// not sure what I need to do with this yet.  This'll be about updating controls for what's current under the selection, I'd think.
 					});
 					editor.doc.position = {x:t.x,y:t.y};
@@ -2959,8 +2962,73 @@ var createInteractiveCanvas = function(boardDiv){
 				}
 			});
 		};
+		var currentEditor = undefined;
+		var updateCurrentEditorFormat = function(category,value){
+			console.log("currentEditor",currentEditor);
+			if (currentEditor !== undefined){
+				carota.runs.nextInsertFormatting = {};
+				currentEditor.selectedRange().setFormatting(category,value);
+				carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+				carota.runs.nextInsertFormatting[category] = value;
+				currentEditor.updateCanvas();
+				currentEditor.claimFocus();
+				if (currentEditor.save().length > 0){
+					stanzaAvailable(richTextEditorToStanza(currentEditor));
+				}
+				//carota.runs.nextInsertFormatting[category] = value;
+			} else {
+				defaultTextAttrs[category] = value;
+				carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
+				carota.runs.nextInsertFormatting[category] = value;
+			}
+		};	
+		var getCurrentEditorFormatOrDefault = function(category){
+			if (currentEditor !== undefined){
+				var nf = carota.runs.nextInsertFormatting[category];
+				var cs = currentEditor.selectedRange().getFormatting()[category];	
+				return nf || cs || defaultTextAttrs[category]; 
+			} else {
+				return defaultTextAttrs[category];
+			}
+		};
 		return {
 			name:"richText",
+			getFont:function(){
+				return getCurrentEditorFormatOrDefault("font")
+			},
+			setFont:function(nf){
+				updateCurrentEditorFormat("font",nf);
+			},
+			getFontSize:function(){
+				return getCurrentEditorFormatOrDefault("size");
+			},
+			setFontSize:function(ns){
+				updateCurrentEditorFormat("size",ns);
+			},
+			getFontColor:function(){
+				return getCurrentEditorFormatOrDefault("color");
+			},
+			setFontColor:function(c){
+				updateCurrentEditorFormat("color",c);
+			},
+			getFontUnderline:function(){
+				return getCurrentEditorFormatOrDefault("underline");
+			},
+			setFontUnderline:function(u){
+				updateCurrentEditorFormat("underline",u);
+			},
+			getFontItalic:function(){
+				return getCurrentEditorFormatOrDefault("italic");
+			},
+			setFontItalic:function(i){
+				updateCurrentEditorFormat("italic",i);
+			},
+			getFontBold:function(){
+				return getCurrentEditorFormatOrDefault("bold");
+			},
+			setFontBold:function(b){
+				updateCurrentEditorFormat("bold",b);
+			},	
 			activate:function(){
 				var doubleClickThreshold = 500;
 				currentMode.deactivate();
@@ -2974,6 +3042,7 @@ var createInteractiveCanvas = function(boardDiv){
 						editor.isActive = true;
 						editor.caretVisible = true;
 						editor.mousedownHandler(editorContextFor(editor,worldPos).node);
+						currentEditor = editor;
 					};
 				}
 				var move = function(x,y,z,worldPos,modifiers){
@@ -3016,11 +3085,12 @@ var createInteractiveCanvas = function(boardDiv){
 					} else {
 						var newEditor = createBlankText(worldPos,[{
 							text:" ",
-							italic:false, //carota.runs.nextInsertFormatting.italic == true,
-							bold:false, //carota.runs.nextInsertFormatting.bold == true,
-							underline:false, //carota.runs.nextInsertFormatting.underline == true,
-							color:"#FFFFFF",//carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
-							size:12 / rendererObj.getScale()//carota.runs.defaultFormatting.newBoxSize / scale()
+							font:defaultTextAttrs.font,
+							italic:defaultTextAttrs.italic, //carota.runs.nextInsertFormatting.italic == true,
+							bold:defaultTextAttrs.bold, //carota.runs.nextInsertFormatting.bold == true,
+							underline:defaultTextAttrs.underline, //carota.runs.nextInsertFormatting.underline == true,
+							color:defaultTextAttrs.color,//carota.runs.nextInsertFormatting.color || carota.runs.defaultFormatting.color,
+							size:defaultTextAttrs.size / rendererObj.getScale()//carota.runs.defaultFormatting.newBoxSize / scale()
 						}]);
 						var newDoc = newEditor.doc;
 						var editor = editorFor(newEditor);
@@ -3048,6 +3118,7 @@ var createInteractiveCanvas = function(boardDiv){
 								delete history.multiWordTexts[t.identity];
 						}
 				});
+				currentEditor = undefined;
 				/*Necessary to ensure that no carets or marquees remain on the editors*/
 				selectMode.clearSelection();
 				rendererObj.render();
