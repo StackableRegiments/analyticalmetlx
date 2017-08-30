@@ -888,9 +888,13 @@ var createCanvasRenderer = function(canvasElem){
 		video.bounds = [video.x,video.y,video.x + video.width,video.y + video.height];
 		if (!("video" in video)){
 			var vid = $("<video/>",{
-				preload:"auto",
-				src:calculateVideoSource(video)
+				//preload:"auto",
+				//src:calculateVideoSource(video)
 			});
+			vid[0].addEventListener("loadeddata",function(){
+				render();
+			});
+			vid.attr("src",calculateVideoSource(video));
 			video.video = vid[0];
 			video.getState = function(){
 				return {
