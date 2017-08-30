@@ -241,7 +241,6 @@
 				code:"#FFFFFF"
 			}];
 			var respondToTextAttributes = function(attrs){
-				console.log("responding to textAttrs",attrs);
 				var tempFonts = _.clone(fonts);
 				var tempSizes = _.clone(sizes);
 				var tempColors = _.clone(colors);
@@ -264,8 +263,10 @@
 						});
 					})).on("change",function(){
 						var value = $(this).val();
-						var vm = valueMutator || function(v){return v;};
-						_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](vm(value));
+						if (valueMutator !== undefined){
+							value = valueMutator(value);
+						}
+						_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
 					});
 					if (newValue){
 						select.val(newValue);
@@ -284,7 +285,6 @@
 						_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
 					});
 					if (newValue === true || newValue === false){
-						console.log("setting",method,newValue);
 						cb.prop("checked",newValue);
 					}
 				};
@@ -350,7 +350,7 @@
 				stanza.target = "presentationSpace";
 				stanza.slide = "thisSlide";
 				stanza.timestamp = new Date().getTime();
-				console.log("test.html stanza:",stanza);
+			//	console.log("test.html stanza:",stanza);
 				stanzas.push(stanza);
 				newCanvas.addStanza(stanza);
 			});

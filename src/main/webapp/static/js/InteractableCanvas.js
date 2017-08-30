@@ -2814,13 +2814,9 @@ var createInteractiveCanvas = function(boardDiv){
 	var preDeleteItem = function(item){
 		return true;
 	};
-	var postSelectItem = function(item){
-	};
-	var postDeleteItem = function(item){
-	};
-	var selectionChangedOuter = function(selected){
-		console.log("selectionChanged",selected);
-	};
+	var postSelectItem = function(item){ };
+	var postDeleteItem = function(item){ };
+	var selectionChangedOuter = function(selected){ };
 
 	var rehomeInteractablesToSelection = function(){
 		var totalBounds = totalSelectedBounds();
@@ -2838,9 +2834,7 @@ var createInteractiveCanvas = function(boardDiv){
 		rehomeInteractablesToSelection();
 		selectionChangedOuter(selected);
 	};
-	var modeChanged = function(m){
-		console.log("modeChanged",m);
-	};
+	var modeChanged = function(m){ };
 	var setHistoryFunc = function(history){
 		rendererObj.setHistory(history,function(){
 			rendererObj.render();
@@ -2914,7 +2908,6 @@ var createInteractiveCanvas = function(boardDiv){
 					}
 					var onChange = function(){
 						var source = history.multiWordTexts[editor.identity];
-						console.log("onChange",editor,source);
 						if (source && source.doc){
 							var stanza = richTextEditorToStanza(source.doc);
 							stanzaAvailable(stanza);
@@ -2970,10 +2963,18 @@ var createInteractiveCanvas = function(boardDiv){
 			var attrs = getCurrentEditorFormatOrDefault();
 			textAttributesChanged(attrs.font,attrs.size,attrs.color,attrs.bold,attrs.italic,attrs.underline);
 		};
-		var updateCurrentEditorFormat = function(category,value){
-			console.log("currentEditor",currentEditor);
-			if (currentEditor !== undefined){
+		var resetCarotaFormatting = function(){
+			//carota.runs.defaultFormatting = _.clone(defaultTextAttrs);
+			//carota.runs.defaultFormatting.newBoxSize = defaultTextAttrs.size;
+			if (carota.runs.nextInsertFormatting == undefined){
 				carota.runs.nextInsertFormatting = {};
+			}
+			//carota.runs.nextInsertFormatting = _.clone(defaultTextAttrs);
+			//carota.runs.nextInsertFormatting.newBoxSize = defaultTextAttrs.size;
+		}
+		var updateCurrentEditorFormat = function(category,value){
+			if (currentEditor !== undefined){
+				resetCarotaFormatting();
 				currentEditor.selectedRange().setFormatting(category,value);
 				carota.runs.nextInsertFormatting = carota.runs.nextInsertFormatting || {};
 				carota.runs.nextInsertFormatting[category] = value;
@@ -3008,6 +3009,7 @@ var createInteractiveCanvas = function(boardDiv){
 				return defaultTextAttrs;
 			}
 		};
+		resetCarotaFormatting();
 		return {
 			name:"richText",
 			getFontAttributes:function(){

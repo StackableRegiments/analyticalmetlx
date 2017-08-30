@@ -1034,7 +1034,6 @@ var carotaTest = function(historyRenderer){
 															lastLoc = caret;
 														}  
 														ctx.save();
-														var screenPos = renderer.worldToScreen(doc.position.x,doc.position.y);
 														var tl = renderer.worldToScreen(doc.position.x + caret.l,doc.position.y + caret.t);
 														var br = renderer.worldToScreen(doc.position.x + caret.r,doc.position.y + caret.b);
 														var scaledCaret = rect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
