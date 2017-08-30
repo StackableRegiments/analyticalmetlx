@@ -2963,6 +2963,7 @@ var createInteractiveCanvas = function(boardDiv){
 			});
 		};
 		var currentEditor = undefined;
+		var textAttributesChanged = function(family,size,color,bold,italic,underline){ };
 		var updateCurrentEditorFormat = function(category,value){
 			console.log("currentEditor",currentEditor);
 			if (currentEditor !== undefined){
@@ -2982,52 +2983,69 @@ var createInteractiveCanvas = function(boardDiv){
 				carota.runs.nextInsertFormatting[category] = value;
 			}
 		};	
-		var getCurrentEditorFormatOrDefault = function(category){
+		var getCurrentEditorFormatOrDefault = function(){
 			if (currentEditor !== undefined){
-				var nf = carota.runs.nextInsertFormatting[category];
-				var cs = currentEditor.selectedRange().getFormatting()[category];	
-				return nf || cs || defaultTextAttrs[category]; 
+				var nf = carota.runs.nextInsertFormatting;
+				var cs = currentEditor.selectedRange().getFormatting();	
+				var dtr = defaultTextAttrs;
+				var getValue = function(category){
+					return nf[category] || cs[category] || dtr[category];
+				};
+				return {
+					font:getValue("font"),
+					size:getValue("size"),
+					color:getValue("color"),
+					bold:getValue("bold"),
+					italic:getValue("italic"),
+					underline:getValue("underline")
+				};
 			} else {
-				return defaultTextAttrs[category];
+				return defaultTextAttrs;
 			}
 		};
 		return {
 			name:"richText",
+			getFontAttributes:function(){
+				return getCurrentEditorFormatOrDefault();
+			},
 			getFont:function(){
-				return getCurrentEditorFormatOrDefault("font")
+				return getCurrentEditorFormatOrDefault()["font"];
 			},
 			setFont:function(nf){
 				updateCurrentEditorFormat("font",nf);
 			},
 			getFontSize:function(){
-				return getCurrentEditorFormatOrDefault("size");
+				return getCurrentEditorFormatOrDefault()["size"];
 			},
 			setFontSize:function(ns){
 				updateCurrentEditorFormat("size",ns);
 			},
 			getFontColor:function(){
-				return getCurrentEditorFormatOrDefault("color");
+				return getCurrentEditorFormatOrDefault()["color"];
 			},
 			setFontColor:function(c){
 				updateCurrentEditorFormat("color",c);
 			},
 			getFontUnderline:function(){
-				return getCurrentEditorFormatOrDefault("underline");
+				return getCurrentEditorFormatOrDefault()["underline"];
 			},
 			setFontUnderline:function(u){
 				updateCurrentEditorFormat("underline",u);
 			},
 			getFontItalic:function(){
-				return getCurrentEditorFormatOrDefault("italic");
+				return getCurrentEditorFormatOrDefault()["italic"];
 			},
 			setFontItalic:function(i){
 				updateCurrentEditorFormat("italic",i);
 			},
 			getFontBold:function(){
-				return getCurrentEditorFormatOrDefault("bold");
+				return getCurrentEditorFormatOrDefault()["bold"];
 			},
 			setFontBold:function(b){
 				updateCurrentEditorFormat("bold",b);
+			},
+			onTextAttributesChanged:function(f){
+				textAttributesChanged = f;
 			},	
 			activate:function(){
 				var doubleClickThreshold = 500;
