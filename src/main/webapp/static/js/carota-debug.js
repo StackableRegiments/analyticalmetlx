@@ -1043,12 +1043,12 @@ var carotaTest = function(historyRenderer){
 														}  
 														ctx.save();
 														var screenPos = renderer.worldToScreen(doc.position.x,doc.position.y);
-														var s = renderer.getScale();
-														ctx.translate(screenPos.x,screenPos.y);
-														ctx.scale(s,s);
+														var tl = renderer.worldToScreen(doc.position.x + caret.l,doc.position.y + caret.t);
+														var br = renderer.worldToScreen(doc.position.x + caret.r,doc.position.y + caret.b);
+														var scaledCaret = rect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
 														ctx.globalAlpha = 1;
 														ctx.fillStyle = drawCaret ? 'black' : 'white';
-														caret.fill(ctx);
+														scaledCaret.fill(ctx);
 														ctx.restore();
 													}
 												}
