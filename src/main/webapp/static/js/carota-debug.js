@@ -520,20 +520,21 @@ var carotaTest = function(historyRenderer){
                         var code = word.code();
                         return !!(code && (code.block || code.eof));
                     };
-                    //var prototype = node.derive((function(){
                     var createPrototype = function(renderer,callback,minimumWidth,minimumHeight){
 											return {
                         invalidateBounds: function(){
-                            var bounds = this.frame.bounds();
-                            var pos = this.position;
-                            var result = [
-                                pos.x + bounds.l,
-                                pos.y + bounds.t,
-                                pos.x + this.frame.actualWidth(),
-                                pos.y + bounds.h];
-                            this.bounds = result;
-                            this.stanza.bounds = this.bounds;
-														callback("boundsChanged",[this.identity,this,this.stanza,this.bounds]);
+													console.log("carota invalidate bounds",this.stanza);
+													var bounds = this.frame.bounds();
+													var pos = this.position;
+													var result = [
+														pos.x + bounds.l,
+														pos.y + bounds.t,
+														pos.x + this.frame.actualWidth(),
+														pos.y + bounds.h
+													];
+													this.bounds = result;
+													this.stanza.bounds = this.bounds;
+													callback("boundsChanged",[this.identity,this,this.stanza,this.bounds]);
                         },
                         load: function(runs) {
                             var self = this;
@@ -949,8 +950,8 @@ var carotaTest = function(historyRenderer){
                         doc.caretVisible = true;
                         doc.customCodes = function(code, data, allCodes) {};
                         doc.codes = function(code, data) {
-                            var instance = codes(code, data, doc.codes, renderer,minimumWidth,minimumHeight);
-                            return instance || doc.customCodes(code, data, doc.codes, renderer,minimumWidth,minimumHeight);
+													var instance = codes(code, data, doc.codes, renderer,minimumWidth,minimumHeight);
+													return instance || doc.customCodes(code, data, doc.codes, renderer,minimumWidth,minimumHeight);
                         };
                         doc.selectionChanged = util.event();
                         doc.contentChanged = util.event();

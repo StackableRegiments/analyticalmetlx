@@ -813,7 +813,7 @@ var createInteractiveCanvas = function(boardDiv){
 				resized.multiWordTextIds = _.keys(selected.multiWordTexts);
 				/*
 				_.each(selected.multiWordTexts,function(text,id){
-						Modes.text.echoesToDisregard[id] = true;
+				//		Modes.text.echoesToDisregard[id] = true;
 						var range = text.doc.documentRange();
 						text.doc.select(range.start,range.end);
 						Modes.text.scaleEditor(text.doc,resized.xScale);
@@ -854,6 +854,54 @@ var createInteractiveCanvas = function(boardDiv){
 			}
 		};
 	})();
+	var hexToRgb = function(hex){
+		return hex;
+		/*
+    if(typeof hex == "object" && hex.alpha) {
+			return Colors.getColorForColorParts(hex.alpha,hex.red,hex.green,hex.blue);
+    } else if (typeof hex == "object" && hex[0] && hex[1] && typeof hex[0] == "string" && typeof hex[1] == "number"){
+			return hex;
+    } else if(typeof hex == "string") {
+			return Colors.getColorObjForHex(hex);
+    } else if(typeof hex == "array") {
+			return hex;
+    } else {
+			return Colors.getDefaultColorObj();
+    }
+		*/
+	}
+
+	var richTextEditorToStanza = function(t){
+		if(!t.bounds) t.doc.invalidateBounds();
+		var bounds = t.bounds;
+		var text = t.doc.save();
+		var w = t.doc.width();
+		return {
+			timestamp:-1,
+			tag:"_",
+			identity:t.identity,
+			type:t.type,
+			x:bounds[0],
+			y:bounds[1],
+			requestedWidth:w,
+			width:w,
+			height:bounds[3]-bounds[1],
+			words:text.map(function partToStanza(p){
+				var defaults = carota.runs.defaultFormatting;
+				var color = hexToRgb(p.color || defaults.color);
+				return {
+					text:p.text,
+					color:color,
+					size:parseFloat(p.size) || parseFloat(defaults.size),
+					font:p.font || defaults.font,
+					justify:p.align || defaults.align,
+					bold:p.bold === true,
+					underline:p.underline === true,
+					italic:p.italic === true
+				};
+			})
+		};
+	}
 
 	var resizeFree = (function(){
 		var bounds = undefined;
@@ -924,19 +972,18 @@ var createInteractiveCanvas = function(boardDiv){
 				resized.textIds = _.keys(selected.texts);
 				resized.imageIds = _.keys(selected.images);
 				resized.videoIds = _.keys(selected.videos);
-				/*
 				var s = rendererObj.getScale();
 				_.each(selected.multiWordTexts,function(word){
 					if(word.doc.save().length > 0){
 						word.doc.width(Math.max(
 							word.doc.width() * resized.xScale,
-							Modes.text.minimumWidth / s
+							minimumTextWidth / s
 						));
 						word.doc.updateCanvas();
-						sendRichText(word);
+						stanzaAvailable(richTextEditorToStanza(word));
+						//sendRichText(word);
 					}
 				});
-				*/
 				/*
 				registerTracker(resized.identity,function(){
 						MeTLBus.call("onSelectionChanged");
@@ -1031,6 +1078,7 @@ var createInteractiveCanvas = function(boardDiv){
 		}
 	};													 
 	var currentModes = noneMode;
+	var minimumTextWidth = 240;
 	var textMode = (function(){
 		var texts = [];
 		var noop = function(){};
@@ -3256,7 +3304,6 @@ var createInteractiveCanvas = function(boardDiv){
 								canvasContext.globalAlpha = 0.7;
 								var s = rendererObj.getScale();
 								canvasContext.scale(s,s);
-								/*
 								var scaledText = carota.editor.create({
 									querySelector:function(){
 										return {
@@ -3264,20 +3311,23 @@ var createInteractiveCanvas = function(boardDiv){
 										}
 									},
 									handleEvent:noop
-								}, canvasContext, noop, _.cloneDeep(item));
+								}, canvasContext, _.cloneDeep(item),rendererObj,function(evn,evps){},20,40);
 								scaledText.position = {x:bounds[0],y:bounds[1]};
 								scaledText.load(item.doc.save());
+								/*
 								delete scaledText.canvas;
+								*/
 								var fullRange = scaledText.documentRange();
 								var nominatedWidth = Math.max(
 										item.doc.width() * xScale,
-										Modes.text.minimumWidth / scale()
+										minimumTextWidth / rendererObj.getScale()
 								);
 								scaledText.width(nominatedWidth);
 								scaledText.updateCanvas();
-								carota.editor.paint(board[0],scaledText);
+								rendererObj.drawMultiwordText(scaledText);
+								//scaledText.editor.paint(board[0]);
+								//carota.editor.paint(board[0],scaledText);
 								canvasContext.restore();
-								*/
 							}
 							break;
 						case "inks":

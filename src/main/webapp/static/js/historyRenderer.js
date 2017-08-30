@@ -642,8 +642,10 @@ var createCanvasRenderer = function(canvasElem){
 					dataImage.src = url;
 					break;
 				case "multiWordText":
-					prerenderMultiwordText(stanza,true);
-					boardContent.multiWordTexts[stanza.identity] = stanza;
+					console.log("add mwt",stanza);
+					var newStanza = prerenderMultiwordText(stanza,true);
+					console.log("add mwt postPreRender",stanza);
+					boardContent.multiWordTexts[stanza.identity] = newStanza;
 					render();
 					break;
 				case "video":
@@ -838,15 +840,23 @@ var createCanvasRenderer = function(canvasElem){
 				minimumWidth,minimumHeight);
 			editor.doc.position = {x:t.x,y:t.y};
 			editor.doc.width(t.width);
-			return editor;
 		} 
+		return editor;
 	};
 
 	var prerenderMultiwordText = function(text){
+		console.log("prmwt 1",text);
 		var editor = textEditorFor(text).doc;
+		console.log("prmwt 2",text);
 		editor.load(text.words);
+		console.log("prmwt 3",text);
+		editor.invalidateBounds();
+		console.log("prmwt 4",text);
 		editor.updateCanvas();
-		incorporateBoardBounds(text.bounds);
+		console.log("prmwt 5",text);
+		incorporateBoardBounds(editor.stanza.bounds);
+		console.log("prmwt 6",text);
+		return editor.stanza;
 	}
 	var prerenderImage = function(image) {
 		var canvas = $("<canvas/>")[0];

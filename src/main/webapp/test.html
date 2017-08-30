@@ -51,8 +51,8 @@
 			type:"video",
 			timestamp:5,
 			identity:"5",
-			x:180,
-			y:20,
+			x:20,
+			y:200,
 			width:160,
 			height:120,
 			target:"presentationSpace",
@@ -72,8 +72,8 @@
 		var mockMultiWordText = {
 			type:"multiWordText",
 			identity:"4",		
-			x:20,
-			y:200,
+			x:320,
+			y:20,
 			width:300,
 			height:100,
 			tag:"testTag",
@@ -260,6 +260,7 @@
 				stanza.privacy = "PUBLIC";
 				stanza.target = "presentationSpace";
 				stanza.slide = "thisSlide";
+				stanza.timestamp = new Date().getTime();
 				console.log("test.html stanza:",stanza);
 				stanzas.push(stanza);
 				newCanvas.addStanza(stanza);
