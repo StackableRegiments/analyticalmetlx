@@ -1030,13 +1030,17 @@ var carotaTest = function(historyRenderer){
 												}
 											};
 											doc.paint = paint;
-
+											var lastLoc = undefined;
 											var repaintCursor = function(doc){
 												if (renderer !== undefined){
 													var drawCaret = doc.selectionJustChanged || doc.caretVisible;
 													var ctx = renderer.getBoardContext();
 													var caret = doc.getCaretCoords(doc.selection.start);
 													if (caret) {
+														if (lastLoc != caret){
+															renderer.render();
+															lastLoc = caret;
+														}  
 														ctx.save();
 														var screenPos = renderer.worldToScreen(doc.position.x,doc.position.y);
 														var s = renderer.getScale();
