@@ -887,6 +887,7 @@ var createCanvasRenderer = function(canvasElem){
 		delete image.imageData;
 	}
 	var prerenderVideo = function(video){
+		video.bounds = [video.x,video.y,video.x + video.width,video.y + video.height];
 		if (!("video" in video)){
 			var vid = $("<video/>",{
 				preload:"auto",
@@ -952,6 +953,7 @@ var createCanvasRenderer = function(canvasElem){
 		if (!("bounds" in video)){
 			calculateVideoBounds(video);
 		}
+		incorporateBoardBounds(video.bounds);
 		return video;
 	}
 	var prerenderText = function(text){
