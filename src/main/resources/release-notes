@@ -1,3 +1,9 @@
+1.20.8
+METL-725: Bugfix: Fixed JS bugs affecting cumulative total on enterprise dashboard.
+
+1.20.7
+METL-724: Bugfix: Repair PPT import endpoint.
+
 1.20.6
 METL-718: Improvement: Don't allow future conversation created dates.
 
