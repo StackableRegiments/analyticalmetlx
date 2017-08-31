@@ -134,10 +134,22 @@
 			});
 			*/
 			newCanvas.onSelectionChanged(function(selected){
+					console.log("selected",selected);
 				if (_.some(selected,function(category,categoryName){ return _.size(category) > 0; })){
 					$("#deleteSelection").show();
+					if (_.some(selected,function(category,categoryName){return _.find(category,function(item){return item.privacy.toLowerCase() == Privacy.privatePrivacy;}) !== undefined})){
+						$("#showSelection").show();
+					}
+					if (_.some(selected,function(category,categoryName){
+							return _.find(category,function(item){
+								return item.privacy.toLowerCase() == Privacy.publicPrivacy;}) !== undefined;
+							})){
+						$("#hideSelection").show();
+					}
 				} else {
 					$("#deleteSelection").hide();
+					$("#showSelection").hide();
+					$("#hideSelection").hide();
 				}
 			});
 			newCanvas.onModeChanged(function(mode){
@@ -147,6 +159,7 @@
 					case "select":
 						$("#setSelectMode").addClass("activeMode");
 						$("#selectTools").show();
+						console.log("selectModeSelected");
 						break;
 					case "zoom":
 						$("#setZoomMode").addClass("activeMode");
@@ -190,6 +203,16 @@
 				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "select";}));
 			});
 
+			var loopbackStanza = function(stanza){
+				stanza.author = "testUser";
+				stanza.privacy = Privacy.getPrivacy();
+				stanza.target = "presentationSpace";
+				stanza.slide = "thisSlide";
+				stanza.timestamp = new Date().getTime();
+				console.log("test.html stanza:",stanza);
+				stanzas.push(stanza);
+				newCanvas.addStanza(stanza);
+			};
 			var Privacy = (function(){
 					var publicMode = "public";
 					var privateMode = "private";
@@ -208,6 +231,38 @@
 						publicSelector.prop("checked",myPrivacy == publicMode);
 						privateSelector.prop("checked",myPrivacy == privateMode);
 					};
+					var hideSelector = $("#hideSelection");
+					var showSelector = $("#showSelection");
+					hideSelector.on("click",function(){
+						var selected = newCanvas.getSelected();
+						var transform = newCanvas.createBatchTransform();
+						_.forEach(selected,function(category,categoryName){
+							transform[selected+"Ids"] = _.map(category,function(stanza){
+								return stanza.identity;
+							});
+						});
+						transform.newPrivacy = privateMode;
+						loopbackStanza(transform);
+					});
+					showSelector.on("click",function(){
+						var selected = newCanvas.getSelected();
+						var transform = newCanvas.createBatchTransform();
+						_.forEach(selected,function(category,categoryName){
+							transform[selected+"Ids"] = _.map(category,function(stanza){
+								return stanza.identity;
+							});
+						});
+						transform.newPrivacy = publicMode;
+						loopbackStanza(transform);
+					});
+
+					newCanvas.onPostTransformItem(function(item,transform){
+						if (transform.newPrivacy == publicMode){
+							item.privacy = publicMode;
+						} else if (transform.newPrivacy == privateMode){
+							item.privacy = privateMode;
+						}
+					});
 					reRenderPrivacyButtons();
 					var beforePreRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
 						if ("privacy" in item && "type" in item){
@@ -463,14 +518,7 @@
 //				console.log("postSelect",item);
 			});
 			newCanvas.onStanzaAvailable(function(stanza){
-				stanza.author = "testUser";
-				stanza.privacy = Privacy.getPrivacy();
-				stanza.target = "presentationSpace";
-				stanza.slide = "thisSlide";
-				stanza.timestamp = new Date().getTime();
-				console.log("test.html stanza:",stanza);
-				stanzas.push(stanza);
-				newCanvas.addStanza(stanza);
+				loopbackStanza(stanza);
 			});
 			var reduceCanvas = function(dims){
 				var gutter = 10;

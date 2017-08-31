@@ -60,6 +60,14 @@ var createInteractiveCanvas = function(boardDiv){
 	rendererObj.onAfterRenderItem(function(i,c){return afterRenderItem(i,c);});
 	rendererObj.onBeforePreRenderItem(function(i,c,s,p){return beforePreRenderItem(i,c,s,p);});
 	rendererObj.onAfterPreRenderItem(function(i,c,s,p){return afterPreRenderItem(i,c,s,p);});
+	var preTransformItem = function(item,transform){ return true; };
+	var preTransform = function(transform){ return true; };
+	var postTransformItem = function(item,transform){ };
+	var postTransform = function(transform){ };
+	rendererObj.onPreTransformItem(function(i,t){return preTransformItem(i,t);});
+	rendererObj.onPostTransformItem(function(i,t){return postTransformItem(i,t);});
+	rendererObj.onPreTransform(function(t){return preTransform(t);});
+	rendererObj.onPostTransform(function(t){return postTransform(t);});
 	/*
 		RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
 		* */
@@ -2011,11 +2019,13 @@ var createInteractiveCanvas = function(boardDiv){
 					dragging = false;
 					resizing = false;
 					registerPositionHandlers(down,move,up);
+					modeChanged(selectMode);
 				},
 				deactivate:function(){
 					unregisterPositionHandlers();
 					clearSelectionFunction();
 					rendererObj.render();
+					modeChanged(noneMode);
 				}
 			}
 	})();
@@ -3245,6 +3255,18 @@ var createInteractiveCanvas = function(boardDiv){
 		onPostDeleteItem:function(f){
 			postDeleteItem = f;
 		},
+		onPreTransformItem:function(f){
+			preTransformItem = f;
+		},
+		onPostTransformItem:function(f){
+			postTransformItem = f;
+		},
+		onPreTransform:function(f){
+			preTransform = f;
+		},
+		onPostTransform:function(f){
+			postTransform = f;
+		},
 		getHistory:function(){
 			return history;
 		},
@@ -3265,6 +3287,7 @@ var createInteractiveCanvas = function(boardDiv){
 		setVideoSourceCalculationFunction:function(f){
 			setVideoSourceCalcFunc = f;
 		},
+		createBatchTransform:batchTransform,
 		getZoomController:function(){return Zoom},
 		getPanController:function(){return Pan},
 		alertSnapshot:function(){
