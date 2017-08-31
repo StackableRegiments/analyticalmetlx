@@ -47,13 +47,19 @@ var createInteractiveCanvas = function(boardDiv){
 		return canvasStanzaAdded(s,stanzaAdded);
 	});
 
-	var preRenderItem = function(item,ctx){
+	var beforeRenderItem = function(item,ctx){
 		return true;
 	};
-	rendererObj.onPreRenderItem(function(i,c){return preRenderItem(i,c);});
-	var postRenderItem = function(item){
+	rendererObj.onBeforeRenderItem(function(i,c){return beforeRenderItem(i,c);});
+	var afterRenderItem = function(item){
 	};
-	rendererObj.onPostRenderItem(function(i,c){return postRenderItem(i,c);});
+	var beforePreRenderItem = function(i,c,s,p){
+		return true;
+	};
+	var afterPreRenderItem = function(i,c,s,p){};
+	rendererObj.onAfterRenderItem(function(i,c){return afterRenderItem(i,c);});
+	rendererObj.onBeforePreRenderItem(function(i,c,s,p){return beforePreRenderItem(i,c,s,p);});
+	rendererObj.onAfterPreRenderItem(function(i,c,s,p){return afterPreRenderItem(i,c,s,p);});
 	/*
 		RegisterPositionHandlers takes a set of contexts (possibly a single jquery), and handlers for down/move/up, normalizing them for touch.  Optionally, the mouse is raised when it leaves the boundaries of the context.  This is particularly to handle selection, which has 2 cooperating event sources which constantly give way to each other.
 		* */
@@ -2932,7 +2938,7 @@ var createInteractiveCanvas = function(boardDiv){
 			var ray = [worldPos.x - threshold,worldPos.y - threshold,worldPos.x + threshold,worldPos.y + threshold];
 			var texts = _.values(history.multiWordTexts).filter(function(text){
 				var intersects = intersectRect(text.bounds,ray)
-				return intersects && preSelectItem(text) && preRenderItem(text);
+				return intersects && preSelectItem(text) && beforeRenderItem(text);
 			});
 			if(texts.length > 0){
 				return texts[0];
@@ -3210,19 +3216,28 @@ var createInteractiveCanvas = function(boardDiv){
 		onRenderComplete:function(f){
 			renderComplete = f;
 		},
-		onPreRenderItem:function(f){
-			//preRenderItem takes an item and a canvasContext and returns whether to continue rendering the item
-			preRenderItem = f;
+		onBeforeRenderItem:function(f){
+			//beforeRenderItem takes an item and a canvasContext and returns whether to continue rendering the item
+			beforeRenderItem = f;
 		},
-		onPostRenderItem:function(f){
-			//postRenderItem takes an item and a canvasContext
-			postRenderItem = f;
+		onAfterRenderItem:function(f){
+			//afterRenderItem takes an item and a canvasContext
+			afterRenderItem = f;
 		},
+		onBeforePreRenderItem:function(f){
+			// (item,canvasContext,scaleMeasurements,params) => shouldPreRender
+			beforePreRenderItem = f;
+		},
+		onAfterPreRenderItem:function(f){
+			// (item,canvasContext,scaleMeasurements,params) => void
+			afterPreRenderItem = f;
+		},
+
 		onPreSelectItem:function(f){
-			preRenderItem = f;
+			preSelectItem = f;
 		},
 		onPostSelectItem:function(f){
-			postRenderItem = f;
+			postSelectItem = f;
 		},
 		onPreDeleteItem:function(f){
 			preDeleteItem = f;

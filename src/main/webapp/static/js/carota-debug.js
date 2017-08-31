@@ -1075,10 +1075,13 @@ var carotaTest = function(historyRenderer){
 												var context = c.getContext("2d");
 												c.width = scaled.width;
 												c.height = scaled.height;
-												context.save();
-												context.setTransform(scaled.scaleX,0,0,scaled.scaleY,0,0);
-												paint(c,doc,hasFocus());
-												context.restore();
+												if (rendererObj.getBeforeRenderItem(doc.stanza,context,scaled,doc)){
+													context.save();
+													context.setTransform(scaled.scaleX,0,0,scaled.scaleY,0,0);
+													paint(c,doc,hasFocus());
+													context.restore();
+													rendererObj.getAfterRenderItem(doc.stanza,context,scaled,doc);
+												}
 											}
 
 											var toggles = {

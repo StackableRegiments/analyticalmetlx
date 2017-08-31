@@ -670,7 +670,6 @@ var createCanvasRenderer = function(canvasElem){
 			if(onBoard){
 					incorporateBoardBounds(ink.bounds);
 			}
-			//var isPrivate = ink.privacy.toUpperCase() == "PRIVATE";
 			var rawWidth = (ink.bounds[2] - ink.bounds[0] + (ink.thickness));
 			var rawHeight = (ink.bounds[3] - ink.bounds[1] + (ink.thickness));
 
@@ -698,50 +697,34 @@ var createCanvasRenderer = function(canvasElem){
 			var contentOffsetX = -1 * ((ink.minX - ink.thickness / 2)) * scaleX;
 			var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2)) * scaleY;
 			var scaledThickness = ink.thickness * scaleX;
-			/*
-			if(isPrivate){
-					x = points[0] + contentOffsetX;
-					y = points[1] + contentOffsetY;
-					context.lineWidth = scaledThickness;
-					context.lineCap = "round";
-					context.strokeStyle = "red";
-					context.globalAlpha = 0.3;
-					context.moveTo(x,y);
-					for(p = 0; p < points.length; p += 3){
-							context.beginPath();
-							context.moveTo(x,y);
-							x = points[p]+contentOffsetX;
-							y = points[p+1]+contentOffsetY;
-							pr = scaledThickness * points[p+2];
-							context.lineWidth = pr + 2;
-							context.lineTo(x,y);
-							context.stroke();
-					}
-					context.globalAlpha = 1.0;
-			}
-			*/
-			context.strokeStyle = ink.color[0];
-			context.fillStyle = ink.color[0];
-			x = points[0] + contentOffsetX;
-			y = points[1] + contentOffsetY;
 
-			context.beginPath();
-			context.moveTo(x,y);
-			pr = scaledThickness * points[2];
-			context.arc(x,y,pr/2,0,2 * Math.PI);
-			context.fill();
-			context.lineCap = "round";
-			for(p = 0; p < points.length; p += 3){
-					context.beginPath();
-					context.moveTo(x,y);
-					x = points[p+0] + contentOffsetX;
-					y = points[p+1] + contentOffsetY;
-					pr = scaledThickness * points[p+2];
-					context.lineWidth = pr;
-					context.lineTo(x,y);
-					context.stroke();
+			if (beforePreRenderItem(ink,context,scaleMeasurements,{points:points})){
+				context.strokeStyle = ink.color[0];
+				context.fillStyle = ink.color[0];
+				x = points[0] + contentOffsetX;
+				y = points[1] + contentOffsetY;
+
+				context.beginPath();
+				context.moveTo(x,y);
+				pr = scaledThickness * points[2];
+				context.arc(x,y,pr/2,0,2 * Math.PI);
+				context.fill();
+				context.lineCap = "round";
+				for(p = 0; p < points.length; p += 3){
+						context.beginPath();
+						context.moveTo(x,y);
+						x = points[p+0] + contentOffsetX;
+						y = points[p+1] + contentOffsetY;
+						pr = scaledThickness * points[p+2];
+						context.lineWidth = pr;
+						context.lineTo(x,y);
+						context.stroke();
+				}
+				afterPreRenderItem(ink,context,scaleMeasurements,{points:points});
+				return true;
+			} else {
+				return false;
 			}
-			return true;
 	};
 
 	var renderViewbox = function(){
@@ -860,29 +843,31 @@ var createCanvasRenderer = function(canvasElem){
 		return editor.stanza;
 	}
 	var prerenderImage = function(image) {
-		var canvas = $("<canvas/>")[0];
-		image.canvas = canvas;
-		canvas.width = image.width;
-		canvas.height = image.height;
+		var rawWidth = image.width;
+		var rawHeight = image.height;
+		var scaleMeasurements = determineScaling(rawWidth,rawHeight);
 
-		var borderW = canvas.width * 0.10;
-		var borderH = canvas.height * 0.10;
-		canvas.width = image.width + borderW;
-		canvas.height = image.height + borderH;
+		var scaleX = scaleMeasurements.scaleX;
+		var scaleY = scaleMeasurements.scaleY;
+
+		var canvas = $("<canvas />",{
+				width:scaleMeasurements.width,
+				height:scaleMeasurements.height
+		})[0];
+		image.canvas = canvas;
+		var borderW = scaleMeasurements.width * 0.10;
+		var borderH = scaleMeasurements.height * 0.10;
+		canvas.width = scaleMeasurements.width + borderW;
+		canvas.height = scaleMeasurements.height + borderH;
 		var context = canvas.getContext("2d");
-		context.drawImage(image.imageData,borderW / 2,borderH / 2,image.width, image.height);
-		/*
-		if(image.privacy.toUpperCase() == "PRIVATE"){
-				context.globalAlpha = 0.2;
-				context.fillStyle = "red";
-				context.fillRect(
-						0,0,
-						canvas.width,
-						canvas.height);
-				context.globalAlpha = 1.0;
+		if (beforePreRenderItem(image,context,scaleMeasurements,{borderWidth:borderW,borderHeight:borderH})){ 
+			context.drawImage(image.imageData,borderW / 2,borderH / 2,scaleMeasurements.width, scaleMeasurements.height);
+			afterPreRenderItem(image,context,scaleMeasurements,{borderWidth:borderW,borderHeight:borderH});
+			delete image.imageData;
+			return true;
+		} else {
+			return false;
 		}
-		*/
-		delete image.imageData;
 	}
 	var prerenderVideo = function(video){
 		video.bounds = [video.x,video.y,video.x + video.width,video.y + video.height];
@@ -1001,74 +986,80 @@ var createCanvasRenderer = function(canvasElem){
 			var rawHeight = (text.bounds[3] - text.bounds[1]);
 			var scaleMeasurements = determineScaling(rawWidth,rawHeight);
 			
-			var scaleX = scaleMeasurements.scaleX;
-			var scaleY = scaleMeasurements.scaleY;
-			
-			var contentOffsetX = 0;
-			var contentOffsetY = 0;
+			if (beforePreRenderItem(text,context,scaleMeasurements,{})){
+				var scaleX = scaleMeasurements.scaleX;
+				var scaleY = scaleMeasurements.scaleY;
+				
+				var contentOffsetX = 0;
+				var contentOffsetY = 0;
 
-			canvas.width = scaleMeasurements.width + contentOffsetX;
-			canvas.height = scaleMeasurements.height + contentOffsetY;
+				canvas.width = scaleMeasurements.width + contentOffsetX;
+				canvas.height = scaleMeasurements.height + contentOffsetY;
 
-			text.height = rawHeight;
+				text.height = rawHeight;
 
-			/*
-			if(text.privacy.toUpperCase() == "PRIVATE"){
-					context.globalAlpha = 0.2;
-					context.fillStyle = "red";
-					context.fillRect(
-							0,0,
-							scaleMeasurements.width,
-							scaleMeasurements.height);
-					context.globalAlpha = 1.0;
+				/*
+				if(text.privacy.toUpperCase() == "PRIVATE"){
+						context.globalAlpha = 0.2;
+						context.fillStyle = "red";
+						context.fillRect(
+								0,0,
+								scaleMeasurements.width,
+								scaleMeasurements.height);
+						context.globalAlpha = 1.0;
+				}
+				*/
+				context.fillStyle = text.color[0];
+				context.textBaseline = "top";
+				function generateTextFont(text) {
+						var font = px(text.size * scaleY) + " " + text.font;
+						if(text.weight == "bold")
+								font = font + ' bold';
+						if(text.style == "italic")
+								font = font + ' italic';
+						return font;
+				}
+
+				_.each(text.runs,function(run,ri){
+						var underline = function(){
+								var lines = text.height/(text.size * 1.25 * scaleY);
+								var range = _.range(text.size, text.height, text.height/lines);
+								_.each(range, function(y){
+										context.beginPath();
+										context.strokeStyle = text.color[0];
+										var underlineY = contentOffsetY + y;
+										context.moveTo(contentOffsetX, underlineY);
+										var underlineEndX = contentOffsetX + scaleMeasurements.width;
+										context.lineTo(underlineEndX, underlineY);
+										context.stroke();
+								});
+						};
+						var _yOffset = ri * text.size * 1.25 * scaleY;
+						context.font = generateTextFont(text);
+						context.fillText(run,
+														 contentOffsetX * scaleX,
+														 (contentOffsetY + _yOffset),
+														 scaleMeasurements.width);
+						if(text.decoration == "underline")
+								underline();
+
+				});
+				incorporateBoardBounds(text.bounds);
+				afterPreRenderItem(text,context,scaleMeasurements,{});
+				return true;
+			} else {
+				return false;
 			}
-			*/
-			context.fillStyle = text.color[0];
-			context.textBaseline = "top";
-			function generateTextFont(text) {
-					var font = px(text.size * scaleY) + " " + text.font;
-					if(text.weight == "bold")
-							font = font + ' bold';
-					if(text.style == "italic")
-							font = font + ' italic';
-					return font;
-			}
-
-			_.each(text.runs,function(run,ri){
-					var underline = function(){
-							var lines = text.height/(text.size * 1.25 * scaleY);
-							var range = _.range(text.size, text.height, text.height/lines);
-							_.each(range, function(y){
-									context.beginPath();
-									context.strokeStyle = text.color[0];
-									var underlineY = contentOffsetY + y;
-									context.moveTo(contentOffsetX, underlineY);
-									var underlineEndX = contentOffsetX + scaleMeasurements.width;
-									context.lineTo(underlineEndX, underlineY);
-									context.stroke();
-							});
-					};
-					var _yOffset = ri * text.size * 1.25 * scaleY;
-					context.font = generateTextFont(text);
-					context.fillText(run,
-													 contentOffsetX * scaleX,
-													 (contentOffsetY + _yOffset),
-													 scaleMeasurements.width);
-					if(text.decoration == "underline")
-							underline();
-
-			});
-			incorporateBoardBounds(text.bounds);
 	}
 
 	var renderInks = function(inks,rendered,viewBounds){
 			if (inks != undefined){
 					_.each(inks,function(ink,i){
 							try{
-								if (preRenderItem(ink,boardContext)){
+								if (beforeRenderItem(ink,boardContext)){
 									if(intersectRect(ink.bounds,viewBounds)){
 											drawInk(ink);
-											postRenderItem(ink,boardContext);
+											afterRenderItem(ink,boardContext);
 											rendered.push(ink);
 									}
 								}
@@ -1082,14 +1073,14 @@ var createCanvasRenderer = function(canvasElem){
 	var renderRichTexts = function(texts,rendered,viewBounds){
 		if(texts){
 			_.each(texts,function(text,i){
-				if (preRenderItem(text,boardContext)){
+				if (beforeRenderItem(text,boardContext)){
 					if(text.doc){
 						if(!text.bounds){
 							text.doc.invalidateBounds();
 						}
 						if(intersectRect(text.bounds,viewBounds)){
 							drawMultiwordText(text);
-							postRenderItem(text,boardContext);
+							afterRenderItem(text,boardContext);
 							rendered.push(text);
 						}
 					}
@@ -1101,11 +1092,11 @@ var createCanvasRenderer = function(canvasElem){
 		if (videos){
 			//Modes.clearCanvasInteractables("videos");
 			_.each(videos,function(video,i){
-				if (preRenderItem(video,boardContext)){
+				if (beforeRenderItem(video,boardContext)){
 					if (intersectRect(video.bounds,viewBounds)){
 							drawVideo(video);
 							//Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-							postRenderItem(video,boardContext);
+							afterRenderItem(video,boardContext);
 							rendered.push(video);
 					}
 				}
@@ -1115,10 +1106,10 @@ var createCanvasRenderer = function(canvasElem){
 
 	var renderTexts = function(texts,rendered,viewBounds){
 			_.each(texts,function(text,i){
-				if (preRenderItem(text,boardContext)){
+				if (beforeRenderItem(text,boardContext)){
 					if(intersectRect(text.bounds,viewBounds)){
 							drawText(text);
-							postRenderItem(text,boardContext);
+							afterRenderItem(text,boardContext);
 							rendered.push(text);
 					}
 				}
@@ -1174,16 +1165,16 @@ var createCanvasRenderer = function(canvasElem){
 	var renderImages = function(images,rendered,viewBounds){
 			_.each(images,function(image,id){
 					try{
-						if (preRenderItem(image)){
+						if (beforeRenderItem(image)){
 							if(intersectRect(image.bounds,viewBounds)){
 									drawImage(image);
-									postRenderItem(image,boardContext);
+									afterRenderItem(image,boardContext);
 									rendered.push(image);
 							}
 						}
 					}
 					catch(e){
-						passException(e,"renderImages",[i,image]);
+						passException(e,"renderImages",[id,image]);
 					}
 			});
 	};
@@ -1557,10 +1548,15 @@ var createCanvasRenderer = function(canvasElem){
 	var historyUpdated = function(history){ };
 	var stanzaAdded = function(stanza){ };
 	var statistic = function(category,time,success,exception){ };
-	var preRenderItem = function(item,ctx){
+	var beforeRenderItem = function(item,ctx){
 		return true;
 	};
-	var postRenderItem = function(item,ctx){ };
+	var afterRenderItem = function(item,ctx){ };
+	var beforePreRenderItem = function(item,ctx,scaleMeasurements,params){
+		return true;
+	};
+	var afterPreRenderItem = function(item,ctx,scaleMeasurements,params){
+	};
 	var preTransform = function(transform){
 		return true;
 	};
@@ -1652,11 +1648,25 @@ var createCanvasRenderer = function(canvasElem){
 		onScaleChanged:function(f){
 			scaleChanged = f;
 		},
-		onPreRenderItem:function(f){
-			preRenderItem = f;
+		onBeforePreRenderItem:function(f){
+			// (item,context,scaleMeasurements,itemSpecificArguments)
+			beforePreRenderItem = f;
 		},
-		onPostRenderItem:function(f){
-			postRenderItem = f;
+		onAfterPreRenderItem:function(f){
+			// (item,context,scaleMeasurements,itemSpecificArguments)
+			afterPreRenderItem = f;
+		},
+		onBeforeRenderItem:function(f){
+			beforeRenderItem = f;
+		},
+		getBeforeRenderItem:function(){
+			return beforeRenderItem;
+		},
+		onAfterRenderItem:function(f){
+			afterRenderItem = f;
+		},
+		getAfterRenderItem:function(){
+			return afterRenderItem;
 		},
 		onPreTransform:function(f){
 			preTransform = f;
