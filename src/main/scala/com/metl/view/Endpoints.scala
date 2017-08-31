@@ -482,8 +482,13 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       () => StatelessHtml.exportMyConversation(Globals.currentUser.is, conversation)
     case r@Req(List("conversationImportAsMe"), _, _) =>
       () => {
-        warn("conversationImportAsMe (formerly foreignConversationImport) endpoint triggered: %s".format(r))
+        warn("conversationImportAsMe endpoint triggered: %s".format(r))
         StatelessHtml.importExportedConversation(r,Some(Globals.currentUser.is))
+      }
+    case r@Req(List("foreignConversationImportAsMe"), _, _) =>
+      () => {
+        warn("foreignConversationImportAsMe (formerly foreignConversationImport) endpoint triggered: %s".format(r))
+        StatelessHtml.importConversationAsMe(r)
       }
 
     case r@Req(List("powerpointImport"), _, _) =>
