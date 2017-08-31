@@ -240,6 +240,7 @@
 				name:"white",
 				code:"#FFFFFF"
 			}];
+			var hasBuiltText = false;
 			var respondToTextAttributes = function(attrs){
 				var tempFonts = _.clone(fonts);
 				var tempSizes = _.clone(sizes);
@@ -255,19 +256,22 @@
 					if (newValue){
 						collection.push(newValue);
 					}
-					select.unbind("change").html(_.map(collection,function(item){
+					select.html(_.map(collection,function(item){
 						var i = optionFunc(item);
 						return $("<option/>",{
 							value:i.value,
 							text:i.name
 						});
-					})).on("change",function(){
-						var value = $(this).val();
-						if (valueMutator !== undefined){
-							value = valueMutator(value);
-						}
-						_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
-					});
+					}));
+					if (!hasBuiltText){
+						select.unbind("change").on("change",function(){
+							var value = $(this).val();
+							if (valueMutator !== undefined){
+								value = valueMutator(value);
+							}
+							_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
+						});
+					}
 					if (newValue){
 						select.val(newValue);
 					}
@@ -280,10 +284,12 @@
 				}
 				updateSelect(colorSelector,tempColors,function(c){return {name:c.name,value:c.code};},color,"setFontColor",function(c){return [c,255];});
 				var updateCheckbox = function(cb,newValue,method){
-					cb.unbind("click").on("click",function(){
-						var value = $(this).prop("checked");
-						_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
-					});
+					if (!hasBuiltText){
+						cb.unbind("click").on("click",function(){
+							var value = $(this).prop("checked");
+							_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
+						});
+					}
 					if (newValue === true || newValue === false){
 						cb.prop("checked",newValue);
 					}
@@ -291,6 +297,7 @@
 				updateCheckbox(boldSelector,attrs.bold,"setFontBold");
 				updateCheckbox(italicSelector,attrs.italic,"setFontItalic");
 				updateCheckbox(underlineSelector,attrs.underline,"setFontUnderline");
+				hasBuiltText = true;
 			};
 			_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}).onTextAttributesChanged(function(font,size,color,bold,italic,underline){
 				respondToTextAttributes({
@@ -350,7 +357,7 @@
 				stanza.target = "presentationSpace";
 				stanza.slide = "thisSlide";
 				stanza.timestamp = new Date().getTime();
-			//	console.log("test.html stanza:",stanza);
+				console.log("test.html stanza:",stanza);
 				stanzas.push(stanza);
 				newCanvas.addStanza(stanza);
 			});

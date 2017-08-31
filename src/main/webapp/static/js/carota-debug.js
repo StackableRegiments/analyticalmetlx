@@ -1025,26 +1025,38 @@ var carotaTest = function(historyRenderer){
 											var lastLoc = undefined;
 											var repaintCursor = function(doc){
 												if (renderer !== undefined){
-													var drawCaret = doc.selectionJustChanged || doc.caretVisible;
+													var drawCaret = doc.selectionJustChanged || !doc.caretVisible;
 													var ctx = renderer.getBoardContext();
 													var caret = doc.getCaretCoords(doc.selection.start);
 													if (caret) {
 														if (lastLoc != caret){
-															renderer.render();
 															lastLoc = caret;
+															renderer.render();
 														}  
+/*
+														ctx.save();
+                            var screenPos = renderer.worldToScreen(doc.position.x,doc.position.y);
+                            var s = renderer.getScale();
+                            ctx.translate(screenPos.x,screenPos.y);
+                            ctx.scale(s,s);
+                            ctx.globalAlpha = 1;
+														ctx.fillStyle = drawCaret ? 'red' : 'blue';//black' : 'white';
+                            //ctx.fillStyle = drawCaret ? 'black' : 'white';
+                            caret.fill(ctx);
+                            ctx.restore();
+														*/
 														ctx.save();
 														var tl = renderer.worldToScreen(doc.position.x + caret.l,doc.position.y + caret.t);
 														var br = renderer.worldToScreen(doc.position.x + caret.r,doc.position.y + caret.b);
 														var scaledCaret = rect(tl.x,tl.y,br.x - tl.x, br.y - tl.y);
 														ctx.globalAlpha = 1;
 														ctx.fillStyle = drawCaret ? 'black' : 'white';
+														//ctx.fillStyle = drawCaret ? 'red' : 'blue';//black' : 'white';
 														scaledCaret.fill(ctx);
 														ctx.restore();
 													}
 												}
 											};
-
 
 											var hasFocus = function(){
 												return document.focussedElement == textArea;
@@ -1063,8 +1075,10 @@ var carotaTest = function(historyRenderer){
 												var context = c.getContext("2d");
 												c.width = scaled.width;
 												c.height = scaled.height;
+												context.save();
 												context.setTransform(scaled.scaleX,0,0,scaled.scaleY,0,0);
 												paint(c,doc,hasFocus());
+												context.restore();
 											}
 
 											var toggles = {
@@ -1363,8 +1377,7 @@ var carotaTest = function(historyRenderer){
 													nextCaretToggle = 0;
 													doc.updateCanvas();
 													doc.update();
-	doc.notifySelectionChanged();
-													repaintCursor(doc);
+													doc.notifySelectionChanged();
 													renderer.render();
 												}
 												catch(e){
@@ -1376,21 +1389,23 @@ var carotaTest = function(historyRenderer){
 													focused = false,
 													cachedWidth = host.clientWidth,
 													cachedHeight = host.clientHeight;
-
+											var caretBlinkSpeed = 500;
+											var caretBlinkRecheck = 10;
 											doc.update = function() {
 												/*Expire the timeouts once we're in a different spot*/
 												if(doc.isActive){
 													var now = new Date().getTime();
 													if (now > nextCaretToggle) {
-														nextCaretToggle = now + 500;
+														nextCaretToggle = now + caretBlinkSpeed;
 														if (doc.toggleCaret()) {
 															repaintCursor(doc);
 														}
+														setTimeout(doc.update,caretBlinkSpeed - caretBlinkRecheck);
+													} else {
+														setTimeout(doc.update,caretBlinkRecheck);
 													}
-													setTimeout(doc.update,500);
 												}
 											};
-											
 											doc.sendKey = handleKey;
 											return doc;
 									};

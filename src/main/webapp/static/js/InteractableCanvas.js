@@ -3079,7 +3079,6 @@ var createInteractiveCanvas = function(boardDiv){
 				};
 				var up = function(x,y,z,worldPos,modifiers){
 					var clickTime = Date.now();
-					var oldEditor = editorAt(x,y,z,worldPos);
 					var editor = editorAt(x,y,z,worldPos);
 					_.each(history.multiWordTexts,function(t){
 						t.doc.isActive = t.doc.identity == editor.identity;
@@ -3096,6 +3095,9 @@ var createInteractiveCanvas = function(boardDiv){
 					selectMode.clearSelection();
 					if (editor){
 						var doc = editor.doc;
+						doc.invalidateBounds();
+						editor = rendererObj.prerenderMultiwordText(editor);
+						rendererObj.render();
 						var context = editorContextFor(doc,worldPos);
 						currentEditor = doc;
 						if(clickTime - lastClick <= doubleClickThreshold){
@@ -3123,7 +3125,6 @@ var createInteractiveCanvas = function(boardDiv){
 						currentEditor = newDoc;
 						var editor = editorFor(newEditor);
 						newDoc.select(0,1);
-						console.log("created",newEditor,newDoc);
 						history.multiWordTexts[newEditor.identity] = newEditor;
 						sel = {multiWordTexts:{}};
 						sel.multiWordTexts[newEditor.identity] = history.multiWordTexts[newEditor.identity];
