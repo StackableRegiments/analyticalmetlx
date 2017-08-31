@@ -428,8 +428,7 @@ var Enterprise = (function(){
 
     return {
         prime:function(){
-            // $.get("/describeConversations?query=&format=json",function(response){
-            $.get("/static/saintLeoProdEnterprise-post-migrate.json",function(response){
+            $.get("/describeConversations?query=&format=json",function(response){
                 var updates = _.flatMap(response.conversations,function(c){
                     var results = _.map(c.edits,function(et){
                         return {
