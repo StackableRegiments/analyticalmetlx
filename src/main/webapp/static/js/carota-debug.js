@@ -1364,6 +1364,8 @@ var carotaTest = function(historyRenderer){
 														} else {
 															doc.select(selectDragStart, node.ordinal,false);
 														}
+														doc.updateCanvas();
+														renderer.render();
 													}
 												}
 											};

@@ -221,6 +221,10 @@
 			var sizes = [8,10,12,14,16,20,24,30,36,48];
 			var colors = [
 			{
+				name:"",
+				code:""
+			},
+			{
 				name:"black",
 				code:"#000000"
 			},
@@ -278,8 +282,8 @@
 				}
 				updateSelect(fontSelector,tempFonts,function(font){return {name:font,value:font};},attrs.font,"setFont");
 				updateSelect(sizeSelector,tempSizes,function(size){return {name:size,value:size};},attrs.size,"setFontSize");
-				var color = undefined;
-				if (attrs.color && attrs.color[0]){
+				var color = "";
+				if (attrs.color && attrs.color != {} && attrs.color[0]){
 					color = attrs.color[0];
 				}
 				updateSelect(colorSelector,tempColors,function(c){return {name:c.name,value:c.code};},color,"setFontColor",function(c){return [c,255];});
