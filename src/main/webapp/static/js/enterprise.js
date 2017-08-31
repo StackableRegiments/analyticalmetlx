@@ -67,13 +67,21 @@ var Enterprise = (function(){
 
 
         var postMigration = _.groupBy(updates,function(d){
-            return parseInt(d.timestamp) > new Date(2016,6,15).getTime();
+            return parseInt(d.timestamp) > new Date(2014,6,15).getTime();
         });
-        var preMigration = _.keys(_.groupBy(postMigration[false],"parameters")).length;
+
+        function arrayIdentity(d) {
+            var a = d.parameters;
+            if (_.isArray(a))
+                return a[0];
+            return a;
+        }
+
+        var preMigration = _.keys(_.groupBy(postMigration[false],arrayIdentity)).length;
         updates = postMigration[true];
 
-        var conversations = _.groupBy(updates,"parameters");
-        var creationSeparated = _.flatMap(conversations,function(cs){
+        var conversations = _.groupBy(updates,arrayIdentity);
+        var creationSeparated = _.sortBy(_.flatMap(conversations,function(cs){
             var rounded = _.map(cs,toDay);
             return [
                 {
@@ -87,7 +95,7 @@ var Enterprise = (function(){
                         update:[c]
                     }
                 }));
-        });
+        }),"timestamp");
 
         var total = 0;
         var stackable = _.reduce(creationSeparated,function(acc,v){
@@ -107,17 +115,19 @@ var Enterprise = (function(){
         },{});
         var stacked = d3.stack()
             .keys(["creation","update"])(_.values(stackable));
-        var totalConversations = _.sortBy(_.toPairs(_.reduce(creationSeparated,function(acc,v){
+        var reduced = _.reduce(creationSeparated,function(acc, v){
             var k = v.timestamp;
             acc.total += v.creation.length;
             acc[k] = {
                 timestamp:k,
                 conversations:acc.total
-            }
+            };
             return acc;
         },{
             total:0
-        })),"0");
+        });
+        delete reduced.total;
+        var totalConversations = _.toPairs(reduced);
         var axisTimes = _.sortBy(_.map(stackable,"timestamp"));
         var ts = d3.extent(axisTimes);
         x.domain(ts);
@@ -126,9 +136,8 @@ var Enterprise = (function(){
         yM.domain([0,_.max(masterData.map(function(d){
             return d[1].length;
         }))]);
-        var maxConversations = _.takeRight(totalConversations,1)[0][1];
-        totalConversations = _.dropRight(totalConversations,1);
-        totalsY.domain([preMigration,maxConversations + preMigration]);
+        var maxConversations = totalConversations[totalConversations.length-1][1].conversations;
+        totalsY.domain([0,maxConversations]);
         y.domain([_.max(_.map(masterData,function(d){
             return d[1].length;
         })),0]);
@@ -419,7 +428,8 @@ var Enterprise = (function(){
 
     return {
         prime:function(){
-            $.get("/describeConversations?query=&format=json",function(response){
+            // $.get("/describeConversations?query=&format=json",function(response){
+            $.get("/static/saintLeoProdEnterprise-post-migrate.json",function(response){
                 var updates = _.flatMap(response.conversations,function(c){
                     var results = _.map(c.edits,function(et){
                         return {
