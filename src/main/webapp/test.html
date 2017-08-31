@@ -120,7 +120,7 @@
 		mockHistory.images[mockImage.identity] = mockImage;
 		mockHistory.videos[mockVideo.identity] = mockVideo;
 		mockHistory.multiWordTexts[mockMultiWordText.identity] = mockMultiWordText;
-		var stanzas = [mockText,mockInk,mockImage,mockVideo];
+		var stanzas = [mockText,mockInk,mockImage,mockVideo,mockMultiWordText];
 		$(function(){
 
 			window.MeTLCanvas = (function(){
@@ -495,8 +495,16 @@
 			})();
 		});
 		var popAudit = function(){
-			var allStanzas = escape(JSON.stringify(stanzas));
-			var windowContent = "<html><script src=\"/static/assets/js/vendor/jquery.min.js\"><\/script><script src=\"static/js/stable/sprintf-0.7-beta1.js\"><\/script><script src=\"static/js/stable/lodash.js\"><\/script><script src=\"static/js/carota-debug.js\"><\/script><script src=\"static/js/historyRenderer.js\"><\/script><script type=\"text/javascript\"> var renderer = undefined; var allStanzas = JSON.parse(unescape(\""+allStanzas+"\")); $(function(){renderer = createCanvasRenderer($(\"#view\")); renderer.setDimensions({width:640,height:480}); var reRender = function(stanzas){renderer.setHistory({ inks:{}, highlighters:{}, images:{}, videos:{}, texts:{}, multiWordTexts:{} }); _.forEach(stanzas,function(s){ renderer.addStanza(s); }); }; $(\"#slider\").attr(\"min\",0).attr(\"max\",_.size(allStanzas)).val(_.size(allStanzas)).on(\"change\",function(){ var val = $(this).val();  var stanzas = _.take(allStanzas,val); reRender(stanzas);}).focus(); reRender(allStanzas); console.log(\"rendered\",soFar,renderer); }); <\/script><body><input type=\"range\" width=\"640\" id=\"slider\"><\/input><canvas id=\"view\"><\/canvas><\/body><\/html>";
+			var allStanzas = escape(JSON.stringify(_.map(stanzas,function(originalStanza){
+				var stanza = _.cloneDeep(originalStanza);
+				delete stanza.canvas;
+				delete stanza.doc;
+				delete stanza.imageData;
+				delete stanza.mipMap;
+				delete stanza.video;
+				return stanza;
+			})));
+			var windowContent = "<html><script src=\"/static/assets/js/vendor/jquery.min.js\"><\/script><script src=\"static/js/stable/sprintf-0.7-beta1.js\"><\/script><script src=\"static/js/stable/lodash.js\"><\/script><script src=\"static/js/carota-debug.js\"><\/script><script src=\"static/js/historyRenderer.js\"><\/script><script type=\"text/javascript\"> var renderer = undefined; var allStanzas = JSON.parse(unescape(\""+allStanzas+"\")); $(function(){renderer = createCanvasRenderer($(\"#view\")); renderer.setDimensions({width:640,height:480}); var reRender = function(stanzas){renderer.setHistory({ inks:{}, highlighters:{}, images:{}, videos:{}, texts:{}, multiWordTexts:{} }); _.forEach(stanzas,function(s){ renderer.addStanza(s); }); }; $(\"#slider\").attr(\"min\",0).attr(\"max\",_.size(allStanzas)).val(_.size(allStanzas)).on(\"change\",function(){ var val = $(this).val();  var stanzas = _.take(allStanzas,val); reRender(stanzas); console.log(\"rendered\",stanzas);}).focus(); reRender(allStanzas); }); <\/script><body><input type=\"range\" width=\"640\" id=\"slider\"><\/input><canvas id=\"view\"><\/canvas><\/body><\/html>";
 			var win = window.open();
 			win.document.open();
 			win.document.write(windowContent);
