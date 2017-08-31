@@ -217,6 +217,9 @@
 									case "ink":
 										if ("points" in additionalArgs){
 											var points = additionalArgs.points
+											var contentOffsetY = additionalArgs.contentOffsetY;
+											var contentOffsetX = additionalArgs.contentOffsetX;
+											var scaledThickness = additionalArgs.scaledThickness;
 											if(item.privacy.toLowerCase() == privateMode){
 												x = points[0] + contentOffsetX;
 												y = points[1] + contentOffsetY;

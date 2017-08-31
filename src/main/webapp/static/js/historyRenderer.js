@@ -698,7 +698,7 @@ var createCanvasRenderer = function(canvasElem){
 			var contentOffsetY = -1 * ((ink.minY - ink.thickness / 2)) * scaleY;
 			var scaledThickness = ink.thickness * scaleX;
 
-			if (beforePreRenderItem(ink,context,scaleMeasurements,{points:points})){
+			if (beforePreRenderItem(ink,context,scaleMeasurements,{points:points,contentOffsetX:contentOffsetX,contentOffsetY:contentOffsetY,scaledThickness:scaledThickness})){
 				context.strokeStyle = ink.color[0];
 				context.fillStyle = ink.color[0];
 				x = points[0] + contentOffsetX;
