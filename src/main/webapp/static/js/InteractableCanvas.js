@@ -21,6 +21,7 @@ var createInteractiveCanvas = function(boardDiv){
 	rendererObj.onDimensionsChanged(function(d,c,e){return dimensionsChanged(d,c,e);});
 	var canvasStanzaAdded = function(stanza,after){
 		// do things locally to the new stanza first
+		respondToStanzaAdded(stanza); 
 		after(stanza);
 	};
 	var stanzaAdded = function(stanza){};
@@ -47,17 +48,125 @@ var createInteractiveCanvas = function(boardDiv){
 		return canvasStanzaAdded(s,stanzaAdded);
 	});
 
-	var beforeRenderItem = function(item,ctx){
+	var respondToStanzaAdded = function(stanza){
+		var selected = selectMode.getSelected();
+		var changedSelection = false;
+		if (stanza !== undefined && "type" in stanza && "identity" in stanza){
+			var sid = stanza.identity;
+			switch (stanza.type) {
+				case "moveDelta":
+					//everything but deletion should have been handled already by the historyRenderer
+					if (stanza.deleted == true){
+						// delete some stuff
+						var removedInks = _.filter(history.inks,function(i){return _.some(stanza.inkIds,function(iid){ return i.identity == iid && i.isHighlighter == false;});});
+						var removedHighlighters = _.filter(history.highlighters,function(i){return _.some(stanza.inkIds,function(iid){ return i.identity == iid && i.isHighlighter == true;});});
+						var removedImages = _.filter(history.images,function(i){return _.some(stanza.imageIds,function(iid){ return i.identity == iid;});});
+						var removedVideos = _.filter(history.videos,function(i){return _.some(stanza.videoIds,function(iid){ return i.identity == iid;});});
+						var removedTexts = _.filter(history.texts,function(i){return _.some(stanza.textIds,function(iid){ return i.identity == iid;});});
+						var removedMultiWordTexts = _.filter(history.multiWordTexts,function(i){return _.some(stanza.multiWordTextIds,function(iid){ return i.identity == iid;});});
+						_.forEach(removedInks,function(i){
+							delete history.inks[i.identity];
+							if (i.identity in selected.inks){
+								delete selected.inks[i.identity];
+								changedSelection = true;
+							}
+						});
+						_.forEach(removedHighlighters,function(i){
+							delete history.highlighters[i.identity];
+							if (i.identity in selected.inks){
+								delete selected.inks[i.identity];
+								changedSelection = true;
+							}
+						});
+						_.forEach(removedImages,function(i){
+							delete history.images[i.identity];
+							if (i.identity in selected.images){
+								delete selected.images[i.identity];
+								changedSelection = true;
+							}
+						});
+						_.forEach(removedVideos,function(i){
+							delete history.videos[i.identity];
+							if (i.identity in selected.videos){
+								delete selected.videos[i.identity];
+								changedSelection = true;
+							}
+						});
+						_.forEach(removedMultiWordTexts,function(i){
+							delete history.multiWordTexts[i.identity];
+							if (i.identity in selected.multiWordTexts){
+								delete selected.multiWordTexts[i.identity];
+								changedSelection = true;
+							}
+						});
+						_.forEach(removedTexts,function(i){
+							delete history.texts[i.identity];
+							if (i.identity in selected.texts){
+								delete selected.texts[i.identity];
+								changedSelection = true;
+							}
+						});
+					} 
+					break;
+				case "ink":
+					if (stanza.isHighlighter){
+						history.highlighters[sid] = stanza;
+					} else {
+						history.inks[sid] = stanza;
+					}
+					if (sid in selected.inks){
+						selected.inks[sid] = stanza;
+						changedSelection = true;
+					}
+					break;
+				case "text":
+					history.texts[sid] = stanza;
+					if (sid in selected.texts){
+						selected.texts[sid] = stanza;
+						changedSelection = true;
+					}
+					break;
+				case "image":
+					history.images[sid] = stanza;
+					if (sid in selected.images){
+						selected.images[sid] = stanza;
+						changedSelection = true;
+					}	
+					break;
+				case "multiWordText":
+					history.multiWordTexts[sid] = stanza;
+					if (sid in selected.multiWordTexts){
+						selected.multiWordTexts[sid] = stanza;
+						changedSelection = true;
+					}
+					break;
+				case "video":
+					history.videos[sid] = stanza;
+					if (sid in selected.videos){
+						selected.videos[sid] = stanza;
+						changedSelection = true;
+					}
+					break;
+				default:
+					break;	
+			}
+			if (changedSelection){
+				selectMode.setSelection(selected);
+			}
+		}
+	};
+
+	var beforeRenderItem = function(item,ctx,sBounds){
 		return true;
 	};
-	rendererObj.onBeforeRenderItem(function(i,c){return beforeRenderItem(i,c);});
-	var afterRenderItem = function(item){
+	rendererObj.onBeforeRenderItem(function(i,c,s){return beforeRenderItem(i,c,s);});
+	var afterRenderItem = function(item,ctx,sBounds){
 	};
 	var beforePreRenderItem = function(i,c,s,p){
 		return true;
 	};
 	var afterPreRenderItem = function(i,c,s,p){};
-	rendererObj.onAfterRenderItem(function(i,c){return afterRenderItem(i,c);});
+	rendererObj.onAfterRenderItem(function(i,c,s){return afterRenderItem(i,c,s);});
 	rendererObj.onBeforePreRenderItem(function(i,c,s,p){return beforePreRenderItem(i,c,s,p);});
 	rendererObj.onAfterPreRenderItem(function(i,c,s,p){return afterPreRenderItem(i,c,s,p);});
 	var preTransformItem = function(item,transform){ return true; };
@@ -1739,8 +1848,13 @@ var createInteractiveCanvas = function(boardDiv){
 
 			return {
 				name:"select",
-				setSelection:function(selected){
-						selected = _.merge(selected,selected);
+				setSelection:function(selection){
+					selected = _.merge(selection,selected);
+					selectionChanged(selected);
+					rendererObj.render();
+				},
+				getSelected:function(){
+					return selected;
 				},
 				offset:{x:0,y:0},
 				resizing:false,
@@ -3197,7 +3311,7 @@ var createInteractiveCanvas = function(boardDiv){
 			}
 		},
 		getSelected:function(){
-			return selected;
+			return selectMode.getSelected();
 		},
 		onSelectionChanged:function(f){
 			selectionChangedOuter = f;
@@ -3227,11 +3341,11 @@ var createInteractiveCanvas = function(boardDiv){
 			renderComplete = f;
 		},
 		onBeforeRenderItem:function(f){
-			//beforeRenderItem takes an item and a canvasContext and returns whether to continue rendering the item
+			//afterRenderItem takes an item, a canvasContext for the entire board, and a screenBounds of the item, and returns a boolean to continue rendering the item
 			beforeRenderItem = f;
 		},
 		onAfterRenderItem:function(f){
-			//afterRenderItem takes an item and a canvasContext
+			//afterRenderItem takes an item, a canvasContext for the entire board, and a screenBounds of the item
 			afterRenderItem = f;
 		},
 		onBeforePreRenderItem:function(f){

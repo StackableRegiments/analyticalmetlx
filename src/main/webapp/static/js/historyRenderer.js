@@ -420,6 +420,9 @@ var createCanvasRenderer = function(canvasElem){
 							transformBounds.incorporateBounds(ink.bounds);
 						}
 						postTransformItem(ink,transform);
+						prerenderInk(ink)
+						boardContent.inks[ink.identity] = ink;
+						stanzaAdded(ink);
 					}
 				}
 			});
@@ -455,6 +458,9 @@ var createCanvasRenderer = function(canvasElem){
 							transformBounds.incorporateBounds(image.bounds);
 						}
 						postTransformItem(image,transform);
+						prerenderImage(image);
+						boardContent.images[image.identity] = image;
+						stanzaAdded(image);
 					}
 				}
 			});
@@ -490,6 +496,9 @@ var createCanvasRenderer = function(canvasElem){
 							transformBounds.incorporateBounds(video.bounds);
 						}
 						postTransformItem(video,transform);
+						prerenderVideo(video);
+						boardContent.videos[video.identity] = video;
+						stanzaAdded(video);
 					}
 				}
 			});
@@ -534,6 +543,9 @@ var createCanvasRenderer = function(canvasElem){
 							transformBounds.incorporateBounds(text.bounds);
 						}
 						postTransformItem(text,transform);
+						prerenderText(text);
+						boardContent.texts[text.identity] = text;
+						stanzaAdded(text);
 					}
 				}
 			});
@@ -578,6 +590,9 @@ var createCanvasRenderer = function(canvasElem){
 							transformBounds.incorporateBounds(text.bounds);
 						}
 						postTransformItem(multiWordText,transform);
+						prerenderMultiwordText(multiWordText);
+						boardContent.multiWordTexts[multiWordText.identity] = multiWordText;
+						stanzaAdded(multiWordText);
 					}
 				}
 			});
@@ -867,7 +882,7 @@ var createCanvasRenderer = function(canvasElem){
 		if (beforePreRenderItem(image,context,scaleMeasurements,{borderWidth:borderW,borderHeight:borderH})){ 
 			context.drawImage(image.imageData,borderW / 2,borderH / 2,scaleMeasurements.width, scaleMeasurements.height);
 			afterPreRenderItem(image,context,scaleMeasurements,{borderWidth:borderW,borderHeight:borderH});
-			delete image.imageData;
+			//delete image.imageData;
 			return true;
 		} else {
 			return false;
@@ -1060,12 +1075,9 @@ var createCanvasRenderer = function(canvasElem){
 			if (inks != undefined){
 					_.each(inks,function(ink,i){
 							try{
-								if (beforeRenderItem(ink,boardContext)){
-									if(intersectRect(ink.bounds,viewBounds)){
-											drawInk(ink);
-											afterRenderItem(ink,boardContext);
-											rendered.push(ink);
-									}
+								if(intersectRect(ink.bounds,viewBounds)){
+									drawInk(ink);
+									rendered.push(ink);
 								}
 							}
 							catch(e){
@@ -1077,16 +1089,13 @@ var createCanvasRenderer = function(canvasElem){
 	var renderRichTexts = function(texts,rendered,viewBounds){
 		if(texts){
 			_.each(texts,function(text,i){
-				if (beforeRenderItem(text,boardContext)){
-					if(text.doc){
-						if(!text.bounds){
-							text.doc.invalidateBounds();
-						}
-						if(intersectRect(text.bounds,viewBounds)){
-							drawMultiwordText(text);
-							afterRenderItem(text,boardContext);
-							rendered.push(text);
-						}
+				if(text.doc){
+					if(!text.bounds){
+						text.doc.invalidateBounds();
+					}
+					if(intersectRect(text.bounds,viewBounds)){
+						drawMultiwordText(text);
+						rendered.push(text);
 					}
 				}
 			});
@@ -1094,15 +1103,10 @@ var createCanvasRenderer = function(canvasElem){
 	};
 	var renderVideos = function(videos,rendered,viewBounds){
 		if (videos){
-			//Modes.clearCanvasInteractables("videos");
 			_.each(videos,function(video,i){
-				if (beforeRenderItem(video,boardContext)){
-					if (intersectRect(video.bounds,viewBounds)){
-							drawVideo(video);
-							//Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-							afterRenderItem(video,boardContext);
-							rendered.push(video);
-					}
+				if (intersectRect(video.bounds,viewBounds)){
+						drawVideo(video);
+						rendered.push(video);
 				}
 			});
 		}
@@ -1110,12 +1114,9 @@ var createCanvasRenderer = function(canvasElem){
 
 	var renderTexts = function(texts,rendered,viewBounds){
 			_.each(texts,function(text,i){
-				if (beforeRenderItem(text,boardContext)){
-					if(intersectRect(text.bounds,viewBounds)){
-							drawText(text);
-							afterRenderItem(text,boardContext);
-							rendered.push(text);
-					}
+				if(intersectRect(text.bounds,viewBounds)){
+						drawText(text);
+						rendered.push(text);
 				}
 			});
 	};
@@ -1172,7 +1173,6 @@ var createCanvasRenderer = function(canvasElem){
 						if (beforeRenderItem(image)){
 							if(intersectRect(image.bounds,viewBounds)){
 									drawImage(image);
-									afterRenderItem(image,boardContext);
 									rendered.push(image);
 							}
 						}
@@ -1266,11 +1266,14 @@ var createCanvasRenderer = function(canvasElem){
 			try{
 				if (image.canvas != undefined){
 					var sBounds = screenBounds(image.bounds);
-					visibleBounds.push(image.bounds);
-					if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
-						var borderW = sBounds.screenWidth * 0.10;
-						var borderH = sBounds.screenHeight * 0.10;
-						boardContext.drawImage(multiStageRescale(image.canvas,sBounds.screenWidth,sBounds.screenHeight,image), sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+					if (beforeRenderItem(image,boardContext,sBounds)){
+						visibleBounds.push(image.bounds);
+						if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+							var borderW = sBounds.screenWidth * 0.10;
+							var borderH = sBounds.screenHeight * 0.10;
+							boardContext.drawImage(multiStageRescale(image.canvas,sBounds.screenWidth,sBounds.screenHeight,image), sBounds.screenPos.x - (borderW / 2), sBounds.screenPos.y - (borderH / 2), sBounds.screenWidth + borderW ,sBounds.screenHeight + borderH);
+						}
+						afterRenderItem(image,boardContext,sBounds);
 					}
 				}
 			}
@@ -1283,9 +1286,12 @@ var createCanvasRenderer = function(canvasElem){
 			try {
 				if(item.doc && item.doc.canvas){
 					var sBounds = screenBounds(item.bounds);
-					visibleBounds.push(item.bounds);
-					if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
-						boardContext.drawImage(multiStageRescale(item.doc.canvas,sBounds.screenWidth,sBounds.screenHeight,item), sBounds.screenPos.x, sBounds.screenPos.y, sBounds.screenWidth,sBounds.screenHeight);
+					if (beforeRenderItem(item,boardContext,sBounds)){
+						visibleBounds.push(item.bounds);
+						if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
+							boardContext.drawImage(multiStageRescale(item.doc.canvas,sBounds.screenWidth,sBounds.screenHeight,item), sBounds.screenPos.x, sBounds.screenPos.y, sBounds.screenWidth,sBounds.screenHeight);
+						}
+						afterRenderItem(item,boardContext,sBounds);
 					}
 				}
 			}
@@ -1295,7 +1301,8 @@ var createCanvasRenderer = function(canvasElem){
 	}
 	var drawText = function(text){
 			try{
-					var sBounds = screenBounds(text.bounds);
+				var sBounds = screenBounds(text.bounds);
+				if (beforeRenderItem(text,boardContext,sBounds)){
 					visibleBounds.push(text.bounds);
 					if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
 							boardContext.drawImage(multiStageRescale(text.canvas,sBounds.screenWidth,sBounds.screenHeight,text),
@@ -1304,13 +1311,16 @@ var createCanvasRenderer = function(canvasElem){
 																			sBounds.screenWidth,
 																			sBounds.screenHeight);
 					}
+					afterRenderItem(text,boardContext,sBounds);
+				}
 			}
 			catch(e){
 				passException(e,"drawText",[text]);
 			}
 	}
 	var drawInk = function(ink){
-			var sBounds = screenBounds(ink.bounds);
+		var sBounds = screenBounds(ink.bounds);
+		if (beforeRenderItem(ink,boardContext,sBounds)){
 			visibleBounds.push(ink.bounds);
 			var c = ink.canvas;
 			if(!c){
@@ -1348,15 +1358,21 @@ var createCanvasRenderer = function(canvasElem){
 						img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
 					}
 			}
+
+			afterRenderItem(ink,boardContext,sBounds);
+		}
 	}
 	var drawVideo = function(video){
-			var sBounds = screenBounds(video.bounds);
+		var sBounds = screenBounds(video.bounds);
+		if (beforeRenderItem(video,boardContext,sBounds)){
 			visibleBounds.push(video.bounds);
 			if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
 					boardContext.drawImage(video.video,
 																	sBounds.screenPos.x,sBounds.screenPos.y,
 																	sBounds.screenWidth,sBounds.screenHeight);
 			}
+			afterRenderItem(video,boardContext,sBounds);
+		}
 	}
 
 	var measureBoardContent = function(includingText){
@@ -1555,7 +1571,7 @@ var createCanvasRenderer = function(canvasElem){
 	var beforeRenderItem = function(item,ctx){
 		return true;
 	};
-	var afterRenderItem = function(item,ctx){ };
+	var afterRenderItem = function(item,ctx,sBounds){ };
 	var beforePreRenderItem = function(item,ctx,scaleMeasurements,params){
 		return true;
 	};

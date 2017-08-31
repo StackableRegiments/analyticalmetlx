@@ -235,9 +235,12 @@
 					var showSelector = $("#showSelection");
 					hideSelector.on("click",function(){
 						var selected = newCanvas.getSelected();
+						console.log("got selected",selected);
 						var transform = newCanvas.createBatchTransform();
 						_.forEach(selected,function(category,categoryName){
-							transform[selected+"Ids"] = _.map(category,function(stanza){
+							var catName = categoryName.substr(0,_.size(categoryName) - 1) + "Ids";
+							console.log("selecting",category,categoryName,catName);
+							transform[catName] = _.map(category,function(stanza){
 								return stanza.identity;
 							});
 						});
@@ -246,9 +249,12 @@
 					});
 					showSelector.on("click",function(){
 						var selected = newCanvas.getSelected();
+						console.log("got selected",selected);
 						var transform = newCanvas.createBatchTransform();
 						_.forEach(selected,function(category,categoryName){
-							transform[selected+"Ids"] = _.map(category,function(stanza){
+							var catName = categoryName.substr(0,_.size(categoryName) - 1) + "Ids";
+							console.log("selecting",category,categoryName,catName);
+							transform[catName] = _.map(category,function(stanza){
 								return stanza.identity;
 							});
 						});
@@ -257,6 +263,7 @@
 					});
 
 					newCanvas.onPostTransformItem(function(item,transform){
+						console.log("onPostTransformItem",item,transform);	
 						if (transform.newPrivacy == publicMode){
 							item.privacy = publicMode;
 						} else if (transform.newPrivacy == privateMode){
@@ -316,12 +323,25 @@
 										context.globalAlpha = 1.0;
 									}
 									break;
+								case "text":
+									if(item.privacy.toLowerCase() == privateMode){ //red for private
+										context.globalAlpha = 0.2;
+										context.fillStyle = "red";
+										context.fillRect(0,0,scaleMeasurements.width,scaleMeasurements.height);
+										context.globalAlpha = 1.0;
+									} else { // blue for public
+										context.globalAlpha = 0.2;
+										context.fillStyle = "blue";
+										context.fillRect(0,0,scaleMeasurements.width,scaleMeasurements.height);
+										context.globalAlpha = 1.0;
+									}
+									break;
 								default:
 									break;
 							}
 						}		
 					};
-					var beforeRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
+					var beforeRenderPrivacyStylingFunc = function(item,context,sBounds){
 						if ("privacy" in item && "type" in item){
 							switch (item.type){
 								default:
@@ -329,9 +349,38 @@
 							}
 						}		
 					};
-					var afterRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
+					var afterRenderPrivacyStylingFunc = function(item,context,sBounds){
+						console.log("arpsf",item,context,sBounds);
 						if ("privacy" in item && "type" in item){
 							switch (item.type){
+								case "video":
+									var l = sBounds.screenPos.x, t = sBounds.screenPos.y, w = sBounds.screenWidth, h = sBounds.screenHeight;
+									if(item.privacy.toLowerCase() == privateMode){ //red for private
+										context.globalAlpha = 0.2;
+										context.fillStyle = "red";
+										context.fillRect(l,t,w,h);
+										context.globalAlpha = 1.0;
+									} else { // blue for public
+										context.globalAlpha = 0.2;
+										context.fillStyle = "blue";
+										context.fillRect(l,t,w,h);
+										context.globalAlpha = 1.0;
+									}
+									break;
+								case "multiWordText":
+									var l = sBounds.screenPos.x, t = sBounds.screenPos.y, w = sBounds.screenWidth, h = sBounds.screenHeight;
+									if(item.privacy.toLowerCase() == privateMode){ //red for private
+										context.globalAlpha = 0.2;
+										context.fillStyle = "red";
+										context.fillRect(l,t,w,h);
+										context.globalAlpha = 1.0;
+									} else { // blue for public
+										context.globalAlpha = 0.2;
+										context.fillStyle = "blue";
+										context.fillRect(l,t,w,h);
+										context.globalAlpha = 1.0;
+									}
+									break;
 								default:
 									break;
 							}
@@ -509,6 +558,13 @@
 			});
 			newCanvas.onAfterPreRenderItem(function(item,ctx,scaleMeasurements,params){
 				Privacy.afterPreRenderPrivacyStyling(item,ctx,scaleMeasurements,params);
+			});
+			newCanvas.onBeforeRenderItem(function(item,ctx,sBounds){
+				Privacy.beforeRenderPrivacyStyling(item,ctx,sBounds);
+				return true;
+			});
+			newCanvas.onAfterRenderItem(function(item,ctx,sBounds){
+				Privacy.afterRenderPrivacyStyling(item,ctx,sBounds);
 			});
 			newCanvas.onPreSelectItem(function(item){
 //				console.log("preSelect",item);
