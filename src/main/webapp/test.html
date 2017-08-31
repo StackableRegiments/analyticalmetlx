@@ -234,7 +234,7 @@
 													x = points[p]+contentOffsetX;
 													y = points[p+1]+contentOffsetY;
 													pr = scaledThickness * points[p+2];
-													context.lineWidth = pr + 2;
+													context.lineWidth = pr + Math.max(2,pr * 0.2);
 													context.lineTo(x,y);
 													context.stroke();
 												}
@@ -495,7 +495,7 @@
 			})();
 		});
 		var popAudit = function(){
-			var allStanzas = escape(JSON.stringify(_.map(stanzas,function(originalStanza){
+			var allStanzas = _.map(stanzas,function(originalStanza){
 				var stanza = _.cloneDeep(originalStanza);
 				delete stanza.canvas;
 				delete stanza.doc;
@@ -503,7 +503,10 @@
 				delete stanza.mipMap;
 				delete stanza.video;
 				return stanza;
-			})));
+			});
+			console.log("allStanzas",allStanzas);
+			allStanzas = escape(JSON.stringify(allStanzas));
+			return;
 			var windowContent = "<html><script src=\"/static/assets/js/vendor/jquery.min.js\"><\/script><script src=\"static/js/stable/sprintf-0.7-beta1.js\"><\/script><script src=\"static/js/stable/lodash.js\"><\/script><script src=\"static/js/carota-debug.js\"><\/script><script src=\"static/js/historyRenderer.js\"><\/script><script type=\"text/javascript\"> var renderer = undefined; var allStanzas = JSON.parse(unescape(\""+allStanzas+"\")); $(function(){renderer = createCanvasRenderer($(\"#view\")); renderer.setDimensions({width:640,height:480}); var reRender = function(stanzas){renderer.setHistory({ inks:{}, highlighters:{}, images:{}, videos:{}, texts:{}, multiWordTexts:{} }); _.forEach(stanzas,function(s){ renderer.addStanza(s); }); }; $(\"#slider\").attr(\"min\",0).attr(\"max\",_.size(allStanzas)).val(_.size(allStanzas)).on(\"change\",function(){ var val = $(this).val();  var stanzas = _.take(allStanzas,val); reRender(stanzas); console.log(\"rendered\",stanzas);}).focus(); reRender(allStanzas); }); <\/script><body><input type=\"range\" width=\"640\" id=\"slider\"><\/input><canvas id=\"view\"><\/canvas><\/body><\/html>";
 			var win = window.open();
 			win.document.open();
