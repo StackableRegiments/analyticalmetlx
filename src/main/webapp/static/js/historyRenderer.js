@@ -814,8 +814,12 @@ var createCanvasRenderer = function(canvasElem){
 		if(!editor.doc){
 			var minimumWidth = 100;
 			var minimumHeight = 30;
+			var host = $("#textInputInvisibleHost");
+			if (host[0] === undefined){
+				host = $("<div/>");
+			}
 			editor.doc = carota.editor.create(
-				$("<div />",{id:sprintf("t_%s",t.identity)}).appendTo($("#textInputInvisibleHost"))[0],
+				$("<div />",{id:sprintf("t_%s",t.identity)}).appendTo(host)[0],
 				canvasElem[0],
 				t,
 				rendererObj,

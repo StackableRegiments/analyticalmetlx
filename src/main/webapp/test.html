@@ -121,379 +121,376 @@
 		mockHistory.videos[mockVideo.identity] = mockVideo;
 		mockHistory.multiWordTexts[mockMultiWordText.identity] = mockMultiWordText;
 		var stanzas = [mockText,mockInk,mockImage,mockVideo,mockMultiWordText];
-		$(function(){
+		var createMeTLCanvas = function(boardElemSelector){
+			var newCanvas = createInteractiveCanvas(boardElemSelector);
+			/*
+			newCanvas.setImageSourceCalculationFunction(function(image){
+				var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
+				return sprintf("/proxyImageUrl/%s?source=%s",urlEncodeSlideName(slide),encodeURIComponent(image.source.trim()));
+			});
+			newCanvas.setVideoSourceCalculationFunction(function(video){
+				var slide = video.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",video.slide,video.author) : video.slide;
+				return sprintf("/videoProxy/%s/%s",urlEncodeSlideName(slide),encodeURIComponent(video.identity.trim()));
+			});
+			*/
+			newCanvas.onSelectionChanged(function(selected){
+				if (_.some(selected,function(category,categoryName){ return _.size(category) > 0; })){
+					$("#deleteSelection").show();
+				} else {
+					$("#deleteSelection").hide();
+				}
+			});
+			newCanvas.onModeChanged(function(mode){
+				$(".subTools").hide();
+				$(".modeButton").removeClass("activeMode");
+				switch (mode.name){
+					case "select":
+						$("#setSelectMode").addClass("activeMode");
+						$("#selectTools").show();
+						break;
+					case "zoom":
+						$("#setZoomMode").addClass("activeMode");
+						$("#zoomTools").show();
+						break;
+					case "pan":
+						$("#setPanMode").addClass("activeMode");
+						$("#panTools").show();
+						break;
+					case "draw":
+						$("#setDrawMode").addClass("activeMode");
+						var color = mode.getColor();
+						var isHighlighter = mode.getIsHighlighter();
+						var size = mode.getSize();
+						$("#inkWidth").val(size);
+						$("#inkColor").val(color);
+						$("#isHighlighter").val(isHighlighter);
+						$("#drawTools").show();
+						break;
+					case "pan":
+						$("#setEraseMode").addClass("activeMode");
+						$("#eraseTools").show();
+						break;
+					case "richText":
+						$("#setRichTextMode").addClass("activeMode");
+						$("#richTextTools").show();	
+					default:
+						break;	 
+				}
+			});
+			$("#setZoomMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "zoom";}));
+			});
+			$("#setPanMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "pan";}));
+			});
+			$("#setDrawMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
+			});
+			$("#setSelectMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "select";}));
+			});
 
-			window.MeTLCanvas = (function(){
-				var newCanvas = createInteractiveCanvas($("#testBoard"));
-				/*
-				newCanvas.setImageSourceCalculationFunction(function(image){
-					var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
-					return sprintf("/proxyImageUrl/%s?source=%s",urlEncodeSlideName(slide),encodeURIComponent(image.source.trim()));
-				});
-				newCanvas.setVideoSourceCalculationFunction(function(video){
-					var slide = video.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",video.slide,video.author) : video.slide;
-					return sprintf("/videoProxy/%s/%s",urlEncodeSlideName(slide),encodeURIComponent(video.identity.trim()));
-				});
-				*/
-				newCanvas.onSelectionChanged(function(selected){
-					if (_.some(selected,function(category,categoryName){ return _.size(category) > 0; })){
-						$("#deleteSelection").show();
-					} else {
-						$("#deleteSelection").hide();
-					}
-				});
-				newCanvas.onModeChanged(function(mode){
-					$(".subTools").hide();
-					$(".modeButton").removeClass("activeMode");
-					switch (mode.name){
-						case "select":
-							$("#setSelectMode").addClass("activeMode");
-							$("#selectTools").show();
-							break;
-						case "zoom":
-							$("#setZoomMode").addClass("activeMode");
-							$("#zoomTools").show();
-							break;
-						case "pan":
-							$("#setPanMode").addClass("activeMode");
-							$("#panTools").show();
-							break;
-						case "draw":
-							$("#setDrawMode").addClass("activeMode");
-							var color = mode.getColor();
-							var isHighlighter = mode.getIsHighlighter();
-							var size = mode.getSize();
-							$("#inkWidth").val(size);
-							$("#inkColor").val(color);
-							$("#isHighlighter").val(isHighlighter);
-							$("#drawTools").show();
-							break;
-						case "pan":
-							$("#setEraseMode").addClass("activeMode");
-							$("#eraseTools").show();
-							break;
-						case "richText":
-							$("#setRichTextMode").addClass("activeMode");
-							$("#richTextTools").show();	
-						default:
-							break;	 
-					}
-				});
-				$("#setZoomMode").on("click",function(){
-					newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "zoom";}));
-				});
-				$("#setPanMode").on("click",function(){
-					newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "pan";}));
-				});
-				$("#setDrawMode").on("click",function(){
-					newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
-				});
-				$("#setSelectMode").on("click",function(){
-					newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "select";}));
-				});
-
-				var Privacy = (function(){
-						var publicMode = "public";
-						var privateMode = "private";
-						var myPrivacy = publicMode;
-						var publicSelector = $("#setPublicMode");
-						var privateSelector = $("#setPrivateMode");
-						publicSelector.on("click",function(){
-							myPrivacy = publicMode;
-							reRenderPrivacyButtons();
-						});
-						privateSelector.on("click",function(){
-							myPrivacy = privateMode;
-							reRenderPrivacyButtons();
-						});
-						var reRenderPrivacyButtons = function(){
-							publicSelector.prop("checked",myPrivacy == publicMode);
-							privateSelector.prop("checked",myPrivacy == privateMode);
-						};
+			var Privacy = (function(){
+					var publicMode = "public";
+					var privateMode = "private";
+					var myPrivacy = publicMode;
+					var publicSelector = $("#setPublicMode");
+					var privateSelector = $("#setPrivateMode");
+					publicSelector.on("click",function(){
+						myPrivacy = publicMode;
 						reRenderPrivacyButtons();
-						var beforePreRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
-							if ("privacy" in item && "type" in item){
-								switch (item.type){
-									case "ink":
-										if ("points" in additionalArgs){
-											var points = additionalArgs.points
-											var contentOffsetY = additionalArgs.contentOffsetY;
-											var contentOffsetX = additionalArgs.contentOffsetX;
-											var scaledThickness = additionalArgs.scaledThickness;
-											if(item.privacy.toLowerCase() == privateMode){
-												x = points[0] + contentOffsetX;
-												y = points[1] + contentOffsetY;
-												context.lineWidth = scaledThickness;
-												context.lineCap = "round";
-												context.strokeStyle = "red";
-												context.globalAlpha = 0.3;
+					});
+					privateSelector.on("click",function(){
+						myPrivacy = privateMode;
+						reRenderPrivacyButtons();
+					});
+					var reRenderPrivacyButtons = function(){
+						publicSelector.prop("checked",myPrivacy == publicMode);
+						privateSelector.prop("checked",myPrivacy == privateMode);
+					};
+					reRenderPrivacyButtons();
+					var beforePreRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
+						if ("privacy" in item && "type" in item){
+							switch (item.type){
+								case "ink":
+									if ("points" in additionalArgs){
+										var points = additionalArgs.points
+										var contentOffsetY = additionalArgs.contentOffsetY;
+										var contentOffsetX = additionalArgs.contentOffsetX;
+										var scaledThickness = additionalArgs.scaledThickness;
+										if(item.privacy.toLowerCase() == privateMode){
+											x = points[0] + contentOffsetX;
+											y = points[1] + contentOffsetY;
+											context.lineWidth = scaledThickness;
+											context.lineCap = "round";
+											context.strokeStyle = "red";
+											context.globalAlpha = 0.3;
+											context.moveTo(x,y);
+											for(p = 0; p < points.length; p += 3){
+												context.beginPath();
 												context.moveTo(x,y);
-												for(p = 0; p < points.length; p += 3){
-													context.beginPath();
-													context.moveTo(x,y);
-													x = points[p]+contentOffsetX;
-													y = points[p+1]+contentOffsetY;
-													pr = scaledThickness * points[p+2];
-													context.lineWidth = pr + Math.max(2,pr * 0.2);
-													context.lineTo(x,y);
-													context.stroke();
-												}
-												context.globalAlpha = 1.0;
+												x = points[p]+contentOffsetX;
+												y = points[p+1]+contentOffsetY;
+												pr = scaledThickness * points[p+2];
+												context.lineWidth = pr + Math.max(2,pr * 0.2);
+												context.lineTo(x,y);
+												context.stroke();
 											}
-										}
-										break;
-									default:
-										break;
-								}
-							}		
-						};
-						var afterPreRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
-							if ("privacy" in item && "type" in item){
-								switch (item.type){
-									case "image":
-										if(item.privacy.toLowerCase() == privateMode){ //red for private
-											context.globalAlpha = 0.2;
-											context.fillStyle = "red";
-											context.fillRect(0,0,scaleMeasurements.width + additionalArgs.borderWidth,scaleMeasurements.height + additionalArgs.borderHeight);
-											context.globalAlpha = 1.0;
-										} else { // blue for public
-											context.globalAlpha = 0.2;
-											context.fillStyle = "blue";
-											context.fillRect(0,0,scaleMeasurements.width + additionalArgs.borderWidth,scaleMeasurements.height + additionalArgs.borderHeight);
 											context.globalAlpha = 1.0;
 										}
-										break;
-									default:
-										break;
-								}
-							}		
-						};
-						var beforeRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
-							if ("privacy" in item && "type" in item){
-								switch (item.type){
-									default:
-										break;
-								}
-							}		
-						};
-						var afterRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
-							if ("privacy" in item && "type" in item){
-								switch (item.type){
-									default:
-										break;
-								}
-							}		
-						};
-						return {
-							publicPrivacy:publicMode,
-							privatePrivacy:privateMode,
-							beforePreRenderPrivacyStyling:beforePreRenderPrivacyStylingFunc,
-							afterPreRenderPrivacyStyling:afterPreRenderPrivacyStylingFunc,
-							beforeRenderPrivacyStyling:beforeRenderPrivacyStylingFunc,
-							afterRenderPrivacyStyling:afterRenderPrivacyStylingFunc,
-							getPrivacy:function(){
-								return myPrivacy;
+									}
+									break;
+								default:
+									break;
 							}
-						};
-				})();
-
-				$("#deleteSelection").on("click",function(){
-					var selectMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "select"});
-					selectMode.deleteSelection();
-				});
-				$("#inkColor").on("change",function(e){
-					var value = $(this).val();
-					var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
-					drawMode.setColor(value);
-					//newCanvas.setMode(drawMode);
-				});
-				$("#inkWidth").on("change",function(e){
-					var value = $(this).val();
-					var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
-					drawMode.setSize(value);
-					//newCanvas.setMode(drawMode);
-				});
-				$("#isHighlighter").on("click",function(e){
-					var value = $(this).prop("checked");
-					var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
-					drawMode.setIsHighlighter(value);
-					//newCanvas.setMode(drawMode);
-				});
-				$("#setEraseMode").on("click",function(){
-					newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "erase";}));
-				});
-				$("#setRichTextMode").on("click",function(){
-					newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}));
-				});
-				var fonts = ["arial","verdana","garamond","wingdings","times new roman"];
-				var sizes = [8,10,12,14,16,20,24,30,36,48];
-				var colors = [
-				{
-					name:"",
-					code:""
-				},
-				{
-					name:"black",
-					code:"#000000"
-				},
-				{
-					name:"red",
-					code:"#FF0000"
-				},	
-				{
-					name:"green",
-					code:"#00FF00"
-				},
-				{
-					name:"blue",
-					code:"#0000FF"
-				},	
-				{
-					name:"white",
-					code:"#FFFFFF"
-				}];
-				var hasBuiltText = false;
-				var respondToTextAttributes = function(attrs){
-					var tempFonts = _.clone(fonts);
-					var tempSizes = _.clone(sizes);
-					var tempColors = _.clone(colors);
-					var fontSelector = $("#textFont");
-					var sizeSelector = $("#textSize");
-					var colorSelector = $("#textColor");
-					var boldSelector = $("#isBold");
-					var italicSelector = $("#isItalic");
-					var underlineSelector = $("#isUnderline");	
-
-					var updateSelect = function(select,collection,optionFunc,newValue,method,valueMutator){
-						if (newValue){
-							collection.push(newValue);
-						}
-						select.html(_.map(collection,function(item){
-							var i = optionFunc(item);
-							return $("<option/>",{
-								value:i.value,
-								text:i.name
-							});
-						}));
-						if (!hasBuiltText){
-							select.unbind("change").on("change",function(){
-								var value = $(this).val();
-								if (valueMutator !== undefined){
-									value = valueMutator(value);
-								}
-								_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
-							});
-						}
-						if (newValue){
-							select.val(newValue);
-						}
-					}
-					updateSelect(fontSelector,tempFonts,function(font){return {name:font,value:font};},attrs.font,"setFont");
-					updateSelect(sizeSelector,tempSizes,function(size){return {name:size,value:size};},attrs.size,"setFontSize");
-					var color = "";
-					if (attrs.color && attrs.color != {} && attrs.color[0]){
-						color = attrs.color[0];
-					}
-					updateSelect(colorSelector,tempColors,function(c){return {name:c.name,value:c.code};},color,"setFontColor",function(c){return [c,255];});
-					var updateCheckbox = function(cb,newValue,method){
-						if (!hasBuiltText){
-							cb.unbind("click").on("click",function(){
-								var value = $(this).prop("checked");
-								_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
-							});
-						}
-						if (newValue === true || newValue === false){
-							cb.prop("checked",newValue);
-						}
+						}		
 					};
-					updateCheckbox(boldSelector,attrs.bold,"setFontBold");
-					updateCheckbox(italicSelector,attrs.italic,"setFontItalic");
-					updateCheckbox(underlineSelector,attrs.underline,"setFontUnderline");
-					hasBuiltText = true;
-				};
-				_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}).onTextAttributesChanged(function(font,size,color,bold,italic,underline){
-					respondToTextAttributes({
-						font:font,
-						size:size,
-						color:color,
-						bold:bold,
-						italic:italic,
-						underline:underline
-					});	
-				});
-				respondToTextAttributes(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}).getFontAttributes());
-				$("#zoomIn").on("click",function(){
-					newCanvas.getZoomController().in();
-				});
-				$("#zoomOut").on("click",function(){
-					newCanvas.getZoomController().out();
-				});
-				var panAmount = 50;
-				$("#panLeft").on("click",function(){
-					newCanvas.getPanController().pan(-1 * panAmount,0);
-				});
-				$("#panRight").on("click",function(){
-					newCanvas.getPanController().pan(panAmount,0);
-				});
-				$("#panUp").on("click",function(){
-					newCanvas.getPanController().pan(0,-1 * panAmount);
-				});
-				$("#panDown").on("click",function(){
-					newCanvas.getPanController().pan(0,panAmount);
-				});
-				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}));
-				newCanvas.onStatistic(function(category,time,success,exception){
-					if ("HealthChecker" in window){
-						HealthChecker.addMeasure(category,time,success);
-					}
-				});
-				newCanvas.onError(function(exception,caller,params){
-					console.log("InteractiveCanvasException",caller,exception,params);
-				});
-				newCanvas.onBeforePreRenderItem(function(item,ctx,scaleMeasurements,params){
-					Privacy.beforePreRenderPrivacyStyling(item,ctx,scaleMeasurements,params);
-					return true;
-				});
-				newCanvas.onAfterPreRenderItem(function(item,ctx,scaleMeasurements,params){
-					Privacy.afterPreRenderPrivacyStyling(item,ctx,scaleMeasurements,params);
-				});
-				newCanvas.onPreSelectItem(function(item){
-	//				console.log("preSelect",item);
-					return true;
-				});
-				newCanvas.onPostSelectItem(function(item){
-	//				console.log("postSelect",item);
-				});
-				window.InteractiveCanvas = newCanvas;
-				newCanvas.onStanzaAvailable(function(stanza){
-					stanza.author = "testUser";
-					stanza.privacy = Privacy.getPrivacy();
-					stanza.target = "presentationSpace";
-					stanza.slide = "thisSlide";
-					stanza.timestamp = new Date().getTime();
-					console.log("test.html stanza:",stanza);
-					stanzas.push(stanza);
-					newCanvas.addStanza(stanza);
-				});
-				var reduceCanvas = function(dims){
-					var gutter = 10;
-					var header = $("#metlHeaderContainer");
-					var headerHeight = header.height();
+					var afterPreRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
+						if ("privacy" in item && "type" in item){
+							switch (item.type){
+								case "image":
+									if(item.privacy.toLowerCase() == privateMode){ //red for private
+										context.globalAlpha = 0.2;
+										context.fillStyle = "red";
+										context.fillRect(0,0,scaleMeasurements.width + additionalArgs.borderWidth,scaleMeasurements.height + additionalArgs.borderHeight);
+										context.globalAlpha = 1.0;
+									} else { // blue for public
+										context.globalAlpha = 0.2;
+										context.fillStyle = "blue";
+										context.fillRect(0,0,scaleMeasurements.width + additionalArgs.borderWidth,scaleMeasurements.height + additionalArgs.borderHeight);
+										context.globalAlpha = 1.0;
+									}
+									break;
+								default:
+									break;
+							}
+						}		
+					};
+					var beforeRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
+						if ("privacy" in item && "type" in item){
+							switch (item.type){
+								default:
+									break;
+							}
+						}		
+					};
+					var afterRenderPrivacyStylingFunc = function(item,context,scaleMeasurements,additionalArgs){
+						if ("privacy" in item && "type" in item){
+							switch (item.type){
+								default:
+									break;
+							}
+						}		
+					};
 					return {
-						width:dims.width - gutter,
-						height:dims.height - headerHeight - gutter
+						publicPrivacy:publicMode,
+						privatePrivacy:privateMode,
+						beforePreRenderPrivacyStyling:beforePreRenderPrivacyStylingFunc,
+						afterPreRenderPrivacyStyling:afterPreRenderPrivacyStylingFunc,
+						beforeRenderPrivacyStyling:beforeRenderPrivacyStylingFunc,
+						afterRenderPrivacyStyling:afterRenderPrivacyStylingFunc,
+						getPrivacy:function(){
+							return myPrivacy;
+						}
 					};
-				};
-				newCanvas.setHistory(mockHistory);
-				newCanvas.setDimensions(reduceCanvas(DeviceConfiguration.getMeasurements()));
-				MeTLBus.subscribe("beforeWorkQueueResume","test",function(){});
-				MeTLBus.subscribe("afterWorkQueuePause","test",function(){});
-				MeTLBus.subscribe("layoutUpdated","test",function(dims){
-						var reduced = reduceCanvas(dims);
-					newCanvas.setDimensions(reduced);
-				});
 			})();
-		});
+
+			$("#deleteSelection").on("click",function(){
+				var selectMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "select"});
+				selectMode.deleteSelection();
+			});
+			$("#inkColor").on("change",function(e){
+				var value = $(this).val();
+				var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
+				drawMode.setColor(value);
+				//newCanvas.setMode(drawMode);
+			});
+			$("#inkWidth").on("change",function(e){
+				var value = $(this).val();
+				var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
+				drawMode.setSize(value);
+				//newCanvas.setMode(drawMode);
+			});
+			$("#isHighlighter").on("click",function(e){
+				var value = $(this).prop("checked");
+				var drawMode = _.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw"});
+				drawMode.setIsHighlighter(value);
+				//newCanvas.setMode(drawMode);
+			});
+			$("#setEraseMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "erase";}));
+			});
+			$("#setRichTextMode").on("click",function(){
+				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}));
+			});
+			var fonts = ["arial","verdana","garamond","wingdings","times new roman"];
+			var sizes = [8,10,12,14,16,20,24,30,36,48];
+			var colors = [
+			{
+				name:"",
+				code:""
+			},
+			{
+				name:"black",
+				code:"#000000"
+			},
+			{
+				name:"red",
+				code:"#FF0000"
+			},	
+			{
+				name:"green",
+				code:"#00FF00"
+			},
+			{
+				name:"blue",
+				code:"#0000FF"
+			},	
+			{
+				name:"white",
+				code:"#FFFFFF"
+			}];
+			var hasBuiltText = false;
+			var respondToTextAttributes = function(attrs){
+				var tempFonts = _.clone(fonts);
+				var tempSizes = _.clone(sizes);
+				var tempColors = _.clone(colors);
+				var fontSelector = $("#textFont");
+				var sizeSelector = $("#textSize");
+				var colorSelector = $("#textColor");
+				var boldSelector = $("#isBold");
+				var italicSelector = $("#isItalic");
+				var underlineSelector = $("#isUnderline");	
+
+				var updateSelect = function(select,collection,optionFunc,newValue,method,valueMutator){
+					if (newValue){
+						collection.push(newValue);
+					}
+					select.html(_.map(collection,function(item){
+						var i = optionFunc(item);
+						return $("<option/>",{
+							value:i.value,
+							text:i.name
+						});
+					}));
+					if (!hasBuiltText){
+						select.unbind("change").on("change",function(){
+							var value = $(this).val();
+							if (valueMutator !== undefined){
+								value = valueMutator(value);
+							}
+							_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
+						});
+					}
+					if (newValue){
+						select.val(newValue);
+					}
+				}
+				updateSelect(fontSelector,tempFonts,function(font){return {name:font,value:font};},attrs.font,"setFont");
+				updateSelect(sizeSelector,tempSizes,function(size){return {name:size,value:size};},attrs.size,"setFontSize");
+				var color = "";
+				if (attrs.color && attrs.color != {} && attrs.color[0]){
+					color = attrs.color[0];
+				}
+				updateSelect(colorSelector,tempColors,function(c){return {name:c.name,value:c.code};},color,"setFontColor",function(c){return [c,255];});
+				var updateCheckbox = function(cb,newValue,method){
+					if (!hasBuiltText){
+						cb.unbind("click").on("click",function(){
+							var value = $(this).prop("checked");
+							_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";})[method](value);
+						});
+					}
+					if (newValue === true || newValue === false){
+						cb.prop("checked",newValue);
+					}
+				};
+				updateCheckbox(boldSelector,attrs.bold,"setFontBold");
+				updateCheckbox(italicSelector,attrs.italic,"setFontItalic");
+				updateCheckbox(underlineSelector,attrs.underline,"setFontUnderline");
+				hasBuiltText = true;
+			};
+			_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}).onTextAttributesChanged(function(font,size,color,bold,italic,underline){
+				respondToTextAttributes({
+					font:font,
+					size:size,
+					color:color,
+					bold:bold,
+					italic:italic,
+					underline:underline
+				});	
+			});
+			respondToTextAttributes(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}).getFontAttributes());
+			$("#zoomIn").on("click",function(){
+				newCanvas.getZoomController().in();
+			});
+			$("#zoomOut").on("click",function(){
+				newCanvas.getZoomController().out();
+			});
+			var panAmount = 50;
+			$("#panLeft").on("click",function(){
+				newCanvas.getPanController().pan(-1 * panAmount,0);
+			});
+			$("#panRight").on("click",function(){
+				newCanvas.getPanController().pan(panAmount,0);
+			});
+			$("#panUp").on("click",function(){
+				newCanvas.getPanController().pan(0,-1 * panAmount);
+			});
+			$("#panDown").on("click",function(){
+				newCanvas.getPanController().pan(0,panAmount);
+			});
+			newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "richText";}));
+			newCanvas.onStatistic(function(category,time,success,exception){
+				if ("HealthChecker" in window){
+					HealthChecker.addMeasure(category,time,success);
+				}
+			});
+			newCanvas.onError(function(exception,caller,params){
+				console.log("InteractiveCanvasException",caller,exception,params);
+			});
+			newCanvas.onBeforePreRenderItem(function(item,ctx,scaleMeasurements,params){
+				Privacy.beforePreRenderPrivacyStyling(item,ctx,scaleMeasurements,params);
+				return true;
+			});
+			newCanvas.onAfterPreRenderItem(function(item,ctx,scaleMeasurements,params){
+				Privacy.afterPreRenderPrivacyStyling(item,ctx,scaleMeasurements,params);
+			});
+			newCanvas.onPreSelectItem(function(item){
+//				console.log("preSelect",item);
+				return true;
+			});
+			newCanvas.onPostSelectItem(function(item){
+//				console.log("postSelect",item);
+			});
+			newCanvas.onStanzaAvailable(function(stanza){
+				stanza.author = "testUser";
+				stanza.privacy = Privacy.getPrivacy();
+				stanza.target = "presentationSpace";
+				stanza.slide = "thisSlide";
+				stanza.timestamp = new Date().getTime();
+				console.log("test.html stanza:",stanza);
+				stanzas.push(stanza);
+				newCanvas.addStanza(stanza);
+			});
+			var reduceCanvas = function(dims){
+				var gutter = 10;
+				var header = $("#metlHeaderContainer");
+				var headerHeight = header.height();
+				return {
+					width:dims.width - gutter,
+					height:dims.height - headerHeight - gutter
+				};
+			};
+			newCanvas.setHistory(mockHistory);
+			newCanvas.setDimensions(reduceCanvas(DeviceConfiguration.getMeasurements()));
+			MeTLBus.subscribe("beforeWorkQueueResume","test",function(){});
+			MeTLBus.subscribe("afterWorkQueuePause","test",function(){});
+			MeTLBus.subscribe("layoutUpdated","test",function(dims){
+				var reduced = reduceCanvas(dims);
+				newCanvas.setDimensions(reduced);
+			});
+			return newCanvas;
+		};
 		var popAudit = function(){
 			var allStanzas = _.map(stanzas,function(originalStanza){
 				var stanza = _.cloneDeep(originalStanza);
@@ -506,13 +503,15 @@
 			});
 			console.log("allStanzas",allStanzas);
 			allStanzas = escape(JSON.stringify(allStanzas));
-			return;
 			var windowContent = "<html><script src=\"/static/assets/js/vendor/jquery.min.js\"><\/script><script src=\"static/js/stable/sprintf-0.7-beta1.js\"><\/script><script src=\"static/js/stable/lodash.js\"><\/script><script src=\"static/js/carota-debug.js\"><\/script><script src=\"static/js/historyRenderer.js\"><\/script><script type=\"text/javascript\"> var renderer = undefined; var allStanzas = JSON.parse(unescape(\""+allStanzas+"\")); $(function(){renderer = createCanvasRenderer($(\"#view\")); renderer.setDimensions({width:640,height:480}); var reRender = function(stanzas){renderer.setHistory({ inks:{}, highlighters:{}, images:{}, videos:{}, texts:{}, multiWordTexts:{} }); _.forEach(stanzas,function(s){ renderer.addStanza(s); }); }; $(\"#slider\").attr(\"min\",0).attr(\"max\",_.size(allStanzas)).val(_.size(allStanzas)).on(\"change\",function(){ var val = $(this).val();  var stanzas = _.take(allStanzas,val); reRender(stanzas); console.log(\"rendered\",stanzas);}).focus(); reRender(allStanzas); }); <\/script><body><input type=\"range\" width=\"640\" id=\"slider\"><\/input><canvas id=\"view\"><\/canvas><\/body><\/html>";
 			var win = window.open();
 			win.document.open();
 			win.document.write(windowContent);
 			win.document.close();
 		};
+		$(function(){
+			window.MeTLCanvas = createMeTLCanvas($("#testBoard"));
+		});
 	</script>
 	<div class="lift:embed?what=_canvas"></div>
 </div>
