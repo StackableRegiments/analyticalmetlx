@@ -25,7 +25,7 @@ resolvers ++= Seq(
 
 seq(webSettings :_*)
 
-startScriptJettyVersion in Compile := "9.2.10.v20150310"
+startScriptJettyVersion in Compile := "9.4.6.v20170531"
 
 startScriptJettyChecksum := "45b03a329990cff2719d1d7a1d228f3b7f6065e8"
 
@@ -50,7 +50,7 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
-  val jettyVersion = "9.3.10.v20160621"
+  val jettyVersion = "9.4.6.v20170531"
   Seq(
     //"org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
     //"org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
