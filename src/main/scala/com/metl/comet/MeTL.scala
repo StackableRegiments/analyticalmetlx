@@ -923,11 +923,13 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
     ClientSideFunction("joinRoom",List("jid"),(args) => {
       val jid = getArgAsString(args(0))
       joinRoomByJid(jid)
+      joinRoomByJid(jid+username)
       busArgs(RECEIVE_HISTORY,serializer.fromHistory(getSlideHistory(jid)))
     },Full(METLBUS_CALL)),
     ClientSideFunction("leaveRoom",List("jid"),(args) => {
       val jid = getArgAsString(args(0))
       leaveRoomByJid(jid)
+      leaveRoomByJid(jid+username)
       Nil
     },Empty),
     ClientSideFunction("getSlide",List("jid"),(args) => {

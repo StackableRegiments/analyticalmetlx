@@ -101,12 +101,12 @@ var MeTLActivities = (function(){
 				console.log("selected",selected);
 			if (_.some(selected,function(category,categoryName){ return _.size(category) > 0; })){
 				rootElem.find("#deleteSelection").show();
-				if (_.some(selected,function(category,categoryName){return _.find(category,function(item){return item.privacy.toLowerCase() == Privacy.privatePrivacy;}) !== undefined})){
+				if (_.some(selected,function(category,categoryName){return _.find(category,function(item){return "privacy" in item && item.privacy.toLowerCase() == Privacy.privatePrivacy;}) !== undefined})){
 					rootElem.find("#showSelection").show();
 				}
 				if (_.some(selected,function(category,categoryName){
 						return _.find(category,function(item){
-							return item.privacy.toLowerCase() == Privacy.publicPrivacy;}) !== undefined;
+							return "privacy" in item && item.privacy.toLowerCase() == Privacy.publicPrivacy;}) !== undefined;
 						})){
 					rootElem.find("#hideSelection").show();
 				}
