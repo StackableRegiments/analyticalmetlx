@@ -639,7 +639,7 @@ var createInteractiveCanvas = function(boardDiv){
 	var interactableAttrs = {
 		opacity:0
 	};
-	var selected = {};
+	var	selected = {images:{},texts:{},inks:{},multiWordTexts:{},videos:{}};
 	var	aspectLocked = true;
 	var dragging = false;
 	var resizing = false;

@@ -36,7 +36,7 @@ var Conversation = (function(){
             rootElem.find(".slideId").text(slide.id);
             rootElem.find(".slideIndex").text(slide.index);
 						
-						rootElem.find(".slideAnchor").attr("href",sprintf("/board?conversationJid=%s&slideId=%s&unique=true",conversation.jid,slide.id)).find(".slideThumbnail").attr("src",sprintf("/thumbnail/%s",slide.id));
+						rootElem.find(".slideAnchor").attr("href",sprintf("/metl?conversationJid=%s&slideId=%s&unique=true",conversation.jid,slide.id)).find(".slideThumbnail").attr("src",sprintf("/thumbnail/%s",slide.id));
 
             return rootElem;
         }));

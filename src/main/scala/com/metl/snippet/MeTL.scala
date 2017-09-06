@@ -39,13 +39,13 @@ class Metl extends Logger {
     (Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username)))) && c != Conversation.empty
   }
   def boardFor():String = {
-    "/board"
+    "/metl"
   }
   def boardFor(conversationJid:String):String = {
-    "/board?conversationJid=%s".format(conversationJid)
+    "/metl?conversationJid=%s".format(conversationJid)
   }
   def boardFor(conversationJid:String,slideId:String):String = {
-    "/board?conversationJid=%s&slideId=%s".format(conversationJid,slideId)
+    "/metl?conversationJid=%s&slideId=%s".format(conversationJid,slideId)
   }
   def projectorFor(conversationJid:String):String = {
     "/board?conversationJid=%s&showTools=false".format(conversationJid)
@@ -181,6 +181,13 @@ class Metl extends Logger {
         None
       }
     }
+  }
+  def specificActivity(in:NodeSeq):NodeSeq = {
+    val name = generateName()
+    val clazz = "lift:comet?type=ActivityActor&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    //warn("generating activity page comet html: %s".format(output))
+    output
   }
   def specificSimple(in:NodeSeq):NodeSeq = {
     val name = generateName()

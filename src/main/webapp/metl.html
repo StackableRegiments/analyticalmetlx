@@ -1,0 +1,93 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+	<script data-lift="with-resource-id" src="static/js/carota-debug.js"></script>
+	<script data-lift="with-resource-id" src="static/js/historyRenderer.js"></script>
+	<script data-lift="with-resource-id" src="static/js/InteractableCanvas.js"></script>
+	<script src="static/js/stable/Tween.js"></script>
+	<script src="static/js/activities.js"></script>
+	<style>
+		.toolsContainer {
+			position:absolute;
+			left:10px;
+			width:160px;
+			z-index:100;
+			background:cyan;
+		}
+		.metlCanvas {
+			border:3px solid yellow;
+			background:white;
+		}
+	</style>
+	<div id="metlContainerRoot"></div>
+	<div id="activityTemplates">
+		<div templateName="canvasAudit">
+			<input type="range" width="640" class="auditSlider"></input>
+			<canvas class="auditView"></canvas>
+		</div>
+		<div templateName="none">
+			<div>no activity loaded</div>
+		</div>
+		<div templateName="canvas">
+			<div>
+				<div class="toolsContainer">
+					<div class="privacyTools">
+						<input type="checkbox" id="setPublicMode" class="subTool privacySelector fa fa-"></input>
+						<label for="setPublicMode">Public</label>
+						<input type="checkbox" id="setPrivateMode" class="subTool privacySelector fa fa-"></input>
+						<label for="setPrivateMode">Private</label>
+					</div>
+					<button id="setSelectMode" class="fa fa- modeButton" >Select</button>
+					<div id="selectTools" class="subTools">
+						<button id="showSelection" class="subTool fa fa-">show</button>
+						<button id="hideSelection" class="subTool fa fa-">hide</button>
+						<button id="deleteSelection" class="subTool fa fa-">delete</button>
+					</div>
+					<button id="setEraseMode" class="fa fa- modeButton">Erase</button>
+					<button id="setDrawMode" class="fa fa- modeButton">Draw</button>
+					<div id="drawTools" class="subTools">
+						<input type="color" id="inkColor" class="subTool fa fa-"></input>
+						<label for="inkColor">color</label>
+						<input type="range" min="1" max="100" id="inkWidth" class="subTool fa fa-" width="40px"></input>
+						<label for="inkWidth">size</label>
+						<input type="checkbox" id="isHighlighter" class="subTool fa fa-"></input>
+						<label for="isHighlighter">highlighter</label>
+					</div>
+					<button id="setZoomMode" class="fa fa- modeButton">Zoom</button>
+					<div id="zoomTools" class="subTools">
+						<button id="zoomIn" class="subTool fa fa-">ZoomIn</button>
+						<button id="zoomOut" class="subTool fa fa-">ZoomOut</button>
+					</div>
+					<button id="setPanMode" class="fa fa-">Pan</button>
+					<div id="panTools" class="subTools">
+						<button id="panLeft" class="subTool fa fa-">Left</button>
+						<button id="panRight" class="subTool fa fa-">Right</button>
+						<button id="panUp" class="subTool fa fa-">Up</button>
+						<button id="panDown" class="subTool fa fa-">Down<button>
+					</div>
+					<button id="setRichTextMode" class="fa fa-">Text</button>
+					<div id="richTextTools" class="subTools">
+						<label for="textFont">font</label>
+						<select id="textFont" class="subTool"></select>
+						<label for="textSize">size</label>
+						<select id="textSize" class="subTool"></select>
+						<label for="textColor">color</label>
+						<select id="textColor" class="subTool"></select>
+						<input type="checkbox" id="isBold" class="subTool fa fa-"></input>
+						<label for="isBold">bold</label>
+						<input type="checkbox" id="isItalic" class="subTool fa fa-"></input>
+						<label for="isItalic">italic</label>
+						<input type="checkbox" id="isUnderline" class="subTool fa fa-"></input>
+						<label for="isUnderline">underline</label>
+					</div>
+				</div>
+				<div id="boardContainer">
+					<canvas class="metlCanvas" class="fill"></canvas>
+					<div id="textInputInvisibleHost"></div>
+					<div id="selectionAdorner"></div>
+					<div id="radar"></div>
+					<div id="marquee"></div>
+				</div>
+			<div>
+		</div>
+	</div>
+	<div class="lift:metl.specificActivity"></div>
+</div>

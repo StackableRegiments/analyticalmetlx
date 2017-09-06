@@ -166,9 +166,12 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
   protected lazy val RECEIVE_IMPORT_DESCRIPTIONS = "receiveImportDescriptions"
   protected lazy val RECEIVE_USER_GROUPS = "receiveUserGroups"
   protected lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
+  protected lazy val RECEIVE_SLIDE_DETAILS = "receiveSlideDetails"
   protected lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
   protected lazy val RECEIVE_QUERY = "receiveQuery"
 
+  protected lazy val RECEIVE_METL_STANZA = "receiveMeTLStanza"
+  protected lazy val RECEIVE_SYNC_MOVE = "receiveSyncMove"
   protected lazy val RECEIVE_SHOW_CONVERSATION_LINKS = "receiveShowConversationLinks"
   protected lazy val RECEIVE_HISTORY = "receiveHistory"
   protected lazy val RECEIVE_USER_OPTIONS = "receiveUserOptions"
@@ -897,16 +900,484 @@ trait JArgUtils {
 }
 /* NEXT */
 
+class ActivityActor extends MeTLActorBase[ActivityActor]{
+  import net.liftweb.json.Extraction
+  import net.liftweb.json.DefaultFormats
+  private val actorUniqueId = nextFuncName
+
+  override lazy val functionDefinitions = List(
+    CommonFunctions.getAccount,
+    CommonFunctions.getProfiles,
+    CommonFunctions.getDefaultProfile,
+    CommonFunctions.getActiveProfile,
+    CommonFunctions.getProfilesById,
+    ClientSideFunction("getUsername",Nil,(args) => {
+      busArgs(RECEIVE_USERNAME,jUsername)
+    },Full(METLBUS_CALL)),
+    ClientSideFunction("sendStanza",List("stanza"),(args) => {
+      val stanza = getArgAsJValue(args(0))
+      trace("sendStanza: %s".format(stanza.toString))
+      sendStanzaToServer(stanza)
+      Nil
+    },Empty),
+    ClientSideFunction("joinRoom",List("jid"),(args) => {
+      val jid = getArgAsString(args(0))
+      joinRoomByJid(jid)
+      busArgs(RECEIVE_HISTORY,serializer.fromHistory(getSlideHistory(jid)))
+    },Full(METLBUS_CALL)),
+    ClientSideFunction("leaveRoom",List("jid"),(args) => {
+      val jid = getArgAsString(args(0))
+      leaveRoomByJid(jid)
+      Nil
+    },Empty),
+    ClientSideFunction("getSlide",List("jid"),(args) => {
+      val jid = getArgAsString(args(0))
+      busArgs(RECEIVE_SLIDE_DETAILS,serializer.fromSlide(serverConfig.detailsOfSlide(jid)))
+    },Full(METLBUS_CALL)),
+    ClientSideFunction("getConversation",List("jid"),(args) => {
+      val jid = getArgAsString(args(0))
+      busArgs(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(serverConfig.detailsOfConversation(jid)))
+    },Full(METLBUS_CALL)),
+    ClientSideFunction("getCurrentSlide",List(),(args) => {
+      busArgs(RECEIVE_SLIDE_DETAILS,serializer.fromSlide(currentSlide.getOrElse(Slide.empty)))
+    },Full(METLBUS_CALL)),
+    ClientSideFunction("getCurrentConversation",List(),(args) => {
+      busArgs(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(currentConversation.getOrElse(Conversation.empty)))
+    },Full(METLBUS_CALL)),
+    CommonFunctions.getHistory(getSlideHistory _)
+  )
+  private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
+  private lazy val serverName = serverConfig.name
+  def registerWith = MeTLActorManager
+  
+  override def render = {
+    OnLoad(
+      Call("getUsername") &
+      Call("getCurrentConversation") &
+      Call("getCurrentSlide") 
+    )
+  }
+  override def lowPriority = {
+    case roomInfo:RoomStateInformation => updateRooms(roomInfo)
+    case metlStanza:MeTLStanza => sendMeTLStanzaToPage(metlStanza)
+    case HealthyWelcomeFromRoom => {}
+    case other => warn("ActivityActor %s received unknown message: %s".format(name,other))
+  }
+  override def autoIncludeJsonCode = true
+  protected var currentConversation:Option[Conversation] = None
+  protected var currentSlide:Option[Slide] = None
+  override def localSetup = {
+    super.localSetup()
+    name.foreach(nameString => {
+      com.metl.snippet.Metl.getConversationFromName(nameString).foreach(convJid => {
+        currentConversation = Some(serverConfig.detailsOfConversation(convJid)).filterNot(_ == Conversation.empty)
+        warn("activityActor conversation: %s".format(convJid))
+      })
+      com.metl.snippet.Metl.getSlideFromName(nameString).map(slideJid => {
+        warn("joining specified slide: %s".format(slideJid))
+        currentSlide = Some(serverConfig.detailsOfSlide(slideJid)).filterNot(_ == Slide.empty)
+      })
+    })
+  }
+  override def localShutdown = {
+    rooms.foreach(r => {
+      r._2() ! LeaveRoom(username,actorUniqueId,this)
+    })
+    super.localShutdown()
+  }
+  protected def getSlideHistory(jid:String):History = {
+    trace("GetSlideHistory %s".format(jid))
+    val convHistory = currentConversation.map(cc => MeTLXConfiguration.getRoom(cc.jid,serverName).getHistory).getOrElse(History.empty)
+    trace("conv %s".format(jid))
+    val pubHistory = MeTLXConfiguration.getRoom(jid,serverName).getHistory
+    trace("pub %s".format(jid))
+    val privHistory = MeTLXConfiguration.getRoom(jid+username,serverName).getHistory
+    trace("priv %s".format(jid))
+    val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp > b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
+    trace("conv found %s".format(convHistory.getGradeValues))
+    val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
+      case g:MeTLGrade => true
+      case gv:MeTLGradeValue if shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) => true
+      case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == true) && gv.getGradedUser == username => true
+      case gv:MeTLGradeValue => false
+      case qr:MeTLQuizResponse if (qr.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case s:MeTLSubmission if (s.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case _ => true
+    }
+    debug("final %s".format(jid))
+    trace("final found %s".format(finalHistory.getGradeValues))
+    finalHistory
+  }
+  protected def joinRoomByJid(jid:String):Unit = {
+    var room = MeTLXConfiguration.getRoom(jid,serverName)
+    room ! JoinRoom(username,actorUniqueId,this)
+  }
+  protected def leaveRoomByJid(jid:String):Unit = {
+    rooms.find(r => r._1._2 == jid).foreach(r => {
+      r._2() ! LeaveRoom(username,actorUniqueId,this)
+    })
+  }
+  protected def updateRooms(roomInfo:RoomStateInformation):Unit = Stopwatch.time("MeTLActor.updateRooms",{
+    warn("roomInfo received: %s".format(roomInfo))
+    trace("updateRooms: %s".format(roomInfo))
+    roomInfo match {
+      case RoomJoinAcknowledged(s,r) => {
+        trace("joining room: %s".format(r))
+        if (rooms.contains((s,r))){
+          //don't do anything - you're already in the room
+        } else {
+          rooms = rooms.updated((s,r),() => MeTLXConfiguration.getRoom(r,s))
+          try {
+            RoomMetaDataUtils.fromJid(r) match {
+              case SlideRoom(sJid) if currentConversation.exists(c => c.slides.exists(_.id == sJid)) => {
+                currentConversation.map(c => {
+                  warn("trying to send truePresence for slideRoom to conversationRoom: %s %s".format(c.jid,sJid))
+                  val room = MeTLXConfiguration.getRoom(c.jid,serverName,ConversationRoom(c.jid))
+                  room !  LocalToServerMeTLStanza(Attendance(username,-1L,sJid,true,Nil))
+                })
+              }
+              case ConversationRoom(cJid) => {
+                warn("trying to send truePresence for conversationRoom to global: %s".format(cJid))
+                val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
+                room ! LocalToServerMeTLStanza(Attendance(username,-1L,cJid,true,Nil))
+              }
+              case _ => {}
+            }
+          } catch {
+            case e:Exception => {
+              error("failed to send arrivingAttendance to room: (%s,%s) => %s".format(s,r,e.getMessage),e)
+            }
+          }
+        }
+      }
+      case RoomLeaveAcknowledged(s,r) => {
+        if (rooms.contains((s,r))){
+          trace("leaving room: %s".format(r))
+          try {
+            RoomMetaDataUtils.fromJid(r) match {
+              case SlideRoom(sJid) if currentConversation.exists(c => c.slides.exists(_.id == sJid)) => {
+                currentConversation.map(c => {
+                  warn("trying to send falsePresence for slideRoom to conversationRoom: %s %s".format(c.jid,sJid))
+                  val room = MeTLXConfiguration.getRoom(c.jid,serverName,ConversationRoom(c.jid))
+                  room !  LocalToServerMeTLStanza(Attendance(username,-1L,sJid,false,Nil))
+                })
+              }
+              case ConversationRoom(cJid) => {
+                warn("trying to send falsePresence for conversationRoom to global: %s".format(cJid))
+                val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom)
+                room ! LocalToServerMeTLStanza(Attendance(username,-1L,cJid,false,Nil))
+              }
+              case _ => {}
+            }
+          } catch {
+            case e:Exception => {
+              error("failed to send leavingAttendance to room: (%s,%s) => %s".format(s,r,e.getMessage),e)
+            }
+          }
+          rooms = rooms.filterNot(rm => rm._1 == (s,r))
+        } else {
+          // don't do anything - you're not in the roo
+        }
+      }
+      case _ => {}
+    }
+  })
+  protected def emit(source:String,value:String,domain:String) = {
+    trace("emit triggered by %s: %s,%s,%s".format(username,source,value,domain))
+    currentConversation.map(cc => {
+      MeTLXConfiguration.getRoom(cc.jid,serverName) ! LocalToServerMeTLStanza(MeTLTheme(username,-1L,cc.jid.toString,Theme(source,value,domain),Nil))
+    })
+  }
+  protected def sendStanzaToServer(jVal:JValue,serverName:String = serverName):Unit  = Stopwatch.time("ActivityActor.sendStanzaToServer (jVal) (%s)".format(serverName),{
+    val metlData = serializer.toMeTLData(jVal)
+    metlData match {
+      case m:MeTLStanza => sendStanzaToServer(m,serverName)
+      case notAStanza => error("Not a stanza at sendStanzaToServer %s".format(notAStanza))
+    }
+  })
+  protected def sendStanzaToServer(stanza:MeTLStanza,serverName:String):Unit  = Stopwatch.time("ActivityActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName),{
+    trace("OUT -> %s".format(stanza))
+    stanza match {
+      case m:MeTLMoveDelta => {
+        val publicRoom = rooms.getOrElse((serverName,m.slide),() => EmptyRoom)()
+        val privateRoom = rooms.getOrElse((serverName,m.slide+username),() => EmptyRoom)()
+        val publicHistory = publicRoom.getHistory
+        val privateHistory = privateRoom.getHistory
+        val (sendToPublic,sendToPrivates) = m.adjustTimestamp(List(privateHistory.getLatestTimestamp,publicHistory.getLatestTimestamp).max + 1).generateChanges(publicHistory,privateHistory)
+        sendToPublic.map(pub => {
+          trace("OUT TO PUB -> %s".format(pub))
+          publicRoom ! LocalToServerMeTLStanza(pub)
+        })
+        sendToPrivates.foreach(privTup => {
+          val privateAuthor = privTup._1
+          if (username == privateAuthor || shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))){
+            val privRoom = MeTLXConfiguration.getRoom(m.slide+privateAuthor,serverName) // rooms.getOrElse((serverName,m.slide+privateAuthor),() => EmptyRoom)()
+              privTup._2.foreach(privStanza => {
+                trace("OUT TO PRIV -> %s".format(privStanza))
+                privRoom ! LocalToServerMeTLStanza(privStanza)
+              })
+          }
+        })
+      }
+      case s:MeTLSubmission => {
+        if (s.author == username) {
+          currentConversation.map(cc => {
+            val roomId = cc.jid.toString
+            rooms.get((serverName,roomId)).map(r =>{
+              trace("sendStanzaToServer sending submission: "+r)
+              r() ! LocalToServerMeTLStanza(s)
+              Globals.metlingPots.foreach(mp => {
+                mp.postItems(List(
+                  MeTLingPotItem("metlActor",new java.util.Date().getTime(),KVP("metlUser",s.author),KVP("informalAcademic","submission"),Some(KVP("room",s.slideJid.toString)),None,None)
+                ))
+              })
+            })
+          })
+        }
+      }
+      case s:MeTLChatMessage => {
+        if (s.author == username) {
+          currentConversation.map(cc => {
+            val roomId = cc.jid.toString
+            rooms.get((serverName,roomId)).map(r =>{
+              debug("sendStanzaToServer sending chatMessage: "+r)
+              if( cc.blackList.contains(username)) {
+                // Banned students can only whisper the teacher.
+                r() ! LocalToServerMeTLStanza(s.adjustAudience(List(Audience("metl", cc.author, "user", "read"))))
+              }
+              else
+              {
+                r() ! LocalToServerMeTLStanza(s)
+              }
+            })
+          })
+        }
+      }
+      case qr:MeTLQuizResponse => {
+        if (qr.author == username) {
+          currentConversation.map(cc => {
+            val roomId = cc.jid.toString
+            rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(qr))
+            Globals.metlingPots.foreach(mp => {
+              mp.postItems(List(
+                MeTLingPotItem("metlActor",new java.util.Date().getTime(),KVP("metlUser",qr.author),KVP("informalAcademic","quizResponse"),Some(KVP("room",cc.jid.toString)),Some(KVP("quiz",qr.id)),None)
+              ))
+            })
+          })
+        }
+      }
+      case q:MeTLQuiz => {
+        if (q.author == username) {
+          currentConversation.map(cc => {
+            if (shouldModifyConversation(cc)){
+              trace("sending quiz: %s".format(q))
+              val roomId = cc.jid.toString
+              rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(q))
+            } else {
+              //errorScreen("quiz creation","You are not permitted to create quizzes in this conversation")
+            }
+          })
+        }
+      }
+      case c:MeTLCanvasContent => {
+        if (c.author == username){
+          currentConversation.map(cc => {
+            val t = c match {
+              case i:MeTLInk => "ink"
+              case i:MeTLImage => "img"
+              case i:MeTLMultiWordText => "txt"
+              case _ => "_"
+            }
+            val p = c.privacy match {
+              case Privacy.PRIVATE => "private"
+              case Privacy.PUBLIC => "public"
+              case _ => "_"
+            }
+            emit(p,c.identity,t)
+            val (shouldSend,roomId,finalItem) = c.privacy match {
+              case Privacy.PRIVATE => {
+                (true,c.slide+username,c)
+              }
+              case Privacy.PUBLIC => {
+                if (shouldPublishInConversation(cc)){
+                  (true,c.slide,c)
+                } else {
+                  (true,c.slide+username,c match {
+                    case i:MeTLInk => i.alterPrivacy(Privacy.PRIVATE)
+                    case t:MeTLText => t.alterPrivacy(Privacy.PRIVATE)
+                    case i:MeTLImage => i.alterPrivacy(Privacy.PRIVATE)
+                    case i:MeTLMultiWordText => i.alterPrivacy(Privacy.PRIVATE)
+                    case di:MeTLDirtyInk => di.alterPrivacy(Privacy.PRIVATE)
+                    case dt:MeTLDirtyText => dt.alterPrivacy(Privacy.PRIVATE)
+                    case di:MeTLDirtyImage => di.alterPrivacy(Privacy.PRIVATE)
+                    case other => other
+                  })
+                }
+              }
+              case other => {
+                warn("unexpected privacy found in: %s".format(c))
+                (false,c.slide,c)
+              }
+            }
+            if (shouldSend){
+              rooms.get((serverName,roomId)).map(targetRoom => targetRoom() ! LocalToServerMeTLStanza(finalItem))
+            }
+          })
+        } else warn("attemped to send a stanza to the server which wasn't yours: %s".format(c))
+      }
+      case c:MeTLCommand => {
+        if (c.author == username && shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))){
+          val conversationSpecificCommands = List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION")
+          val slideSpecificCommands = List("/TEACHER_VIEW_MOVED")
+          val roomTarget = c.command match {
+            case s:String if (conversationSpecificCommands.contains(s)) => currentConversation.map(_.jid).getOrElse("global")
+            case s:String if (slideSpecificCommands.contains(s)) => currentSlide.map(_.id).getOrElse("global")
+            case _ => "global"
+          }
+          val alteredCommand = c match {
+            case MeTLCommand(author,timestamp,"/SYNC_MOVE",List(jid),audiences) => MeTLCommand(author,timestamp,"/SYNC_MOVE",List(jid,uniqueId),audiences)
+            case other => other
+          }
+          rooms.get((serverName,roomTarget)).map(r => {
+            trace("sending MeTLStanza to room: %s <- %s".format(r,alteredCommand))
+            r() ! LocalToServerMeTLStanza(alteredCommand)
+          })
+        }
+      }
+      case f:MeTLFile => {
+        if (f.author == username){
+          currentConversation.map(cc => {
+            val roomTarget = cc.jid.toString
+            rooms.get((serverName,roomTarget)).map(r => {
+              trace("sending MeTLFile to conversation room: %s <- %s".format(r,f))
+              r() ! LocalToServerMeTLStanza(f)
+            })
+          })
+        }
+      }
+      case g:MeTLGrade => {
+        if (g.author == username){
+          currentConversation.map(cc => {
+            if (cc.author == g.author){
+              val roomTarget = cc.jid.toString
+              rooms.get((serverName,roomTarget)).map(r => {
+                r() ! LocalToServerMeTLStanza(g)
+              })
+            }
+          })
+        }
+      }
+      case g:MeTLGradeValue => {
+        if (g.author == username){
+          currentConversation.map(cc => {
+            if (cc.author == g.author){
+              val roomTarget = cc.jid.toString
+              rooms.get((serverName,roomTarget)).map(r => {
+                r() ! LocalToServerMeTLStanza(g)
+                Globals.metlingPots.foreach(mp => {
+                  mp.postItems(List(
+                    MeTLingPotItem("metlActor",new java.util.Date().getTime(),KVP("metlUser",g.author),KVP("formalAcademic","graded"),Some(KVP("grade",g.getGradeId)),Some(KVP("metlUser",g.getGradedUser)),None)
+                  ))
+                })
+              })
+            }
+          })
+        }
+      }
+      case other => {
+        warn("sendStanzaToServer's toMeTLStanza returned unknown type when deserializing: %s".format(other))
+      }
+    }
+  })
+  private def sendMeTLStanzaToPage(metlStanza:MeTLStanza):Unit = Stopwatch.time("MeTLActor.sendMeTLStanzaToPage",{
+    trace("IN -> %s".format(metlStanza))
+    metlStanza match {
+      case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
+        trace("comet.MeTL /UPDATE_CONVERSATION_DETAILS for %s".format(name))
+        val newJid = c.commandParameters(0)
+        val newConv = serverConfig.detailsOfConversation(newJid)
+        if (currentConversation.exists(_.jid == newConv.jid)){
+          if (!shouldDisplayConversation(newConv)){
+            debug("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
+            currentConversation = Empty
+            currentSlide = Empty
+            reRender
+            partialUpdate(RedirectTo(noBoard))
+          } else {
+            currentConversation = currentConversation.map(cc => {
+              if (cc.jid == newJid){
+                newConv
+              } else cc
+            })
+            trace("updating conversation to: %s".format(newConv))
+            partialUpdate(busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(newConv,username,userGroups))))
+          }
+        }
+      }
+      case c:MeTLCommand if (c.command == "/SYNC_MOVE") => {
+        trace("incoming syncMove: %s".format(c))
+        val newJid = c.commandParameters(0)
+        val signature = c.commandParameters(1)
+        if(uniqueId != signature){//Don't respond to moves that started at this actor
+          partialUpdate(busCall(RECEIVE_SYNC_MOVE,JString(newJid),JString(signature)))
+        }
+      }
+      case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
+        //not relaying teacherInConversation to page
+      }
+      //case a:Attendance if (shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => getAttendance.map(attendances => partialUpdate(busCall(RECEIVE_ATTENDANCE,attendances)))
+      case s:MeTLSubmission if !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) && s.author != username => {
+        //not sending the submission to the page, because you're not the author and it's not yours
+      }
+      case qr:MeTLQuizResponse if !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) && qr.author != username => {
+        //not sending the quizResponse to the page, because you're not the author and it's not yours
+      }
+      /*
+       case g:MeTLGrade if !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) && !g.visible => {
+       //not sending a grade to the page because you're not the author, and this one's not visible
+       }
+       */
+      case gv:MeTLGradeValue => {
+        currentConversation.foreach(cc => {
+          if (shouldModifyConversation(cc)){
+            partialUpdate(busCall(RECEIVE_METL_STANZA,serializer.fromMeTLData(gv)))
+          } else {
+            if (gv.getGradedUser == username){
+              val roomTarget = cc.jid.toString
+              rooms.get((serverConfig.name,roomTarget)).map(r => {
+                val convHistory = r().getHistory
+                val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp > b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
+                val thisGrade = allGrades.get(gv.getGradeId)
+                if (thisGrade.exists(_.visible)){
+                  partialUpdate(busCall(RECEIVE_METL_STANZA,serializer.fromMeTLData(gv)))
+                }
+              })
+            }
+          }
+        })
+      }
+      case _ => {
+        trace("receiving: %s".format(metlStanza))
+        val response = serializer.fromMeTLData(metlStanza) match {
+          case j:JValue => j
+          case other => JString(other.toString)
+        }
+        partialUpdate(busCall(RECEIVE_METL_STANZA,response))
+      }
+    }
+  })
+
+}
+
+
 class MeTLActor extends MeTLActorBase[MeTLActor]{
   import net.liftweb.json.Extraction
   import net.liftweb.json.DefaultFormats
   private val actorUniqueId = nextFuncName
 
   // javascript functions to fire
-  private lazy val RECEIVE_SYNC_MOVE = "receiveSyncMove" // tick
   private lazy val RECEIVE_CURRENT_CONVERSATION = "receiveCurrentConversation" //tick
   private lazy val RECEIVE_CURRENT_SLIDE = "receiveCurrentSlide"
-  private lazy val RECEIVE_METL_STANZA = "receiveMeTLStanza"
   private lazy val RECEIVE_QUIZZES = "receiveQuizzes"
   private lazy val RECEIVE_QUIZ_RESPONSES = "receiveQuizResponses"
   private lazy val RECEIVE_IS_INTERACTIVE_USER = "receiveIsInteractiveUser"
