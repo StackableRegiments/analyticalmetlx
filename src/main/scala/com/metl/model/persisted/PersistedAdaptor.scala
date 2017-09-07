@@ -32,7 +32,7 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def renameConversation(jid:String,newTitle:String):Conversation = conversations.renameConversation(jid,newTitle)
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = conversations.changePermissions(jid,newPermissions)
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = conversations.updateSubjectOfConversation(jid,newSubject)
-  override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = conversations.addSlideAtIndexOfConversation(jid,index)
+  override def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation = conversations.addSlideAtIndexOfConversation(jid,index,slideType)
   override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = conversations.addGroupSlideAtIndexOfConversation(jid,index,grouping)
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = conversations.reorderSlidesOfConversation(jid,newSlides)
   override def updateConversation(jid:String,conversation:Conversation):Conversation = conversations.updateConversation(jid,conversation)

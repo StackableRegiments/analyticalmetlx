@@ -16,7 +16,28 @@
 			border:3px solid yellow;
 			background:white;
 		}
+		.slideThumbnail {
+			max-height:30px;
+			max-width:40px;
+		}
 	</style>
+	<div id="conversationRoot">
+		<div class="conversationTemplate">
+			<span class="prevSlideContainer">
+				<button class="prevSlideButton">
+					<img class="prevSlideThumbnail slideThumbnail"></img>
+					<div class="prevSlideDescription"></div>
+				</button>
+			</span>
+			<span class="conversationTitle"></span>
+			<span class="nextSlideContainer">
+				<button class="nextSlideButton">
+					<img class="nextSlideThumbnail slideThumbnail"></img>
+					<div class="nextSlideDescription"></div>
+				</button>
+			</span>
+		</div>
+	</div>
 	<div id="metlContainerRoot"></div>
 	<div id="activityTemplates">
 		<div templateName="canvasAudit">

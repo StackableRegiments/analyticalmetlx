@@ -636,9 +636,9 @@ GROUP BY %s""".format(
   def renameConversation(jid:String,newTitle:String):Conversation = findAndModifyConversation(jid,c => c.rename(newTitle))
   def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation = findAndModifyConversation(jid,c => c.replacePermissions(newPermissions))
   def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = findAndModifyConversation(jid,c => c.replaceSubject(newSubject))
-  def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = {
+  def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation = {
     findAndModifyConversation(jid,c => {
-      val slide = createSlide(c.author)
+      val slide = createSlide(c.author,slideType)
       c.addSlideAtIndex(index,slide)
     })
   }

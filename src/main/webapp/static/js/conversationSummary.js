@@ -30,14 +30,28 @@ var Conversation = (function(){
     var slidesContainer = {};
     var slideTemplate = {};
 
+		var thumbnailForSlide = function(slide,slideElem){
+			var thumbnailImage = slideElem.find(".slideThumbnail");
+			switch (slide.slideType){
+				case "SLIDE":
+					thumbnailImage.attr("src",sprintf("/thumbnail/%s",slide.id));
+					break;
+				default:
+					thumbnailImage.replace($("<div/>",{
+						text:slide.slideType + "_" +slide.id
+					}));
+					break;
+			}
+		};
+
     var reRender = function(){
         slidesContainer.html(_.map(_.sortBy(conversation.slides,"index"),function(slide){
             var rootElem = slideTemplate.clone();
             rootElem.find(".slideId").text(slide.id);
             rootElem.find(".slideIndex").text(slide.index);
-						
-						rootElem.find(".slideAnchor").attr("href",sprintf("/metl?conversationJid=%s&slideId=%s&unique=true",conversation.jid,slide.id)).find(".slideThumbnail").attr("src",sprintf("/thumbnail/%s",slide.id));
-
+					
+						rootElem.find(".slideAnchor").attr("href",sprintf("/metl?conversationJid=%s&slideId=%s&unique=true",conversation.jid,slide.id));
+						thumbnailForSlide(slide,rootElem);
             return rootElem;
         }));
 

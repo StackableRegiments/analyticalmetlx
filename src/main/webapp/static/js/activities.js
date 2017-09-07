@@ -11,8 +11,65 @@ var MeTLActivities = (function(){
 		author = u;
 	});
 	bus.subscribe("receiveConversationDetails","activities",function(cd){
+		console.log("conversation received",cd);
+		var oldConv = conversation;
 		conversation = cd;
+		reRenderConversations();
 	});
+	bus.subscribe("receiveMeTLStanza","activities",function(stanza){
+		if ("type" in stanza){
+			switch (stanza.type){
+				case "command":
+					// perhaps it's a syncMove?
+					break;
+				default:
+					break;
+			}
+		}
+	});
+	var reRenderConversations = function(){
+		if (conversation !== undefined){
+			var rootElem = conversationTemplate.clone();
+			rootElem.find(".conversationTitle").text(conversation.title);
+			var prevSlide = rootElem.find(".prevSlideContainer");
+			var nextSlide = rootElem.find(".nextSlideContainer");
+			var slideInConv = undefined;
+		 	if (slide !== undefined && "id" in slide){
+		 	 	slideInConv = _.find(conversation.slides,function(s){ return s.id == slide.id; });
+			}
+			if (slideInConv === undefined){
+				slideInConv = slide;
+			}
+			if ("slides" in conversation && _.size(conversation.slides) > 1 && slideInConv !== undefined && _.minBy(conversation.slides,"index").index != slideInConv.index){
+				var pSlide = _.maxBy(_.filter(conversation.slides,function(s){
+					return s.index < slideInConv.index;
+				}),"index");
+				prevSlide.find(".prevSlideButton").on("click",function(){
+					moveToSlide(pSlide.id);
+				});
+				prevSlide.find(".prevSlideThumbnail").attr("src","/thumbnail/"+pSlide.id);
+				prevSlide.find(".prevSlideDescription").text(pSlide.slideType + "_"+pSlide.id);
+			} else {
+				prevSlide.empty();
+			}
+			if ("slides" in conversation && _.size(conversation.slides) > 1 && slideInConv !== undefined && _.maxBy(conversation.slides,"index").index != slideInConv.index){
+				var nSlide = _.minBy(_.filter(conversation.slides,function(s){
+					return s.index > slideInConv.index;
+				}),"index");
+				nextSlide.find(".nextSlideButton").on("click",function(){
+					moveToSlide(nSlide.id);
+				});
+				nextSlide.find(".nextSlideThumbnail").attr("src","/thumbnail/"+nSlide.id);
+				nextSlide.find(".nextSlideDescription").text(nSlide.slideType + "_"+nSlide.id);
+			} else {
+				nextSlide.empty();
+			}	
+			conversationRoot.html(rootElem);
+		} else {
+			conversationRoot.empty();
+		}
+		bus.call("layoutUpdated",[DeviceConfiguration.getMeasurements()]);
+	};
 	var currentActivity = {};
 	bus.subscribe("receiveSlideDetails","activites",function(s){
 		console.log("slide received:",s);
@@ -28,14 +85,17 @@ var MeTLActivities = (function(){
 				}
 			}
 		}
+		reRenderConversations();
 	});
 	var reduceCanvas = function(dims){
 		var gutter = 10;
 		var header = $("#metlHeaderContainer");
 		var headerHeight = header.height();
+		var conversationHeader = $("#conversationRoot");
+		var conversationHeaderHeight = conversationHeader.height();
 		return {
 			width:dims.width - gutter,
-			height:dims.height - headerHeight - gutter
+			height:dims.height - headerHeight - conversationHeaderHeight - gutter
 		};
 	};
 	$(function(){
@@ -46,6 +106,10 @@ var MeTLActivities = (function(){
 		});
 		$("#activityTemplates").empty();
 		containerRoot = $("#metlContainerRoot");
+		conversationRoot = $("#conversationRoot");
+		conversationTemplate = conversationRoot.find(".conversationTemplate").clone();
+		conversationRoot.empty();
+		reRenderConversations();
 	});
 
 	var createAuditCanvasActivity = function(bus,slideId){

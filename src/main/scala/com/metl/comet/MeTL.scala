@@ -292,6 +292,19 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
   }
 
   object CommonFunctions {
+    def sendStanza(stanzaFunc:MeTLStanza=>Unit):ClientSideFunction = ClientSideFunction("sendStanza",List("stanza"),(args) => {
+      val jVal = getArgAsJValue(args(0))
+      val stanza = serializer.toMeTLData(jVal)
+      stanza match {
+        case m:MeTLStanza => {
+          trace("sendStanza: %s".format(stanza.toString))
+          stanzaFunc(m)
+        }
+        case notAStanza => {}
+      }
+      Nil
+    },Empty)
+
     def getActiveProfile = ClientSideFunction("getActiveProfile",List(),(args) => {
       busArgs(RECEIVE_ACTIVE_PROFILE,jProfile)
     },Full(METLBUS_CALL))
@@ -368,7 +381,15 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       busArgs(RECEIVE_CONVERSATIONS,JArray(serverConfig.getConversationsByAuthor(profileAccessor().id).map(serializer.fromConversation _)))
     },Full(METLBUS_CALL))
     def getUserGroups:ClientSideFunction = ClientSideFunction("getUserGroups",List.empty[String],(args) => busArgs(RECEIVE_USER_GROUPS,jUserGroups),Full(METLBUS_CALL))
-    def getUsername:ClientSideFunction = ClientSideFunction("getUser",List.empty[String],(unused) => busArgs(RECEIVE_USERNAME,jUsername),Full(METLBUS_CALL))
+    def getUsername:ClientSideFunction = ClientSideFunction("getUsername",List.empty[String],(unused) => busArgs(RECEIVE_USERNAME,jUsername),Full(METLBUS_CALL))
+    def getSlide = ClientSideFunction("getSlide",List("jid"),(args) => {
+      val jid = getArgAsString(args(0))
+      busArgs(RECEIVE_SLIDE_DETAILS,serializer.fromSlide(serverConfig.detailsOfSlide(jid)))
+    },Full(METLBUS_CALL))
+    def getConversation = ClientSideFunction("getConversation",List("jid"),(args) => {
+      val jid = getArgAsString(args(0))
+      busArgs(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(serverConfig.detailsOfConversation(jid)))
+    },Full(METLBUS_CALL))
     def searchForConversation(updateListing:List[Conversation] => List[Conversation],queryUpdater:Option[String]=>Option[String]):ClientSideFunction = ClientSideFunction("getSearchResult",List("query"),(args) => {
       val q = getArgAsString(args(0)).toLowerCase.trim
       queryUpdater(Some(q))
@@ -450,12 +471,13 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
         c
       },username,userGroups)))
     },Full(METLBUS_CALL))
-    def addSlideToConversationAtIndex:ClientSideFunction = ClientSideFunction("addSlideToConversationAtIndex",List("jid","index"),(args) => {
+    def addSlideToConversationAtIndex:ClientSideFunction = ClientSideFunction("addSlideToConversationAtIndex",List("jid","index","slideType"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
+      val slideType = args.drop(2).headOption.map(a => getArgAsString(a)).getOrElse("SLIDE")
       val c = serverConfig.detailsOfConversation(jid)
       val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
-        case true => serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
+        case true => serverConfig.addSlideAtIndexOfConversation(c.jid,index,slideType)
         case _ => c
       },username,userGroups))
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
@@ -898,7 +920,6 @@ trait JArgUtils {
     case _ => Nil
   }
 }
-/* NEXT */
 
 class ActivityActor extends MeTLActorBase[ActivityActor]{
   import net.liftweb.json.Extraction
@@ -911,15 +932,8 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
     CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
     CommonFunctions.getProfilesById,
-    ClientSideFunction("getUsername",Nil,(args) => {
-      busArgs(RECEIVE_USERNAME,jUsername)
-    },Full(METLBUS_CALL)),
-    ClientSideFunction("sendStanza",List("stanza"),(args) => {
-      val stanza = getArgAsJValue(args(0))
-      trace("sendStanza: %s".format(stanza.toString))
-      sendStanzaToServer(stanza)
-      Nil
-    },Empty),
+    CommonFunctions.getUsername,
+    CommonFunctions.sendStanza(sendStanzaToServer _),
     ClientSideFunction("joinRoom",List("jid"),(args) => {
       val jid = getArgAsString(args(0))
       joinRoomByJid(jid)
@@ -932,21 +946,21 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       leaveRoomByJid(jid+username)
       Nil
     },Empty),
-    ClientSideFunction("getSlide",List("jid"),(args) => {
-      val jid = getArgAsString(args(0))
-      busArgs(RECEIVE_SLIDE_DETAILS,serializer.fromSlide(serverConfig.detailsOfSlide(jid)))
-    },Full(METLBUS_CALL)),
-    ClientSideFunction("getConversation",List("jid"),(args) => {
-      val jid = getArgAsString(args(0))
-      busArgs(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(serverConfig.detailsOfConversation(jid)))
-    },Full(METLBUS_CALL)),
+    CommonFunctions.getSlide,
+    CommonFunctions.getConversation,
     ClientSideFunction("getCurrentSlide",List(),(args) => {
       busArgs(RECEIVE_SLIDE_DETAILS,serializer.fromSlide(currentSlide.getOrElse(Slide.empty)))
     },Full(METLBUS_CALL)),
     ClientSideFunction("getCurrentConversation",List(),(args) => {
       busArgs(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(currentConversation.getOrElse(Conversation.empty)))
     },Full(METLBUS_CALL)),
-    CommonFunctions.getHistory(getSlideHistory _)
+    CommonFunctions.addSlideToConversationAtIndex,
+    CommonFunctions.getHistory(getSlideHistory _),
+    ClientSideFunction("moveToSlide",List("jid"),(args) => {
+      val jid = getArgAsString(args(0))
+      currentSlide = Some(serverConfig.detailsOfSlide(jid)).filterNot(_ == Slide.empty)
+      busArgs(RECEIVE_SLIDE_DETAILS,serializer.fromSlide(currentSlide.getOrElse(Slide.empty)))
+    },Full(METLBUS_CALL))
   )
   private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
   private lazy val serverName = serverConfig.name
@@ -1090,14 +1104,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       MeTLXConfiguration.getRoom(cc.jid,serverName) ! LocalToServerMeTLStanza(MeTLTheme(username,-1L,cc.jid.toString,Theme(source,value,domain),Nil))
     })
   }
-  protected def sendStanzaToServer(jVal:JValue,serverName:String = serverName):Unit  = Stopwatch.time("ActivityActor.sendStanzaToServer (jVal) (%s)".format(serverName),{
-    val metlData = serializer.toMeTLData(jVal)
-    metlData match {
-      case m:MeTLStanza => sendStanzaToServer(m,serverName)
-      case notAStanza => error("Not a stanza at sendStanzaToServer %s".format(notAStanza))
-    }
-  })
-  protected def sendStanzaToServer(stanza:MeTLStanza,serverName:String):Unit  = Stopwatch.time("ActivityActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName),{
+  protected def sendStanzaToServer(stanza:MeTLStanza):Unit  = Stopwatch.time("ActivityActor.sendStanzaToServer (MeTLStanza) (%s)".format(serverName),{
     trace("OUT -> %s".format(stanza))
     stanza match {
       case m:MeTLMoveDelta => {
@@ -1406,6 +1413,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       Nil
     },Empty),
     CommonFunctions.getHistory(getSlideHistory _),
+    CommonFunctions.addSlideToConversationAtIndex,
     CommonFunctions.searchForConversation(cs => cs,q => q),
     ClientSideFunction("getIsInteractiveUser",List.empty[String],(args) => busArgs(RECEIVE_IS_INTERACTIVE_USER,isInteractiveUser.map(iu => JBool(iu)).openOr(JBool(true))),Full(METLBUS_CALL)),
     ClientSideFunction("setIsInteractiveUser",List("isInteractive"),(args) => {
@@ -1639,16 +1647,6 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       },username,userGroups))
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL)),
-    ClientSideFunction("addSlideToConversationAtIndex",List("jid","index"),(args) => {
-      val jid = getArgAsString(args(0))
-      val index = getArgAsInt(args(1))
-      val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
-        case true => serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
-        case _ => c
-      },username,userGroups))
-      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
-    },Full(METLBUS_CALL)),
     ClientSideFunction("addImageSlideToConversationAtIndex",List("jid","index","resourceId","caption"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
@@ -1658,7 +1656,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val c = serverConfig.detailsOfConversation(jid)
       val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
-          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
+          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
             val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
             val bytes = serverConfig.getResource(resourceId)
@@ -1684,7 +1682,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val c = serverConfig.detailsOfConversation(jid)
       val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
-          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
+          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
             val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
             MeTLXConfiguration.getRoom(jid,server).getHistory.getSubmissions.find(sub => sub.identity == submissionId).map(sub => {
@@ -1709,7 +1707,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val c = serverConfig.detailsOfConversation(jid)
       val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
-          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
+          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
             val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
             val convHistory = MeTLXConfiguration.getRoom(jid,server).getHistory
@@ -1742,7 +1740,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val c = serverConfig.detailsOfConversation(jid)
       val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
         case true => {
-          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid.toString,index)
+          val newC = serverConfig.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
             val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
             val convHistory = MeTLXConfiguration.getRoom(jid,server).getHistory

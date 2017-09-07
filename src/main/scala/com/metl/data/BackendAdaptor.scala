@@ -68,7 +68,7 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def renameConversation(jid:String,newTitle:String):Conversation
   def changePermissions(jid:String,newPermissions:Permissions):Conversation
   def updateSubjectOfConversation(jid:String,newSubject:String):Conversation
-  def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation
+  def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation
   def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation
   def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation
   def updateConversation(jid:String,newConversation:Conversation):Conversation
@@ -220,7 +220,7 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = Conversation.empty
-  override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = Conversation.empty
+  override def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation = Conversation.empty
   override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = Conversation.empty
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = Conversation.empty
   override def updateConversation(jid:String,newConversation:Conversation):Conversation = Conversation.empty
@@ -273,7 +273,7 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def renameConversation(jid:String,newTitle:String):Conversation = sc.renameConversation(jid,newTitle)
   override def changePermissions(jid:String,newPermissions:Permissions):Conversation = sc.changePermissions(jid,newPermissions)
   override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = sc.updateSubjectOfConversation(jid,newSubject)
-  override def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation = sc.addSlideAtIndexOfConversation(jid,index)
+  override def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation = sc.addSlideAtIndexOfConversation(jid,index,slideType)
   override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = sc.addGroupSlideAtIndexOfConversation(jid,index,grouping)
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = sc.reorderSlidesOfConversation(jid,newSlides)
   override def updateConversation(jid:String,newConversation:Conversation):Conversation = sc.updateConversation(jid,newConversation)

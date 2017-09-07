@@ -523,8 +523,8 @@ object StatelessHtml extends Stemmer with Logger {
   def addSlideAtIndex(onBehalfOfUser:String,jid:String,afterSlideId:String):Box[LiftResponse] = {
     val conv = config.detailsOfConversation(jid)
     if (onBehalfOfUser == conv.author){
-      val newConv = conv.slides.find(_.id.toString == afterSlideId).map(slide => {
-        config.addSlideAtIndexOfConversation(jid,slide.index + 1)
+      val newConv = conv.slides.find(_.id == afterSlideId).map(slide => {
+        config.addSlideAtIndexOfConversation(jid,slide.index + 1,"SLIDE")
       }).getOrElse(conv)
       serializer.fromConversation(newConv).headOption.map(n => XmlResponse(n))
     } else {
@@ -540,7 +540,7 @@ object StatelessHtml extends Stemmer with Logger {
     val c = config.detailsOfConversation(jid)
     serializer.fromConversation(shouldModifyConversation(c) match {
       case true => {
-        val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index)
+        val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index,"SLIDE")
         newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
           val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
           val convHistory = MeTLXConfiguration.getRoom(jid,server).getHistory
@@ -571,7 +571,7 @@ object StatelessHtml extends Stemmer with Logger {
     val c = config.detailsOfConversation(jid)
     serializer.fromConversation(shouldModifyConversation(c) match {
       case true => {
-        val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index)
+        val newC = config.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
         newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
           val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
           val convHistory = MeTLXConfiguration.getRoom(jid,server).getHistory
@@ -628,7 +628,7 @@ object StatelessHtml extends Stemmer with Logger {
         json match {
           case Full(JArray(identities)) => {
             debug("addSubmissionSlideToConversationAtIndex: %s".format(identities))
-            val newC = config.addSlideAtIndexOfConversation(c.jid.toString,index)
+            val newC = config.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
             newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
               val slideRoom = MeTLXConfiguration.getRoom(ho.id.toString,server)
               val existingSubmissions = MeTLXConfiguration.getRoom(jid,server).getHistory.getSubmissions
@@ -659,7 +659,7 @@ object StatelessHtml extends Stemmer with Logger {
     val conv = config.detailsOfConversation(conversation)
     if (onBehalfOfUser == conv.author){
       val newConv = conv.slides.find(_.id.toString == slide).map(slide => {
-        val step1 = config.addSlideAtIndexOfConversation(conversation,slide.index + 1)
+        val step1 = config.addSlideAtIndexOfConversation(conversation,slide.index + 1,"SLIDE")
         step1.slides.find(_.index == slide.index + 1).foreach(newSlide => {
           val oldId = slide.id
           val newId = newSlide.id

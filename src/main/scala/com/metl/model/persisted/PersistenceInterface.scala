@@ -24,7 +24,7 @@ abstract class PersistenceInterface(config:ServerConfiguration) {
   def renameConversation(jid:String,newTitle:String):Conversation
   def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation
   def updateSubjectOfConversation(jid:String,newSubject:String):Conversation
-  def addSlideAtIndexOfConversation(jid:String,index:Int):Conversation
+  def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation
   def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation
   def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation
   def updateConversation(jid:String,conversation:Conversation):Conversation

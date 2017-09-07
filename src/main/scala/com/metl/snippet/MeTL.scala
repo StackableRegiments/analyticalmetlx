@@ -363,6 +363,13 @@ class Metl extends Logger {
   }
   def header = {
     val locations:List[Tuple2[String,NodeSeq]] = S.uri.split("/").toList.map(_.trim).filterNot(_ == "") match {
+      case "metl" :: _args => {
+        (conversationSearch(),Text("conversationSearch")) ::
+          S.param("conversationJid").toList.flatMap(cj => {
+            (conversationSummary(cj),Text("conversation")) :: 
+            S.param("slideId").map(sj => (boardFor(cj,sj),Text("activity"))).toList
+          }).toList
+      }
       case "board" :: _args => {
         (conversationSearch(),Text("conversationSearch")) ::
           S.param("conversationJid").toList.flatMap(cj => {
