@@ -12,7 +12,7 @@
 			z-index:100;
 			background:cyan;
 		}
-		.metlCanvas, .auditView {
+		.metlCanvas, .auditView, .quizComponent{
 			border:3px solid yellow;
 			background:white;
 		}
@@ -40,6 +40,25 @@
 	</div>
 	<div id="metlContainerRoot"></div>
 	<div id="activityTemplates">
+		<div templateName="quiz">
+			<div class="quizComponent">
+				<div class="quizzesContainer">
+					<div class="quiz">
+						<div class="quizQuestion"></div>
+						<div class="quizOptions">
+							<div class="quizOption">
+								<button class="chooseQuizOptionButton">
+									<div class="quizOptionValue"></div>
+									<div class="quizOptionLabel"></div>
+								</button>
+							</div>
+						</div>
+						<button class="addQuizOption">add quiz option</button>
+					</div>
+				</div>
+				<button class="addQuizButton">add quiz</button>
+			</div>
+		</div>
 		<div templateName="canvasAudit">
 			<input type="range" width="640" class="auditSlider"></input>
 			<canvas class="auditView"></canvas>

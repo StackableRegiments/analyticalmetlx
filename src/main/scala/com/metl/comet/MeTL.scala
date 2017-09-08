@@ -955,7 +955,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       busArgs(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(currentConversation.getOrElse(Conversation.empty)))
     },Full(METLBUS_CALL)),
     CommonFunctions.addSlideToConversationAtIndex,
-    CommonFunctions.getHistory(getSlideHistory _),
+    CommonFunctions.getHistory(getHistory _),
     ClientSideFunction("moveToSlide",List("jid"),(args) => {
       val jid = getArgAsString(args(0))
       currentSlide = Some(serverConfig.detailsOfSlide(jid)).filterNot(_ == Slide.empty)
@@ -1001,17 +1001,18 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
     })
     super.localShutdown()
   }
-  protected def getSlideHistory(jid:String):History = {
-    trace("GetSlideHistory %s".format(jid))
+  protected def getHistory(jid:String):History = {
+    RoomMetaDataUtils.fromJid(jid) match {
+      case SlideRoom(sJid) => getSlideHistory(sJid)
+      case ConversationRoom(cJid) => getConvHistory(cJid)
+      case PrivateSlideRoom(psJid,psUser) => MeTLXConfiguration.getRoom(jid,serverName).getHistory
+      case other => History.empty
+    }
+  }
+  protected def getConvHistory(jid:String):History = {
     val convHistory = currentConversation.map(cc => MeTLXConfiguration.getRoom(cc.jid,serverName).getHistory).getOrElse(History.empty)
-    trace("conv %s".format(jid))
-    val pubHistory = MeTLXConfiguration.getRoom(jid,serverName).getHistory
-    trace("pub %s".format(jid))
-    val privHistory = MeTLXConfiguration.getRoom(jid+username,serverName).getHistory
-    trace("priv %s".format(jid))
     val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp > b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
-    trace("conv found %s".format(convHistory.getGradeValues))
-    val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
+    val finalHistory = convHistory.filter{
       case g:MeTLGrade => true
       case gv:MeTLGradeValue if shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) => true
       case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == true) && gv.getGradedUser == username => true
@@ -1020,8 +1021,18 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       case s:MeTLSubmission if (s.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
       case _ => true
     }
+    finalHistory
+  }
+  protected def getSlideHistory(jid:String):History = {
+    val pubHistory = MeTLXConfiguration.getRoom(jid,serverName).getHistory
+    val privHistory = MeTLXConfiguration.getRoom(jid+username,serverName).getHistory
+    val finalHistory = pubHistory.merge(privHistory).filter{
+      case g:MeTLGrade => true
+      case qr:MeTLQuizResponse if (qr.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case s:MeTLSubmission if (s.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case _ => true
+    }
     debug("final %s".format(jid))
-    trace("final found %s".format(finalHistory.getGradeValues))
     finalHistory
   }
   protected def joinRoomByJid(jid:String):Unit = {
@@ -1164,12 +1175,12 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       }
       case qr:MeTLQuizResponse => {
         if (qr.author == username) {
-          currentConversation.map(cc => {
-            val roomId = cc.jid.toString
+          currentSlide.map(cs => {
+            val roomId = cs.id
             rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(qr))
             Globals.metlingPots.foreach(mp => {
               mp.postItems(List(
-                MeTLingPotItem("metlActor",new java.util.Date().getTime(),KVP("metlUser",qr.author),KVP("informalAcademic","quizResponse"),Some(KVP("room",cc.jid.toString)),Some(KVP("quiz",qr.id)),None)
+                MeTLingPotItem("metlActor",new java.util.Date().getTime(),KVP("metlUser",qr.author),KVP("informalAcademic","quizResponse"),Some(KVP("room",cs.id)),Some(KVP("quiz",qr.id)),None)
               ))
             })
           })
@@ -1177,10 +1188,10 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       }
       case q:MeTLQuiz => {
         if (q.author == username) {
-          currentConversation.map(cc => {
-            if (shouldModifyConversation(cc)){
+          currentSlide.map(cs => {
+            if (cs.author == username){
               trace("sending quiz: %s".format(q))
-              val roomId = cc.jid.toString
+              val roomId = cs.id
               rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(q))
             } else {
               //errorScreen("quiz creation","You are not permitted to create quizzes in this conversation")
