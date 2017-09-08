@@ -718,7 +718,7 @@ var MeTLActivities = (function(){
 				var quizRoot = quizTemplate.clone();
 				quizRoot.find(".quizQuestion").text(quiz.question);
 				var quizOptionsRoot = quizRoot.find(".quizOptions");
-				var quizOptionTemplate = quizOptionRoot.find(".quizOption").clone();
+				var quizOptionTemplate = quizOptionsRoot.find(".quizOption").clone();
 				quizOptionsRoot.empty();
 				var quizOptions = _.map(quiz.options,function(qo){
 					var quizOptionRoot = quizOptionTemplate.clone();
@@ -747,8 +747,8 @@ var MeTLActivities = (function(){
 		reRenderQuizzes();
 		return {
 			activate:function(){
-				bus.subscribe("receiveMeTLStanza",busId,function(s){
-					console.log("receivedStanza",s);
+				bus.subscribe("receiveMeTLStanza",busId,function(stanza){
+					console.log("receivedStanza",stanza);
 					if ("type" in stanza){
 						switch (stanza.type){
 							case "quiz":

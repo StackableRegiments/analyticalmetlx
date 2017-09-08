@@ -236,11 +236,13 @@ class CachingServerAdaptor(
   protected val resourceCache = resourceCacheConfig.map(c => new ResourceCache(config,c))
   protected val sessionCache = sessionCacheConfig.map(c => new SessionCache(config,c))
  
-  override val messageBusProvider = new TappingMessageBusProvider(config.messageBusProvider,s => {
-    println("message going up!: %s".format(s))
+  override val messageBusProvider = new TappingMessageBusProvider(config.messageBusProvider,(sTup:Tuple2[MeTLStanza,String]) => {
+    val (s,l) = sTup
+    println("message to %s going up!: %s".format(l,s))
   },
-  s => {
-    println("message going down!: %s".format(s))
+  (sTup:Tuple2[MeTLStanza,String]) => {
+    val (s,l) = sTup
+    println("message to %s going down!: %s".format(l,s))
     s match {
       case a:Attendance => themeCache.foreach(tc => tc.addAttendance(a))
       case t:MeTLTheme => themeCache.foreach(tc => tc.addTheme(t))

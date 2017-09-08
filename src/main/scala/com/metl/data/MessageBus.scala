@@ -8,7 +8,7 @@ import net.liftweb.common.Logger
 import scala.collection.JavaConversions
 
 // the feedback name should be bound to a particular onReceive function, so that we can use that feedbackName to match particular behaviours (given that the anonymous functions won't work that way for us)
-class MessageBusDefinition(val location:String, val feedbackName:String, val onReceive:(MeTLStanza) => Unit = (s:MeTLStanza) => {}, val onConnectionLost:() => Unit = () => {}, val onConnectionRegained:() => Unit = () => {}){
+class MessageBusDefinition(val location:String, val feedbackName:String, val onReceive:Tuple2[MeTLStanza,String] => Unit = (mTup:Tuple2[MeTLStanza,String]) => {}, val onConnectionLost:() => Unit = () => {}, val onConnectionRegained:() => Unit = () => {}){
   override def equals(other:Any):Boolean = {
     other match {
       case omb:MessageBusDefinition => omb.location == location && omb.feedbackName == feedbackName
@@ -41,17 +41,18 @@ class LoopbackMessageBusProvider extends OneBusPerRoomMessageBusProvider {
   override def createNewMessageBus(definition:MessageBusDefinition) = Stopwatch.time("LoopbackMessageBusProvider",new LoopbackBus(definition,this))
 }
 
-class TappingMessageBusProvider(mbp:MessageBusProvider,upTap:MeTLStanza=>Unit = s => {},downTap:MeTLStanza=>Unit = s => {}) extends MessageBusProvider {
+class TappingMessageBusProvider(mbp:MessageBusProvider,upTap:Tuple2[MeTLStanza,String]=>Unit = s => {},downTap:Tuple2[MeTLStanza,String]=>Unit = s => {}) extends MessageBusProvider {
   override def getMessageBus(definition:MessageBusDefinition):MessageBus = {
-    val newDef = new MessageBusDefinition(definition.location,definition.feedbackName,(s:MeTLStanza) => {
+    val newDef = new MessageBusDefinition(definition.location,definition.feedbackName,(mTup:Tuple2[MeTLStanza,String]) => {
+      val (s,l) = mTup
       try {
-        downTap(s)
+        downTap(s,l)
       } catch {
         case e:Exception => {
           error("tapbus threw exception: %s".format(e.getMessage),e)
         }
       }
-      definition.onReceive(s)
+      definition.onReceive(s,l)
     },definition.onConnectionLost,definition.onConnectionRegained)
     warn("creating messageBus from definition: %s => %s".format(definition,newDef))
     new TabBus(mbp.getMessageBus(newDef),upTap)
@@ -72,17 +73,17 @@ abstract class MessageBus(definition:MessageBusDefinition, creator:MessageBusPro
   def getDefinition:MessageBusDefinition = definition
   def getCreator:MessageBusProvider = creator
   def sendStanzaToRoom[A <: MeTLStanza](stanza:A,updateTimestamp:Boolean = true):Boolean
-  def recieveStanzaFromRoom[A <: MeTLStanza](stanza:A) = definition.onReceive(stanza)
+  def recieveStanzaFromRoom[A <: MeTLStanza](stanza:A) = definition.onReceive(stanza,definition.location)
   def notifyConnectionLost = definition.onConnectionLost()
   def notifyConnectionResumed = definition.onConnectionRegained()
   def release = creator.releaseMessageBus(definition)
 }
 
-class TabBus(mb:MessageBus,upTap:MeTLStanza => Unit = s => {}) extends MessageBus(mb.getDefinition,mb.getCreator){
+class TabBus(mb:MessageBus,upTap:Tuple2[MeTLStanza,String] => Unit = s => {}) extends MessageBus(mb.getDefinition,mb.getCreator){
   override def getDefinition:MessageBusDefinition = mb.getDefinition
   override def getCreator:MessageBusProvider = mb.getCreator
   override def sendStanzaToRoom[A <: MeTLStanza](stanza:A,updateTimestamp:Boolean = true):Boolean = {
-    upTap(stanza)
+    upTap(stanza,getDefinition.location)
     mb.sendStanzaToRoom(stanza,updateTimestamp)
   } 
   override def notifyConnectionLost = mb.notifyConnectionLost

@@ -148,7 +148,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     }
   }
   protected def initialize:Unit = {}
-  protected val messageBusDefinition = new MessageBusDefinition(location,"unicastBackToOwner",(s:MeTLStanza) => this ! ServerToLocalMeTLStanza(s),onConnectionLost _,onConnectionRegained _)
+  protected val messageBusDefinition = new MessageBusDefinition(location,"unicastBackToOwner",(mTup:Tuple2[MeTLStanza,String]) => this ! ServerToLocalMeTLStanza(mTup._1),onConnectionLost _,onConnectionRegained _)
   protected val messageBus = config.getMessageBus(messageBusDefinition)
 
   def getHistory:History

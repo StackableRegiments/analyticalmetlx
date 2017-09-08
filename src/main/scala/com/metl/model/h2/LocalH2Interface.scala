@@ -481,7 +481,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       }
     }
   }
-  protected def receiveConversationDetailsUpdated(m:MeTLStanza) = {
+  protected def receiveConversationDetailsUpdated(mTup:Tuple2[MeTLStanza,String]) = {
+    val (m,location) = mTup
     m match {
       case c:MeTLCommand if c.command == "/UPDATE_CONVERSATION_DETAILS" && c.commandParameters.length == 1 => {
         try{
