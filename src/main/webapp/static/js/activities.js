@@ -265,11 +265,14 @@ var MeTLActivities = (function(){
 			stanza.privacy = Privacy.getPrivacy();
 			stanza.target = target;//"presentationSpace";
 			stanza.slide = slideId;//"thisSlide";
-			//stanza.timestamp = new Date().getTime();
+			if ("type" in stanza && stanza.type == "moveDelta"){
+				if (!("newPrivacy" in stanza)){
+					stanza.newPrivacy = "not_set";
+				}
+			}
 			console.log("test.html stanza:",stanza);
-			//stanzas.push(stanza);
 
-			//newCanvas.addStanza(stanza);
+
 			sendStanza(stanza);
 		};
 		bus.subscribe("receiveMeTLStanza",busId,function(stanza){
