@@ -27,6 +27,7 @@ class PrivacySerializer extends net.liftweb.json.Serializer[Privacy] {
 
   def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), Privacy] = {
     case (TypeInfo(PrivacyClass, _), json) => json match {
+      case JNothing => Privacy.NOT_SET
       case JString(p) => Privacy.parse(p)
       case x => throw new MappingException("Can't convert " + x + " to Privacy")
     }

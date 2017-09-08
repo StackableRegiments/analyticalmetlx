@@ -265,11 +265,6 @@ var MeTLActivities = (function(){
 			stanza.privacy = Privacy.getPrivacy();
 			stanza.target = target;//"presentationSpace";
 			stanza.slide = slideId;//"thisSlide";
-			if ("type" in stanza && stanza.type == "moveDelta"){
-				if (!("newPrivacy" in stanza)){
-					stanza.newPrivacy = "not_set";
-				}
-			}
 			console.log("test.html stanza:",stanza);
 
 
