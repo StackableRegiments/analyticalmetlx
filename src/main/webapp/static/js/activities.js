@@ -78,10 +78,10 @@ var MeTLActivities = (function(){
 				slide = s;
 				switch (slide.slideType){
 					case "SLIDE":
-						var activity = activateActivity(createMeTLCanvasActivity(bus,author,target,slide.id));
+						var activity = activateActivity(createMeTLCanvasActivity(bus,author,target,slide.id),containerRoot);
 						break;
 					case "QUIZ":
-						var activity = activateActivity(createQuizActivity(bus,author,slide.id,author == slide.author));
+						var activity = activateActivity(createQuizActivity(bus,author,slide.id,author == slide.author),containerRoot);
 						break;
 					default:
 						break;
@@ -137,7 +137,7 @@ var MeTLActivities = (function(){
 		};
 		var history = {};
 		return {
-			activate:function(){
+			activate:function(root){
 				bus.subscribe("layoutUpdated",busId,function(dims){
 					var reduced = reduceCanvas(dims);
 					renderer.setDimensions(reduced);
@@ -148,7 +148,7 @@ var MeTLActivities = (function(){
 					reRender(stanzas);
 					console.log("rendered",stanzas);
 				});
-				containerRoot.html(rootElem);
+				root.html(rootElem);
 				renderer.setDimensions(reduceCanvas(DeviceConfiguration.getMeasurements()));
 				bus.subscribe("receiveMeTLStanza",busId,function(s){
 					allStanzas.push(s);
@@ -638,7 +638,7 @@ var MeTLActivities = (function(){
 
 		return {
 			canvas:newCanvas,
-			activate:function(){
+			activate:function(root){
 				bus.subscribe("layoutUpdated",busId,function(dims){
 					var reduced = reduceCanvas(dims);
 					newCanvas.setDimensions(reduced);
@@ -653,7 +653,7 @@ var MeTLActivities = (function(){
 						newCanvas.setHistory(h);
 					}
 				});
-				containerRoot.html(rootElem);
+				root.html(rootElem);
 				newCanvas.setDimensions(reduceCanvas(DeviceConfiguration.getMeasurements()));
 				newCanvas.setMode(_.find(newCanvas.getAvailableModes(),function(m){return m.name == "draw";}));
 				joinRoom(slideId);
@@ -746,7 +746,7 @@ var MeTLActivities = (function(){
 		};
 		reRenderQuizzes();
 		return {
-			activate:function(){
+			activate:function(root){
 				bus.subscribe("receiveMeTLStanza",busId,function(stanza){
 					console.log("receivedStanza",stanza);
 					if ("type" in stanza){
@@ -771,7 +771,7 @@ var MeTLActivities = (function(){
 						reRenderQuizzes();
 					}
 				});
-				containerRoot.html(rootElem);
+				root.html(rootElem);
 				joinRoom(slideId);
 			},
 			deactivate:function(){
@@ -782,12 +782,12 @@ var MeTLActivities = (function(){
 			}	
 		};
 	};
-	var activateActivity = function(activity){
+	var activateActivity = function(activity,container){
 		if ("deactivate" in currentActivity){
 			currentActivity.deactivate();
 		}
 		currentActivity = activity;
-		activity.activate();
+		activity.activate(container);
 		return activity;
 	}
 
@@ -798,16 +798,16 @@ var MeTLActivities = (function(){
 		getAtivity:function(){ return currentActivity; },
 		override:{
 			audit:function(slideId){
-				return activateActivity(createAuditCanvasActivity(bus,slideId));
+				return activateActivity(createAuditCanvasActivity(bus,slideId),containerRoot);
 			},
 			canvas:function(slideId){
-				return activateActivity(createMeTLCanvasActivity(bus,author,target,slideId));
+				return activateActivity(createMeTLCanvasActivity(bus,author,target,slideId),containerRoot);
 			},
 			quiz:function(slideId){
-				return activateActivity(createQuizActivity(bus,author,slideId,false));
+				return activateActivity(createQuizActivity(bus,author,slideId,false),contianerRoot);
 			},	
 			quizAuthoring:function(slideId){
-				return activateActivity(createQuizActivity(bus,author,slideId,true));
+				return activateActivity(createQuizActivity(bus,author,slideId,true),containerRoot);
 			}	
 		}
 	};
