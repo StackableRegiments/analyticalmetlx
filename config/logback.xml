@@ -11,8 +11,14 @@
       <Pattern>%d{MM-dd-YYYY HH:mm:ss.SSSz} - MeTL - %msg%n</Pattern>
     </encoder>
   </appender>
-  <appender name="DEBUG" class="ch.qos.logback.core.FileAppender">
+  <appender name="DEBUG_FILE" class="ch.qos.logback.core.FileAppender">
     <file>debug.log</file>
+    <encoder>
+      <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
+    </encoder>
+  </appender>  
+  <appender name="BOOT_FILE" class="ch.qos.logback.core.FileAppender">
+    <file>boot.log</file>
     <encoder>
       <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
     </encoder>
@@ -43,9 +49,12 @@
     <appender-ref ref="SECURITY_FILE"/>
   </logger>
   <logger name="bootstrap.liftweb.Boot" level="ALL">
-    <appender-ref ref="DEBUG" />
+    <appender-ref ref="BOOT_FILE" />
   </logger>
-  <root level="WARN">
+  <root level="DEBUG">
+    <appender-ref ref="DEBUG_FILE"/>
+  </root>
+  <root level="TRACE">
     <appender-ref ref="STDOUT"/>
   </root>
 </configuration>
