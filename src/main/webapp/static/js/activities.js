@@ -27,6 +27,11 @@ var MeTLActivities = (function(){
 			}
 		}
 	});
+	bus.subscribe("layoutUpdated","activities",function(dims){
+		var reduced = reduceCanvas(dims);
+		$("#metlContainerRoot").height(reduced.height);
+	});
+
 	var reRenderConversations = function(){
 		if (conversation !== undefined){
 			var rootElem = conversationTemplate.clone();
@@ -602,6 +607,9 @@ var MeTLActivities = (function(){
 		});
 		rootElem.find("#panDown").on("click",function(){
 			newCanvas.getPanController().pan(0,panAmount);
+		});
+		rootElem.find("#insertImage").on("click",function(){
+
 		});
 		newCanvas.onStatistic(function(category,time,success,exception){
 			if ("HealthChecker" in window){
