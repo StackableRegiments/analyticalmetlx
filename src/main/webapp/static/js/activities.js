@@ -28,8 +28,10 @@ var MeTLActivities = (function(){
 		}
 	});
 	bus.subscribe("layoutUpdated","activities",function(dims){
-		var reduced = reduceCanvas(dims);
-		$("#metlContainerRoot").height(reduced.height);
+		_.defer(function(){
+			var reduced = reduceCanvas(dims);
+			$("#metlContainerRoot").height(reduced.height);
+		});
 	});
 
 	var reRenderConversations = function(){
@@ -96,14 +98,15 @@ var MeTLActivities = (function(){
 		reRenderConversations();
 	});
 	var reduceCanvas = function(dims){
-		var gutter = 10;
+		var gutter = 15;
 		var header = $("#metlHeaderContainer");
 		var headerHeight = header.height();
 		var conversationHeader = $("#conversationRoot");
 		var conversationHeaderHeight = conversationHeader.height();
+		console.log("reduced:",dims,headerHeight,conversationHeaderHeight);
 		return {
 			width:dims.width - gutter,
-			height:dims.height - headerHeight - conversationHeaderHeight - gutter
+			height:dims.height - (headerHeight + conversationHeaderHeight + gutter)
 		};
 	};
 	$(function(){
@@ -648,8 +651,10 @@ var MeTLActivities = (function(){
 			canvas:newCanvas,
 			activate:function(root){
 				bus.subscribe("layoutUpdated",busId,function(dims){
-					var reduced = reduceCanvas(dims);
-					newCanvas.setDimensions(reduced);
+					_.defer(function(){
+						var reduced = reduceCanvas(dims);
+						newCanvas.setDimensions(reduced);
+					});
 				});
 				bus.subscribe("beforeWorkQueueResume",busId,function(){});
 				bus.subscribe("afterWorkQueuePause",busId,function(){});

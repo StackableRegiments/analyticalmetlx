@@ -1419,6 +1419,10 @@ var createCanvasRenderer = function(canvasElem){
 				canvasElem.height(boardHeight);	
 				canvasElem.attr("width",boardWidth);
 				canvasElem.attr("height",boardHeight);	
+				canvasElem.css("display","block");
+				canvasElem.css("border","0px");
+				canvasElem.css("padding","0px");
+				canvasElem.css("margin","0px");
 				canvasElem[0].width = boardWidth;
 				canvasElem[0].height = boardHeight;	
 				renderStarting(boardContext,canvasElem,boardContent);
