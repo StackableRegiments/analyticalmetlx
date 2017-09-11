@@ -1,6 +1,6 @@
 package com.metl.utils
 
-import com.metl.liftAuthenticator.LiftAuthStateData
+import com.metl.external.LiftAuthStateData
 
 object CasUtils {
 

@@ -1,22 +1,22 @@
 package com.metl.model
 
+import com.metl.external.{GroupStoreData, GroupStoreProvider, GroupsProvider, LiftAuthStateData, OrgUnit}
 import org.scalatest._
 import org.scalatest.FunSuite
 import org.scalatest.BeforeAndAfter
-import org.scalatest.matchers.{ShouldMatchers, HavePropertyMatcher, HavePropertyMatchResult}
+import org.scalatest.matchers.{HavePropertyMatchResult, HavePropertyMatcher, ShouldMatchers}
 import org.scalatest.OptionValues._
-
 import net.liftweb.util.Helpers._
 import net.liftweb.common._
 import com.metl.model._
-import com.metl.liftAuthenticator._
+
 import scala.xml._
 
 class MockGroupStoreProvider(gsd:GroupStoreData) extends GroupStoreProvider {
   override val getData = gsd
 }
 
-class GroupsProviderSuite extends FunSuite with ShouldMatchers {
+class GroupsProviderConfiguratorSuite extends FunSuite with ShouldMatchers {
   def fixture(groupsByMember:Map[String,List[OrgUnit]]):GroupsProvider = {
     new StoreBackedGroupsProvider("mockId","mock",new MockGroupStoreProvider(GroupStoreData(
       groupsForMembers = groupsByMember
@@ -28,7 +28,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       OrgUnit("testKind","testCourse3",Nil,Nil,None)
     )))
     val filterXml = NodeSeq.Empty
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None),
@@ -43,7 +43,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
     val filterXml = 
       <filterNot>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None),
@@ -59,7 +59,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group key="elephant"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None),
@@ -75,7 +75,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group key="testKind"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None)
@@ -90,7 +90,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group key="testKind"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None)
@@ -105,7 +105,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group key="testKind"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None)
@@ -120,7 +120,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group key="testKind"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None)
@@ -135,7 +135,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group keySuffix="Kind"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None)
@@ -150,7 +150,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group keyPrefix="test"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None)
@@ -165,7 +165,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group value="testCourse3"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None)
@@ -180,7 +180,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group valueSuffix="3"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None)
@@ -195,7 +195,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group valuePrefix="test"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None)
@@ -214,7 +214,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
       <filterNot>
         <group valuePrefix="mock" valueSuffix="3"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","mockCourse1",Nil,Nil,None),
@@ -238,7 +238,7 @@ class GroupsProviderSuite extends FunSuite with ShouldMatchers {
         <group valuePrefix="mock"/>
         <group valueSuffix="3"/>
       </filterNot>
-    val fgp = GroupsProvider.possiblyFilter(filterXml,gp)
+    val fgp = GroupsProviderConfigurator.possiblyFilter(filterXml,gp)
     val actual = fgp.getGroupsFor(LiftAuthStateData(false,"testUser",Nil,Nil))
     actual should equal(List(
       OrgUnit("mockType","testCourse1",Nil,Nil,None),

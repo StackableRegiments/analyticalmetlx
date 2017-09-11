@@ -3,6 +3,16 @@
 Install Jetty 9.4.6.v20170531 and configure (see WoS for details).
 Update start.jar to Jetty 9.4.6.v20170531.
 
+Wrap <d2lGradebook/> in <externalLibGradebookConfigurator className="com.metl.d2l.D2LGradebookConfigurator">.
+Wrap <d2lGroupsProvider/> in <externalLibGroupProvider className="com.metl.d2l.D2LGroupsConfigurator">.
+Wrap <d2lGroupStore/> in <externalLibGroupStoreProvider className="com.metl.d2l.D2LGroupStoreConfigurator">.
+Wrap <remote/> and <brightSpaceValence/> in <externalLibLtiProvider className="com.metl.d2l.BrightSparkLtiConfigurator">.
+Wrap <ApiGatewayMetlingPotAdaptor/> in <externalMetlingPotProvider className="com.metl.pot.AWSMeTLingPotAdaptorConfigurator">.
+
+Provide slu-adaptor_2.11-0.0.2.jar on classpath, and (for AWS MeTLingPot only):
+aws-java-sdk-core-1.11.72.jar
+aws-java-sdk-opensdk-1.11.72.jar
+
 1.12.4
 
 New config:

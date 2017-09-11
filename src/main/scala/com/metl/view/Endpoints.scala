@@ -2,7 +2,7 @@ package com.metl.view
 
 import java.util.Date
 
-import com.metl.data._
+import com.metl.data.{GroupSet=>MeTLGroupSet,_}
 import com.metl.utils._
 import com.metl.renderer.SlideRenderer
 import net.liftweb.json._
@@ -11,6 +11,7 @@ import net.liftweb.common._
 import net.liftweb.http._
 import net.liftweb.http.rest._
 import Helpers._
+import com.metl.external._
 import com.metl.model._
 import com.metl.utils.CasUtils._
 
@@ -210,7 +211,41 @@ object WebMeTLRestHelper extends RestHelper with Logger{
     }
   }
 }
-object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
+
+trait ExternalGradeHelper {
+  def toExternalGrade(grade:MeTLGrade):ExternalGrade = {
+    val gradeType = grade.gradeType match {
+      case MeTLGradeValueType.Boolean => ExternalGradeValueType.Boolean
+      case MeTLGradeValueType.Text => ExternalGradeValueType.Text
+      case MeTLGradeValueType.Numeric => ExternalGradeValueType.Numeric
+      case _ => ExternalGradeValueType.Text
+    }
+    ExternalGrade(grade.author,grade.timestamp,grade.id,grade.location,grade.name,grade.description,gradeType,grade.visible,grade.foreignRelationship,grade.gradeReferenceUrl,grade.numericMaximum,grade.numericMinimum)
+  }
+  def fromExternalGrade(grade:ExternalGrade):MeTLGrade = {
+    val gradeType = grade.gradeType match {
+      case ExternalGradeValueType.Boolean => MeTLGradeValueType.Boolean
+      case ExternalGradeValueType.Text => MeTLGradeValueType.Text
+      case ExternalGradeValueType.Numeric => MeTLGradeValueType.Numeric
+      case _ => MeTLGradeValueType.Text
+    }
+    MeTLGrade(ServerConfiguration.default,grade.author,grade.timestamp,grade.id,grade.location,grade.name,grade.description,gradeType,grade.visible,grade.foreignRelationship,grade.gradeReferenceUrl,grade.numericMaximum,grade.numericMinimum)
+  }
+  def toExternalGradeValue(in:MeTLGradeValue):ExternalGradeValue = {
+    in match {
+      case n:MeTLNumericGradeValue => toExternalNumericGradeValue(n)
+      case t:MeTLTextGradeValue => toExternalTextGradeValue(t)
+      case b:MeTLBooleanGradeValue => toExternalBooleanGradeValue(b)
+    }
+  }
+  def toExternalNumericGradeValue(n:MeTLNumericGradeValue):ExternalNumericGradeValue = ExternalNumericGradeValue(n.author,n.timestamp,n.gradeId,n.gradedUser,n.gradeValue,n.gradeComment,n.gradePrivateComment)
+  def toExternalTextGradeValue(t:MeTLTextGradeValue):ExternalTextGradeValue = ExternalTextGradeValue(t.author,t.timestamp,t.gradeId,t.gradedUser,t.gradeValue,t.gradeComment,t.gradePrivateComment)
+  def toExternalBooleanGradeValue(b:MeTLBooleanGradeValue):ExternalBooleanGradeValue = ExternalBooleanGradeValue(b.author,b.timestamp,b.gradeId,b.gradedUser,b.gradeValue,b.gradeComment,b.gradePrivateComment)
+  def fromExternalNumericGradeValue(n:ExternalNumericGradeValue):MeTLNumericGradeValue = MeTLNumericGradeValue(ServerConfiguration.default,n.author,n.timestamp,n.gradeId,n.gradedUser,n.gradeValue,n.gradeComment,n.gradePrivateComment)
+  def fromExternalTextGradeValue(t:ExternalTextGradeValue):MeTLTextGradeValue = MeTLTextGradeValue(ServerConfiguration.default,t.author,t.timestamp,t.gradeId,t.gradedUser,t.gradeValue,t.gradeComment,t.gradePrivateComment)
+  def fromExternalBooleanGradeValue(b:ExternalBooleanGradeValue):MeTLBooleanGradeValue = MeTLBooleanGradeValue(ServerConfiguration.default,b.author,b.timestamp,b.gradeId,b.gradedUser,b.gradeValue,b.gradeComment,b.gradePrivateComment)
+}
+object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer with ExternalGradeHelper {
   import java.io._
   debug("MeTLStatefulRestHelper inline")
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
@@ -338,31 +373,13 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case Req("thumbnailWithPrivateFor" :: jid :: Nil, _, _) => Stopwatch.time("MeTLRestHelper.thumbnail", {
       HttpResponder.snapshotWithPrivate(jid, "thumbnail")
     })
-    case Req("saveToOneNote" :: conversation :: _, _, _) => Stopwatch.time("MeTLRestHelper.saveToOneNote", {
-      RedirectResponse(
-        (for (
-          token <- Globals.oneNoteAuthToken.get;
-          odata <- OneNote.export(conversation, token);
-          href <- (parse(odata) \\ "oneNoteWebUrl" \ "href").extractOpt[String]
-        ) yield href).getOrElse(OneNote.authUrl))
-    })
-    case Req("permitOneNote" :: Nil, _, _) => Stopwatch.time("MeTLRestHelper.permitOneNote", {
-      for (
-        token <- S.param("code");
-        referer <- S.referer
-      ) yield {
-        Globals.oneNoteAuthToken(Full(OneNote.claimToken(token)))
-        info("permitOneNote: %s -> %s".format(token, referer))
-        RedirectResponse(referer)
-      }
-    })
     //gradebook integration
     case Req("getExternalGradebooks" :: Nil, _, _) => () => Full(JsonResponse(JArray(Globals.getGradebookProviders.map(gb => JObject(List(JField("name", JString(gb.name)), JField("id", JString(gb.id)))))), 200))
     case Req("getExternalGradebookOrgUnits" :: externalGradebookId :: Nil, _, _) => {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
-        gbp.getGradeContexts() match {
+        gbp.getGradeContexts(Globals.currentUser.is) match {
           case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
           case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)), 200)
         }
@@ -372,7 +389,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
-        gbp.getGradeContextClasslist(orgUnitId) match {
+        gbp.getGradeContextClasslist(Globals.currentUser.is, orgUnitId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
           case Right(cls) => JsonResponse(Extraction.decompose(cls), 200)
         }
@@ -382,9 +399,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
-        gbp.getGradeInContext(orgUnitId, gradeId) match {
+        gbp.getGradeInContext(orgUnitId, Globals.currentUser.is, gradeId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc), 200)
+          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(fromExternalGrade(gc)), 200)
         }
       }
     }
@@ -392,9 +409,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
-        gbp.getGradesFromContext(orgUnitId) match {
+        gbp.getGradesFromContext(orgUnitId,Globals.currentUser.is) match {
           case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gc) => JsonResponse(JArray(gc.map(go => jsonSerializer.fromGrade(go))), 200)
+          case Right(gc) => JsonResponse(JArray(gc.map(go => jsonSerializer.fromGrade(fromExternalGrade(go)))), 200)
         }
       }
     }
@@ -404,9 +421,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         json <- r.json
       } yield {
         val grade = jsonSerializer.toGrade(json)
-        gbp.createGradeInContext(orgUnitId, grade) match {
+        gbp.createGradeInContext(orgUnitId, Globals.currentUser.is, toExternalGrade(grade)) match {
           case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc), 200)
+          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(fromExternalGrade(gc)), 200)
         }
       }
     }
@@ -416,9 +433,8 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         json <- r.json
       } yield {
         val grade = jsonSerializer.toGrade(json)
-        gbp.updateGradeInContext(orgUnitId, grade) match {
+        gbp.updateGradeInContext(orgUnitId, Globals.currentUser.is, toExternalGrade(grade)) match {
           case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc), 200)
         }
       }
     }
@@ -426,12 +442,12 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       for {
         gbp <- Globals.getGradebookProvider(externalGradebookId)
       } yield {
-        gbp.getGradeValuesForGrade(orgUnit, gradeId) match {
+        gbp.getGradeValuesForGrade(orgUnit, Globals.currentUser.is, gradeId) match {
           case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
           case Right(gcs) => JsonResponse(JArray(gcs.map {
-            case ngv: MeTLNumericGradeValue => jsonSerializer.fromNumericGradeValue(ngv)
-            case bgv: MeTLBooleanGradeValue => jsonSerializer.fromBooleanGradeValue(bgv)
-            case tgv: MeTLTextGradeValue => jsonSerializer.fromTextGradeValue(tgv)
+            case ngv: ExternalNumericGradeValue => jsonSerializer.fromNumericGradeValue(fromExternalNumericGradeValue(ngv))
+            case bgv: ExternalBooleanGradeValue => jsonSerializer.fromBooleanGradeValue(fromExternalBooleanGradeValue(bgv))
+            case tgv: ExternalTextGradeValue => jsonSerializer.fromTextGradeValue(fromExternalTextGradeValue(tgv))
           }), 200)
         }
       }
@@ -449,12 +465,12 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
           }
           case _ => Nil
         }
-        gbp.updateGradeValuesForGrade(orgUnit, gradeId, grades) match {
+        gbp.updateGradeValuesForGrade(orgUnit, Globals.currentUser.is, gradeId, grades.map(toExternalGradeValue _)) match {
           case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
           case Right(gcs) => JsonResponse(JArray(gcs.map {
-            case ngv: MeTLNumericGradeValue => jsonSerializer.fromNumericGradeValue(ngv)
-            case bgv: MeTLBooleanGradeValue => jsonSerializer.fromBooleanGradeValue(bgv)
-            case tgv: MeTLTextGradeValue => jsonSerializer.fromTextGradeValue(tgv)
+            case ngv: ExternalNumericGradeValue => jsonSerializer.fromNumericGradeValue(fromExternalNumericGradeValue(ngv))
+            case bgv: ExternalBooleanGradeValue => jsonSerializer.fromBooleanGradeValue(fromExternalBooleanGradeValue(bgv))
+            case tgv: ExternalTextGradeValue => jsonSerializer.fromTextGradeValue(fromExternalTextGradeValue(tgv))
           }), 200)
         }
       }
@@ -516,9 +532,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case Req(List("duplicateConversation", conversation), _, _) =>
       () => StatelessHtml.duplicateConversation(Globals.currentUser.is, conversation)
     case Req(List("requestMaximumSizedGrouping", conversation, slide, groupSize), _, _) if Globals.isSuperUser =>
-      () => Stopwatch.time("StatelessHtml.requestMaximumSizedGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByMaximumSize(groupSize.toInt), Nil, Nil)))
+      () => StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByMaximumSize(groupSize.toInt), Nil, Nil))
     case Req(List("requestClassroomSplitGrouping", conversation, slide, numberOfGroups), _, _) if Globals.isSuperUser =>
-      () => Stopwatch.time("StatelessHtml.requestClassroomSplitGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByTotalGroups(numberOfGroups.toInt), Nil, Nil)))
+      () => StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByTotalGroups(numberOfGroups.toInt), Nil, Nil))
     case Req(List("proxyDataUri", slide, source), _, _) =>
       () => StatelessHtml.proxyDataUri(slide, source)
     case Req(List("proxy", slide, source), _, _) =>

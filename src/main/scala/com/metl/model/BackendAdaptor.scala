@@ -1,22 +1,15 @@
 package com.metl.model
 
-import com.metl.liftAuthenticator._
 import com.metl.data._
 import com.metl.metl2011._
-import com.metl.auth._
 import com.metl.utils._
 import _root_.net.liftweb.util._
 import Helpers._
 import _root_.net.liftweb.common._
 import _root_.net.liftweb.http._
-import _root_.net.liftweb.http.rest._
-import _root_.net.liftweb.http.provider._
-import _root_.net.liftweb.sitemap._
-import _root_.net.liftweb.sitemap.Loc._
-import com.metl.snippet._
+import com.metl.external.ExternalSnapshotExportConfigurator
 import com.metl.view._
 import com.metl.h2._
-import net.liftweb.util.Props
 import com.mongodb._
 import net.liftweb.mongodb._
 import net.liftweb.util
@@ -114,7 +107,7 @@ case class MeTLRolePrincipal(name:String) extends java.security.Principal{
   override def getName = name
 }
 
-object MeTLXConfiguration extends PropertyReader with Logger {
+object MeTLXConfiguration extends PropertyReader with Logger with ReflectionUtil {
   protected var configs:Map[String,Tuple2[ServerConfiguration,RoomProvider]] = Map.empty[String,Tuple2[ServerConfiguration,RoomProvider]]
   var clientConfig:Option[ClientConfiguration] = None
   var configurationProvider:Option[ConfigurationProvider] = None
@@ -224,7 +217,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
   def setupAuthorizersFromFile(filePath:String) = {
     val propFile = XML.load(filePath)
     val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
-    Globals.groupsProviders = GroupsProvider.constructFromXml(authorizationNodes)
+    Globals.groupsProviders = GroupsProviderConfigurator.constructFromXml(authorizationNodes)
     info("configured groupsProviders: %s".format(Globals.groupsProviders))
   }
   def setupClientAdaptorsFromFile(filePath:String) = {
@@ -318,7 +311,19 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     },true)
   }
-
+  def setupSnapshotExportersFromFile(xml:NodeSeq,conversationFunc:String=>Tuple2[String,Map[String,Array[Byte]]]) = {
+    for {
+      n <- (xml \\ "externalLibSnapshotExporterProvider").headOption
+      className <- (n \ "@className").headOption.map(_.text)
+    } yield {
+      constructExternalClasses[Object,ExternalSnapshotExportConfigurator](className,(configurator:ExternalSnapshotExportConfigurator) => {
+        configurator.configureFromXml(n,conversationFunc).right.toOption.getOrElse(Nil)
+      }).left.map(e => {
+        error("exception thrown while configuring an externalSnapshotExporter",e)
+        e
+      })
+    }
+  }
   def setupServersFromFile(filePath:String) = {
     MeTL2011ServerConfiguration.initialize
     MeTL2015ServerConfiguration.initialize
@@ -392,15 +397,21 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
-    setupMetlingPotsFromFile(Globals.configurationFileLocation)
     LiftRules.unloadHooks.append(() => {
       Globals.metlingPots.foreach(_.shutdown)
       SecurityListener.cleanupAllSessions
     })
     setupUserProfileProvidersFromFile(Globals.configurationFileLocation)
-    LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
-    LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
+
     Globals.metlingPots.foreach(_.init)
+
+    (scala.xml.XML.load(Globals.configurationFileLocation) \\ "externalSnapshotExporters" ).headOption.foreach(externalSnapshotNodes => setupSnapshotExportersFromFile(externalSnapshotNodes,(conversationJid:String) => {
+      val details = ServerConfiguration.default.detailsOfConversation(conversationJid)
+      val slideMap = Map(details.slides.sortBy(_.index).map(s => {
+        (s.id.toString, HttpResponder.getSnapshotWithPrivate(s.id.toString, "medium"))
+      }): _*)
+      (details.title, slideMap)
+    }))
     info(configs)
   }
   def listRooms(configName:String):List[MeTLRoom] = configs(configName)._2.list

@@ -1,6 +1,6 @@
 package com.metl.model
 
-import com.metl.data.{Group=>MeTLGroup,_}
+import com.metl.data.{Group => MeTLGroup, _}
 import com.metl.utils._
 import com.metl.renderer.SlideRenderer
 
@@ -13,6 +13,8 @@ import util._
 import util.TimeHelpers
 import Helpers._
 import java.util.Date
+
+import com.metl.external.{KVP, MeTLingPotItem}
 import com.metl.renderer.RenderDescription
 
 import collection.JavaConverters._

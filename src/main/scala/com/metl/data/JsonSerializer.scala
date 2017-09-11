@@ -2,13 +2,12 @@ package com.metl.data
 
 import com.metl.utils._
 import com.metl.model._
-
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 import Privacy._
-import net.liftweb.json.{Serialization, NoTypeHints, TypeInfo, Formats, MappingException}
+import com.metl.external.ForeignRelationship
+import net.liftweb.json.{Formats, MappingException, NoTypeHints, Serialization, TypeInfo}
 import net.liftweb.json.JsonAST._
-import com.metl.liftAuthenticator.ForeignRelationship
 
 object ConversionHelper extends Logger {
   def toDouble(a:Any):Double = a match{

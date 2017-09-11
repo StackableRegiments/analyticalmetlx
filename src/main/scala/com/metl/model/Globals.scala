@@ -1,22 +1,16 @@
 package com.metl.model
 
-import com.metl.liftAuthenticator._
-
-import com.metl.data._
+import com.metl.TimeSpanParser
+import com.metl.external.{Detail, ExternalGradebook, GroupsProvider => ExternalGroupsProvider, LiftAuthStateData, LiftAuthStateDataForbidden, LtiIntegration, MeTLingPotAdaptor, Member, OrgUnit}
 import com.metl.utils._
-import com.metl.view._
-
 import net.liftweb.http.SessionVar
 import net.liftweb.http.LiftRules
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
-
 import net.liftweb.util.Props
 import scala.xml._
 import scala.util._
 import com.metl.renderer.RenderDescription
-
-import net.liftweb.http._
 
 case class PropertyNotFoundException(key: String) extends Exception(key) {
   override def getMessage: String = "Property not found: " + key
@@ -161,19 +155,15 @@ object Globals extends PropertyReader with Logger {
   val remotePluginConversationChooserActorLifespan = Full(readTimespan(cometConfig,"remotePluginConversationChooserActorLifespan").getOrElse(2 minutes))
   val editConversationActorLifespan = Full(readTimespan(cometConfig,"conversationEditActorLifespan").getOrElse(2 minutes))
 
-  val ltiIntegrations = readNodes(readNode(propFile,"lti"),"remotePlugin").map(remotePluginNode => (readAttribute(remotePluginNode,"key"),readAttribute(remotePluginNode,"secret")))
-  var metlingPots:List[MeTLingPotAdaptor] = Nil
-  val brightSpaceValenceIntegrations = {
-    val bsvin = readNode(propFile,"brightSpaceValence")
-    (readAttribute(bsvin,"url"),readAttribute(bsvin,"appId"),readAttribute(bsvin,"appKey"))
-  }
+  var metlingPots:List[MeTLingPotAdaptor] = ExternalMeTLingPotAdaptors.configureFromXml(readNode(propFile,"metlingPotAdaptors")).right.toOption.getOrElse(Nil)
+
+  var ltiIntegrationPlugins:List[LtiIntegration] = ExternalLtiIntegrations.configureFromXml(readNode(propFile,"lti")).right.toOption.getOrElse(Nil)
 
   val cloudConverterApiKey = readText(propFile,"cloudConverterApiKey").getOrElse("")
   val themeName = readText(propFile,"themeName").getOrElse("neutral")
   val googleAnalytics = ("stackable",readText(propFile,"googleAnalytics"))
   val clientGoogleAnalytics = ("client",readText(propFile,"clientGoogleAnalytics"))
 
-  val d2lThreadPoolMultiplier = readInt(propFile,"d2lThreadPoolMultiplier").getOrElse(5)
   val h2ThreadPoolMultiplier = readInt(propFile,"h2ThreadPoolMultiplier").getOrElse(8)
 
   def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
@@ -191,14 +181,14 @@ object Globals extends PropertyReader with Logger {
   }
   var userProfileProvider:Option[UserProfileProvider] = Some(new CachedInMemoryProfileProvider())
 
-  var groupsProviders:List[GroupsProvider] = Nil
+  var groupsProviders:List[ExternalGroupsProvider] = Nil
 
   var gradebookProviders:List[ExternalGradebook] = Nil
   def getGradebookProvider(providerId:String):Option[ExternalGradebook] = gradebookProviders.find(_.id == providerId)
   def getGradebookProviders:List[ExternalGradebook] = gradebookProviders
 
-  def getGroupsProvider(providerStoreId:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerStoreId)
-  def getGroupsProviders:List[GroupsProvider] = groupsProviders
+  def getGroupsProvider(providerStoreId:String):Option[ExternalGroupsProvider] = getGroupsProviders.find(_.storeId == providerStoreId)
+  def getGroupsProviders:List[ExternalGroupsProvider] = groupsProviders
 
   var mailer:Option[SimpleMailer] = for {
     mailerNode <- (propFile \\ "mailer").headOption
@@ -214,7 +204,6 @@ object Globals extends PropertyReader with Logger {
   }
 
   object casState {
-    import com.metl.liftAuthenticator._
     import net.liftweb.http.S
     private object validState extends SessionVar[Option[LiftAuthStateData]](None)
     def is:LiftAuthStateData = {
@@ -282,8 +271,6 @@ object Globals extends PropertyReader with Logger {
   def isAnalyst:Boolean = casState.isAnalyst
   def assumeContainerSession:LiftAuthStateData = casState.assumeContainerSession
   def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = casState.impersonate(newUsername,personalAttributes)
-
-  object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
 
   val printDpi = 100
   val ThumbnailSize = new RenderDescription(320,240)

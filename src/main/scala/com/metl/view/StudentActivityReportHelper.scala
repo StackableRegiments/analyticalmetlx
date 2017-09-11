@@ -6,7 +6,7 @@ import java.util.Date
 
 import com.github.tototoshi.csv.CSVWriter
 import com.metl.data.ServerConfiguration
-import com.metl.liftAuthenticator.{ForeignRelationship, Member}
+import com.metl.external.{ForeignRelationship, GroupsProvider, Member}
 import com.metl.model._
 import net.liftweb.common.Logger
 import net.liftweb.mapper.DB
@@ -23,7 +23,7 @@ object StudentActivityReportHelper extends Logger {
 
   protected val config = CacheConfig(10, MemoryUnit.MEGABYTES, MemoryStoreEvictionPolicy.LRU, Some(60))
   protected val reportCache = new ManagedCache[(Option[String],Option[Date],Option[Date]), List[List[String]]]("studentActivity", (key: (Option[String],Option[Date],Option[Date])) => generateStudentActivity(key._1,key._2,key._3), config)
-  protected val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("d2lMembersByCourseId", (key: (String, String)) => getD2LMembers(key._1, key._2), config)
+  protected val membersCache = new ManagedCache[(String, String), Option[List[Member]]]("externalMembersByCourseId", (key: (String, String)) => getExternalMembers(key._1, key._2), config)
 
   def studentActivity(courseId: Option[String],from:Option[Date],to:Option[Date]): List[List[String]] = {
     reportCache.get((courseId,from,to))
@@ -89,12 +89,12 @@ object StudentActivityReportHelper extends Logger {
     var nonAttendingRows: List[List[String]] = List(List())
     if (conversations.nonEmpty) {
       val conversation = conversations.head
-      nonAttendingRows = getAllD2LUserIds(conversation.foreignRelationship).map(m => {
+      nonAttendingRows = getAllExternalUserIds(conversation.foreignRelationship).map(m => {
         List("", getMemberDetail(m, "UserName"), "", "", "", "", "", "", getMemberDetail(m, "OrgDefinedId"), "")
       }).filter(l => l(7).nonEmpty).filter(l => !csvRows.exists(c => l(1).equals(c(1)))).sortWith((left, right) => left(1).toLowerCase.compareTo(right(1).toLowerCase) < 0) ::: nonAttendingRows
     }
 
-    val finalRows:List[List[String]] = List(List("Conversation", "Student", "Page", "Seconds", "Visits", "Activity", "Approx", "Start", "End", "Days", "D2LStudentID", "ConversationID")) ::: csvRows ::: nonAttendingRows
+    val finalRows:List[List[String]] = List(List("Conversation", "Student", "Page", "Seconds", "Visits", "Activity", "Approx", "Start", "End", "Days", "ExternalStudentID", "ConversationID")) ::: csvRows ::: nonAttendingRows
     println("Generated student activity in %ds".format(new Date().toInstant.getEpochSecond - start.getEpochSecond))
 
     finalRows
@@ -108,16 +108,16 @@ object StudentActivityReportHelper extends Logger {
     stringWriter.toString
   }
 
-  /** Retrieve from D2L for insert into cache. */
-  protected def getD2LMembers(system: String, courseId: String): Option[List[Member]] = {
+  /** Retrieve from external system for insert into cache. */
+  protected def getExternalMembers(system: String, courseId: String): Option[List[Member]] = {
     val groupsProviders = Globals.getGroupsProviders.filter(gp => gp.canQuery && gp.canRestrictConversations && gp.storeId.equals(system))
     val m = groupsProviders.flatMap {
-      case g: D2LGroupsProvider =>
+      case g: GroupsProvider if g.name == system =>
         for {
           orgUnit <- g.getOrgUnit(courseId)
           members = g.getMembersFor(orgUnit)
         } yield {
-          println("Loaded " + members.length + " members from D2L for courseId: " + courseId)
+          println("Loaded " + members.length + " members from external system for courseId: " + courseId)
           members
         }
       case _ => None
@@ -125,7 +125,7 @@ object StudentActivityReportHelper extends Logger {
     Some(m.flatten)
   }
 
-  protected def getAllD2LUserIds(conversationForeignRelationship: Option[ForeignRelationship]): List[Member] = {
+  protected def getAllExternalUserIds(conversationForeignRelationship: Option[ForeignRelationship]): List[Member] = {
     conversationForeignRelationship match {
       case Some(fr) =>
         val members = membersCache.get((fr.system, fr.key))
@@ -138,7 +138,7 @@ object StudentActivityReportHelper extends Logger {
     }
   }
 
-  protected def getD2LUserId(conversationForeignRelationship: Option[ForeignRelationship], metlUser: String): String = {
+  protected def getExternalUserId(conversationForeignRelationship: Option[ForeignRelationship], metlUser: String): String = {
     conversationForeignRelationship match {
       case Some(fr) =>
         val members = membersCache.get((fr.system, fr.key))
@@ -169,7 +169,7 @@ object StudentActivityReportHelper extends Logger {
         formatDate(r.start),
         formatDate(r.end),
         "%.1f".format(r.days),
-        getD2LUserId(r.conversationForeignRelationship, r.author),
+        getExternalUserId(r.conversationForeignRelationship, r.author),
         r.conversationJid.toString) :: csvRows
     })
     csvRows.filter(r => r.nonEmpty && r.head.trim.nonEmpty).sortWith(sortRows)

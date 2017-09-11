@@ -2,11 +2,11 @@ package com.metl.data
 
 import com.metl.utils._
 import com.metl.model._
-
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 import java.util.Date
-import com.metl.liftAuthenticator.ForeignRelationship
+
+import com.metl.external.ForeignRelationship
 
 object PointConverter {
   def fromText(t:String):List[Point] = parsePoints(t.split(" ").toList)

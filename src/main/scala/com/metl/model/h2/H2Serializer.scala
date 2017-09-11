@@ -4,13 +4,11 @@ import com.metl.data._
 import com.metl.model._
 import com.metl.utils._
 import com.metl.h2.dbformats._
-
-import net.liftweb.common.{Logger => LiftLogger,_}
+import net.liftweb.common.{Logger => LiftLogger, _}
 import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
-
 import Privacy._
-import com.metl.liftAuthenticator.ForeignRelationship
+import com.metl.external.ForeignRelationship
 
 class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogger {
   implicit val formats = net.liftweb.json.DefaultFormats

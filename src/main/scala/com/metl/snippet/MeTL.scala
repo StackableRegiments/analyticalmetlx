@@ -1,28 +1,22 @@
 package com.metl.snippet
 
 import com.metl.data._
-import com.metl.utils._
-import com.metl.liftAuthenticator._
-
-
 import net.liftweb._
 import http._
-import SHtml._
 import common._
 import util._
 import Helpers._
-import scala.xml._
-import com.metl.comet._
-import com.metl.model._
-import Globals._
 
-import net.liftweb.http.js._
+import scala.xml._
+import com.metl.model._
+import com.metl.ReadOnlyMetlInterface
+import com.metl.external.OrgUnit
 import net.liftweb.http.js.JE._
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.json.JsonAST._
 
 object Metl extends Metl
-class Metl extends Logger {
+class Metl extends Logger with ReadOnlyMetlInterface {
   val config = ServerConfiguration.default
   def shouldModifyConversation(username:String, c:Conversation):Boolean = {
     (Globals.isSuperUser || username.toLowerCase.trim == c.author.toLowerCase.trim) && c != Conversation.empty
@@ -35,13 +29,13 @@ class Metl extends Logger {
   def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
     (Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username)))) && c != Conversation.empty
   }
-  def boardFor():String = {
+  override def boardFor():String = {
     "/board"
   }
-  def boardFor(conversationJid:Int):String = {
+  override def boardFor(conversationJid:Int):String = {
     "/board?conversationJid=%s".format(conversationJid)
   }
-  def boardFor(conversationJid:Int,slideId:Int):String = {
+  override def boardFor(conversationJid:Int,slideId:Int):String = {
     "/board?conversationJid=%s&slideId=%s".format(conversationJid,slideId)
   }
   def projectorFor(conversationJid:Int):String = {
@@ -62,13 +56,13 @@ class Metl extends Logger {
   def printSlideWithPrivateFor(conversationJid:Int,slideId:Int):String = {
     "/printableImageWithPrivateFor/%s".format(slideId.toString)
   }
-  def remotePluginConversationChooser(ltiToken:String):String = {
+  override def remotePluginConversationChooser(ltiToken:String):String = {
     "/remotePluginConversationChooser?ltiToken=%s".format(ltiToken)
   }
   def remotePluginChoseConversation(ltiToken:String,conversationJid:Int):String = {
-    "/brightSpark/remotePluginConversationChosen?ltiToken=%s&conversationJid=%s".format(ltiToken,conversationJid.toString)
+    "/remotePlugin/remotePluginConversationChosen?ltiToken=%s&conversationJid=%s".format(ltiToken,conversationJid.toString)
   }
-  def noBoard:String = {
+  override def noBoard:String = {
     conversationSearch()
   }
   def editConversation(conversationJid:Int):String = {
@@ -77,7 +71,6 @@ class Metl extends Logger {
   def conversationSearch():String = {
     "/conversationSearch?unique=true"
   }
-
 
   lazy val serverConfig = ServerConfiguration.default
   protected def generateName(showDeleted:Boolean = false):String = {

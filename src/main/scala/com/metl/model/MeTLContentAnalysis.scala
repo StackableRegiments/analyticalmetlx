@@ -5,6 +5,7 @@ import java.util.Date
 import dispatch._
 import dispatch.Defaults._
 import com.metl.data._
+import com.metl.external.{KVP, MeTLingPotItem}
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
 import net.liftweb.common.Logger
