@@ -1,3 +1,6 @@
+1.21.2
+METL-710: Improvement: Move all D2L-related code from core MeTL into a plugin.
+
 1.21.1
 METL-726: Improvement: Updated Jetty version.
 
