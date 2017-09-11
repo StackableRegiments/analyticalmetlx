@@ -66,7 +66,7 @@ var unpix = function(str){
 }
 
 
-var createCanvasRenderer = function(canvasElem){
+var createCanvasRenderer = function(canvasElem,textInputInvisibleHost){
 	var boardContext = canvasElem[0].getContext("2d");
 	var boardContent = {
 		inks:{},
@@ -829,7 +829,7 @@ var createCanvasRenderer = function(canvasElem){
 		if(!editor.doc){
 			var minimumWidth = 100;
 			var minimumHeight = 30;
-			var host = $("#textInputInvisibleHost");
+			var host = textInputInvisibleHost;
 			if (host[0] === undefined){
 				host = $("<div/>");
 			}

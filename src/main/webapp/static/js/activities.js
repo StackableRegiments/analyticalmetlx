@@ -192,7 +192,11 @@ var MeTLActivities = (function(){
 		var busId = "canvas_" + new Date().getTime().toString(); 
 		var rootElem = templates["canvas"].clone();
 		var boardElemSelector = rootElem.find(".metlCanvas");
-		var newCanvas = createInteractiveCanvas(boardElemSelector);
+		var selectAdornerSelector = rootElem.find(".selectionAdorner");
+		var textInputInvisibleHostSelector = rootElem.find(".textInputInvisibleHost");
+		var radarSelector = rootElem.find(".radar");
+
+		var newCanvas = createInteractiveCanvas(boardElemSelector,selectAdornerSelector,textInputInvisibleHostSelector);
 		newCanvas.setImageSourceCalculationFunction(function(image){
 			var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
 			return sprintf("/proxyImageUrl/%s?source=%s",urlEncodeSlideName(slide),encodeURIComponent(image.source.trim()));
@@ -653,6 +657,7 @@ var MeTLActivities = (function(){
 				bus.subscribe("layoutUpdated",busId,function(dims){
 					_.defer(function(){
 						var reduced = reduceCanvas(dims);
+						selectAdornerSelector.height(reduced.height).width(reduced.width);
 						newCanvas.setDimensions(reduced);
 					});
 				});

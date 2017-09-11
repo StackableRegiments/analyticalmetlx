@@ -1,7 +1,7 @@
-var createInteractiveCanvas = function(boardDiv){
+var createInteractiveCanvas = function(boardCanvas,selectionAdornerDiv,textInputInvisibleHostDiv){
 	var history = {};
 	// link in the renderer, and attach handlers as appropriate
-	var rendererObj = createCanvasRenderer(boardDiv);
+	var rendererObj = createCanvasRenderer(boardCanvas,textInputInvisibleHostDiv);
 	var statistic = function(category,time,success,exception){ };
 	rendererObj.onStatistic(function(c,t,s,e){return statistic(c,t,s,e);});
 	var errorFunc = function(exception,location,parameters){ };
@@ -190,7 +190,7 @@ var createInteractiveCanvas = function(boardDiv){
 	}
 	var unregisterPositionHandlers = function(){
 			$.each("pointerdown pointermove pointerup pointerout pointerleave pointercancel mouseup mousemove mousedown touchstart touchmove touchend touchcancelled mouseout touchleave gesturechange gesturestart".split(" "),function(i,evt){
-					boardDiv.unbind(evt);
+					boardCanvas.unbind(evt);
 			});
 			WorkQueue.gracefullyResume();
 	}
@@ -230,7 +230,7 @@ var createInteractiveCanvas = function(boardDiv){
 							eraser:isErasing
 					}
 			}
-			var context = boardDiv;//Might have to rewrap single jquerys
+			var context = boardCanvas;//Might have to rewrap single jquerys
 			var offset = function(){
 					return context.offset();
 			}
@@ -1871,7 +1871,7 @@ var createInteractiveCanvas = function(boardDiv){
 					var marquee = $("<div/>",{
 							id:"selectMarquee"
 					});
-					var adorner = $("#selectionAdorner");
+					var adorner = selectionAdornerDiv;
 					var threshold = 30;
 					var categories = function(func){
 							func("images");
@@ -2145,7 +2145,7 @@ var createInteractiveCanvas = function(boardDiv){
 	})();
 	var updateMarquee = function(marquee,pointA,pointB){
 		var rect = rectFromTwoPoints(pointA,pointB);
-		var selectionAdorner = $("#selectionAdorner");
+		var selectionAdorner = selectionAdornerDiv;
 		if (!(jQuery.contains(selectionAdorner,marquee))){
 				selectionAdorner.append(marquee);
 		}
@@ -2243,7 +2243,7 @@ var createInteractiveCanvas = function(boardDiv){
 							startY = y;
 							startWorldPos = worldPos;
 							marquee.show();
-							marquee.appendTo($("#selectionAdorner"));
+							marquee.appendTo(selectionAdornerDiv);
 							originPoint = {x:x,y:y};
 							updateMarquee(marquee,originPoint,originPoint);
 					}
@@ -3289,7 +3289,7 @@ var createInteractiveCanvas = function(boardDiv){
 	var availableModes = [noneMode,drawMode,eraseMode,panMode,zoomMode,selectMode,richTextMode];
 	var currentMode = noneMode;
 	return {
-		boardElem:boardDiv,
+		boardElem:boardCanvas,
 		renderer:rendererObj,
 		render:function(){
 			if (rendererObj !== undefined){

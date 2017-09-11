@@ -24,6 +24,16 @@
 			overflow-x:auto;
 			overflow-y:auto;
 		}
+		.boardContainer {
+			position:relative;
+		}
+		.boardContainer .metlCanvas, .boardContainer .selectionAdorner {
+			position:absolute;
+			left:0px;
+			right:0px;
+			top:0px;
+			bottom:0px;
+		}
 	</style>
 	<div id="conversationRoot">
 		<div class="conversationTemplate">
@@ -124,17 +134,11 @@
 						<label for="isUnderline">underline</label>
 					</div>
 				</div>
-				<div>
-					<!--
 				<div class="boardContainer">
--->
 					<canvas class="metlCanvas"></canvas>
-					<!--
 					<div class="textInputInvisibleHost"></div>
 					<div class="selectionAdorner"></div>
 					<div class="radar"></div>
-					<div class="marquee"></div>
--->
 				</div>
 			<div>
 		</div>
