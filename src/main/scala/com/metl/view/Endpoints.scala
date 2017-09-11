@@ -532,9 +532,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer with E
     case Req(List("duplicateConversation", conversation), _, _) =>
       () => StatelessHtml.duplicateConversation(Globals.currentUser.is, conversation)
     case Req(List("requestMaximumSizedGrouping", conversation, slide, groupSize), _, _) if Globals.isSuperUser =>
-      () => StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByMaximumSize(groupSize.toInt), Nil, Nil))
+      () => StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, MeTLGroupSet(ServerConfiguration.default, nextFuncName, slide, ByMaximumSize(groupSize.toInt), Nil, Nil))
     case Req(List("requestClassroomSplitGrouping", conversation, slide, numberOfGroups), _, _) if Globals.isSuperUser =>
-      () => StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(ServerConfiguration.default, nextFuncName, slide, ByTotalGroups(numberOfGroups.toInt), Nil, Nil))
+      () => StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, MeTLGroupSet(ServerConfiguration.default, nextFuncName, slide, ByTotalGroups(numberOfGroups.toInt), Nil, Nil))
     case Req(List("proxyDataUri", slide, source), _, _) =>
       () => StatelessHtml.proxyDataUri(slide, source)
     case Req(List("proxy", slide, source), _, _) =>
