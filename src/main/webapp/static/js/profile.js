@@ -50,6 +50,7 @@ var Profiles = (function(){
 		receiveProfileFunc(profile);
 	});
 	MeTLBus.subscribe("receiveProfiles","profiles",function(profiles){ //invoked by Lift
+		console.log("updated profiles:",profiles);
 		receiveProfilesFunc(profiles);
 	});
 	MeTLBus.subscribe("receiveCurrentProfile","profiles",function(profile){ //invoked by Lift

@@ -938,7 +938,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       val jid = getArgAsString(args(0))
       joinRoomByJid(jid)
       joinRoomByJid(jid+username)
-      busArgs(RECEIVE_HISTORY,serializer.fromHistory(getSlideHistory(jid)))
+      busArgs(RECEIVE_HISTORY,serializer.fromHistory(getHistory(jid)))
     },Full(METLBUS_CALL)),
     ClientSideFunction("leaveRoom",List("jid"),(args) => {
       val jid = getArgAsString(args(0))
@@ -962,8 +962,9 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       busArgs(RECEIVE_SLIDE_DETAILS,serializer.fromSlide(currentSlide.getOrElse(Slide.empty)))
     },Full(METLBUS_CALL))
   )
-  private var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
-  private lazy val serverName = serverConfig.name
+  protected val profiles = scala.collection.mutable.HashMap.empty[String,Profile]
+  protected var rooms = Map.empty[Tuple2[String,String],() => MeTLRoom]
+  protected lazy val serverName = serverConfig.name
   def registerWith = MeTLActorManager
   
   override def render = {
@@ -973,9 +974,24 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       Call("getCurrentSlide") 
     )
   }
+  protected def updateProfilesToPage(authors:String *):Unit = {
+    val knownAuthors = profiles.keys.toList
+    authors.toList.filterNot(a => knownAuthors.contains(a)) match {
+      case Nil => {}
+      case unknownAuthors => {
+        println("updating local profile cache with: %s".format(unknownAuthors))
+        val foundAuthors = serverConfig.getProfiles(unknownAuthors:_*)
+        profiles ++= foundAuthors.map(a => (a.id,a))
+        partialUpdate(busCall(RECEIVE_PROFILES,JObject(foundAuthors.map(a => JField(a.id,renderProfile(a))))))
+      }
+    }
+  }
   override def lowPriority = {
     case roomInfo:RoomStateInformation => updateRooms(roomInfo)
-    case metlStanza:MeTLStanza => sendMeTLStanzaToPage(metlStanza)
+    case metlStanza:MeTLStanza => {
+      updateProfilesToPage(metlStanza.author)
+      sendMeTLStanzaToPage(metlStanza)
+    }
     case HealthyWelcomeFromRoom => {}
     case other => warn("ActivityActor %s received unknown message: %s".format(name,other))
   }
@@ -1002,12 +1018,15 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
     super.localShutdown()
   }
   protected def getHistory(jid:String):History = {
-    RoomMetaDataUtils.fromJid(jid) match {
+    val history = RoomMetaDataUtils.fromJid(jid) match {
       case SlideRoom(sJid) => getSlideHistory(sJid)
       case ConversationRoom(cJid) => getConvHistory(cJid)
       case PrivateSlideRoom(psJid,psUser) => MeTLXConfiguration.getRoom(jid,serverName).getHistory
       case other => History.empty
     }
+    val authors = history.getAll.map(_.author).distinct
+    updateProfilesToPage(authors:_*)
+    history
   }
   protected def getConvHistory(jid:String):History = {
     val convHistory = currentConversation.map(cc => MeTLXConfiguration.getRoom(cc.jid,serverName).getHistory).getOrElse(History.empty)

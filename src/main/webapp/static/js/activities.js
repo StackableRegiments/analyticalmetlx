@@ -39,7 +39,12 @@ var MeTLActivities = (function(){
 		return new Date(ts).toString();
 	};
 	var renderAuthor = function(a){
-		// This should look up the profile name for a given profile, to translate profileId into human readable name.
+		if ("Profiles" in window){
+			var prof = Profiles.getProfileForId(a);
+			if (prof !== undefined && "name" in prof){
+				return prof.name;
+			}
+		} 
 		return a;
 	};
 

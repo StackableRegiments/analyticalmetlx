@@ -34,6 +34,12 @@
 			top:0px;
 			bottom:0px;
 		}
+		.post {
+			margin-left:1em;
+		}
+		.postButton {
+			display:inline-block;
+		}
 	</style>
 	<div id="conversationRoot">
 		<div class="conversationTemplate">
@@ -82,10 +88,10 @@
 				<div class="posts">
 					<div class="post">
 						<div class="postMessage"></div>
-						<div class="postAuthor"></div>
-						<div class="postTimestamp"></div>
-						<button class="respondButton">Respond</button>
-						<button class="editButton">Edit</button>
+						<span class="postAuthor"></span>
+						<span class="postTimestamp"></span>
+						<button class="respondButton postButton">Respond</button>
+						<button class="editButton postButton">Edit</button>
 						<div class="responses"></div>
 					</div>
 				</div>
