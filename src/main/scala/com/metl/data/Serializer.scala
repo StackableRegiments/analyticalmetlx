@@ -92,6 +92,8 @@ abstract class Serializer {
   def fromChatMessage(input:MeTLChatMessage):T = throw new SerializationNotImplementedException
   def toProfile(input:T):Profile = throw new SerializationNotImplementedException
   def fromProfile(input:Profile):T = throw new SerializationNotImplementedException
+  def toForumPost(input:T):ForumPost = throw new SerializationNotImplementedException
+  def fromForumPost(input:ForumPost):T = throw new SerializationNotImplementedException
   def fromMeTLData(input:MeTLData):T = input match {
     case i:MeTLInk => fromMeTLInk(i)
     case t:MeTLText => fromMeTLText(t)
@@ -117,6 +119,7 @@ abstract class Serializer {
     case g:MeTLTextGradeValue => fromTextGradeValue(g)
     case cm:MeTLChatMessage => fromChatMessage(cm)
     case p:Profile => fromProfile(p)
+    case fp:ForumPost => fromForumPost(fp)
     case uc:MeTLUndeletedCanvasContent => fromMeTLUndeletedCanvasContent(uc)
     case cc:MeTLUnhandledCanvasContent => fromMeTLUnhandledCanvasContent(cc)
     case ms:MeTLUnhandledStanza => fromMeTLUnhandledStanza(ms)
@@ -206,4 +209,6 @@ class PassthroughSerializer extends Serializer {
   override def fromTextGradeValue(input:MeTLTextGradeValue):Object = input.asInstanceOf[Object]
   override def toProfile(input:Object):Profile = input.asInstanceOf[Profile]
   override def fromProfile(input:Profile):Object = input.asInstanceOf[Object]
+  override def toForumPost(input:Object):ForumPost = input.asInstanceOf[ForumPost]
+  override def fromForumPost(input:ForumPost):Object = input.asInstanceOf[Object]
 }

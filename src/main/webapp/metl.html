@@ -12,7 +12,7 @@
 			z-index:100;
 			background:cyan;
 		}
-		.metlCanvas, .auditView, .quizComponent{
+		.metlCanvas, .auditView, .quizComponent, .forumComponent{
 			//border:3px solid yellow;
 			background:white;
 		}
@@ -74,16 +74,23 @@
 			</div>
 		</div>
 		<div templateName="forum">
-			<div class="posts">
-				<div class="post">
-					<div class="postMessage"></div>
-					<div class="postAuthor"></div>
-					<div class="postTimestamp"></div>
-					<button class="respondButton"></button>
-					<div class="responses"></div>
+			<div class="forumComponent">
+				<div class="editPostTemplate">
+					<input type="textarea" class="postText"></input>
+					<button class="submitPost">Submit</button>
 				</div>
+				<div class="posts">
+					<div class="post">
+						<div class="postMessage"></div>
+						<div class="postAuthor"></div>
+						<div class="postTimestamp"></div>
+						<button class="respondButton">Respond</button>
+						<button class="editButton">Edit</button>
+						<div class="responses"></div>
+					</div>
+				</div>
+				<button class="addPostButton">Add post</button>
 			</div>
-			<button class="addPostButton">Add post</button>
 		</div>
 		<div templateName="canvasAudit">
 			<input type="range" width="640" class="auditSlider"></input>

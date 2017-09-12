@@ -99,6 +99,9 @@ var MeTLActivities = (function(){
 					case "QUIZ":
 						var activity = activateActivity(createQuizActivity(bus,author,slide.id,author == slide.author),containerRoot);
 						break;
+					case "FORUM":
+						var activity = activateActivity(createForumActivity(bus,author,slide.id,author == slide.author),containerRoot);
+						break;
 					default:
 						break;
 				}
@@ -699,61 +702,97 @@ var MeTLActivities = (function(){
 	var createForumActivity = function(bus,author,slideId,authoring){
 		var busId = "forumActivity_"+new Date().getTime()+"_"+slideId;
 		var history = {
-			posts:{}
+			forumPosts:{}
 		}
 		var rootElem = templates["forum"].clone();
 		var postsContainer = rootElem.find(".posts");
 		var addPostButton = rootElem.find(".addPostButton");
 		var postTemplate = postsContainer.find(".post").clone();
+		var editPostTemplate = rootElem.find(".editPostTemplate").clone();
+		rootElem.find(".editPostTemplate").remove();
 		postsContainer.empty();
-		addPost.on("click",function(){
-			//do this after popping a jAlert to get the new message.
+		var renderEditPost = function(post){
+			var alertId = "editPostContainer" + _.uniqueId().toString();
+			var sendPost = function(){
+				sendStanza(postStanza);
+			};
+			var alertRoot = editPostTemplate.clone();
+			var alertContainer = $("<div/>",{
+				id:alertId
+			});
+			var jAlert = $.jAlert({
+				title:"forum post",
+				width:"auto",
+				content:alertContainer[0].outerHTML,
+				onClose:function(){
+					// should it submit on close?  Probably not.  This would enable people to back out, using the close button.
+				}
+			});
+			var textInput = alertRoot.find(".postText");
+			textInput.val(post.text);
+			textInput.on("change",function(){
+				post.text = textInput.val();
+			});
+			alertRoot.find(".submitPost").on("click",function(){
+				sendStanza(post);
+				jAlert.closeAlert();
+			});
+			$("#"+alertId).html(alertRoot);
+		};
+		addPostButton.on("click",function(){
+			var now = new Date().getTime();
+			var postId = now.toString() + "_" + author + "_" + busId;
+			var postStanza = {
+				type:"forumPost",
+				author:author,
+				timestamp:0,
+				identity:postId,
+				slide:slideId,
+				timestamp:now,
+				inResponseTo:"",
+				text:""	
+			};
+			renderEditPost(postStanza);
+		});
+		var renderPost = function(post){
+			console.log("rendering:",post,history.forumPosts);
+			var postRoot = postTemplate.clone();
+			var children = _.filter(history.forumPosts,function(p,pKey){
+				return p.inResponseTo == post.identity;
+			});
+			postRoot.find(".postMessage").text(post.text);
+			postRoot.find(".postAuthor").text(renderAuthor(post.author));
+			postRoot.find(".postTimestamp").text(renderTimestamp(post.timestamp));
+			var editButton = postRoot.find(".editButton");
+			if (post.author == author){
+				editButton.on("click",function(){
+					renderEditPost(post);
+				});
+			} else {
+				editButton.remove();
+			}
+			postRoot.find(".respondButton").on("click",function(){
 				var now = new Date().getTime();
 				var postId = now.toString() + "_" + author + "_" + busId;
 				var postStanza = {
-					type:"post",
+					type:"forumPost",
 					author:author,
 					timestamp:0,
 					identity:postId,
 					slide:slideId,
 					timestamp:now,
-					inResponseTo:"",
+					inResponseTo:post.identity,
 					text:""	
 				};
-				sendStanza(postStanza);
-		});
-		var renderPost = function(post){
-			var postRoot = postTemplate.clone();
-			var children = _.filter(history.posts,function(p,pKey){
-				return p.inResponseTo == post.identity;
+				renderEditPost(postStanza);
 			});
 			postRoot.find(".responses").html(_.map(children,function(p){
-				return renderPost(post);
+				return renderPost(p);
 			}));
-			postRoot.find(".postMessage").text(post.text);
-			postRoot.find(".postAuthor").text(renderAuthor(post.author));
-			postRoot.find(".postTimestamp").text(renderTimestamp(post.timestamp));
-
-			postRoot.find(".respondButton").on("click",function(){
-				// do this after popping a jAlert to get the new message.
-					var now = new Date().getTime();
-					var postId = now.toString() + "_" + author + "_" + busId;
-					var postStanza = {
-						type:"post",
-						author:author,
-						timestamp:0,
-						identity:postId,
-						slide:slideId,
-						timestamp:now,
-						inResponseTo:post.identity,
-						text:""	
-					};
-					sendStanza(postStanza);
-			});
 			return postRoot;
 		};
 		var reRenderPosts = function(){
-			postsContainer.html(_.map(_.filter(history.posts,function(p){
+			postsContainer.html(_.map(_.filter(history.forumPosts,function(p){
 				return p.inResponseTo == "";
 			}),renderPost));
 		};
@@ -764,8 +803,8 @@ var MeTLActivities = (function(){
 					console.log("receivedStanza",stanza);
 					if ("type" in stanza){
 						switch (stanza.type){
-							case "post":
-								history.posts[stanza.id] = stanza;
+							case "forumPost":
+								history.forumPosts[stanza.identity] = stanza;
 								reRenderPosts();
 								break;
 							default:

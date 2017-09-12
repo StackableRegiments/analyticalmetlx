@@ -271,6 +271,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected val deletedCanvasContents:HistoryCollection[MeTLCanvasContent] = emptyColl[MeTLCanvasContent]
   protected val grades:HistoryCollection[MeTLGrade] = emptyColl[MeTLGrade]
   protected val gradeValues:HistoryCollection[MeTLGradeValue] = emptyColl[MeTLGradeValue]
+  protected val forumPosts:HistoryCollection[ForumPost] = emptyColl[ForumPost]
 
   def getLatestCommands:Map[String,MeTLCommand] = latestCommands
 
@@ -297,6 +298,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getDeletedCanvasContents = deletedCanvasContents.toList
   def getGrades = grades.toList
   def getGradeValues = gradeValues.toList
+  def getForumPosts = forumPosts.toList
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
   def getRenderableGrouped:Tuple6[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo]] = Stopwatch.time("History.getRenderableGrouped",{
@@ -360,6 +362,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLVideoStream => addVideoStream(s)
     case s:MeTLGrade => addGrade(s)
     case s:MeTLGradeValue => addGradeValue(s)
+    case s:ForumPost => addForumPost(s)
     case s:MeTLUnhandledCanvasContent => addMeTLUnhandledCanvasContent(s)
     case s:MeTLUnhandledStanza => addMeTLUnhandledStanza(s)
     case s:MeTLUndeletedCanvasContent => addMeTLUndeletedCanvasContent(s)
@@ -383,6 +386,11 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     this
   }
 
+  def addForumPost(s:ForumPost) = {
+    forumPosts += s
+    outputHook(s)
+    this
+  }
   def addTheme(t:MeTLTheme) = {
     themes += t
     trace("Theme count: %s".format(themes.length))

@@ -1139,6 +1139,19 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
           }
         })
       }
+      case fp:ForumPost => {
+        if (fp.author == username){
+          val roomId = fp.slideId
+          rooms.get((serverName,roomId)).map(r => {
+            r() ! LocalToServerMeTLStanza(fp)
+            Globals.metlingPots.foreach(mp => {
+              mp.postItems(List(
+                MeTLingPotItem("metlActor",new java.util.Date().getTime(),KVP("metlUser",fp.author),KVP("informalAcademic","forumPost"),Some(KVP("room",fp.slideId)),None,None)
+              ))
+            })
+          })
+        }
+      }
       case s:MeTLSubmission => {
         if (s.author == username) {
           currentConversation.map(cc => {

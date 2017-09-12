@@ -119,6 +119,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
           case "numericGradeValue" => toNumericGradeValue(i.asInstanceOf[H2NumericGradeValue])
           case "booleanGradeValue" => toBooleanGradeValue(i.asInstanceOf[H2BooleanGradeValue])
           case "textGradeValue" => toTextGradeValue(i.asInstanceOf[H2TextGradeValue])
+          case "forumPost" => toForumPost(i.asInstanceOf[H2ForumPost])
           case "undeletedCanvasContent" => toMeTLUndeletedCanvasContent(i.asInstanceOf[H2UndeletedCanvasContent])
           case "unhandledCanvasContent" => toMeTLUnhandledCanvasContent(i.asInstanceOf[H2UnhandledCanvasContent])
           case "unhandledStanza" => toMeTLUnhandledStanza(i.asInstanceOf[H2UnhandledStanza])
@@ -667,5 +668,12 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
       <attribute name={attr._1}>{attr._2}</attribute>
     })}</attributes>
     incStanza(H2Profile.create,i,"profile").profileId(i.id).name(i.name).attrs(attrs.toString)
+  })
+  def toForumPost(i:H2ForumPost):ForumPost = Stopwatch.time("H2Serializer.toForumPost",{
+    val c = decStanza(i)
+    ForumPost(c.author,c.timestamp,i.identity.get,Some(i.inResponseTo.get).filterNot(_ == ""),i.slideId.get,i.text.get,c.audiences)
+  })
+  override def fromForumPost(i:ForumPost):H2ForumPost = Stopwatch.time("H2Serializer.fromForumPost",{
+    incStanza(H2ForumPost.create,i,"forumPost").identity(i.identity).inResponseTo(i.inResponseTo.getOrElse("")).slideId(i.slideId).text(i.text)
   })
 }

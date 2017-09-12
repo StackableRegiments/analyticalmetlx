@@ -180,12 +180,17 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case (identity,Nil) => None
       case (identity,items) => items.sortBy(_.timestamp).reverse.headOption.map(head => JField(identity,fromMeTLMultiWordText(head)))
     }).toList
+    val latestForumPosts = (input.getForumPosts.groupBy(_.identity).toList.flatMap{
+      case (identity,Nil) => None
+      case (identity,items) => items.sortBy(_.timestamp).reverse.headOption.map(head => JField(identity,fromForumPost(head)))
+    }).toList
     toJsObj("history",List(
       JField("jid",JString(input.jid)),
       JField("inks",JObject(inks.map(i => JField(i.identity,fromMeTLInk(i))))),
       JField("highlighters",JObject(highlighters.map(i => JField(i.identity,fromMeTLInk(i))))),
       JField("images",JObject(images.map(i => JField(i.identity,fromMeTLImage(i))))),
       JField("videos",JObject(videos.map(i => JField(i.identity,fromMeTLVideo(i))))),
+      JField("forumPosts",JObject(latestForumPosts)),
       JField("texts",JObject(latestTexts)),
       //JField("texts",JObject(texts.map(i => JField(i.identity,fromMeTLText(i))))),
       JField("themes",JArray(input.getThemes.map(fromTheme _))),
@@ -256,6 +261,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         case jo:JObject if (isOfType(jo,"booleanGradeValue")) => history.addStanza(toBooleanGradeValue(jo))
       }
     })
+    getFields(i,"forumPosts").foreach(fp => history.addStanza(toForumPost(fp.value)))
     getFields(i,"undeletedCanvasContent").foreach(jf => history.addStanza(toMeTLUndeletedCanvasContent(jf.value)))
     getFields(i,"unhandledCanvasContents").foreach(jf => history.addStanza(toMeTLUnhandledCanvasContent(jf.value)))
     getFields(i,"unhandledStanzas").foreach(jf => history.addStanza(toMeTLUnhandledStanza(jf.value)))
@@ -301,6 +307,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case jo:JObject if (isOfType(jo,"numericGradeValue")) => toNumericGradeValue(jo)
       case jo:JObject if (isOfType(jo,"textGradeValue")) => toTextGradeValue(jo)
       case jo:JObject if (isOfType(jo,"booleanGradeValue")) => toBooleanGradeValue(jo)
+      case jo:JObject if (isOfType(jo,"forumPost")) => toForumPost(jo)
       case other:JObject if hasFields(other,List("target","privacy","slide","identity")) => toMeTLUnhandledCanvasContent(other)
       case other:JObject if hasFields(other,List("author","timestamp")) => toMeTLUnhandledStanza(other)
       case other:JObject => toMeTLUnhandledData(other)
@@ -1229,5 +1236,25 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       })))
     ) ::: parseMeTLContent(input))
   })
-  
+  override def toForumPost(input:JValue):ForumPost = Stopwatch.time("JsonSerializer.toForumPost",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val text = getStringByName(j,"text")
+        val identity = getStringByName(j,"identity")
+        val inResponseTo = Some(getStringByName(j,"inResponseTo")).filterNot(_ == "")
+        val slideId = getStringByName(j,"slide")
+        ForumPost(m.author,m.timestamp,identity,inResponseTo,slideId,text,m.audiences)
+      }
+      case _ => ForumPost.empty
+    }
+  })
+  override def fromForumPost(input:ForumPost):JValue = Stopwatch.time("JsonSerializer.fromForumPost",{
+    toJsObj("forumPost",List(
+      JField("identity",JString(input.identity)),
+      JField("inResponseTo",JString(input.inResponseTo.getOrElse(""))),
+      JField("slide",JString(input.slideId)),
+      JField("text",JString(input.text))
+    ) ::: parseMeTLContent(input))
+  })
 }

@@ -290,6 +290,16 @@ class H2Conversation extends H2MeTLContent[H2Conversation]{
 }
 object H2Conversation extends H2Conversation with LongKeyedMetaMapper[H2Conversation]{
 }
+class H2ForumPost extends H2MeTLStanza[H2ForumPost]{
+  def getSingleton = H2ForumPost
+  object text extends MappedText(this)
+  object slideId extends MappedMeTLString(this,H2Constants.room)
+  object identity extends H2MeTLIndexedString(this,H2Constants.identity);
+  object inResponseTo extends H2MeTLIndexedString(this,H2Constants.identity);
+}
+object H2ForumPost extends H2ForumPost with LongKeyedMetaMapper[H2ForumPost]{
+}
+
 class H2File extends H2MeTLStanza[H2File]{
   def getSingleton = H2File
   object name extends MappedText(this)

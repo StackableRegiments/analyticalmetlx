@@ -89,6 +89,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       case i:NodeSeq if hasChild(i,"dirtyVideo") => toMeTLDirtyVideo(i)
       case i:NodeSeq if hasChild(i,"moveDelta") => toMeTLMoveDelta(i)
       case i:NodeSeq if hasChild(i,"quiz") => toMeTLQuiz(i)
+      case i:NodeSeq if hasChild(i,"forumPost") => toForumPost(i)
       case i:NodeSeq if hasChild(i,"quizResponse") => toMeTLQuizResponse(i)
       case i:NodeSeq if hasChild(i,"screenshotSubmission") => toSubmission(i)
       case i:NodeSeq if hasChild(i,"attendance") => toMeTLAttendance(i)
@@ -877,6 +878,22 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <attributes>{input.attributes.toList.map(attr => {
         <attribute name={attr._1}>{attr._2}</attribute>
       })}</attributes>
+    ))
+  })
+  override def toForumPost(input:NodeSeq):ForumPost = Stopwatch.time("GenericXmlSerializer.toForumPost",{
+    val m = parseMeTLContent(input,config)
+    val text = getStringByName(input,"text")
+    val identity = getStringByName(input,"text")
+    val slide = getStringByName(input,"text")
+    val inResponseTo = Some(getStringByName(input,"text")).filterNot(_ == "")
+    ForumPost(m.author,m.timestamp,identity,inResponseTo,slide,text,m.audiences)
+  })
+  override def fromForumPost(input:ForumPost):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromForumPost",{
+    metlContentToXml("forumPost",input,List(
+      <text>{input.text}</text>,
+      <identity>{input.identity}</identity>,
+      <slide>{input.slideId}</slide>,
+      <inResponseTo>{input.inResponseTo.getOrElse("")}</inResponseTo>
     ))
   })
 }

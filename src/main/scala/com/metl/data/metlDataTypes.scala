@@ -1111,3 +1111,10 @@ case class MeTLTextGradeValue(override val author:String, override val timestamp
   override def getPrivateComment:Option[String] = gradePrivateComment
 }
 
+object ForumPost {
+  def empty = ForumPost("",0L,"",None,"","",Nil)
+}
+
+case class ForumPost(override val author:String,override val timestamp:Long,identity:String,inResponseTo:Option[String],slideId:String,text:String,override val audiences:List[Audience] = Nil) extends MeTLStanza(author,timestamp,audiences) {
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):ForumPost = copy(timestamp = newTime)
+}
