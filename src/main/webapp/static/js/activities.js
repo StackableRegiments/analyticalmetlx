@@ -43,7 +43,26 @@ var MeTLActivities = (function(){
 		return a;
 	};
 
+	var updateQueryParams = function(){
+		if (window != undefined && "history" in window && "pushState" in window.history){
+				var l = window.location;
+				var c = conversation;
+				var s = slide;
+				var newUrl = sprintf("%s//%s%s",l.protocol,l.host,l.pathname);
+				if (c != undefined && "jid" in c && s != undefined && "id" in s){
+						newUrl = sprintf("%s?conversationJid=%s&slideId=%s&unique=true",newUrl,c.jid,s.id);
+				}
+				window.history.replaceState({
+						path:newUrl,
+						url:newUrl
+				},newUrl,newUrl);
+		}
+		if (s != undefined && "id" in s && document != undefined && "title" in document){
+				document.title = sprintf("MeTL - %s",s.id.toString());
+		}
+	};
 	var reRenderConversations = function(){
+		updateQueryParams();
 		if (conversation !== undefined){
 			var rootElem = conversationTemplate.clone();
 			rootElem.find(".conversationTitle").text(conversation.title);
