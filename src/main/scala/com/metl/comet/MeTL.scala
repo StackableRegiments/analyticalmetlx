@@ -929,6 +929,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
   override lazy val functionDefinitions = List(
     CommonFunctions.getAccount,
     CommonFunctions.getProfiles,
+    CommonFunctions.getProfile(() => profile),
     CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
     CommonFunctions.getProfilesById,
@@ -969,6 +970,8 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
   
   override def render = {
     OnLoad(
+      Call("getAccount") &
+      Call("getActiveProfile") & 
       Call("getUsername") &
       Call("getCurrentConversation") &
       Call("getCurrentSlide") 
