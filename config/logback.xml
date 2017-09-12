@@ -54,7 +54,7 @@
   <root level="DEBUG">
     <appender-ref ref="DEBUG_FILE"/>
   </root>
-  <root level="TRACE">
+  <root level="WARN">
     <appender-ref ref="STDOUT"/>
   </root>
 </configuration>
