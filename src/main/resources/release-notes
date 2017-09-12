@@ -1,3 +1,6 @@
+1.21.4
+METL-666: Bugfix: Delete poll does not work.
+
 1.21.2
 METL-710: Improvement: Move all D2L-related code from core MeTL into a plugin.
 
