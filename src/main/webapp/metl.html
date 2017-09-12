@@ -40,6 +40,10 @@
 		.postButton {
 			display:inline-block;
 		}
+		.postAvatar {
+			max-height:30px;
+			max-width:30px;
+		}
 	</style>
 	<div id="conversationRoot">
 		<div class="conversationTemplate">
@@ -88,7 +92,10 @@
 				<div class="posts">
 					<div class="post">
 						<div class="postMessage"></div>
-						<span class="postAuthor"></span>
+						<span class="postAuthorship">
+							<img class="postAvatar"></img>
+							<span class="postAuthor"></span>
+						</span>
 						<span class="postTimestamp"></span>
 						<button class="respondButton postButton">Respond</button>
 						<button class="editButton postButton">Edit</button>

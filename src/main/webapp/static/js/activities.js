@@ -36,16 +36,21 @@ var MeTLActivities = (function(){
 
 	var renderTimestamp = function(ts){
 		// I'd like to have uniform representations of datetimes, so that we can be neat.
-		return new Date(ts).toString();
+		return new Date(ts).toJSON();
 	};
 	var renderAuthor = function(a){
 		if ("Profiles" in window){
 			var prof = Profiles.getProfileForId(a);
 			if (prof !== undefined && "name" in prof){
-				return prof.name;
+				return {
+					name:prof.name,
+					avatarUrl:prof.attributes.avatarUrl
+				};	
 			}
 		} 
-		return a;
+		return {
+			name:a
+		};
 	};
 
 	var updateQueryParams = function(){
@@ -785,7 +790,9 @@ var MeTLActivities = (function(){
 				return p.inResponseTo == post.identity;
 			});
 			postRoot.find(".postMessage").text(post.text);
-			postRoot.find(".postAuthor").text(renderAuthor(post.author));
+			var author = renderAuthor(post.author);
+			postRoot.find(".postAuthor").text(author.name);
+			postRoot.find(".postAvatar").attr("src",author.avatarUrl);
 			postRoot.find(".postTimestamp").text(renderTimestamp(post.timestamp));
 			var editButton = postRoot.find(".editButton");
 			if (post.author == author){
