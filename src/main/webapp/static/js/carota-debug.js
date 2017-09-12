@@ -666,7 +666,7 @@ var carotaTest = function(historyRenderer){
                                 endDetails = this.wordContainingOrdinal(Math.min(range.end, this.frame.length - 1)) || startDetails;
                             if(!(startDetails && endDetails)){
                                 /*The words aren't constructed yet*/
-                                throw new Exception("range miss");
+                                throw new Error("range miss");
                             }
                             if (startDetails.index === endDetails.index) {
                                 startDetails.word.runs(emit, {

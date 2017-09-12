@@ -34,6 +34,15 @@ var MeTLActivities = (function(){
 		});
 	});
 
+	var renderTimestamp = function(ts){
+		// I'd like to have uniform representations of datetimes, so that we can be neat.
+		return new Date(ts).toString();
+	};
+	var renderAuthor = function(a){
+		// This should look up the profile name for a given profile, to translate profileId into human readable name.
+		return a;
+	};
+
 	var reRenderConversations = function(){
 		if (conversation !== undefined){
 			var rootElem = conversationTemplate.clone();
@@ -687,8 +696,102 @@ var MeTLActivities = (function(){
 			}			
 		};
 	};
+	var createForumActivity = function(bus,author,slideId,authoring){
+		var busId = "forumActivity_"+new Date().getTime()+"_"+slideId;
+		var history = {
+			posts:{}
+		}
+		var rootElem = templates["forum"].clone();
+		var postsContainer = rootElem.find(".posts");
+		var addPostButton = rootElem.find(".addPostButton");
+		var postTemplate = postsContainer.find(".post").clone();
+		postsContainer.empty();
+		addPost.on("click",function(){
+			//do this after popping a jAlert to get the new message.
+				var now = new Date().getTime();
+				var postId = now.toString() + "_" + author + "_" + busId;
+				var postStanza = {
+					type:"post",
+					author:author,
+					timestamp:0,
+					identity:postId,
+					slide:slideId,
+					timestamp:now,
+					inResponseTo:"",
+					text:""	
+				};
+				sendStanza(postStanza);
+		});
+		var renderPost = function(post){
+			var postRoot = postTemplate.clone();
+			var children = _.filter(history.posts,function(p,pKey){
+				return p.inResponseTo == post.identity;
+			});
+			postRoot.find(".responses").html(_.map(children,function(p){
+				return renderPost(post);
+			}));
+			postRoot.find(".postMessage").text(post.text);
+			postRoot.find(".postAuthor").text(renderAuthor(post.author));
+			postRoot.find(".postTimestamp").text(renderTimestamp(post.timestamp));
+
+			postRoot.find(".respondButton").on("click",function(){
+				// do this after popping a jAlert to get the new message.
+					var now = new Date().getTime();
+					var postId = now.toString() + "_" + author + "_" + busId;
+					var postStanza = {
+						type:"post",
+						author:author,
+						timestamp:0,
+						identity:postId,
+						slide:slideId,
+						timestamp:now,
+						inResponseTo:post.identity,
+						text:""	
+					};
+					sendStanza(postStanza);
+			});
+			return postRoot;
+		};
+		var reRenderPosts = function(){
+			postsContainer.html(_.map(_.filter(history.posts,function(p){
+				return p.inResponseTo == "";
+			}),renderPost));
+		};
+		return {
+			activate:function(container){
+				container.append(rootElem);
+				bus.subscribe("receiveMeTLStanza",busId,function(stanza){
+					console.log("receivedStanza",stanza);
+					if ("type" in stanza){
+						switch (stanza.type){
+							case "post":
+								history.posts[stanza.id] = stanza;
+								reRenderPosts();
+								break;
+							default:
+								break;
+						}
+					}
+				});
+				bus.subscribe("receiveHistory",busId,function(h){
+					console.log("receivedHistory",h);
+					if ("jid" in h && h.jid == slideId){
+						history = h;
+						reRenderPosts();
+					}
+				});
+				joinRoom(slideId);
+			},
+			deactivate:function(){
+				bus.unsubscribe("receiveHistory",busId);
+				bus.unsubscribe("receiveMeTLStanza",busId);
+				leaveRoom(slideId);
+				rootElem.empty();
+			}
+		};	
+	};
 	var createQuizActivity = function(bus,author,slideId,authoring){
-		var busId = "quizActivity_"+ new Date().getTime();
+		var busId = "quizActivity_"+new Date().getTime()+"_"+slideId;
 		var history = {
 			quizzes:{},
 			quizResponses:{}
