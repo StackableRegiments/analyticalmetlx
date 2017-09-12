@@ -340,7 +340,10 @@ var Quizzes = (function(){
             noDataContent: "No polls",
             controller: {
                 loadData: function(filter){
-                    var sorted = _.map(_.keys(quizzes),function(k){
+                    var validQuizIds = _.map(_.filter(quizzes,function(q){
+                        return q.isDeleted == false;
+                    }),"id");
+                    var sorted = _.map(validQuizIds,function(k){
                         var v = quizzes[k];
                         var answers = quizAnswers[k];
                         quizResultsGraphs[k] = updateQuizGraph(v);
@@ -505,7 +508,7 @@ var Quizzes = (function(){
             jAlert.closeAlert();
         });
         editPopup.find(".deleteQuiz").on("click",function(){
-            newQuiz.deleted = true;
+            newQuiz.isDeleted = true;
             sendStanza(newQuiz);
             jAlert.closeAlert();
         });
@@ -564,7 +567,7 @@ var Quizzes = (function(){
         reRenderQuizzes();
     };
     var quizAnswersFunction = function(quiz){
-        if ("type" in quiz && quiz.type == "quiz" && "id" in quiz){
+        if (quiz !== undefined && "type" in quiz && quiz.type == "quiz" && "id" in quiz){
             var quizId = quiz.id;
             var theseQuizAnswers = quizAnswers[quizId] || [];
             var theseQuizAnswerers = {};
@@ -671,7 +674,7 @@ var Quizzes = (function(){
     };
     var historyReceivedFunction = function(history){
         try {
-            if ("type" in history && history.type == "history"){
+            if (history !== undefined && "type" in history && history.type == "history"){
                 clearState();
                 _.forEach(history.quizResponses,doStanzaReceivedFunction);
                 _.forEach(history.quizzes,doStanzaReceivedFunction);
@@ -688,9 +691,9 @@ var Quizzes = (function(){
     };
     var doStanzaReceivedFunction = function(possibleQuiz){
         try {
-            if ("type" in possibleQuiz && possibleQuiz.type == "quizResponse"){
+            if (possibleQuiz !== undefined && "type" in possibleQuiz && possibleQuiz.type == "quizResponse"){
                 actOnQuizResponse(possibleQuiz);
-            } else if ("type" in possibleQuiz && possibleQuiz.type == "quiz"){
+            } else if (possibleQuiz !== undefined && "type" in possibleQuiz && possibleQuiz.type == "quiz"){
                 actOnQuiz(possibleQuiz);
                 if (currentQuiz.id == possibleQuiz.id){
                     currentQuiz = possibleQuiz;
@@ -705,7 +708,7 @@ var Quizzes = (function(){
         try{
             if (_.size(newQuizzes) > 0){
                 $.each(newQuizzes,function(unusedQuizName,quiz){
-                    if ("type" in quiz && quiz.type == "quiz"){
+                    if (quiz !== undefined && "type" in quiz && quiz.type == "quiz"){
                         quizzes[quiz.id] = quiz;
                         quizResultsGraphs[quiz.id] = updateQuizGraph(quiz);
                         if (reRenderActiveGraphFunction != undefined){
