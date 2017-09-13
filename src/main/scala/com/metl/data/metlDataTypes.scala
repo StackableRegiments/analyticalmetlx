@@ -1118,3 +1118,11 @@ object ForumPost {
 case class ForumPost(override val author:String,override val timestamp:Long,identity:String,inResponseTo:Option[String],slideId:String,text:String,override val audiences:List[Audience] = Nil) extends MeTLStanza(author,timestamp,audiences) {
   override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):ForumPost = copy(timestamp = newTime)
 }
+
+object WootOperation {
+  def empty = WootOperation("",0L,"","","","",Nil)
+}
+
+case class WootOperation(override val author:String,override val timestamp:Long,identity:String,wootMessage:String,wootArgs:String,slideId:String,override val audiences:List[Audience] = Nil) extends MeTLStanza(author,timestamp,audiences) {
+  override def adjustTimestamp(newTime:Long = new java.util.Date().getTime):WootOperation = copy(timestamp = newTime)
+}

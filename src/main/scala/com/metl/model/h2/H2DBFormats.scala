@@ -294,10 +294,20 @@ class H2ForumPost extends H2MeTLStanza[H2ForumPost]{
   def getSingleton = H2ForumPost
   object text extends MappedText(this)
   object slideId extends MappedMeTLString(this,H2Constants.room)
-  object identity extends H2MeTLIndexedString(this,H2Constants.identity);
-  object inResponseTo extends H2MeTLIndexedString(this,H2Constants.identity);
+  object identity extends H2MeTLIndexedString(this,H2Constants.identity)
+  object inResponseTo extends H2MeTLIndexedString(this,H2Constants.identity)
 }
 object H2ForumPost extends H2ForumPost with LongKeyedMetaMapper[H2ForumPost]{
+}
+
+class H2WootOperation extends H2MeTLStanza[H2WootOperation]{
+  def getSingleton = H2WootOperation
+  object wootMessage extends MappedMeTLString(this,64)
+  object slideId extends MappedMeTLString(this,H2Constants.room)
+  object identity extends H2MeTLIndexedString(this,H2Constants.identity)
+  object wootArgs extends MappedText(this) 
+}
+object H2WootOperation extends H2WootOperation with LongKeyedMetaMapper[H2WootOperation]{
 }
 
 class H2File extends H2MeTLStanza[H2File]{

@@ -272,6 +272,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   protected val grades:HistoryCollection[MeTLGrade] = emptyColl[MeTLGrade]
   protected val gradeValues:HistoryCollection[MeTLGradeValue] = emptyColl[MeTLGradeValue]
   protected val forumPosts:HistoryCollection[ForumPost] = emptyColl[ForumPost]
+  protected val wootOperations:HistoryCollection[WootOperation] = emptyColl[WootOperation]
 
   def getLatestCommands:Map[String,MeTLCommand] = latestCommands
 
@@ -299,6 +300,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
   def getGrades = grades.toList
   def getGradeValues = gradeValues.toList
   def getForumPosts = forumPosts.toList
+  def getWootOperations = wootOperations.toList
 
   def getRenderable = Stopwatch.time("History.getRenderable",getCanvasContents.map(scaleItemToSuitHistory(_)))
   def getRenderableGrouped:Tuple6[List[MeTLText],List[MeTLInk],List[MeTLInk],List[MeTLImage],List[MeTLMultiWordText],List[MeTLVideo]] = Stopwatch.time("History.getRenderableGrouped",{
@@ -363,6 +365,7 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     case s:MeTLGrade => addGrade(s)
     case s:MeTLGradeValue => addGradeValue(s)
     case s:ForumPost => addForumPost(s)
+    case s:WootOperation => addWootOperation(s)
     case s:MeTLUnhandledCanvasContent => addMeTLUnhandledCanvasContent(s)
     case s:MeTLUnhandledStanza => addMeTLUnhandledStanza(s)
     case s:MeTLUndeletedCanvasContent => addMeTLUndeletedCanvasContent(s)
@@ -372,6 +375,11 @@ case class History(jid:String,xScale:Double = 1.0, yScale:Double = 1.0,xOffset:D
     }
   }
 
+  def addWootOperation(t:WootOperation) = {
+    wootOperations += t
+    outputHook(t)
+    this
+  }
   def addGrade(t:MeTLGrade) = {
     grades += t
     outputHook(t)

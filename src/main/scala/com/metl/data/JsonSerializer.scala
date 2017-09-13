@@ -205,6 +205,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("files",JArray(input.getFiles.map(i => fromMeTLFile(i)))),
       JField("videoStreams",JArray(input.getVideoStreams.map(i => fromMeTLVideoStream(i)))),
       JField("grades",JArray(input.getGrades.map(i => fromGrade(i)))),
+      JField("wootOperations",JArray(input.getWootOperations.map(i => fromWootOperation(i)))),
       JField("gradeValues",JArray(input.getGradeValues.flatMap{
         case i:MeTLNumericGradeValue => Some(fromNumericGradeValue(i))
         case i:MeTLBooleanGradeValue => Some(fromBooleanGradeValue(i))
@@ -247,6 +248,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     getFields(i,"videoStreams").foreach(jf => history.addStanza(toMeTLVideoStream(jf.value)))
     getFields(i,"themes").foreach(jf => history.addStanza(toTheme(jf.value)))
     getFields(i,"chatMessages").foreach(jf => history.addStanza(toChatMessage(jf.value)))
+    getFields(i,"wootOperations").foreach(jf => history.addStanza(toWootOperation(jf.value)))
     getFields(i,"deletedCanvasContents").foreach(jf => {
       toMeTLData(jf.value) match {
         case cc:MeTLCanvasContent => history.addDeletedCanvasContent(cc)
@@ -307,6 +309,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       case jo:JObject if (isOfType(jo,"numericGradeValue")) => toNumericGradeValue(jo)
       case jo:JObject if (isOfType(jo,"textGradeValue")) => toTextGradeValue(jo)
       case jo:JObject if (isOfType(jo,"booleanGradeValue")) => toBooleanGradeValue(jo)
+      case jo:JObject if (isOfType(jo,"wootOperation")) => toWootOperation(jo)
       case jo:JObject if (isOfType(jo,"forumPost")) => toForumPost(jo)
       case other:JObject if hasFields(other,List("target","privacy","slide","identity")) => toMeTLUnhandledCanvasContent(other)
       case other:JObject if hasFields(other,List("author","timestamp")) => toMeTLUnhandledStanza(other)
@@ -1255,6 +1258,27 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("inResponseTo",JString(input.inResponseTo.getOrElse(""))),
       JField("slide",JString(input.slideId)),
       JField("text",JString(input.text))
+    ) ::: parseMeTLContent(input))
+  })
+  override def toWootOperation(input:JValue):WootOperation = Stopwatch.time("JsonSerializer.toWootOperation",{
+    input match {
+      case j:JObject => {
+        val m = parseJObjForMeTLContent(j,config)
+        val wootMessage = getStringByName(j,"wootMessage")
+        val wootArgs = getObjectByName(j,"wootArgs")
+        val identity = getStringByName(j,"identity")
+        val slideId = getStringByName(j,"slide")
+        WootOperation(m.author,m.timestamp,identity,wootMessage,compactRender(wootArgs),slideId,m.audiences)
+      }
+      case _ => WootOperation.empty
+    }
+  })
+  override def fromWootOperation(input:WootOperation):JValue = Stopwatch.time("JsonSerializer.fromWootOperation",{
+    toJsObj("wootOperation",List(
+      JField("identity",JString(input.identity)),
+      JField("slide",JString(input.slideId)),
+      JField("wootMessage",JString(input.wootMessage)),
+      JField("wootArgs",net.liftweb.json.parse(input.wootArgs))
     ) ::: parseMeTLContent(input))
   })
 }

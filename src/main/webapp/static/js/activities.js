@@ -865,23 +865,20 @@ var MeTLActivities = (function(){
 	};
 	var createTextDocumentActivity = function(bus,author,slideId){
 		var busId = "textDocumentActivity_"+new Date().getTime()+"_"+slideId + "_" +_.uniqueId();
-		var history = [];
 
-		// a rudimentary message bus which I'll later wire into the main bus.
-		var receiveOperation = function(msg,data){
-			history.push({msg:msg,data:data});
-			if (metlWootAdaptor !== undefined){
-				metlWootAdaptor.receive(msg,data);
-			}
-		}
 		var sendOperation = function(msg,data){
-			// it's looping back here.  This is where it would go up to MeTL, and the other point is where it would come back from MeTL.
-			if (msg == "woot_send"){
-				receiveOperation("woot_receive",data);
-			} else {
-				receiveOperation(msg,data);
-			}
-		}
+			var stanzaId = author +"_"+ slideId +"_"+ new Date().getTime().toString() +"_"+ _.uniqueId().toString();
+			var stanza = {
+				type:"wootOperation",
+				author:author,
+				slide:slideId,
+				timestamp:0,
+				identity:stanzaId,
+				wootMessage:msg,
+				wootArgs:data
+			};
+			sendStanza(stanza);
+		};
 
 		var metlWootAdaptor = (function(){
 			var funcs = {};
@@ -925,14 +922,33 @@ var MeTLActivities = (function(){
 		var quillAdaptor = undefined;
 			
 		return {
-			getHistory:function(){return history;},
 			metlWootAdaptor:metlWootAdaptor,
 			activate:function(container){
 				container.append(rootElem);
-				quillAdaptor = new Woot.QuillAdapter(metlWootAdaptor,"#"+quillId,"#"+toolbarId,"#"+authorId,author,author);
-				quillAdaptor.editor.focus();
+				MeTLBus.subscribe("receiveMeTLStanza",busId,function(stanza){
+					if (stanza !== undefined && "type" in stanza && stanza.type == "wootOperation"){
+						if (metlWootAdaptor !== undefined){
+							metlWootAdaptor.receive(stanza.wootMessage == "woot_send" ? "woot_receive" : stanza.wootMessage,stanza.wootArgs);
+						}
+					}
+				});
+				MeTLBus.subscribe("receiveHistory",busId,function(history){
+					if (history !== undefined && "jid" in history && history.jid == slideId){
+						if (metlWootAdaptor !== undefined){
+							quillAdaptor = new Woot.QuillAdapter(metlWootAdaptor,"#"+quillId,"#"+toolbarId,"#"+authorId,author,author);
+							_.forEach(history.wootOperations,function(op){
+								metlWootAdaptor.receive(stanza.wootMessage == "woot_send" ? "woot_receive" : stanza.wootMessage,stanza.wootArgs);
+							});
+							quillAdaptor.editor.focus();
+						}
+					}
+				});
+				joinRoom(slideId);
 			},
 			deactivate:function(){
+				MeTLBus.unsubscribe("receiveMeTLStanza",busId);
+				MeTLBus.unsubscribe("receiveHistory",busId);
+				leaveRoom(slideId);
 				rootElem.empty();
 			}	
 		}

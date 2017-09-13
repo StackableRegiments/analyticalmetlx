@@ -120,6 +120,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
           case "booleanGradeValue" => toBooleanGradeValue(i.asInstanceOf[H2BooleanGradeValue])
           case "textGradeValue" => toTextGradeValue(i.asInstanceOf[H2TextGradeValue])
           case "forumPost" => toForumPost(i.asInstanceOf[H2ForumPost])
+          case "wootOperation" => toWootOperation(i.asInstanceOf[H2WootOperation])
           case "undeletedCanvasContent" => toMeTLUndeletedCanvasContent(i.asInstanceOf[H2UndeletedCanvasContent])
           case "unhandledCanvasContent" => toMeTLUnhandledCanvasContent(i.asInstanceOf[H2UnhandledCanvasContent])
           case "unhandledStanza" => toMeTLUnhandledStanza(i.asInstanceOf[H2UnhandledStanza])
@@ -675,5 +676,12 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   })
   override def fromForumPost(i:ForumPost):H2ForumPost = Stopwatch.time("H2Serializer.fromForumPost",{
     incStanza(H2ForumPost.create,i,"forumPost").identity(i.identity).inResponseTo(i.inResponseTo.getOrElse("")).slideId(i.slideId).text(i.text)
+  })
+  def toWootOperation(i:H2WootOperation):WootOperation = Stopwatch.time("H2Serializer.toWootOperation",{
+    val c = decStanza(i)
+    WootOperation(c.author,c.timestamp,i.identity.get,i.wootMessage.get,i.wootArgs.get,i.slideId.get,c.audiences)
+  })
+  override def fromWootOperation(i:WootOperation):H2WootOperation = Stopwatch.time("H2Serializer.fromWootOperation",{
+    incStanza(H2WootOperation.create,i,"wootOperation").identity(i.identity).slideId(i.slideId).wootMessage(i.wootMessage).wootArgs(i.wootArgs)
   })
 }

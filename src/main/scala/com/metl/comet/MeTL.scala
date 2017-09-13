@@ -1161,6 +1161,14 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
           }
         })
       }
+      case wo:WootOperation => {
+        if (wo.author == username){
+          val roomId = wo.slideId
+          rooms.get((serverName,roomId)).map(r => {
+            r() ! LocalToServerMeTLStanza(wo)
+          })
+        }
+      }
       case fp:ForumPost => {
         if (fp.author == username){
           val roomId = fp.slideId

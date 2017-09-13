@@ -76,7 +76,8 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
         H2AccountRelationships,
         H2Slide,
         H2SessionRecord,
-        H2ForumPost
+        H2ForumPost,
+        H2WootOperation
       ):_*
     )
     // this starts our pool in advance
@@ -243,6 +244,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       case s:MeTLNumericGradeValue => Some(serializer.fromNumericGradeValue(s).room(jid))
       case s:MeTLBooleanGradeValue => Some(serializer.fromBooleanGradeValue(s).room(jid))
       case s:ForumPost => Some(serializer.fromForumPost(s).room(jid))
+      case s:WootOperation => Some(serializer.fromWootOperation(s).room(jid))
       case s:MeTLTextGradeValue => Some(serializer.fromTextGradeValue(s).room(jid))
       case s:MeTLUndeletedCanvasContent => Some(serializer.fromMeTLUndeletedCanvasContent(s).room(jid))
       case s:MeTLUnhandledStanza => Some(serializer.fromMeTLUnhandledStanza(s).room(jid))
@@ -268,7 +270,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     }
   })
   protected val identityPoolTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(5 * Globals.h2ThreadPoolMultiplier))
-  protected val stanzaTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(22 * Globals.h2ThreadPoolMultiplier))
+  protected val stanzaTaskSupport = new scala.collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(23 * Globals.h2ThreadPoolMultiplier))
   def getHistory(jid:String):History = Stopwatch.time("H2Interface.getHistory",{
     val newHistory = History(jid)
     var moveDeltas:List[MeTLMoveDelta] = Nil
@@ -327,6 +329,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
       () => {
         moveDeltas = H2MoveDelta.findAll(By(H2MoveDelta.room,jid)).map(s => serializer.toMeTLMoveDelta(s))
       },
+      () => H2WootOperation.findAll(By(H2WootOperation.room,jid)).foreach(s => newHistory.addStanza(serializer.toWootOperation(s))),
       () => H2QuizResponse.findAll(By(H2QuizResponse.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLQuizResponse(s))),
       () => H2VideoStream.findAll(By(H2VideoStream.room,jid)).toList.par.map(s => newHistory.addStanza(serializer.toMeTLVideoStream(s))).toList,
       () => H2Attendance.findAll(By(H2Attendance.room,jid)).foreach(s => newHistory.addStanza(serializer.toMeTLAttendance(s))),
