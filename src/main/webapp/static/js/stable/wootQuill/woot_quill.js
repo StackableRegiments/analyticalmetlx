@@ -5,10 +5,16 @@
   this.Woot.QuillAdapter = (function() {
     QuillAdapter.prototype.colors = ['rgba(139,0,139,0.4)', 'rgba(255,127,0,0.4)', 'rgba(238,44,44,0.4)', 'rgba(179,238,58,0.4)', 'rgba(28,134,238,0.4)'];
 
-    function QuillAdapter(io, editor_id, toolbar_id, authors_id,siteId,authorName) {
+    function QuillAdapter(io, editor_id, toolbar_id, authors_id,authorObject) {
       if (authors_id == null) {
         authors_id = null;
       }
+			// metl integration changes
+			var siteId = authorObject.id;
+			var authorId = authorObject.author;
+			var profile = authorObject.profile;
+			var renderProfileFunc = authorObject.renderProfile;
+
       this.contents = bind(this.contents, this);
       this.contentsInit = bind(this.contentsInit, this);
       this.ins = bind(this.ins, this);
@@ -45,13 +51,16 @@
         	this.authors.html(_.map(this.allAuthors,function(v,k){
 						return $("<div/>",{
 							style:"background-color:"+v.color,
-							text:k + (v.name == this.site_id ? " - me" : "")
+							text:v.name + (v.id == this.site_id ? " - me" : "")
 						});
 					}));
 				}
 			};
 			this.allAuthors[this.site_id] = {
-				name:this.site_id,
+				id:this.site_id,
+				authorId:authorId,
+				name:profile.name,
+				profile:profile,
 				color:this.color
 			};
 			this.reRenderAuthors();
@@ -61,6 +70,8 @@
         id: this.site_id,
         color: this.color,
         sender: this.site_id,
+				profile:profile,
+				authorId:authorId,
         state: null
       });
       this.editor.on('text-change', this.textChange);
@@ -129,9 +140,10 @@
     QuillAdapter.prototype.cursorCreate = function(op) {
       var author, el, k, len, ops, ref;
       author = op.id;
+			console.log("received cursor-create",op);
       if (!this.editor.getModule('multi-cursor').cursors[author]) {
         this.editor.getModule('authorship').addAuthor(author, op.color);
-        this.editor.getModule('multi-cursor').setCursor(author, this.editor.getLength() - 1, author, op.color);
+        this.editor.getModule('multi-cursor').setCursor(author, this.editor.getLength() - 1, op.profile.name, op.color);
         if (op.state && this.site.empty()) {
           this.site.string = op.state.string;
           this.site.chars_by_id = op.state.chars_by_id;
@@ -157,8 +169,10 @@
         if (this.site_id !== op.sender) {
           this.io.emit('woot_send', {
             type: 'cursor-create',
-            id: this.site_id,
-            color: this.color,
+            id: op.id,
+						authorId: op.authorId,
+						profile: op.profile,
+            color: op.color,
             sender: op.sender,
             state: {
               string: this.site.string,
@@ -168,8 +182,13 @@
           });
         }
         if (this.authors != null) {
-					this.allAuthors[author] = {name:author,color:op.color};
-          //return this.authors.append('<div style="background-color: ' + op.color + '">' + author + '</div>');
+					this.allAuthors[op.id] = {
+						id:op.id,
+						authorId:op.authorId,
+						name:op.profile.name,
+						color:op.color,
+						profile:op.profile,
+					};
         }
 				this.reRenderAuthors();
       }

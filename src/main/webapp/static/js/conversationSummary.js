@@ -37,9 +37,10 @@ var Conversation = (function(){
 					thumbnailImage.attr("src",sprintf("/thumbnail/%s",slide.id));
 					break;
 				default:
-					thumbnailImage.replace($("<div/>",{
+					thumbnailImage.after($("<div/>",{
 						text:slide.slideType + "_" +slide.id
 					}));
+					thumbnailImage.remove();
 					break;
 			}
 		};

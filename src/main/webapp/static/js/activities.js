@@ -893,12 +893,10 @@ var MeTLActivities = (function(){
 					}
 				},
 				emit:function(msg,data){
-//					console.log("wootAdaptor emit:",msg,data);
 					sendOperation(msg,data);
 				},
 				on:function(evName,func){
 					funcs[evName] = function(op){
-//						console.log("on "+evName+":",op);
 						func(op);
 					};
 				}
@@ -936,7 +934,13 @@ var MeTLActivities = (function(){
 					console.log("receivedHistory",history);
 					if (history !== undefined && "jid" in history && history.jid == slideId){
 						if (metlWootAdaptor !== undefined){
-							quillAdaptor = new Woot.QuillAdapter(metlWootAdaptor,"#"+quillId,"#"+toolbarId,"#"+authorId,author,author);
+							var siteId = author+"_"+_.uniqueId() +"_"+ new Date().getTime().toString();
+							quillAdaptor = new Woot.QuillAdapter(metlWootAdaptor,"#"+quillId,"#"+toolbarId,"#"+authorId,{
+								id:siteId,
+								author:author,
+								profile:renderAuthor(author),					 
+								renderProfile:renderAuthor
+							});
 							_.forEach(history.wootOperations,function(stanza){
 								metlWootAdaptor.receive(stanza.wootMessage == "woot_send" ? "woot_receive" : stanza.wootMessage,stanza.wootArgs);
 							});
