@@ -56,7 +56,7 @@
 					}));
 				}
 			};
-			this.allAuthors[this.site_id] = {
+			this.allAuthors[authorId] = {
 				id:this.site_id,
 				authorId:authorId,
 				name:profile.name,
@@ -142,8 +142,15 @@
       author = op.id;
 			console.log("received cursor-create",op);
       if (!this.editor.getModule('multi-cursor').cursors[author]) {
-        this.editor.getModule('authorship').addAuthor(author, op.color);
-        this.editor.getModule('multi-cursor').setCursor(author, this.editor.getLength() - 1, op.profile.name, op.color);
+				var authorProf = this.allAuthors[op.authorId];
+				var color = undefined;
+				if (authorProf !== undefined){
+					color = authorProf.color;
+				} else {
+					color = op.color;
+				}
+        this.editor.getModule('authorship').addAuthor(author, color);
+        this.editor.getModule('multi-cursor').setCursor(author, this.editor.getLength() - 1, op.profile.name, color);
         if (op.state && this.site.empty()) {
           this.site.string = op.state.string;
           this.site.chars_by_id = op.state.chars_by_id;
@@ -182,13 +189,15 @@
           });
         }
         if (this.authors != null) {
-					this.allAuthors[op.id] = {
-						id:op.id,
-						authorId:op.authorId,
-						name:op.profile.name,
-						color:op.color,
-						profile:op.profile,
-					};
+					if (!(op.authorId in this.allAuthors)){
+						this.allAuthors[op.authorId] = {
+							id:op.id,
+							authorId:op.authorId,
+							name:op.profile.name,
+							color:op.color,
+							profile:op.profile,
+						};
+					}
         }
 				this.reRenderAuthors();
       }
