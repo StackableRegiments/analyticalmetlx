@@ -893,12 +893,12 @@ var MeTLActivities = (function(){
 					}
 				},
 				emit:function(msg,data){
-					console.log("wootAdaptor emit:",msg,data);
+//					console.log("wootAdaptor emit:",msg,data);
 					sendOperation(msg,data);
 				},
 				on:function(evName,func){
 					funcs[evName] = function(op){
-						console.log("on "+evName+":",op);
+//						console.log("on "+evName+":",op);
 						func(op);
 					};
 				}
@@ -922,10 +922,10 @@ var MeTLActivities = (function(){
 		var quillAdaptor = undefined;
 			
 		return {
-			metlWootAdaptor:metlWootAdaptor,
 			activate:function(container){
 				container.append(rootElem);
 				MeTLBus.subscribe("receiveMeTLStanza",busId,function(stanza){
+					console.log("receivedStanza",stanza);
 					if (stanza !== undefined && "type" in stanza && stanza.type == "wootOperation"){
 						if (metlWootAdaptor !== undefined){
 							metlWootAdaptor.receive(stanza.wootMessage == "woot_send" ? "woot_receive" : stanza.wootMessage,stanza.wootArgs);
@@ -933,10 +933,11 @@ var MeTLActivities = (function(){
 					}
 				});
 				MeTLBus.subscribe("receiveHistory",busId,function(history){
+					console.log("receivedHistory",history);
 					if (history !== undefined && "jid" in history && history.jid == slideId){
 						if (metlWootAdaptor !== undefined){
 							quillAdaptor = new Woot.QuillAdapter(metlWootAdaptor,"#"+quillId,"#"+toolbarId,"#"+authorId,author,author);
-							_.forEach(history.wootOperations,function(op){
+							_.forEach(history.wootOperations,function(stanza){
 								metlWootAdaptor.receive(stanza.wootMessage == "woot_send" ? "woot_receive" : stanza.wootMessage,stanza.wootArgs);
 							});
 							quillAdaptor.editor.focus();

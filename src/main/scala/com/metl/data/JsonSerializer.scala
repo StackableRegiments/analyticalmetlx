@@ -1263,9 +1263,10 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
   override def toWootOperation(input:JValue):WootOperation = Stopwatch.time("JsonSerializer.toWootOperation",{
     input match {
       case j:JObject => {
+        warn("trying to parse woot operation: %s".format(j))
         val m = parseJObjForMeTLContent(j,config)
         val wootMessage = getStringByName(j,"wootMessage")
-        val wootArgs = getObjectByName(j,"wootArgs")
+        val wootArgs = (j \ "wootArgs")
         val identity = getStringByName(j,"identity")
         val slideId = getStringByName(j,"slide")
         WootOperation(m.author,m.timestamp,identity,wootMessage,compactRender(wootArgs),slideId,m.audiences)

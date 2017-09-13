@@ -55,7 +55,7 @@
       this.dirty = false;
       if (this.io != null) {
         this.io.on('woot_receive', this.receive);
-        setInterval(this.autosave, 10000);
+        //setInterval(this.autosave, 10000);
       }
     }
 
