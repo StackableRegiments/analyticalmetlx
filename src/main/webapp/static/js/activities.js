@@ -131,6 +131,9 @@ var MeTLActivities = (function(){
 					case "FORUM":
 						var activity = activateActivity(createForumActivity(bus,author,slide.id,author == slide.author),containerRoot);
 						break;
+					case "TEXTDOCUMENT":
+						var activity = activateActivity(createTextDocumentActivity(bus,author,slide.id),containerRoot);
+						break;
 					default:
 						break;
 				}
@@ -860,6 +863,80 @@ var MeTLActivities = (function(){
 			}
 		};	
 	};
+	var createTextDocumentActivity = function(bus,author,slideId){
+		var busId = "textDocumentActivity_"+new Date().getTime()+"_"+slideId + "_" +_.uniqueId();
+		var history = [];
+
+		// a rudimentary message bus which I'll later wire into the main bus.
+		var receiveOperation = function(msg,data){
+			history.push({msg:msg,data:data});
+			if (metlWootAdaptor !== undefined){
+				metlWootAdaptor.receive(msg,data);
+			}
+		}
+		var sendOperation = function(msg,data){
+			// it's looping back here.  This is where it would go up to MeTL, and the other point is where it would come back from MeTL.
+			if (msg == "woot_send"){
+				receiveOperation("woot_receive",data);
+			} else {
+				receiveOperation(msg,data);
+			}
+		}
+
+		var metlWootAdaptor = (function(){
+			var funcs = {};
+			return {
+				list:function(){
+					return funcs;
+				},
+				receive:function(msg,data){
+					var f = funcs[msg];
+					if (f !== undefined){
+						f(data);
+					}
+				},
+				emit:function(msg,data){
+					console.log("wootAdaptor emit:",msg,data);
+					sendOperation(msg,data);
+				},
+				on:function(evName,func){
+					funcs[evName] = function(op){
+						console.log("on "+evName+":",op);
+						func(op);
+					};
+				}
+			}
+		})();
+
+		var woot = undefined;
+
+		var rootElem = templates["textDocument"].clone();
+		var editorElem = rootElem.find(".quillEditor");
+		var toolbarElem = rootElem.find(".quillToolbar");
+		var authorElem = rootElem.find(".quillAuthors");
+		var uniqueId = _.uniqueId();
+		var toolbarId = "quillToolbar_"+uniqueId;
+		var quillId = "quillEditor_"+uniqueId;
+		var authorId = "quillAuthors_"+uniqueId;
+		editorElem.attr("id",quillId);
+		toolbarElem.attr("id",toolbarId);
+		authorElem.attr("id",authorId);
+
+		var quillAdaptor = undefined;
+			
+		return {
+			getHistory:function(){return history;},
+			metlWootAdaptor:metlWootAdaptor,
+			activate:function(container){
+				container.append(rootElem);
+				quillAdaptor = new Woot.QuillAdapter(metlWootAdaptor,"#"+quillId,"#"+toolbarId,"#"+authorId,author,author);
+				quillAdaptor.editor.focus();
+			},
+			deactivate:function(){
+				rootElem.empty();
+			}	
+		}
+	};
 	var createQuizActivity = function(bus,author,slideId,authoring){
 		var busId = "quizActivity_"+new Date().getTime()+"_"+slideId;
 		var history = {
@@ -999,6 +1076,9 @@ var MeTLActivities = (function(){
 			},	
 			quizAuthoring:function(slideId){
 				return activateActivity(createQuizActivity(bus,author,slideId,true),containerRoot);
+			},
+			textDocument:function(slideId){
+				return activateActivity(createTextDocumentActivity(bus,author,slideId),containerRoot);
 			}	
 		}
 	};
