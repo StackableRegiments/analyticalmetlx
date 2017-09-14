@@ -240,14 +240,87 @@ var MeTLActivities = (function(){
 		var textInputInvisibleHostSelector = rootElem.find(".textInputInvisibleHost");
 		var radarSelector = rootElem.find(".radar");
 
+		var fileUploadTemplate = rootElem.find(".fileImportTemplate").clone();
+		rootElem.find(".fileImportTemplate").remove();
+		var uploadDialogue = function(name,func){
+			var alertId = "fileUploadContainer" + _.uniqueId().toString();
+			var alertRoot = fileUploadTemplate.clone();
+			var alertContainer = $("<div/>",{
+				id:alertId
+			});
+			var jAlert = $.jAlert({
+				title:name,
+				width:"auto",
+				content:alertContainer[0].outerHTML,
+				onClose:function(){
+					// should it submit on close?  Probably not.  This would enable people to back out, using the close button.
+				}
+			});
+			var fileUploadId = "fileUpload_"+_.uniqueId();
+			var fileUploadElem = alertRoot.find(".fileUploadElem");// this is the input
+			alertRoot.find(".fileUploadElemLabel").attr("for",fileUploadId);
+			fileUploadElem.attr("id",fileUploadId);
+
+			fileUploadElem[0].addEventListener("change",function(e){
+				var reader = new FileReader();
+				reader.onload = function(readerE){
+					var originalSrc = readerE.target.result; // it's a dataURI;
+					func(originalSrc,function(){
+						jAlert.closeAlert();
+					},jAlert);
+				};
+
+				var files = e.target.files || e.dataTransfer.files;
+				var limit = files.length;
+				var file = files[0];
+				reader.readAsDataURL(file);
+			});
+			$("#"+alertId).html(alertRoot);
+		}
+		var withUploadedResource = function(name,withIdentity,processDataURI){
+			var now = Date.now();
+			uploadDialogue(name,function(dataURI,onComplete){
+				processDataURI(dataURI,function(dataUriResult){
+					console.log("about to upload",dataUriResult);
+					var identity = sprintf("%s_%s_%s_%s",now,author,slideId,_.uniqueId());
+					var url = sprintf("/uploadDataUri?jid=%s&filename=%s",encodeURIComponent(slideId),encodeURIComponent(identity));
+					$.ajax({
+						url:url,
+						type:"POST",
+						success:function(e){
+							var newIdentity = $(e).find("resourceUrl").text().trim();
+							withIdentity(newIdentity,dataUriResult);
+							onComplete();
+						},
+						error:function(e){
+							errorAlert("Upload failed.  This file cannot be uploaded, likely because it exceeds maximum file upload size.");
+							console.log("file upload failure",e);
+							onComplete();
+						},
+						data:dataUriResult.dataURI,
+						cache:false,
+						contentType:false,
+						processData:false
+					});
+				},function(error){
+					errorAlert("File processing failed");
+					console.log("file processing failure",error);
+					onComplete();
+				});
+			});
+		}
+
+		var encodeSlide = function(slide){
+			return btoa(slide);
+		};
 		var newCanvas = createInteractiveCanvas(boardElemSelector,selectAdornerSelector,textInputInvisibleHostSelector);
 		newCanvas.setImageSourceCalculationFunction(function(image){
 			var slide = image.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",image.slide,image.author) : image.slide;
-			return sprintf("/proxyImageUrl/%s?source=%s",urlEncodeSlideName(slide),encodeURIComponent(image.source.trim()));
+			return sprintf("/proxyImageUrl/%s?source=%s",encodeSlide(slide),encodeURIComponent(image.source.trim()));
 		});
 		newCanvas.setVideoSourceCalculationFunction(function(video){
 			var slide = video.privacy.toUpperCase() == "PRIVATE" ? sprintf("%s%s",video.slide,video.author) : video.slide;
-			return sprintf("/videoProxy/%s/%s",urlEncodeSlideName(slide),encodeURIComponent(video.identity.trim()));
+			return sprintf("/videoProxy/%s/%s",encodeSlide(slide),encodeURIComponent(video.identity.trim()));
 		});
 		newCanvas.onSelectionChanged(function(selected){
 				console.log("selected",selected);
@@ -659,8 +732,109 @@ var MeTLActivities = (function(){
 		rootElem.find("#panDown").on("click",function(){
 			newCanvas.getPanController().pan(0,panAmount);
 		});
-		rootElem.find("#insertImage").on("click",function(){
 
+		var clientSideImageResize = function(originalDataURI,onComplete,onError,maxPixelCount,quality){
+			try {
+				var renderCanvas = $("<canvas/>");
+				var img = new Image();
+				if (originalDataURI.indexOf("data") == 0){
+					// don't set crossOrigin on dataUrls
+				} else {
+					img.setAttribute("crossOrigin","Anonymous");	
+				}
+				img.onerror = function(e){
+					onError(e);
+				}
+				img.onload = function(e){
+					var width = img.width;
+					var height = img.height;
+					var w = width;
+					var h = height;
+					var currentTotal = w * h;
+					var q = quality !== undefined ? quality : 0.4;
+					var resized = false;
+					if (maxPixelCount !== undefined && maxPixelCount > 0){
+						while (currentTotal > maxPixelCount){
+							resized = true;
+							w = w * 0.8;
+							h = h * 0.8;
+							currentTotal = w * h;
+						}
+					}
+					renderCanvas.width = width;
+					renderCanvas.height = height;
+					renderCanvas.attr("width",width);
+					renderCanvas.attr("height",height);
+					renderCanvas.css({
+						width:px(width),
+						height:px(height)
+					});
+					var ctx = renderCanvas[0].getContext("2d");		
+					ctx.rect(0,0,width,height);
+					ctx.fillStyle = "white";
+					ctx.fill();
+					ctx.drawImage(img,0,0,width,height);
+					var resizedCanvas = renderCanvas[0];
+					if (resized){
+						resizedCanvas = multiStageRescale(renderCanvas[0],w,h);
+					}
+					var resultantDataURI = resizedCanvas.toDataURL("image/jpeg",q);
+					if (_.size(resultantDataURI) >= _.size(originalDataURI)){
+						var res = {
+							originalWidth:width,
+							originalHeight:height,
+							width:width,
+							height:height,
+							dataURI:originalDataURI
+						};
+						onComplete(res);
+					}	else {
+						var res = {
+							originalWidth:width,
+							originalHeight:height,
+							width:w,
+							height:h,
+							dataURI:resultantDataURI
+						};
+						onComplete(res);
+					}
+				}
+				img.src = originalDataURI;
+			} catch(e){
+				onError(e);
+			}
+		}
+
+		rootElem.find("#insertImage").on("click",function(){
+			withUploadedResource("insert image",function(identity,dataUriDescriptor){
+				var t = Date.now();
+				var imageId = sprintf("%s_%s_%s",author,t,_.uniqueId());
+				var width = dataUriDescriptor.width;
+				var height = dataUriDescriptor.height;
+				var x = 0;
+				var y = 0;
+				var bounds = [x,y,x + width, y + width];
+				var imageStanza = {
+					type:"image",
+					author:author,
+					timestamp:0,
+					slide:slideId,
+					source:identity,
+					bounds:bounds,
+					tag:"",
+					identity:imageId,
+					width:width,
+					height:height,
+					target:target,
+					privacy:Privacy.getPrivacy(),
+					x:x,
+					y:y,
+					audiences:[]
+				};
+				sendStanza(imageStanza);
+			},function(dataURI,onComplete,onError){
+				clientSideImageResize(dataURI,onComplete,onError,1024 * 1024,0.8);
+			});	
 		});
 		newCanvas.onStatistic(function(category,time,success,exception){
 			if ("HealthChecker" in window){

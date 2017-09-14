@@ -189,6 +189,7 @@ object StatelessHtml extends Stemmer with Logger {
     val room = MeTLXConfiguration.getRoom(slideJid,config.name,RoomMetaDataUtils.fromJid(slideJid))
     val history = room.getHistory
     val images = history.getImages
+    warn("looking for: [%s] [%s] in []".format(slideJid,url,images.map(_.source)))
     trace("room: %s\r\nhistory: %s\r\nimages: %s\r\nurl: %s".format(room,history,images,url))
     Full(images.find(_.source.exists(_ == url)).map(image => {
       trace("room: %s\r\nhistory: %s\r\nimages: %s\r\nimageOption: %s".format(room,history,images,image))

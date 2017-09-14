@@ -51,6 +51,55 @@ var rectFromTwoPoints = function(pointA,pointB,minimumSideLength){
 				height:height
 		};
 };
+var scaleCanvas = function(incCanvas,w,h){
+		if (w >= 1 && h >= 1){
+				var canvas = $("<canvas />");
+				canvas.width = w;
+				canvas.height = h;
+				canvas.attr("width",w);
+				canvas.attr("height",h);
+				canvas.css({
+						width:px(w),
+						height:px(h)
+				});
+				var ctx = canvas[0].getContext("2d");
+				ctx.drawImage(incCanvas,0,0,w,h);
+				return canvas[0];
+		} else {
+				return incCanvas;
+		}
+};
+
+var multiStageRescale = function(incCanvas,w,h,stanza){
+	stanza = stanza == undefined ? {} : stanza;
+	if (!("mipMap" in stanza)){
+		stanza.mipMap = {};
+	}
+	var mm = stanza.mipMap;
+	var sf = 0.5;
+	var iw = incCanvas.width;
+	var ih = incCanvas.height;
+	var save = true;
+
+	var iwSize = Math.floor(iw);
+	if (w >= 1 && iw >= 1 && w < iw){ //shrinking
+		var sdw = iw * sf;
+		var sdh = ih * sf;
+		if (sdw < w){
+			return incCanvas;
+		} else {
+			var key = Math.floor(sdw);
+			if (!(key in mm)){
+				var newCanvas = scaleCanvas(incCanvas,sdw,sdh);
+				mm[key] = newCanvas;
+			}
+			return multiStageRescale(mm[key],w,h,stanza);
+		}
+	} else {
+		return incCanvas;
+	}
+}
+
 
 var pica = function(value){
     return value / 128;
@@ -1208,59 +1257,6 @@ var createCanvasRenderer = function(canvasElem,textInputInvisibleHost){
 					screenHeight:screenHeight
 			};
 	};
-	var scaleCanvas = function(incCanvas,w,h){
-			if (w >= 1 && h >= 1){
-					var canvas = $("<canvas />");
-					canvas.width = w;
-					canvas.height = h;
-					canvas.attr("width",w);
-					canvas.attr("height",h);
-					canvas.css({
-							width:px(w),
-							height:px(h)
-					});
-					var ctx = canvas[0].getContext("2d");
-					ctx.drawImage(incCanvas,0,0,w,h);
-					return canvas[0];
-			} else {
-					return incCanvas;
-			}
-	};
-
-	var mipMappingEnabled = true;
-	var multiStageRescale = function(incCanvas,w,h,stanza){
-			if (mipMappingEnabled){
-					stanza = stanza == undefined ? {} : stanza;
-					if (!("mipMap" in stanza)){
-							stanza.mipMap = {};
-					}
-					var mm = stanza.mipMap;
-					var sf = 0.5;
-					var iw = incCanvas.width;
-					var ih = incCanvas.height;
-					var save = true;
-
-					var iwSize = Math.floor(iw);
-					if (w >= 1 && iw >= 1 && w < iw){ //shrinking
-							var sdw = iw * sf;
-							var sdh = ih * sf;
-							if (sdw < w){
-									return incCanvas;
-							} else {
-									var key = Math.floor(sdw);
-									if (!(key in mm)){
-											var newCanvas = scaleCanvas(incCanvas,sdw,sdh);
-											mm[key] = newCanvas;
-									}
-									return multiStageRescale(mm[key],w,h,stanza);
-							}
-					} else {
-							return incCanvas;
-					}
-			} else {
-					return incCanvas;
-			}
-	}
 
 	var drawImage = function(image){
 			try{
