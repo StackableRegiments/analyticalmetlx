@@ -24,7 +24,7 @@ var Conversations = (function(){
 		MeTLBus.subscribe("receiveProfiles","conversationSearch",function(newProfiles){
 			profiles = _.merge(profiles,newProfiles);
 		});
-		MeTLBus.subscribe("receiveProfile","conversationSearch",function(profile){
+		MeTLBus.subscribe("receiveCurrentProfile","conversationSearch",function(profile){
 			myProfile = profile;
 		});
     $(function(){
