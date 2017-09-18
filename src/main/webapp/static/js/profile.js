@@ -49,7 +49,7 @@ var Profiles = (function(){
 	MeTLBus.subscribe("receiveProfile","profiles",function(profile){ //invoked by Lift
 		receiveProfileFunc(profile);
 	});
-	MeTLBus.subscribe("receiveProfiles","profiles",function(profiles){ //invoked by Lift
+	MeTLBus.subscribe("receiveAvailableProfiles","profiles",function(profiles){ //invoked by Lift
 		console.log("updated profiles:",profiles);
 		receiveProfilesFunc(profiles);
 	});

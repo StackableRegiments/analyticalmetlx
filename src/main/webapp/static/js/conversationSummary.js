@@ -1,11 +1,18 @@
 var Conversation = (function(){
 		var profiles = {};
 		var receiveProfilesFunc = function(newProfiles){
-			profiles = _.merge(profiles,newProfiles);
+			_.forEach(newProfiles,function(prof){
+				profiles[prof.id] = prof;
+			});
+		};
+		var receiveCurrentProfileFunc = function(prof){
+			profile = prof;
+			reRender();
 		};
     var conversation = {};
     var userGroups = [];
     var username = "";
+		var profile = {};
     var getUsernameFunc = function(){
         return username;
     };
@@ -45,6 +52,15 @@ var Conversation = (function(){
 			}
 		};
 
+		var renderUser = function(userId){
+			var cand = profiles[userId];
+			if (cand !== undefined){
+				return cand.name;
+			} else {
+				return userId;
+			}
+		};
+
     var reRender = function(){
         slidesContainer.html(_.map(_.sortBy(conversation.slides,"index"),function(slide){
             var rootElem = slideTemplate.clone();
@@ -56,8 +72,9 @@ var Conversation = (function(){
             return rootElem;
         }));
 
+				console.log("profiles",profiles);
         $(".conversationJid").text(conversation.jid);
-        $(".conversationAuthor").text(conversation.author);
+        $(".conversationAuthor").text(renderUser(conversation.author));
         $(".conversationCreated").text(new Date(conversation.creation).toString());
         $(".conversationLastModified").text(new Date(conversation.lastAccessed).toString());
 
@@ -78,7 +95,8 @@ var Conversation = (function(){
 		MeTLBus.subscribe("receiveProfiles","editConversation",function(profiles){ //invoked by Lift
 			receiveProfilesFunc(profiles);
 		});
-		MeTLBus.subscribe("receiveProfile","editConversation",function(profile){ //invoked by Lift
+		MeTLBus.subscribe("receiveCurrentProfile","editConversation",function(profile){ //invoked by Lift
+			receiveCurrentProfileFunc(profile);
 		});
 
     $(function(){

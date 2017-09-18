@@ -153,6 +153,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
 
   protected lazy val RECEIVE_PROFILE = "receiveProfile"
   protected lazy val RECEIVE_PROFILES = "receiveProfiles"
+  protected lazy val RECEIVE_AVAILABLE_PROFILES = "receiveAvailableProfiles"
   protected lazy val RECEIVE_ACTIVE_PROFILE = "receiveCurrentProfile"
   protected lazy val RECEIVE_DEFAULT_PROFILE = "receiveDefaultProfile"
   protected lazy val RECEIVE_ACCOUNT = "receiveAccount"
@@ -314,8 +315,11 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
     def getProfile(profileAccessor:()=>Profile) = ClientSideFunction("getProfile",List(),(args) => {
       busArgs(RECEIVE_PROFILE,renderProfile(profileAccessor()))
     },Full(METLBUS_CALL))
-    def getProfiles = ClientSideFunction("getProfiles",List(),(args) => {
-      busArgs(RECEIVE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _)))
+    def getProfiles(pFunc:()=>List[Profile]) = ClientSideFunction("getProfiles",List(),(args) => {
+      busArgs(RECEIVE_PROFILES,JArray(pFunc().map(renderProfile _)))
+    },Full(METLBUS_CALL))
+    def getAvailableProfiles = ClientSideFunction("getAvailableProfiles",List(),(args) => {
+      busArgs(RECEIVE_AVAILABLE_PROFILES,JArray(Globals.availableProfiles.is.map(renderProfile _)))
     },Full(METLBUS_CALL))
     def getDefaultProfile = ClientSideFunction("getDefaultProfile",List(),(args) => {
       busArgs(RECEIVE_DEFAULT_PROFILE,JString(serverConfig.getProfileIds(Globals.currentAccount.name,Globals.currentAccount.provider)._2))
@@ -533,7 +537,7 @@ class MeTLAccount extends MeTLActorBase[MeTLAccount]{
   override def registerWith = MeTLAccountActorManager
   override lazy val functionDefinitions = List(
     CommonFunctions.getAccount,
-    CommonFunctions.getProfiles,
+    CommonFunctions.getAvailableProfiles,
     CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
     CommonFunctions.createProfile,
@@ -547,7 +551,7 @@ class MeTLAccount extends MeTLActorBase[MeTLAccount]{
   }
   override def render = OnLoad(
     Call("getAccount") &
-    Call("getProfiles") &
+    Call("getAvailableProfiles") &
     Call("getDefaultProfile") &
     Call("getActiveProfile")
   )
@@ -595,7 +599,7 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
   }
   override lazy val functionDefinitions = List(
     CommonFunctions.getAccount,
-    CommonFunctions.getProfiles,
+    CommonFunctions.getAvailableProfiles,
     CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
     CommonFunctions.getProfile(() => thisProfile),
@@ -615,7 +619,7 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
   }
   override def render = OnLoad(
     Call("getAccount") &
-    Call("getProfiles") &
+    Call("getAvailableProfiles") &
     Call("getDefaultProfile") &
     Call("getActiveProfile") &
     Call("getProfile") & 
@@ -666,7 +670,7 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
   }
   override lazy val functionDefinitions = List(
     CommonFunctions.getAccount,
-    CommonFunctions.getProfiles,
+    CommonFunctions.getAvailableProfiles,
     CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
     CommonFunctions.getUserGroups,
@@ -708,7 +712,7 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
     printSince("groups, serialized")
     val cmd = OnLoad(
       Call("getAccount") &
-      Call("getProfiles") &
+      Call("getAvailableProfiles") &
       Call("getDefaultProfile") &
       Call("getActiveProfile") &
       busCall(RECEIVE_USERNAME,jUsername) &
@@ -758,7 +762,7 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
   
   override lazy val functionDefinitions = List(
     CommonFunctions.getAccount,
-    CommonFunctions.getProfiles,
+    CommonFunctions.getAvailableProfiles,
     CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
     CommonFunctions.getProfilesById,
@@ -793,7 +797,7 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
     }).map(c => {
       warn("editConversationRendering")
       Call("getAccount") &
-      Call("getProfiles") &
+      Call("getAvailableProfiles") &
       Call("getDefaultProfile") &
       Call("getActiveProfile") &
       busCall(RECEIVE_USERNAME,jUsername) &
@@ -821,9 +825,11 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
 class ConversationSummaryActor extends MeTLActorBase[ConversationSummaryActor] {
   import com.metl.view._
   
+  protected var relevantProfiles = List.empty[Profile]
   override lazy val functionDefinitions = List(
     CommonFunctions.getAccount,
-    CommonFunctions.getProfiles,
+    CommonFunctions.getAvailableProfiles,
+    CommonFunctions.getProfiles(() => relevantProfiles),
     CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
     CommonFunctions.getProfilesById,
@@ -844,6 +850,9 @@ class ConversationSummaryActor extends MeTLActorBase[ConversationSummaryActor] {
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
       conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => refreshForeignRelationship(serverConfig.detailsOfConversation(jid.toString),username,userGroups))
+      conversation.foreach(c => {
+        relevantProfiles = (serverConfig.getProfiles(c.author) ::: relevantProfiles).distinct
+      })
     })
   }
 
@@ -851,6 +860,7 @@ class ConversationSummaryActor extends MeTLActorBase[ConversationSummaryActor] {
     OnLoad(conversation.filter(c => shouldDisplayConversation(c)).map(c => {
       Call("getAccount") &
       Call("getProfiles") &
+      Call("getAvailableProfiles") &
       Call("getDefaultProfile") &
       Call("getActiveProfile") &
       busCall(RECEIVE_USERNAME,jUsername) &
@@ -928,7 +938,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
 
   override lazy val functionDefinitions = List(
     CommonFunctions.getAccount,
-    CommonFunctions.getProfiles,
+    CommonFunctions.getAvailableProfiles,
     CommonFunctions.getProfile(() => profile),
     CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
@@ -1451,7 +1461,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
   protected var tokSlideSpecificSessions:scala.collection.mutable.HashMap[String,Option[TokBoxSession]] = new scala.collection.mutable.HashMap[String,Option[TokBoxSession]]()
   override lazy val functionDefinitions = List(
     CommonFunctions.getAccount,
-    CommonFunctions.getProfiles,
+    CommonFunctions.getAvailableProfiles,
     CommonFunctions.getDefaultProfile,
     CommonFunctions.getActiveProfile,
     CommonFunctions.getProfilesById,
@@ -2136,7 +2146,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       hideLoader
     }
     val baseCmds:JsCmd = Call("getAccount") &
-    Call("getProfiles") &
+    Call("getAvailableProfiles") &
     Call("getDefaultProfile") &
     Call("getActiveProfile")
 
