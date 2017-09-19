@@ -116,6 +116,7 @@ class CloneableHttpServletRequestWrapper(request:HttpServletRequest) extends Htt
     clonedReq.localAddr = request.getLocalAddr
     clonedReq.remoteAddr = request.getRemoteAddr
     clonedReq.servletPath = request.getServletPath
+    clonedReq.queryString = request.getQueryString
     clonedReq.headers = headers
     clonedReq.cookies = cookies
     clonedReq.attributes = attributes
@@ -601,7 +602,7 @@ class MultiAuthenticator(sessionStore:LowLevelSessionStore,authenticators:List[D
           val result = describedAuthenticator.handle(authSession,req,res,session)
           sessionStore.getValidSession(session) match {
             case Right(has@HealthyAuthSession(session,storedRequests,user,groups,attrs,prov)) => {
-              sessionStore.updateSession(authSession.session,s => has.copy(accountProvider = describedAuthenticator.prefix))//,username = "%s%s".format(describedAuthenticator.prefix,user)))
+              sessionStore.updateSession(authSession.session,s => has.copy(accountProvider = describedAuthenticator.prefix))
               true
             }
             case _ => result

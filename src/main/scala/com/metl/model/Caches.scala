@@ -9,22 +9,107 @@ import net.liftweb.util
 import net.sf.ehcache.config.PersistenceConfiguration
 
 class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit) {
-  def startup:Unit = {}
-  def shutdown:Unit = {}
-  protected lazy val conversationCache:scala.collection.mutable.Map[String,Conversation] = scala.collection.mutable.Map(config.getAllConversations.map(c => (c.jid,c)):_*)
-  protected lazy val slideCache:scala.collection.mutable.Map[String,Slide] = scala.collection.mutable.Map(config.getAllSlides.map(s => (s.id,s)):_*)
+  import org.apache.lucene.analysis.standard.StandardAnalyzer
+  import org.apache.lucene.document.{Document,Field,StringField,TextField,IntPoint,LongPoint}
+  import org.apache.lucene.index.{DirectoryReader,IndexReader,IndexWriter,IndexWriterConfig,Term}
+  import org.apache.lucene.queryparser.classic.{ParseException,QueryParser,MultiFieldQueryParser}
+  import org.apache.lucene.search.{IndexSearcher,Query,ScoreDoc,TopDocs}
+  import org.apache.lucene.store.{Directory,RAMDirectory}
+
+  protected val analyzer = new StandardAnalyzer()
+  protected val slideIndex:Directory = new RAMDirectory()
+  protected val conversationIndex:Directory = new RAMDirectory()
+  
+  protected val conversationCache:scala.collection.mutable.Map[String,Conversation] = scala.collection.mutable.Map()
+  protected val slideCache:scala.collection.mutable.Map[String,Slide] = scala.collection.mutable.Map()
+
+  protected def conversationDocFromSlide(c:Conversation):Document = {
+    val doc = new Document()
+    doc.add(new StringField("jid",c.jid,Field.Store.YES))
+    doc.add(new TextField("title",c.title,Field.Store.YES))
+    doc.add(new StringField("author",c.author,Field.Store.YES))
+    doc.add(new StringField("subject",c.subject,Field.Store.YES))
+    doc.add(new StringField("tag",c.tag,Field.Store.YES))
+    doc.add(new LongPoint("created",c.created))
+    doc.add(new LongPoint("lastModified",c.lastAccessed))
+    doc.add(new TextField("slides",c.slides.map(_.id).mkString(" "),Field.Store.YES))
+    doc
+  }
+  protected def slideDocFromSlide(s:Slide):Document = {
+    val doc = new Document()
+    doc.add(new StringField("id",s.id,Field.Store.YES))
+    doc.add(new StringField("author",s.author,Field.Store.YES))
+    doc.add(new IntPoint("index",s.index))
+    doc.add(new StringField("type",s.slideType,Field.Store.YES))
+    doc
+  }
+  protected def updateLuceneConversationCache(jid:String,c:Conversation,writer:Option[IndexWriter] = None) = {
+    val w = writer.getOrElse({
+      val indexConfig = new IndexWriterConfig(analyzer)
+      new IndexWriter(conversationIndex,indexConfig)
+    })
+    w.updateDocument(new Term("jid",c.jid),conversationDocFromSlide(c).getFields())
+    writer.getOrElse(w.close)
+  }
+  protected def updateLuceneSlideCache(id:String,s:Slide,writer:Option[IndexWriter] = None) = {
+    val w = writer.getOrElse({
+      val indexConfig = new IndexWriterConfig(analyzer)
+      new IndexWriter(slideIndex,indexConfig)
+    })
+    w.updateDocument(new Term("id",s.id),slideDocFromSlide(s).getFields())
+    writer.getOrElse(w.close)
+  }
+
+  def startup:Unit = {
+    config.getAllConversations.foreach(c => {
+      conversationCache.update(c.jid,c)
+    })
+    val cIndexConfig = new IndexWriterConfig(analyzer)
+    val cw = new IndexWriter(conversationIndex,cIndexConfig)
+    config.getAllConversations.foreach(c => updateLuceneConversationCache(c.jid,c,Some(cw)))
+    cw.close
+    config.getAllSlides.foreach(s => {
+      slideCache.update(s.id,s)
+    })
+    val sIndexConfig = new IndexWriterConfig(analyzer)
+    val sw = new IndexWriter(slideIndex,sIndexConfig)
+    config.getAllSlides.foreach(s => updateLuceneSlideCache(s.id,s,Some(sw)))
+    sw.close
+  }
+  def shutdown:Unit = {
+
+  }
 
   def getAllConversations:List[Conversation] = conversationCache.values.toList
   def getAllSlides:List[Slide] = slideCache.values.toList
   def getConversationsForSlideId(jid:String):List[String] = getAllConversations.flatMap(c => c.slides.find(_.id == jid).map(s => c.jid))
-  def searchForConversation(query:String):List[Conversation] = getAllConversations.filter(c => c.title.toLowerCase.trim.contains(query.toLowerCase.trim) || c.author.toLowerCase.trim == query.toLowerCase.trim).toList
+  protected val searchableConversationFields = Array("title","jid","author","subject","tag","slides")
+  def searchForConversation(query:String):List[Conversation] = {
+    val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
+    println("query [%s] => %s".format(query,q))
+    val reader = DirectoryReader.open(conversationIndex)
+    val searcher = new IndexSearcher(reader)
+    val topDocs:TopDocs = searcher.search(q,conversationCache.size)
+    val hits:Array[ScoreDoc] = topDocs.scoreDocs
+    val results = hits.toList.flatMap(h => {
+      val d:Document = searcher.doc(h.doc)
+      val jid:String = d.get("jid")
+      val res = conversationCache.get(jid)
+      println("found: [%s] %s => %s\r\n%s\r\n%s".format(jid,h.doc,searcher.explain(q,h.doc),d,res))
+      res
+    })
+    results
+    //getAllConversations.filter(c => c.title.toLowerCase.trim.contains(query.toLowerCase.trim) || c.author.toLowerCase.trim == query.toLowerCase.trim).toList
+  }
   def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def detailsOfConversation(jid:String):Conversation = conversationCache.get(jid).getOrElse(Conversation.empty)
   def detailsOfSlide(jid:String):Slide = slideCache.get(jid).getOrElse(Slide.empty)
   protected def updateConversation(c:Conversation):Conversation = {
     conversationCache.update(c.jid,c)
+    updateLuceneConversationCache(c.jid,c)
     c.slides.foreach(s => {
       slideCache.update(s.id,s)
+      updateLuceneSlideCache(s.id,s)
     })
     onConversationDetailsUpdated(c)
     c
@@ -47,6 +132,7 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   def updateConversation(jid:String,conversation:Conversation):Conversation = updateConversation(config.updateConversation(jid,conversation))
   def getConversationsByAuthor(author:String):List[Conversation] = getAllConversations.filter(_.author == author)
 }
+
 class ThemeCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
   protected val themesByAuthorCache = new ManagedCache[String,List[Theme]]("themesByAuthor",(author) => config.getThemesByAuthor(author),cacheConfig)
   protected val authorsByThemeCache = new ManagedCache[String,List[String]]("authorByTheme",(theme) => config.getAuthorsByTheme(theme),cacheConfig)
@@ -306,8 +392,9 @@ class CachingServerAdaptor(
     themeCache.foreach(_.startup)
   }
   override def isReady:Boolean = {
+    val ready = super.isReady
     initialize
-    super.isReady
+    ready
   }
 
 }
@@ -406,3 +493,4 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   }
   def shutdown = cache.dispose()
 }
+
