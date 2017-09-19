@@ -281,7 +281,7 @@ var Conversations = (function(){
         var author = details.author;
         var q = getQueryFunc();
 				var cfr = details.foreignRelationship;
-        return ((q == author || title.indexOf(q) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+        return (/*(q == author || title.indexOf(q) > -1) && */(subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
 						var fr = g.foreignRelationship;
             var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;

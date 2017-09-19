@@ -727,7 +727,7 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
   }
   protected def serialize(id:ImportDescription):JValue = Extraction.decompose(id)
 
-  protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q || in.jid.toString == q).getOrElse(false)
+  protected def queryApplies(in:Conversation):Boolean = true//query.map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q || in.jid.toString == q).getOrElse(false)
 
   override protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[OrgUnit],includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,me,myGroups,includeDeleted) && queryApplies(c)
 
