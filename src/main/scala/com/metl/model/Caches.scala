@@ -7,6 +7,7 @@ import Helpers._
 import _root_.net.liftweb.common._
 import net.liftweb.util
 import net.sf.ehcache.config.PersistenceConfiguration
+import com.metl.liftAuthenticator.OrgUnit
 
 class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit) {
   import org.apache.lucene.analysis.standard.StandardAnalyzer
@@ -23,7 +24,7 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   protected val conversationCache:scala.collection.mutable.Map[String,Conversation] = scala.collection.mutable.Map()
   protected val slideCache:scala.collection.mutable.Map[String,Slide] = scala.collection.mutable.Map()
 
-  protected def conversationDocFromSlide(c:Conversation):Document = {
+  protected def conversationDocFromConversation(c:Conversation):Document = {
     val doc = new Document()
     doc.add(new StringField("jid",c.jid,Field.Store.YES))
     doc.add(new TextField("title",c.title,Field.Store.YES))
@@ -48,7 +49,7 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
       val indexConfig = new IndexWriterConfig(analyzer)
       new IndexWriter(conversationIndex,indexConfig)
     })
-    w.updateDocument(new Term("jid",c.jid),conversationDocFromSlide(c).getFields())
+    w.updateDocument(new Term("jid",c.jid),conversationDocFromConversation(c).getFields())
     writer.getOrElse(w.close)
   }
   protected def updateLuceneSlideCache(id:String,s:Slide,writer:Option[IndexWriter] = None) = {
@@ -100,6 +101,17 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
     })
     results
     //getAllConversations.filter(c => c.title.toLowerCase.trim.contains(query.toLowerCase.trim) || c.author.toLowerCase.trim == query.toLowerCase.trim).toList
+  }
+  def shouldDisplayConversation(c:Conversation,includeDeleted:Boolean = false,user:String = Globals.currentUser.is,groups:List[OrgUnit] = Globals.getUserGroups):Boolean = {
+    com.metl.snippet.Metl.shouldDisplayConversation(c,includeDeleted,user,groups)
+  }
+  def shouldModifyConversation(user:String,c:Conversation):Boolean = {
+    com.metl.snippet.Metl.shouldModifyConversation(user,c)
+  }
+  def queryAppliesToConversation(query:String,c:Conversation):Boolean = {
+    val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
+    val doc:Document = conversationDocFromConversation(c)
+    true // still working out how to apply the query to filter a single conversation without spinning up a fresh lucene, which seems dumb
   }
   def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def detailsOfConversation(jid:String):Conversation = conversationCache.get(jid).getOrElse(Conversation.empty)
