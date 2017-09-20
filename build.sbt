@@ -55,6 +55,7 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
+  val luceneVersion = "6.6.1"
   Seq(
     //"org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
     //"org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
@@ -125,10 +126,11 @@ libraryDependencies ++= {
     //for AWS API Gateway interaction
 	  "com.amazonaws" % "aws-java-sdk-opensdk" % "1.11.72",
     //for apache lucene for conversationSearch
-    "org.apache.lucene" % "lucene-core" % "6.6.1",
-    "org.apache.lucene" % "lucene-queries" % "6.6.1",
-    "org.apache.lucene" % "lucene-queryparser" % "6.6.1",
-    "org.apache.lucene" % "lucene-analyzers-common" % "6.6.1"
+    "org.apache.lucene" % "lucene-core" % luceneVersion,
+    "org.apache.lucene" % "lucene-queries" % luceneVersion,
+    "org.apache.lucene" % "lucene-queryparser" % luceneVersion,
+    "org.apache.lucene" % "lucene-analyzers-common" % luceneVersion,
+    "org.apache.lucene" % "lucene-memory" % luceneVersion
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 

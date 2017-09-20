@@ -12,7 +12,8 @@ import com.metl.liftAuthenticator.OrgUnit
 class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit) {
   import org.apache.lucene.analysis.standard.StandardAnalyzer
   import org.apache.lucene.document.{Document,Field,StringField,TextField,IntPoint,LongPoint}
-  import org.apache.lucene.index.{DirectoryReader,IndexReader,IndexWriter,IndexWriterConfig,Term}
+  import org.apache.lucene.index.{DirectoryReader,IndexReader,IndexWriter,IndexWriterConfig,Term,IndexableField}
+  import org.apache.lucene.index.memory.MemoryIndex
   import org.apache.lucene.queryparser.classic.{ParseException,QueryParser,MultiFieldQueryParser}
   import org.apache.lucene.search.{IndexSearcher,Query,ScoreDoc,TopDocs}
   import org.apache.lucene.store.{Directory,RAMDirectory}
@@ -86,21 +87,26 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   def getConversationsForSlideId(jid:String):List[String] = getAllConversations.flatMap(c => c.slides.find(_.id == jid).map(s => c.jid))
   protected val searchableConversationFields = Array("title","jid","author","subject","tag","slides")
   def searchForConversation(query:String):List[Conversation] = {
+    val results = internalSearchForConversation(query)
+    /*
+    results.foreach(r => {
+      queryAppliesToConversation(query,r)
+    })
+    */
+    results
+  }
+  protected def internalSearchForConversation(query:String):List[Conversation] = {
     val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
     println("query [%s] => %s".format(query,q))
     val reader = DirectoryReader.open(conversationIndex)
     val searcher = new IndexSearcher(reader)
     val topDocs:TopDocs = searcher.search(q,conversationCache.size)
     val hits:Array[ScoreDoc] = topDocs.scoreDocs
-    val results = hits.toList.flatMap(h => {
+    hits.toList.flatMap(h => {
       val d:Document = searcher.doc(h.doc)
       val jid:String = d.get("jid")
-      val res = conversationCache.get(jid)
-      println("found: [%s] %s => %s\r\n%s\r\n%s".format(jid,h.doc,searcher.explain(q,h.doc),d,res))
-      res
+      conversationCache.get(jid)
     })
-    results
-    //getAllConversations.filter(c => c.title.toLowerCase.trim.contains(query.toLowerCase.trim) || c.author.toLowerCase.trim == query.toLowerCase.trim).toList
   }
   def shouldDisplayConversation(c:Conversation,includeDeleted:Boolean = false,user:String = Globals.currentUser.is,groups:List[OrgUnit] = Globals.getUserGroups):Boolean = {
     com.metl.snippet.Metl.shouldDisplayConversation(c,includeDeleted,user,groups)
@@ -109,9 +115,44 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
     com.metl.snippet.Metl.shouldModifyConversation(user,c)
   }
   def queryAppliesToConversation(query:String,c:Conversation):Boolean = {
-    val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
-    val doc:Document = conversationDocFromConversation(c)
-    true // still working out how to apply the query to filter a single conversation without spinning up a fresh lucene, which seems dumb
+
+    def time[A](a: => A):Tuple2[Long,A] = {
+      val start = new java.util.Date().getTime
+      val res = a
+      (new java.util.Date().getTime - start,a)
+    }
+    val res1 = time({
+      val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
+      val doc:Document = conversationDocFromConversation(c)
+      val index = new RAMDirectory()
+      val indexConfig = new IndexWriterConfig(analyzer)
+      val writer = new IndexWriter(index,indexConfig)
+      writer.addDocument(doc)
+      writer.close()
+      val reader = DirectoryReader.open(index)
+      val searcher = new IndexSearcher(reader)
+      val topDocs:TopDocs = searcher.search(q,1)
+      val hits:Array[ScoreDoc] = topDocs.scoreDocs
+      hits.length > 0
+    })
+    val res2 = time({
+      internalSearchForConversation(query).exists(_.jid == c.jid)
+    })
+    println("queryAppliesToConv: %s && %s".format(res1,res2)) 
+    res1._2 && res2._2
+/*
+    val index = new MemoryIndex()
+    doc.getFields.toArray.toList.foreach{
+      case field:TextField => index.addField(field.name(),field.stringValue(),analyzer)
+      case field:StringField => index.addField(field.name(),field.stringValue(),analyzer)
+      case field:LongPoint => index.addField(field.name(),field.numericValue().longValue().toString(),analyzer)
+      case field:IntPoint => index.addField(field.name(),field.numericValue().intValue().toString(),analyzer)
+      //case field:IndexableField => index.addField(field.name(),field.tokenStream(analyzer,new org.apache.lucene.analysis.standard.StandardTokenizer()))
+      case _ => {}
+    }
+    val isMatch:Float = index.search(q)
+    isMatch > 0
+*/
   }
   def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def detailsOfConversation(jid:String):Conversation = conversationCache.get(jid).getOrElse(Conversation.empty)
