@@ -60,6 +60,9 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def getConversationsForSlideId(jid:String):List[String]
   def searchForConversation(query:String):List[Conversation]
   def searchForConversationByCourse(courseId:String):List[Conversation]
+  def searchForSlide(query:String):List[Slide]
+  def queryAppliesToConversation(query:String,conversation:Conversation):Boolean
+  def queryAppliesToSlide(query:String,slide:Slide):Boolean
   def detailsOfConversation(jid:String):Conversation
   def detailsOfSlide(jid:String):Slide
   def createConversation(title:String,author:String):Conversation

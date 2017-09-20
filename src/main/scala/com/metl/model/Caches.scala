@@ -125,12 +125,6 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
       conversationCache.get(jid)
     })
   }
-  def shouldDisplayConversation(c:Conversation,includeDeleted:Boolean = false,user:String = Globals.currentUser.is,groups:List[OrgUnit] = Globals.getUserGroups):Boolean = {
-    com.metl.snippet.Metl.shouldDisplayConversation(c,includeDeleted,user,groups)
-  }
-  def shouldModifyConversation(user:String,c:Conversation):Boolean = {
-    com.metl.snippet.Metl.shouldModifyConversation(user,c)
-  }
   def queryAppliesToConversation(query:String,c:Conversation):Boolean = {
     // this is presently performing a performance check against this stuff, just to validate speed.
     /*
