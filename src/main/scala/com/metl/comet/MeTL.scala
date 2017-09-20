@@ -169,6 +169,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
   protected lazy val RECEIVE_CONVERSATION_DETAILS = "receiveConversationDetails"
   protected lazy val RECEIVE_SLIDE_DETAILS = "receiveSlideDetails"
   protected lazy val RECEIVE_NEW_CONVERSATION_DETAILS = "receiveNewConversationDetails"
+  protected lazy val RECEIVE_REMOVED_CONVERSATION_JIDS = "receiveRemovedConversationJids"
   protected lazy val RECEIVE_QUERY = "receiveQuery"
 
   protected lazy val RECEIVE_METL_STANZA = "receiveMeTLStanza"
@@ -750,8 +751,15 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
       trace("receivedCommand: %s".format(c))
       val newJid = c.commandParameters(0)
       val newConv = refreshForeignRelationship(serverConfig.detailsOfConversation(newJid.toString),username,userGroups)
+      val inOldListing = listing.exists(_.jid == newJid)
       listing = filterConversations(List(newConv) ::: listing.filterNot(_.jid == newConv.jid))
-      partialUpdate(busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+      val inNewListing = listing.exists(_.jid == newJid)
+      (inOldListing,inNewListing) match {
+        case (true,true) => partialUpdate(busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+        case (true,false) => partialUpdate(busCall(RECEIVE_REMOVED_CONVERSATION_JIDS,JArray(List(JString(newJid)))))
+        case (false,true) => partialUpdate(busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
+        case (false,false) => {}
+      }
     }
     case _ => warn("MeTLConversationSearchActor received unknown message")
   }

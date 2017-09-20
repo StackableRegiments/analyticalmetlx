@@ -422,6 +422,12 @@ var Conversations = (function(){
         currentImports = importDescs;
         reRender();
     });
+		MeTLBus.subscribe("receiveRemovedConversationJids","conversationSearch",function(jids){
+			currentSearchResults = _.filter(currentSearchResults,function(conv){
+				return !(_.find(jids,function(jid){return conv.jid == jid;}));
+			});
+			reRender();	
+		});
     var updateQueryParams = function(){
         // console.log("updating queryparams:",getQueryFunc(),window.location);
         if (window != undefined && "history" in window && "pushState" in window.history){
