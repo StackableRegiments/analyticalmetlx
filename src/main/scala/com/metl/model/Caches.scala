@@ -28,13 +28,13 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   protected def conversationDocFromConversation(c:Conversation):Document = {
     val doc = new Document()
     doc.add(new StringField("jid",c.jid,Field.Store.YES))
-    doc.add(new TextField("title",c.title,Field.Store.YES))
-    doc.add(new StringField("author",c.author,Field.Store.YES))
-    doc.add(new StringField("subject",c.subject,Field.Store.YES))
-    doc.add(new StringField("tag",c.tag,Field.Store.YES))
+    doc.add(new TextField("title",c.title,Field.Store.NO))
+    doc.add(new StringField("author",c.author,Field.Store.NO))
+    doc.add(new StringField("subject",c.subject,Field.Store.NO))
+    doc.add(new StringField("tag",c.tag,Field.Store.NO))
     doc.add(new LongPoint("created",c.created))
     doc.add(new LongPoint("lastModified",c.lastAccessed))
-    doc.add(new TextField("slides",c.slides.map(_.id).mkString(" "),Field.Store.YES))
+    doc.add(new TextField("slides",c.slides.map(_.id).mkString(" "),Field.Store.NO))
     doc
   }
   protected def slideDocFromSlide(s:Slide):Document = {
@@ -63,12 +63,31 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   }
 
   def startup:Unit = {
+    /*
+    val testConvs = Range(0,50000).map(i => {
+      val author = "testAuthor_"+scala.util.Random.nextInt(10).toString()
+      val now = new java.util.Date().getTime
+      val testJid = "testJid_"+ i.toString() + "_" + nextFuncName
+      Conversation(author,now,Range(0,scala.util.Random.nextInt(50)).map(si => {
+        val slideId = testJid + "_testSlideId_"+si.toString()
+        Slide(author,slideId,si)
+      }).toList,nextFuncName,nextFuncName,testJid,nextFuncName,now,Permissions.default)
+    })
+    testConvs.foreach(c => {
+      conversationCache.update(c.jid,c)
+    })
+    */
     config.getAllConversations.foreach(c => {
       conversationCache.update(c.jid,c)
     })
     val cIndexConfig = new IndexWriterConfig(analyzer)
     val cw = new IndexWriter(conversationIndex,cIndexConfig)
     config.getAllConversations.foreach(c => updateLuceneConversationCache(c.jid,c,Some(cw)))
+    /*
+    testConvs.foreach(c => {
+      updateLuceneConversationCache(c.jid,c,Some(cw))
+    })
+    */
     cw.close
     config.getAllSlides.foreach(s => {
       slideCache.update(s.id,s)
@@ -88,11 +107,9 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   protected val searchableConversationFields = Array("title","jid","author","subject","tag","slides")
   def searchForConversation(query:String):List[Conversation] = {
     val results = internalSearchForConversation(query)
-    /*
     results.foreach(r => {
       queryAppliesToConversation(query,r)
     })
-    */
     results
   }
   protected def internalSearchForConversation(query:String):List[Conversation] = {
@@ -115,13 +132,16 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
     com.metl.snippet.Metl.shouldModifyConversation(user,c)
   }
   def queryAppliesToConversation(query:String,c:Conversation):Boolean = {
-
+    // this is presently performing a performance check against this stuff, just to validate speed.
+    /*
     def time[A](a: => A):Tuple2[Long,A] = {
       val start = new java.util.Date().getTime
       val res = a
       (new java.util.Date().getTime - start,a)
     }
+    
     val res1 = time({
+      */
       val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
       val doc:Document = conversationDocFromConversation(c)
       val index = new RAMDirectory()
@@ -134,12 +154,14 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
       val topDocs:TopDocs = searcher.search(q,1)
       val hits:Array[ScoreDoc] = topDocs.scoreDocs
       hits.length > 0
+      /*
     })
     val res2 = time({
       internalSearchForConversation(query).exists(_.jid == c.jid)
     })
     println("queryAppliesToConv: %s && %s".format(res1,res2)) 
     res1._2 && res2._2
+    */
 /*
     val index = new MemoryIndex()
     doc.getFields.toArray.toList.foreach{
