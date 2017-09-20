@@ -401,6 +401,11 @@ var Conversations = (function(){
         currentSearchResults.push(details);
         reRender();
     });
+		MeTLBus.subscribe("receiveConversationSearchResults","conversationSearch",function(results){
+			console.log("received search results:",results);
+			currentSearchResults = _.map(results,function(r){ return r.conversation; });
+			reRender();
+		});
     MeTLBus.subscribe("receiveConversations","conversationSearch",function(results){
         // console.log("receiveSearchResults",results);
         currentSearchResults = results;

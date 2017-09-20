@@ -45,7 +45,7 @@ object SystemRestHelper extends RestHelper with Stemmer with Logger {
     case Req(List("api","v1","conversation","search",query),_,_) =>
       () => Stopwatch.time("SystemRestHelper.search", {
         val server = ServerConfiguration.default
-        val x = <conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
+        val x = <conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c._1))}</conversations>
         Full(S.params("format") match {
           case List("json") => JsonResponse(net.liftweb.json.Xml.toJson(x))
           case _ => XmlResponse(x)
@@ -140,16 +140,41 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       () => Stopwatch.time("MeTLRestHelper.details", StatelessHtml.setUserOptions(r))
     case r @ Req(List("getUserOptions"),_,_) =>
       () => Stopwatch.time("MeTLRestHelper.details", StatelessHtml.getUserOptions(r))
-    case Req("search" :: Nil,_,_) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.search", {
-        val query = S.params("query").head
+    case r@Req("search" :: Nil,_,_) =>
+      () => Stopwatch.time("metlstatefulresthelper.search", {
+        val query = r.params("query").head
         val server = ServerConfiguration.default
-        val x = <conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
-        Full(S.params("format") match {
+        val x = <conversations>{server.searchForConversation(query).map(c => serializer.fromConversation(c._1))}</conversations>
+        Full(r.params("format") match {
           case List("json") => JsonResponse(net.liftweb.json.Xml.toJson(x))
           case _ => XmlResponse(x)
         })
       })
+    case r@Req("searchWithExplanation" :: Nil,_,_) => 
+      () => Stopwatch.time("metlstatefulresthelper.searchWithExplanation", {
+        val query = r.params("query").head
+        val server = ServerConfiguration.default
+        def explanationToXml(in:SearchExplanation):scala.xml.NodeSeq = {
+          <explanation>
+            <query>{in.query}</query>
+            <documentId>{in.documentId}</documentId>
+            <isMatch>{in.isMatch}</isMatch>
+            <score>{in.score}</score>
+            <description>{in.description}</description>
+            <subExplanations>{in.subResults.map(sr => explanationToXml(sr))}</subExplanations>
+          </explanation>
+        }
+        val x = <conversations>{server.searchForConversation(query).map(c => <result>{
+          explanationToXml(c._2)
+        }{
+          <conversation>{serializer.fromConversation(c._1)}</conversation>
+        }</result>)}</conversations>
+        Full(r.params("format") match {
+          case List("json") => JsonResponse(net.liftweb.json.Xml.toJson(x))
+          case _ => XmlResponse(x)
+        })
+      })
+
     case Req("render" :: jid :: height :: width :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.render",  {
       val server = ServerConfiguration.default
       val room = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid))

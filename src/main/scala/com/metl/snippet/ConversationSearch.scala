@@ -25,7 +25,7 @@ package com.metl.snippet
       else{
         val serverConfig = ServerConfiguration.default
         var results = serverConfig.searchForConversation(query)
-        SetHtml("searchResults",results.map(c=> <a href={"/board?conversationJid=%s".format(c.jid)}>{c.title}</a>))
+        SetHtml("searchResults",results.map(c=> <a href={"/board?conversationJid=%s".format(c._1.jid)}>{c._1.title}</a>))
       }
     })
   }

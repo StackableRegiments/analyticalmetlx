@@ -118,7 +118,7 @@ object StatelessHtml extends Stemmer with Logger {
     describeUser(Globals.assumeContainerSession)
   })
   def loadSearch(query:String,config:ServerConfiguration = ServerConfiguration.default):Node = Stopwatch.time("StatelessHtml.loadSearch", {
-    <conversations>{config.searchForConversation(query).map(c => serializer.fromConversation(c))}</conversations>
+    <conversations>{config.searchForConversation(query).map(c => serializer.fromConversation(c._1))}</conversations>
   })
 
   def getThemesByAuthor(author:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getThemesByAuthor",{
@@ -131,7 +131,7 @@ object StatelessHtml extends Stemmer with Logger {
     Full(JsonResponse(JArray(config.getConversationsByTheme(theme).map(JString(_))),200))
   })
   def getConversationsByQuery(query:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getConversationsByQuery",{
-    Full(JsonResponse(JArray(config.searchForConversation(query).map(c => jsonSerializer.fromConversation(c))),200))
+    Full(JsonResponse(JArray(config.searchForConversation(query).map(c => jsonSerializer.fromConversation(c._1))),200))
   })
   def getAuthorsByTheme(theme:String):Box[LiftResponse] = Stopwatch.time("StatelessHtml.getAuthorsByTheme",{
     Full(JsonResponse(JArray(config.getAuthorsByTheme(theme).map(JString(_))),200))
@@ -478,7 +478,7 @@ object StatelessHtml extends Stemmer with Logger {
     }
   }
   def describeConversations(query:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversations(%s)".format(query),{
-    describeConversationByList(config.searchForConversation(query),format)
+    describeConversationByList(config.searchForConversation(query).map(_._1),format)
   })
   def describeConversation(jid:String,format:Box[String]=Full("xml"))():Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeConversation(%s)".format(jid),{
     describeConversationByList(List(config.detailsOfConversation(jid)).filterNot(c => c == Conversation.empty),format)

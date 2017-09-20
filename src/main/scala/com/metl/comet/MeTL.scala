@@ -161,6 +161,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
   protected lazy val RECEIVE_THEMES = "receiveThemes"
   protected lazy val RECEIVE_ATTENDANCES = "receiveAttendances"
   protected lazy val RECEIVE_CONVERSATIONS = "receiveConversations"
+  protected lazy val RECEIVE_CONVERSATION_SEARCH_RESULTS = "receiveConversationSearchResults"
 
   protected lazy val RECEIVE_USERNAME = "receiveUsername"
   protected lazy val RECEIVE_IMPORT_DESCRIPTION = "receiveImportDescription"
@@ -398,9 +399,15 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
     def searchForConversation(updateListing:List[Conversation] => List[Conversation],queryUpdater:Option[String]=>Option[String]):ClientSideFunction = ClientSideFunction("getSearchResult",List("query"),(args) => {
       val q = getArgAsString(args(0)).toLowerCase.trim
       queryUpdater(Some(q))
-      val foundConversations = serverConfig.searchForConversation(q)
+      val searchResults = serverConfig.searchForConversation(q)
+      val foundConversations = searchResults.map(_._1)
       val results = updateListing(foundConversations)
-      busArgs(RECEIVE_CONVERSATIONS,serializer.fromConversationList(results))
+      busArgs(RECEIVE_CONVERSATION_SEARCH_RESULTS,JArray(searchResults.map(sr => {
+        JObject(List(
+          JField("conversation",serializer.fromConversation(sr._1)),
+          JField("explanation",Extraction.decompose(sr._2))
+        ))
+      })))
     },Full(METLBUS_CALL))
     def createConversation(listingAccessor:() => List[Conversation],updateListing:List[Conversation] => List[Conversation]):ClientSideFunction = ClientSideFunction("createConversation",List("title"),(args) => {
       val title = getArgAsString(args(0))
@@ -689,7 +696,7 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
     query = Some(name.flatMap(nameString => {
       com.metl.snippet.Metl.getQueryFromName(nameString)
     }).getOrElse(Globals.currentProfile.is.name.toLowerCase.trim))
-    listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q),true))
+    listing = query.toList.flatMap(q => filterConversations(serverConfig.searchForConversation(q).map(_._1),true))
     warn("localSetup for ConversationSearch [%s] (%sms)".format(name,new Date().getTime - s))
     super.localSetup
   }

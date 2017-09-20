@@ -27,7 +27,7 @@ class SearchSnippet extends Logger {
   def searchResults = {
     query.is match {
       case q:String if (q.length > 0) => {
-        val rawResults = server.searchForConversation(q)
+        val rawResults = server.searchForConversation(q).map(_._1)
         val results = rawResults.filter(c => c.shouldDisplayFor(Globals.currentUser.is,Globals.getUserGroups.map(eg => eg.name)))
         trace("rawResults: %s\r\nfilteredResults: %s".format(rawResults,results))
         "#searchResultsMetaTerms *" #> Text(q) & {

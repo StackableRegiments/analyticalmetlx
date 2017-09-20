@@ -180,6 +180,8 @@ object Group {
   def empty = Group("","",0,Nil,Nil)
 }
 
+case class SearchExplanation(query:String,documentId:String,isMatch:Boolean,score:Float,description:String,subResults:List[SearchExplanation])
+
 case class Conversation(author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:String,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil,foreignRelationship:Option[ForeignRelationship] = None) extends MeTLData(audiences) with Logger{
   def delete = copy(subject="deleted",lastAccessed=new Date().getTime)//Conversation(author,new Date().getTime,slides,"deleted",tag,jid,title,created,permissions,blackList,audiences)
   def rename(newTitle:String) = copy(title=newTitle,lastAccessed = new Date().getTime)

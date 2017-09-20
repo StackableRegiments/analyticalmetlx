@@ -15,7 +15,7 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
   import org.apache.lucene.index.{DirectoryReader,IndexReader,IndexWriter,IndexWriterConfig,Term,IndexableField}
   import org.apache.lucene.index.memory.MemoryIndex
   import org.apache.lucene.queryparser.classic.{ParseException,QueryParser,MultiFieldQueryParser}
-  import org.apache.lucene.search.{IndexSearcher,Query,ScoreDoc,TopDocs,TermQuery,BooleanQuery,BooleanClause}
+  import org.apache.lucene.search.{IndexSearcher,Query,ScoreDoc,TopDocs,TermQuery,BooleanQuery,BooleanClause,PhraseQuery,Explanation}
   import org.apache.lucene.store.{Directory,RAMDirectory}
 
   protected val analyzer = new StandardAnalyzer()
@@ -29,6 +29,34 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
     val q = rewriteQuery(query,new MultiFieldQueryParser(defaultFields.toArray,analyzer).parse(query))
     println("built query: [%s]".format(q))
     q
+  }
+
+  protected def enrichQuery(query:Query,transforms:Map[String,Tuple3[Query,String,List[Tuple2[String,Int]]] => Query]):Query = {
+    query match {
+      case tq:TermQuery => {
+        val fieldName = tq.getTerm.field()
+        val fieldValue = tq.getTerm.text()
+        val fieldValues = List((fieldValue,0))
+        transforms.get(fieldName).map(f => f((tq,fieldName,fieldValues))).getOrElse(tq)
+      }
+      case pq:PhraseQuery => {
+        val terms = pq.getTerms.toList
+        val fieldName = terms.head.field()
+        val fieldValues = terms.map(_.text()).zipWithIndex.toList
+        transforms.get(fieldName).map(f => f((pq,fieldName,fieldValues))).getOrElse(pq)
+      }
+      case bq:BooleanQuery => {
+        val nbq = new BooleanQuery.Builder()
+        bq.clauses().toArray.toList.foreach{
+          case bc:BooleanClause => {
+            nbq.add(new BooleanClause(enrichQuery(bc.getQuery,transforms),bc.getOccur))
+          }
+          case _ => {}
+        }
+        nbq.build()
+      }
+      case other => other
+    }
   }
 
   def addItems(items:List[A]):Unit = {
@@ -46,7 +74,7 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
     writer.getOrElse(w.close)
 
   }
-  def search(query:String,maxResults:Int):List[String] = {
+  def search(query:String,maxResults:Int):List[Tuple2[String,SearchExplanation]] = {
     val q = queryBuilder(query)
     val reader = DirectoryReader.open(index)
     val searcher = new IndexSearcher(reader)
@@ -54,8 +82,14 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
     val hits:Array[ScoreDoc] = topDocs.scoreDocs
     hits.toList.map(h => {
       val d:Document = searcher.doc(h.doc)
-      d.get(keyTerm)
+      val docId = d.get(keyTerm)
+      (docId,toSearchExplanation(query,docId,searcher.explain(q,h.doc)))
     })
+  }
+  protected def toSearchExplanation(queryString:String,docId:String,in:Explanation):SearchExplanation = {
+    SearchExplanation(queryString,docId,in.isMatch(),in.getValue(),in.getDescription(),in.getDetails().toArray.toList.map(d => {
+      toSearchExplanation(queryString,docId,d)
+    }))
   }
   def queryAppliesTo(query:String,item:A):Boolean = {
     val q = queryBuilder(query)
@@ -79,15 +113,32 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   import org.apache.lucene.search.{Query,TermQuery,BooleanQuery,BooleanClause}
 
   object ConversationIndex extends LuceneIndex[Conversation]("jid",List("title","subject","tag")){
-    /*
     override protected def rewriteQuery(queryString:String,query:Query) = {
-      val b = new BooleanQuery.Builder()
-      val supp = new TermQuery(new Term("author","dave"))
-      b.add(new BooleanClause(query,BooleanClause.Occur.SHOULD))
-      b.add(new BooleanClause(supp,BooleanClause.Occur.SHOULD))
-      b.build()
+      enrichQuery(query,Map(
+        "author" -> {(qTup:Tuple3[Query,String,List[Tuple2[String,Int]]]) => {
+          val query = qTup._1
+          val fieldName = qTup._2
+          val fieldValues = qTup._3
+          val b = new BooleanQuery.Builder()
+          b.add(new BooleanClause(query,BooleanClause.Occur.SHOULD))
+          fieldValues.foreach(fv => {
+            b.add(new BooleanClause(new TermQuery(new Term("profile",fv._1)),BooleanClause.Occur.SHOULD))
+          })
+          b.build()
+        }},
+        "subject" -> {(qTup:Tuple3[Query,String,List[Tuple2[String,Int]]]) => {
+          val query = qTup._1
+          val fieldName = qTup._2
+          val fieldValues = qTup._3
+          val b = new BooleanQuery.Builder()
+          b.add(new BooleanClause(query,BooleanClause.Occur.SHOULD))
+          fieldValues.foreach(fv => {
+            b.add(new BooleanClause(new TermQuery(new Term("course",fv._1)),BooleanClause.Occur.SHOULD))
+          })
+          b.build()
+        }}
+      ))
     }
-    */
     override protected def getKey(in:Conversation):String = in.jid
     override protected def toDoc(c:Conversation):Document = {
       val doc = new Document()
@@ -134,11 +185,11 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   def getAllConversations:List[Conversation] = conversationCache.values.toList
   def getAllSlides:List[Slide] = slideCache.values.toList
   def getConversationsForSlideId(jid:String):List[String] = getAllConversations.flatMap(c => c.slides.find(_.id == jid).map(s => c.jid))
-  def searchForConversation(query:String):List[Conversation] = {
-    ConversationIndex.search(query,conversationCache.size).flatMap(jid => conversationCache.get(jid))
+  def searchForConversation(query:String):List[Tuple2[Conversation,SearchExplanation]] = {
+    ConversationIndex.search(query,conversationCache.size).flatMap(jidAndExplanation => conversationCache.get(jidAndExplanation._1).map(c => (c,jidAndExplanation._2)))
   }
-  def searchForSlide(query:String):List[Slide] = {
-    SlideIndex.search(query,slideCache.size).flatMap(id => slideCache.get(id))
+  def searchForSlide(query:String):List[Tuple2[Slide,SearchExplanation]] = {
+    SlideIndex.search(query,slideCache.size).flatMap(idAndExplanation => slideCache.get(idAndExplanation._1).map(s => (s,idAndExplanation._2)))
   }
   def queryAppliesToConversation(query:String,c:Conversation):Boolean = {
     ConversationIndex.queryAppliesTo(query,c)

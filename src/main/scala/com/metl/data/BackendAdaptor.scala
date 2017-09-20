@@ -58,9 +58,9 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def getAllConversations:List[Conversation]
   def getAllSlides:List[Slide]
   def getConversationsForSlideId(jid:String):List[String]
-  def searchForConversation(query:String):List[Conversation]
+  def searchForConversation(query:String):List[Tuple2[Conversation,SearchExplanation]]
   def searchForConversationByCourse(courseId:String):List[Conversation]
-  def searchForSlide(query:String):List[Slide]
+  def searchForSlide(query:String):List[Tuple2[Slide,SearchExplanation]]
   def queryAppliesToConversation(query:String,conversation:Conversation):Boolean
   def queryAppliesToSlide(query:String,slide:Slide):Boolean
   def detailsOfConversation(jid:String):Conversation
@@ -213,9 +213,9 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def getAllConversations = List.empty[Conversation]
   override def getAllSlides:List[Slide] = List.empty[Slide]
   override def getConversationsForSlideId(jid:String):List[String] = List.empty[String]
-  override def searchForConversation(query:String) = List.empty[Conversation]
+  override def searchForConversation(query:String) = List.empty[Tuple2[Conversation,SearchExplanation]]
   override def searchForConversationByCourse(courseId:String) = List.empty[Conversation]
-  override def searchForSlide(query:String):List[Slide] = List.empty[Slide]
+  override def searchForSlide(query:String) = List.empty[Tuple2[Slide,SearchExplanation]]
   override def queryAppliesToConversation(query:String,conversation:Conversation):Boolean = false
   override def queryAppliesToSlide(query:String,slide:Slide):Boolean = false
   override def detailsOfConversation(jid:String) = Conversation.empty
@@ -271,7 +271,7 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def getConversationsForSlideId(jid:String):List[String] = sc.getConversationsForSlideId(jid)
   override def searchForConversation(query:String) = sc.searchForConversation(query)
   override def searchForConversationByCourse(courseId:String) = sc.searchForConversationByCourse(courseId)
-  override def searchForSlide(query:String):List[Slide] = sc.searchForSlide(query)
+  override def searchForSlide(query:String) = sc.searchForSlide(query)
   override def queryAppliesToConversation(query:String,conversation:Conversation):Boolean = sc.queryAppliesToConversation(query,conversation)
   override def queryAppliesToSlide(query:String,slide:Slide):Boolean = sc.queryAppliesToSlide(query,slide)
   override def detailsOfConversation(jid:String) = sc.detailsOfConversation(jid)

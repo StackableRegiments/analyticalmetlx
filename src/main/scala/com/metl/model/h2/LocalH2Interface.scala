@@ -427,8 +427,12 @@ GROUP BY maintable.%s""".format(
   }
   
   override def getConversationsForSlideId(jid:String):List[String] = getAllConversations.filter(_.slides.exists(_.id == jid)).map(_.jid).toList
-  def searchForConversation(query:String):List[Conversation] = getAllConversations.filter(c => queryAppliesToConversation(query,c)).toList
-  def searchForSlide(query:String):List[Slide] = getAllSlides.filter(s => queryAppliesToSlide(query,s))
+  def searchForConversation(query:String):List[Tuple2[Conversation,SearchExplanation]] = getAllConversations.filter(c => queryAppliesToConversation(query,c)).toList.map(c => {
+    (c,SearchExplanation(query,c.jid,true,1.0f,"",Nil))
+  })
+  def searchForSlide(query:String):List[Tuple2[Slide,SearchExplanation]] = getAllSlides.filter(s => queryAppliesToSlide(query,s)).map(s => {
+    (s,SearchExplanation(query,s.id,true,1.0f,"",Nil))
+  })
   def queryAppliesToSlide(query:String,slide:Slide) = slide.id == query || slide.author == query
   def queryAppliesToConversation(query:String,conversation:Conversation) = conversation.title.toLowerCase.trim.contains(query.toLowerCase.trim) || conversation.author.toLowerCase.trim == query.toLowerCase.trim
   def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList

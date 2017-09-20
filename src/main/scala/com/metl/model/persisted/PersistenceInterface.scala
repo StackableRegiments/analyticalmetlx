@@ -14,8 +14,8 @@ abstract class PersistenceInterface(config:ServerConfiguration) {
   def getAllConversations:List[Conversation]
   def getAllSlides:List[Slide]
   def getConversationsForSlideId(jid:String):List[String] = List.empty[String]
-  def searchForConversation(query:String):List[Conversation]
-  def searchForSlide(query:String):List[Slide]
+  def searchForConversation(query:String):List[Tuple2[Conversation,SearchExplanation]]
+  def searchForSlide(query:String):List[Tuple2[Slide,SearchExplanation]]
   def queryAppliesToConversation(query:String,conversation:Conversation):Boolean
   def queryAppliesToSlide(query:String,slide:Slide):Boolean
   def searchForConversationByCourse(courseId:String):List[Conversation]
