@@ -405,6 +405,7 @@ var Conversations = (function(){
 			console.log("received search results:",results);
 			currentSearchResults = _.map(results,function(r){ return r.conversation; });
 			reRender();
+			permitOneSearch();
 		});
     MeTLBus.subscribe("receiveConversations","conversationSearch",function(results){
         // console.log("receiveSearchResults",results);
