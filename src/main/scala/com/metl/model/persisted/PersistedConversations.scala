@@ -6,7 +6,10 @@ import com.metl.utils._
 class PersistedConversations(config:ServerConfiguration,dbInterface:PersistenceInterface,onConversationDetailsUpdated:Conversation=>Unit) extends ConversationRetriever(config,onConversationDetailsUpdated) {
   override def getAllConversations = dbInterface.getAllConversations
   override def getAllSlides = dbInterface.getAllSlides
-  override def search(query:String) = dbInterface.searchForConversation(query)
+  override def searchForConversation(query:String) = dbInterface.searchForConversation(query)
+  override def searchForSlide(query:String) = dbInterface.searchForSlide(query)
+  override def queryAppliesToConversation(query:String,conversation:Conversation) = dbInterface.queryAppliesToConversation(query,conversation)
+  override def queryAppliesToSlide(query:String,slide:Slide) = dbInterface.queryAppliesToSlide(query,slide)
   override def searchByCourse(courseId:String) = dbInterface.searchForConversationByCourse(courseId)
   override def getConversationsForSlideId(jid:String):List[String] = dbInterface.getConversationsForSlideId(jid)
   override def detailsOf(jid:String) = dbInterface.detailsOfConversation(jid)

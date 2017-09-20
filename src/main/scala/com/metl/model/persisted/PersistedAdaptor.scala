@@ -21,8 +21,11 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def getHistory(jid:String) = history.getMeTLHistory(jid)
   override def getAllConversations = conversations.getAllConversations
   override def getAllSlides = conversations.getAllSlides
-  override def searchForConversation(query:String) = conversations.search(query)
+  override def searchForConversation(query:String) = conversations.searchForConversation(query)
   override def searchForConversationByCourse(courseId:String) = conversations.searchByCourse(courseId)
+  override def searchForSlide(query:String) = conversations.searchForSlide(query)
+  override def queryAppliesToSlide(query:String,slide:Slide) = conversations.queryAppliesToSlide(query,slide)
+  override def queryAppliesToConversation(query:String,conversation:Conversation) = conversations.queryAppliesToConversation(query,conversation)
   override def detailsOfConversation(jid:String) = conversations.detailsOf(jid)
   override def detailsOfSlide(jid:String) = conversations.detailsOfSlide(jid)
   override def getConversationsForSlideId(jid:String) = conversations.getConversationsForSlideId(jid)

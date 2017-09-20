@@ -14,7 +14,10 @@ abstract class ConversationRetriever(config:ServerConfiguration,onConversationDe
 	lazy val isReady:Boolean = true
 	def getAllConversations:List[Conversation]
 	def getAllSlides:List[Slide]
-	def search(query:String):List[Conversation]
+	def searchForConversation(query:String):List[Conversation]
+	def searchForSlide(query:String):List[Slide]
+  def queryAppliesToConversation(query:String,conversation:Conversation):Boolean
+  def queryAppliesToSlide(query:String,slide:Slide):Boolean
 	def searchByCourse(courseId:String):List[Conversation]
 	def detailsOf(jid:String):Conversation 
   def detailsOfSlide(jid:String):Slide
@@ -34,7 +37,10 @@ abstract class ConversationRetriever(config:ServerConfiguration,onConversationDe
 object EmptyConversations extends ConversationRetriever(EmptyBackendAdaptor,(c) => {}){
 	override def getAllConversations = List.empty[Conversation]
 	override def getAllSlides = List.empty[Slide]
-	override def search(query:String) = List.empty[Conversation]
+	override def searchForConversation(query:String) = List.empty[Conversation]
+	override def searchForSlide(query:String) = List.empty[Slide]
+  override def queryAppliesToConversation(query:String,conversation:Conversation) = false
+  override def queryAppliesToSlide(query:String,slide:Slide) = false
 	override def searchByCourse(courseId:String) = List.empty[Conversation]
 	override def detailsOf(jid:String) = Conversation.empty
   override def detailsOfSlide(jid:String):Slide = Slide.empty

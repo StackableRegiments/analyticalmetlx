@@ -40,9 +40,9 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   protected def slideDocFromSlide(s:Slide):Document = {
     val doc = new Document()
     doc.add(new StringField("id",s.id,Field.Store.YES))
-    doc.add(new StringField("author",s.author,Field.Store.YES))
+    doc.add(new StringField("author",s.author,Field.Store.NO))
     doc.add(new IntPoint("index",s.index))
-    doc.add(new StringField("type",s.slideType,Field.Store.YES))
+    doc.add(new StringField("type",s.slideType,Field.Store.NO))
     doc
   }
   protected def updateLuceneConversationCache(jid:String,c:Conversation,writer:Option[IndexWriter] = None) = {
@@ -63,31 +63,12 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   }
 
   def startup:Unit = {
-    /*
-    val testConvs = Range(0,50000).map(i => {
-      val author = "testAuthor_"+scala.util.Random.nextInt(10).toString()
-      val now = new java.util.Date().getTime
-      val testJid = "testJid_"+ i.toString() + "_" + nextFuncName
-      Conversation(author,now,Range(0,scala.util.Random.nextInt(50)).map(si => {
-        val slideId = testJid + "_testSlideId_"+si.toString()
-        Slide(author,slideId,si)
-      }).toList,nextFuncName,nextFuncName,testJid,nextFuncName,now,Permissions.default)
-    })
-    testConvs.foreach(c => {
-      conversationCache.update(c.jid,c)
-    })
-    */
     config.getAllConversations.foreach(c => {
       conversationCache.update(c.jid,c)
     })
     val cIndexConfig = new IndexWriterConfig(analyzer)
     val cw = new IndexWriter(conversationIndex,cIndexConfig)
     config.getAllConversations.foreach(c => updateLuceneConversationCache(c.jid,c,Some(cw)))
-    /*
-    testConvs.foreach(c => {
-      updateLuceneConversationCache(c.jid,c,Some(cw))
-    })
-    */
     cw.close
     config.getAllSlides.foreach(s => {
       slideCache.update(s.id,s)
@@ -106,15 +87,7 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   def getConversationsForSlideId(jid:String):List[String] = getAllConversations.flatMap(c => c.slides.find(_.id == jid).map(s => c.jid))
   protected val searchableConversationFields = Array("title","jid","author","subject","tag","slides")
   def searchForConversation(query:String):List[Conversation] = {
-    val results = internalSearchForConversation(query)
-    results.foreach(r => {
-      queryAppliesToConversation(query,r)
-    })
-    results
-  }
-  protected def internalSearchForConversation(query:String):List[Conversation] = {
     val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
-    println("query [%s] => %s".format(query,q))
     val reader = DirectoryReader.open(conversationIndex)
     val searcher = new IndexSearcher(reader)
     val topDocs:TopDocs = searcher.search(q,conversationCache.size)
@@ -125,50 +98,46 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
       conversationCache.get(jid)
     })
   }
+  protected val searchableSlideFields = Array("id","author","index","type")
+  def searchForSlide(query:String):List[Slide] = {
+    val q:Query = new MultiFieldQueryParser(searchableSlideFields,analyzer).parse(query)
+    val reader = DirectoryReader.open(slideIndex)
+    val searcher = new IndexSearcher(reader)
+    val topDocs:TopDocs = searcher.search(q,slideCache.size)
+    val hits:Array[ScoreDoc] = topDocs.scoreDocs
+    hits.toList.flatMap(h => {
+      val d:Document = searcher.doc(h.doc)
+      val id:String = d.get("id")
+      slideCache.get(id)
+    })
+  }
   def queryAppliesToConversation(query:String,c:Conversation):Boolean = {
-    // this is presently performing a performance check against this stuff, just to validate speed.
-    /*
-    def time[A](a: => A):Tuple2[Long,A] = {
-      val start = new java.util.Date().getTime
-      val res = a
-      (new java.util.Date().getTime - start,a)
-    }
-    
-    val res1 = time({
-      */
-      val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
-      val doc:Document = conversationDocFromConversation(c)
-      val index = new RAMDirectory()
-      val indexConfig = new IndexWriterConfig(analyzer)
-      val writer = new IndexWriter(index,indexConfig)
-      writer.addDocument(doc)
-      writer.close()
-      val reader = DirectoryReader.open(index)
-      val searcher = new IndexSearcher(reader)
-      val topDocs:TopDocs = searcher.search(q,1)
-      val hits:Array[ScoreDoc] = topDocs.scoreDocs
-      hits.length > 0
-      /*
-    })
-    val res2 = time({
-      internalSearchForConversation(query).exists(_.jid == c.jid)
-    })
-    println("queryAppliesToConv: %s && %s".format(res1,res2)) 
-    res1._2 && res2._2
-    */
-/*
-    val index = new MemoryIndex()
-    doc.getFields.toArray.toList.foreach{
-      case field:TextField => index.addField(field.name(),field.stringValue(),analyzer)
-      case field:StringField => index.addField(field.name(),field.stringValue(),analyzer)
-      case field:LongPoint => index.addField(field.name(),field.numericValue().longValue().toString(),analyzer)
-      case field:IntPoint => index.addField(field.name(),field.numericValue().intValue().toString(),analyzer)
-      //case field:IndexableField => index.addField(field.name(),field.tokenStream(analyzer,new org.apache.lucene.analysis.standard.StandardTokenizer()))
-      case _ => {}
-    }
-    val isMatch:Float = index.search(q)
-    isMatch > 0
-*/
+    val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
+    val doc:Document = conversationDocFromConversation(c)
+    val index = new RAMDirectory()
+    val indexConfig = new IndexWriterConfig(analyzer)
+    val writer = new IndexWriter(index,indexConfig)
+    writer.addDocument(doc)
+    writer.close()
+    val reader = DirectoryReader.open(index)
+    val searcher = new IndexSearcher(reader)
+    val topDocs:TopDocs = searcher.search(q,1)
+    val hits:Array[ScoreDoc] = topDocs.scoreDocs
+    hits.length > 0
+  }
+  def queryAppliesToSlide(query:String,s:Slide):Boolean = {
+    val q:Query = new MultiFieldQueryParser(searchableSlideFields,analyzer).parse(query)
+    val doc:Document = slideDocFromSlide(s)
+    val index = new RAMDirectory()
+    val indexConfig = new IndexWriterConfig(analyzer)
+    val writer = new IndexWriter(index,indexConfig)
+    writer.addDocument(doc)
+    writer.close()
+    val reader = DirectoryReader.open(index)
+    val searcher = new IndexSearcher(reader)
+    val topDocs:TopDocs = searcher.search(q,1)
+    val hits:Array[ScoreDoc] = topDocs.scoreDocs
+    hits.length > 0
   }
   def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def detailsOfConversation(jid:String):Conversation = conversationCache.get(jid).getOrElse(Conversation.empty)
@@ -410,6 +379,9 @@ class CachingServerAdaptor(
   override def getConversationsForSlideId(jid:String) = conversationCache.map(_.getConversationsForSlideId(jid)).getOrElse(config.getConversationsForSlideId(jid))
   override def searchForConversation(query:String) = conversationCache.map(_.searchForConversation(query)).getOrElse(config.searchForConversation(query))
   override def searchForConversationByCourse(courseId:String) = conversationCache.map(_.searchForConversationByCourse(courseId)).getOrElse(config.searchForConversationByCourse(courseId))
+  override def searchForSlide(query:String) = conversationCache.map(_.searchForSlide(query)).getOrElse(config.searchForSlide(query))
+  override def queryAppliesToConversation(query:String,conversation:Conversation) = conversationCache.map(_.queryAppliesToConversation(query,conversation)).getOrElse(config.queryAppliesToConversation(query,conversation))
+  override def queryAppliesToSlide(query:String,slide:Slide) = conversationCache.map(_.queryAppliesToSlide(query,slide)).getOrElse(config.queryAppliesToSlide(query,slide))
   override def detailsOfConversation(jid:String) = conversationCache.map(_.detailsOfConversation(jid)).getOrElse(config.detailsOfConversation(jid))
   override def detailsOfSlide(jid:String) = conversationCache.map(_.detailsOfSlide(jid)).getOrElse(config.detailsOfSlide(jid))
   override def createConversation(title:String,author:String) = conversationCache.map(_.createConversation(title,author)).getOrElse(config.createConversation(title,author))
@@ -495,7 +467,7 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
     .logging(false)
     .copyOnRead(false)
     .copyOnWrite(false)
-//    .sizeOfPolicy(sizeOfPolicy)
+    .sizeOfPolicy(sizeOfPolicy)
   cacheConfig.timeToLiveSeconds.foreach(s => cacheConfiguration.timeToLiveSeconds(s))
   val cache = new Cache(cacheConfiguration)
   cm.addCache(cache)
