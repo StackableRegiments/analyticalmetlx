@@ -368,10 +368,10 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   }
   def toSlide(i:H2Slide):Slide = {
     val audiences = parseAudiences(i.audiences.get)
-    Slide(i.author.get,i.jid.get,0,i.defaultHeight.get,i.defaultWidth.get,true,i.slideType.get,Nil,audiences)
+    Slide(i.author.get,i.jid.get,0,i.creation.get,i.modified.get,i.defaultHeight.get,i.defaultWidth.get,true,i.slideType.get,Nil,audiences)
   }
   override def fromSlide(i:Slide):H2Slide = {
-    incMeTLContent(H2Slide.create,i,"slide").author(i.author).creation(new java.util.Date().getTime).jid(i.id).slideType(i.slideType).defaultWidth(i.defaultWidth).defaultHeight(i.defaultHeight).modified(new java.util.Date().getTime)
+    incMeTLContent(H2Slide.create,i,"slide").author(i.author).creation(i.created).jid(i.id).slideType(i.slideType).defaultWidth(i.defaultWidth).defaultHeight(i.defaultHeight).modified(i.modified)
   }
   def toConversation(i:H2Conversation):Conversation = {
     val fr = for {
@@ -428,7 +428,17 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
           GroupSet(groupSetId,groupSetLoc,groupingStrategy,groups,parseAudiences(groupSetAudiences))
         }).toList
     } yield {
-      (sid,Slide("",sid,index,0,0,exposed,"",groupSets,Nil))
+      (sid,Slide(
+        author="",
+        id=sid,
+        index=index,
+        created=0L,
+        modified=0L,
+        exposed=exposed,
+        slideType="",
+        groupSet=groupSets,
+        audiences=Nil
+      ))
     }):_*)
 
     val slideRecords = H2Slide.findAll(ByList(H2Slide.jid,structure.keys.toList))
@@ -437,7 +447,19 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
       slideId = sr.jid.get
       cs <- structure.get(slideId)
     } yield {
-      Slide(sr.author.get,slideId,cs.index,sr.defaultHeight.get,sr.defaultWidth.get,cs.exposed,sr.slideType.get,cs.groupSet,parseAudiences(sr.audiences.get))
+      Slide(
+        author=sr.author.get,
+        id=slideId,
+        index=cs.index,
+        created=sr.creation.get,
+        modified=sr.modified.get,
+        defaultHeight=sr.defaultHeight.get,
+        defaultWidth=sr.defaultWidth.get,
+        exposed=cs.exposed,
+        slideType=sr.slideType.get,
+        groupSet=cs.groupSet,
+        audiences=parseAudiences(sr.audiences.get)
+      )
     }).toList
     val audiences = parseAudiences(i.audiences.get)
     Conversation(i.author.get,i.lastAccessed.get,slides,i.subject.get,i.tag.get,i.jid.get,i.title.get,i.creation.get,permissionsFromString(i.permissions.get),stringToStrings(i.blackList.get).toList,parseAudiences(i.audiences.get),fr)
@@ -506,12 +528,14 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
       case e:Exception => Nil
     }
   }
+  /*
   def slidesToString(ls:List[Slide]):String = {
     "<slides>%s</slides>".format(ls.map(s => xmlSerializer.fromSlide(s).toString).mkString(""))
   }
   def slidesFromString(s:String):List[Slide] = {
     (scala.xml.XML.loadString(s) \\ "slide").map(sl => xmlSerializer.toSlide(sl)).toList
   }
+  */
   def permissionsToString(p:Permissions):String = {
     xmlSerializer.fromPermissions(p).toString
   }

@@ -651,10 +651,12 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val index = getIntByName(input,"index")
     val defHeight = getIntByName(input,"defaultHeight")
     val defWidth = getIntByName(input,"defaultWidth")
+    val created = getLongByName(input,"created")
+    val modified = getLongByName(input,"modified")
     val exposed = getBooleanByName(input,"exposed")
     val slideType = getStringByName(input,"type")
     val groupSets = (input \ "groupSet").map(gs => toGroupSet(gs)).toList
-    Slide(author,id,index,defHeight,defWidth,exposed,slideType,groupSets,m.audiences)
+    Slide(author,id,index,created,modified,defHeight,defWidth,exposed,slideType,groupSets,m.audiences)
   })
   override def fromSlide(input:Slide):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSlide",{
     metlXmlToXml("slide",List(
@@ -663,6 +665,8 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <index>{input.index}</index>,
       <defaultHeight>{input.defaultHeight}</defaultHeight>,
       <defaultWidth>{input.defaultWidth}</defaultWidth>,
+      <created>{input.created}</created>,
+      <modified>{input.modified}</modified>,
       <exposed>{input.exposed}</exposed>,
       <type>{input.slideType}</type>
     ) ::: List(input.groupSet.map(gs => fromGroupSet(gs))).flatten.flatMap(_.theSeq).toList)

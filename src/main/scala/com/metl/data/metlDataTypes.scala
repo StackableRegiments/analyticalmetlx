@@ -207,11 +207,11 @@ object Conversation{
   def empty = Conversation("",0L,List.empty[Slide],"","","","",0L,Permissions.default,Nil,Nil)
 }
 
-case class Slide(author:String,id:String,index:Int,defaultHeight:Int = 540, defaultWidth:Int = 720, exposed:Boolean = true, slideType:String = "SLIDE",groupSet:List[GroupSet] = Nil,override val audiences:List[Audience] = Nil) extends MeTLData(audiences){
+case class Slide(author:String,id:String,index:Int,created:Long,modified:Long,defaultHeight:Int = 540, defaultWidth:Int = 720, exposed:Boolean = true, slideType:String = "SLIDE",groupSet:List[GroupSet] = Nil,override val audiences:List[Audience] = Nil) extends MeTLData(audiences){
   def replaceIndex(newIndex:Int) = copy(index=newIndex)
 }
 object Slide{
-  def empty = Slide("","",0)
+  def empty = Slide("","",0,0L,0L)
 }
 
 case class Audience(domain:String,name:String,audienceType:String,action:String,override val audiences:List[Audience] = Nil) extends MeTLData(audiences)

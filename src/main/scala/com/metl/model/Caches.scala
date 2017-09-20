@@ -9,74 +9,123 @@ import net.liftweb.util
 import net.sf.ehcache.config.PersistenceConfiguration
 import com.metl.liftAuthenticator.OrgUnit
 
-class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit) {
+abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
   import org.apache.lucene.analysis.standard.StandardAnalyzer
   import org.apache.lucene.document.{Document,Field,StringField,TextField,IntPoint,LongPoint}
   import org.apache.lucene.index.{DirectoryReader,IndexReader,IndexWriter,IndexWriterConfig,Term,IndexableField}
   import org.apache.lucene.index.memory.MemoryIndex
   import org.apache.lucene.queryparser.classic.{ParseException,QueryParser,MultiFieldQueryParser}
-  import org.apache.lucene.search.{IndexSearcher,Query,ScoreDoc,TopDocs}
+  import org.apache.lucene.search.{IndexSearcher,Query,ScoreDoc,TopDocs,TermQuery,BooleanQuery,BooleanClause}
   import org.apache.lucene.store.{Directory,RAMDirectory}
 
   protected val analyzer = new StandardAnalyzer()
-  protected val slideIndex:Directory = new RAMDirectory()
-  protected val conversationIndex:Directory = new RAMDirectory()
-  
+  protected val index:Directory = new RAMDirectory()
+
+  protected def getKey(in:A):String
+  protected def toDoc(in:A):Document
+
+  protected def rewriteQuery(queryString:String,query:Query):Query = query
+  protected def queryBuilder(query:String):Query = {
+    val q = rewriteQuery(query,new MultiFieldQueryParser(defaultFields.toArray,analyzer).parse(query))
+    println("built query: [%s]".format(q))
+    q
+  }
+
+  def addItems(items:List[A]):Unit = {
+    val indexConfig = new IndexWriterConfig(analyzer)
+    val w = new IndexWriter(index,indexConfig)
+    items.foreach(item => updateItem(item,Some(w)))
+    w.close
+  }
+  def updateItem(item:A,writer:Option[IndexWriter] = None):Unit = {
+    val w = writer.getOrElse({
+      val indexConfig = new IndexWriterConfig(analyzer)
+      new IndexWriter(index,indexConfig)
+    })
+    w.updateDocument(new Term(keyTerm,getKey(item)),toDoc(item).getFields())
+    writer.getOrElse(w.close)
+
+  }
+  def search(query:String,maxResults:Int):List[String] = {
+    val q = queryBuilder(query)
+    val reader = DirectoryReader.open(index)
+    val searcher = new IndexSearcher(reader)
+    val topDocs:TopDocs = searcher.search(q,maxResults)
+    val hits:Array[ScoreDoc] = topDocs.scoreDocs
+    hits.toList.map(h => {
+      val d:Document = searcher.doc(h.doc)
+      d.get(keyTerm)
+    })
+  }
+  def queryAppliesTo(query:String,item:A):Boolean = {
+    val q = queryBuilder(query)
+    val doc:Document = toDoc(item)
+    val index = new RAMDirectory()
+    val indexConfig = new IndexWriterConfig(analyzer)
+    val writer = new IndexWriter(index,indexConfig)
+    writer.addDocument(doc)
+    writer.close()
+    val reader = DirectoryReader.open(index)
+    val searcher = new IndexSearcher(reader)
+    val topDocs:TopDocs = searcher.search(q,1)
+    val hits:Array[ScoreDoc] = topDocs.scoreDocs
+    hits.length > 0
+  }
+}
+
+class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit) {
+  import org.apache.lucene.index.{Term}
+  import org.apache.lucene.document.{Document,Field,StringField,TextField,IntPoint,LongPoint}
+  import org.apache.lucene.search.{Query,TermQuery,BooleanQuery,BooleanClause}
+
+  object ConversationIndex extends LuceneIndex[Conversation]("jid",List("title","subject","tag")){
+    /*
+    override protected def rewriteQuery(queryString:String,query:Query) = {
+      val b = new BooleanQuery.Builder()
+      val supp = new TermQuery(new Term("author","dave"))
+      b.add(new BooleanClause(query,BooleanClause.Occur.SHOULD))
+      b.add(new BooleanClause(supp,BooleanClause.Occur.SHOULD))
+      b.build()
+    }
+    */
+    override protected def getKey(in:Conversation):String = in.jid
+    override protected def toDoc(c:Conversation):Document = {
+      val doc = new Document()
+      doc.add(new StringField("jid",c.jid,Field.Store.YES))
+      doc.add(new TextField("title",c.title,Field.Store.NO))
+      doc.add(new StringField("author",c.author,Field.Store.NO))
+      doc.add(new StringField("subject",c.subject,Field.Store.NO))
+      doc.add(new StringField("tag",c.tag,Field.Store.NO))
+      doc.add(new LongPoint("created",c.created))
+      doc.add(new LongPoint("lastModified",c.lastAccessed))
+      doc.add(new TextField("slides",c.slides.map(_.id).mkString(" "),Field.Store.NO))
+      doc
+    }
+  }
+  object SlideIndex extends LuceneIndex[Slide]("id",List("index","type")){
+    override protected def getKey(in:Slide):String = in.id
+    override protected def toDoc(s:Slide):Document = {
+      val doc = new Document()
+      doc.add(new StringField("id",s.id,Field.Store.YES))
+      doc.add(new StringField("author",s.author,Field.Store.NO))
+      doc.add(new IntPoint("index",s.index))
+      doc.add(new StringField("type",s.slideType,Field.Store.NO))
+      doc
+    }
+  }
   protected val conversationCache:scala.collection.mutable.Map[String,Conversation] = scala.collection.mutable.Map()
   protected val slideCache:scala.collection.mutable.Map[String,Slide] = scala.collection.mutable.Map()
-
-  protected def conversationDocFromConversation(c:Conversation):Document = {
-    val doc = new Document()
-    doc.add(new StringField("jid",c.jid,Field.Store.YES))
-    doc.add(new TextField("title",c.title,Field.Store.NO))
-    doc.add(new StringField("author",c.author,Field.Store.NO))
-    doc.add(new StringField("subject",c.subject,Field.Store.NO))
-    doc.add(new StringField("tag",c.tag,Field.Store.NO))
-    doc.add(new LongPoint("created",c.created))
-    doc.add(new LongPoint("lastModified",c.lastAccessed))
-    doc.add(new TextField("slides",c.slides.map(_.id).mkString(" "),Field.Store.NO))
-    doc
-  }
-  protected def slideDocFromSlide(s:Slide):Document = {
-    val doc = new Document()
-    doc.add(new StringField("id",s.id,Field.Store.YES))
-    doc.add(new StringField("author",s.author,Field.Store.NO))
-    doc.add(new IntPoint("index",s.index))
-    doc.add(new StringField("type",s.slideType,Field.Store.NO))
-    doc
-  }
-  protected def updateLuceneConversationCache(jid:String,c:Conversation,writer:Option[IndexWriter] = None) = {
-    val w = writer.getOrElse({
-      val indexConfig = new IndexWriterConfig(analyzer)
-      new IndexWriter(conversationIndex,indexConfig)
-    })
-    w.updateDocument(new Term("jid",c.jid),conversationDocFromConversation(c).getFields())
-    writer.getOrElse(w.close)
-  }
-  protected def updateLuceneSlideCache(id:String,s:Slide,writer:Option[IndexWriter] = None) = {
-    val w = writer.getOrElse({
-      val indexConfig = new IndexWriterConfig(analyzer)
-      new IndexWriter(slideIndex,indexConfig)
-    })
-    w.updateDocument(new Term("id",s.id),slideDocFromSlide(s).getFields())
-    writer.getOrElse(w.close)
-  }
-
   def startup:Unit = {
-    config.getAllConversations.foreach(c => {
+    val convs = config.getAllConversations
+    convs.foreach(c => {
       conversationCache.update(c.jid,c)
     })
-    val cIndexConfig = new IndexWriterConfig(analyzer)
-    val cw = new IndexWriter(conversationIndex,cIndexConfig)
-    config.getAllConversations.foreach(c => updateLuceneConversationCache(c.jid,c,Some(cw)))
-    cw.close
-    config.getAllSlides.foreach(s => {
+    ConversationIndex.addItems(convs)
+    val slides = config.getAllSlides
+    slides.foreach(s => {
       slideCache.update(s.id,s)
     })
-    val sIndexConfig = new IndexWriterConfig(analyzer)
-    val sw = new IndexWriter(slideIndex,sIndexConfig)
-    config.getAllSlides.foreach(s => updateLuceneSlideCache(s.id,s,Some(sw)))
-    sw.close
+    SlideIndex.addItems(slides)
   }
   def shutdown:Unit = {
 
@@ -85,69 +134,27 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   def getAllConversations:List[Conversation] = conversationCache.values.toList
   def getAllSlides:List[Slide] = slideCache.values.toList
   def getConversationsForSlideId(jid:String):List[String] = getAllConversations.flatMap(c => c.slides.find(_.id == jid).map(s => c.jid))
-  protected val searchableConversationFields = Array("title","jid","author","subject","tag","slides")
   def searchForConversation(query:String):List[Conversation] = {
-    val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
-    val reader = DirectoryReader.open(conversationIndex)
-    val searcher = new IndexSearcher(reader)
-    val topDocs:TopDocs = searcher.search(q,conversationCache.size)
-    val hits:Array[ScoreDoc] = topDocs.scoreDocs
-    hits.toList.flatMap(h => {
-      val d:Document = searcher.doc(h.doc)
-      val jid:String = d.get("jid")
-      conversationCache.get(jid)
-    })
+    ConversationIndex.search(query,conversationCache.size).flatMap(jid => conversationCache.get(jid))
   }
-  protected val searchableSlideFields = Array("id","author","index","type")
   def searchForSlide(query:String):List[Slide] = {
-    val q:Query = new MultiFieldQueryParser(searchableSlideFields,analyzer).parse(query)
-    val reader = DirectoryReader.open(slideIndex)
-    val searcher = new IndexSearcher(reader)
-    val topDocs:TopDocs = searcher.search(q,slideCache.size)
-    val hits:Array[ScoreDoc] = topDocs.scoreDocs
-    hits.toList.flatMap(h => {
-      val d:Document = searcher.doc(h.doc)
-      val id:String = d.get("id")
-      slideCache.get(id)
-    })
+    SlideIndex.search(query,slideCache.size).flatMap(id => slideCache.get(id))
   }
   def queryAppliesToConversation(query:String,c:Conversation):Boolean = {
-    val q:Query = new MultiFieldQueryParser(searchableConversationFields,analyzer).parse(query)
-    val doc:Document = conversationDocFromConversation(c)
-    val index = new RAMDirectory()
-    val indexConfig = new IndexWriterConfig(analyzer)
-    val writer = new IndexWriter(index,indexConfig)
-    writer.addDocument(doc)
-    writer.close()
-    val reader = DirectoryReader.open(index)
-    val searcher = new IndexSearcher(reader)
-    val topDocs:TopDocs = searcher.search(q,1)
-    val hits:Array[ScoreDoc] = topDocs.scoreDocs
-    hits.length > 0
+    ConversationIndex.queryAppliesTo(query,c)
   }
   def queryAppliesToSlide(query:String,s:Slide):Boolean = {
-    val q:Query = new MultiFieldQueryParser(searchableSlideFields,analyzer).parse(query)
-    val doc:Document = slideDocFromSlide(s)
-    val index = new RAMDirectory()
-    val indexConfig = new IndexWriterConfig(analyzer)
-    val writer = new IndexWriter(index,indexConfig)
-    writer.addDocument(doc)
-    writer.close()
-    val reader = DirectoryReader.open(index)
-    val searcher = new IndexSearcher(reader)
-    val topDocs:TopDocs = searcher.search(q,1)
-    val hits:Array[ScoreDoc] = topDocs.scoreDocs
-    hits.length > 0
+    SlideIndex.queryAppliesTo(query,s)
   }
   def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def detailsOfConversation(jid:String):Conversation = conversationCache.get(jid).getOrElse(Conversation.empty)
   def detailsOfSlide(jid:String):Slide = slideCache.get(jid).getOrElse(Slide.empty)
   protected def updateConversation(c:Conversation):Conversation = {
     conversationCache.update(c.jid,c)
-    updateLuceneConversationCache(c.jid,c)
+    ConversationIndex.updateItem(c)
     c.slides.foreach(s => {
       slideCache.update(s.id,s)
-      updateLuceneSlideCache(s.id,s)
+      SlideIndex.updateItem(s)
     })
     onConversationDetailsUpdated(c)
     c
@@ -158,6 +165,7 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   def createSlide(author:String,slideType:String = "SLIDE",grouping:List[com.metl.data.GroupSet] = Nil):Slide = {
     val s = config.createSlide(author,slideType,grouping)
     slideCache.update(s.id,s)
+    SlideIndex.updateItem(s)
     s
   }
   def deleteConversation(jid:String):Conversation = updateConversation(config.deleteConversation(jid))

@@ -919,10 +919,12 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val index = getIntByName(input,"index")
         val defaultHeight = getIntByName(input,"defaultHeight")
         val defaultWidth = getIntByName(input,"defaultWidth")
+        val created = getLongByName(input,"created")
+        val modified = getLongByName(input,"modified")
         val exposed = getBooleanByName(input,"exposed")
         val slideType = getStringByName(input,"slideType")
         val groupSet = getListOfObjectsByName(input,"groupSets").map(gs => toGroupSet(gs))
-        Slide(author,id,index,defaultHeight,defaultWidth,exposed,slideType,groupSet)
+        Slide(author,id,index,created,modified,defaultHeight,defaultWidth,exposed,slideType,groupSet)
       }
       case _ => Slide.empty
     }
@@ -932,6 +934,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("id",JString(input.id)),
       JField("author",JString(input.author)),
       JField("index",JInt(input.index)),
+      JField("created",JInt(input.created)),
+      JField("modified",JInt(input.modified)),
       JField("defaultHeight",JInt(input.defaultHeight)),
       JField("defaultWidth",JInt(input.defaultWidth)),
       JField("exposed",JBool(input.exposed)),

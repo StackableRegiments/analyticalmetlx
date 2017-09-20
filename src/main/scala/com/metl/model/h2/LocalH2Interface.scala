@@ -489,8 +489,9 @@ GROUP BY %s""".format(
   def generateConversationJid:String = "c_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
   def generateSlideJid:String = "s_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
   def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = {
-    val slide = H2Slide.create.slideType(slideType).creation(new java.util.Date().getTime).author(author).jid(generateSlideJid).defaultHeight(540).defaultWidth(720).saveMe
-    Slide(slide.author.get,slide.jid.get,0,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
+    val now = new java.util.Date().getTime
+    val slide = H2Slide.create.slideType(slideType).creation(now).modified(now).author(author).jid(generateSlideJid).defaultHeight(540).defaultWidth(720).saveMe
+    Slide(slide.author.get,slide.jid.get,0,now,now,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
   }
   def createConversation(title:String,author:String):Conversation = {
     val now = new Date()
