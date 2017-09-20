@@ -34,6 +34,8 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                                     <index>0</index>
                                     <defaultHeight>540</defaultHeight>
                                     <defaultWidth>720</defaultWidth>
+                                    <created>23524634634343</created>
+                                    <modified>23524634634344</modified>
                                     <exposed>true</exposed>
                                     <type>SLIDE</type>
                                 </slide>
@@ -43,6 +45,8 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                                     <index>1</index>
                                     <defaultHeight>540</defaultHeight>
                                     <defaultWidth>720</defaultWidth>
+                                    <created>23524634634343</created>
+                                    <modified>23524634634344</modified>
                                     <exposed>false</exposed>
                                     <type>SLIDE</type>
                                 </slide>
@@ -52,6 +56,8 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                                     <index>2</index>
                                     <defaultHeight>540</defaultHeight>
                                     <defaultWidth>720</defaultWidth>
+                                    <created>23524634634343</created>
+                                    <modified>23524634634344</modified>
                                     <exposed>true</exposed>
                                     <type>SLIDE</type>
                                 </slide>
@@ -73,6 +79,8 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
 
 		val result = xmlSerializer.toConversation(content)
 
+    val creation = 23524634634343L
+    val modification = 23524634634344L
 		result should have (
 			author ("eecrole"),
 			lastAccessed (234234234234L),
@@ -80,12 +88,12 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
             tag ("lelsdjfljksdf"),
             jid ("232523454"),
             title ("The quest for answers"),
-            created (23524634634343L),
+            created (creation),
             permissions(Permissions(false, false, true,true,true)),
             slides (List(
-              Slide(author = "eecrole", id = "3453463", index = 0, exposed = true),
-              Slide(author = "eecrole", id = "3453464", index = 1, exposed = false),
-              Slide(author = "eecrole", id = "3453465", index = 2, exposed = true)))
+              Slide(author = "eecrole", id = "3453463", index = 0, created = creation, modified = modification, exposed = true),
+              Slide(author = "eecrole", id = "3453464", index = 1, created = creation, modified = modification, exposed = false),
+              Slide(author = "eecrole", id = "3453465", index = 2, created = creation, modified = modification, exposed = true)))
 		)
 	}
 

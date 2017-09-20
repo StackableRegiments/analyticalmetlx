@@ -284,9 +284,11 @@ trait MeTLDataGenerators {
 
   def genSlide = for {
     author <- genString(32)
-    id <- genString(64)//rbitrary[Int]
+    id <- genString(64)
     index <- arbitrary[Int]
-  } yield Slide(author, id, index)
+    created <- arbitrary[Long]
+    modified <- arbitrary[Long]
+  } yield Slide(author, id, index, created, modified)
 
   def genPermissions = for {
     studentsCanOptionFriends <- arbitrary[Boolean]
