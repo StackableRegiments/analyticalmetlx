@@ -9,15 +9,51 @@ import net.liftweb.util
 import net.sf.ehcache.config.PersistenceConfiguration
 import com.metl.liftAuthenticator.OrgUnit
 
-abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
-  import org.apache.lucene.analysis.standard.StandardAnalyzer
-  import org.apache.lucene.document.{Document,Field,StringField,TextField,IntPoint,LongPoint}
-  import org.apache.lucene.index.{DirectoryReader,IndexReader,IndexWriter,IndexWriterConfig,Term,IndexableField}
-  import org.apache.lucene.index.memory.MemoryIndex
-  import org.apache.lucene.queryparser.classic.{ParseException,QueryParser,MultiFieldQueryParser}
-  import org.apache.lucene.search.{IndexSearcher,Query,ScoreDoc,TopDocs,TermQuery,BooleanQuery,BooleanClause,PhraseQuery,Explanation}
-  import org.apache.lucene.store.{Directory,RAMDirectory}
+import org.apache.lucene.analysis.standard.StandardAnalyzer
+import org.apache.lucene.document.{Document,Field,StringField,TextField,IntPoint,LongPoint}
+import org.apache.lucene.index.{DirectoryReader,IndexReader,IndexWriter,IndexWriterConfig,Term,IndexableField}
+import org.apache.lucene.index.memory.MemoryIndex
+import org.apache.lucene.queryparser.classic.{ParseException,QueryParser,MultiFieldQueryParser}
+import org.apache.lucene.search.{IndexSearcher,Query,ScoreDoc,TopDocs,TermQuery,BooleanQuery,BooleanClause,PhraseQuery,Explanation}
+import org.apache.lucene.store.{Directory,RAMDirectory}
 
+abstract class IndexedInMemoryStore[A](keyTerm:String,defaultFields:List[String]) {
+  protected def getKeyFromIndex(in:A):String
+  protected def toIndexDoc(in:A):Document
+  protected def rewriteIndexQuery(queryString:String,query:Query):Query = query
+  protected object index extends LuceneIndex[A](keyTerm,defaultFields){
+    override protected def getKey(in:A):String = getKeyFromIndex(in)
+    override protected def toDoc(in:A):Document = toIndexDoc(in)
+    override protected def rewriteQuery(queryString:String,query:Query):Query = rewriteIndexQuery(queryString,query)
+  }
+  protected val store:scala.collection.mutable.Map[String,A] = scala.collection.mutable.Map[String,A]()
+  
+  def addItems(items:List[A]) = {
+    store ++= items.map(i => (getKeyFromIndex(i),i))
+    index.addItems(items)
+  }
+  def search(query:String):List[Tuple2[A,SearchExplanation]] = {
+    index.search(query,store.size).flatMap(rTup => store.get(rTup._1).map(item => (item,rTup._2)))
+  }
+  def queryAppliesTo(query:String,item:A):Boolean = {
+    index.queryAppliesTo(query,item)
+  }
+  def updateItem(item:A) = {
+    store.update(getKeyFromIndex(item),item)
+    index.updateItem(item)
+  }
+  def getAll:List[A] = {
+    store.values.toList
+  }
+  def get(key:String):Option[A] = {
+    store.get(key)
+  }
+  def contains(key:String):Boolean = {
+    store.keys.toList.contains(key)
+  }
+}
+
+abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
   protected val analyzer = new StandardAnalyzer()
   protected val index:Directory = new RAMDirectory()
 
@@ -75,16 +111,21 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
 
   }
   def search(query:String,maxResults:Int):List[Tuple2[String,SearchExplanation]] = {
-    val q = queryBuilder(query)
-    val reader = DirectoryReader.open(index)
-    val searcher = new IndexSearcher(reader)
-    val topDocs:TopDocs = searcher.search(q,maxResults)
-    val hits:Array[ScoreDoc] = topDocs.scoreDocs
-    hits.toList.map(h => {
-      val d:Document = searcher.doc(h.doc)
-      val docId = d.get(keyTerm)
-      (docId,toSearchExplanation(query,docId,searcher.explain(q,h.doc)))
-    })
+    maxResults match {
+      case 0 => Nil
+      case mr => {
+        val q = queryBuilder(query)
+        val reader = DirectoryReader.open(index)
+        val searcher = new IndexSearcher(reader)
+        val topDocs:TopDocs = searcher.search(q,mr)
+        val hits:Array[ScoreDoc] = topDocs.scoreDocs
+        hits.toList.map(h => {
+          val d:Document = searcher.doc(h.doc)
+          val docId = d.get(keyTerm)
+          (docId,toSearchExplanation(query,docId,searcher.explain(q,h.doc)))
+        })
+      }
+    }
   }
   protected def toSearchExplanation(queryString:String,docId:String,in:Explanation):SearchExplanation = {
     SearchExplanation(queryString,docId,in.isMatch(),in.getValue(),in.getDescription(),in.getDetails().toArray.toList.map(d => {
@@ -107,24 +148,23 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
   }
 }
 
-class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit) {
-  import org.apache.lucene.index.{Term}
-  import org.apache.lucene.document.{Document,Field,StringField,TextField,IntPoint,LongPoint}
-  import org.apache.lucene.search.{Query,TermQuery,BooleanQuery,BooleanClause}
-
+class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit,profileCache:Option[ProfileCache] = None) {
   object ConversationIndex extends LuceneIndex[Conversation]("jid",List("title","subject","tag")){
     override protected def rewriteQuery(queryString:String,query:Query) = {
       enrichQuery(query,Map(
         "author" -> {(qTup:Tuple3[Query,String,List[Tuple2[String,Int]]]) => {
           val query = qTup._1
-          val fieldName = qTup._2
-          val fieldValues = qTup._3
-          val b = new BooleanQuery.Builder()
-          b.add(new BooleanClause(query,BooleanClause.Occur.SHOULD))
-          fieldValues.foreach(fv => {
-            b.add(new BooleanClause(new TermQuery(new Term("profile",fv._1)),BooleanClause.Occur.SHOULD))
-          })
-          b.build()
+          profileCache.map(pc => {
+            val fieldName = qTup._2
+            val fieldValues = qTup._3
+            val b = new BooleanQuery.Builder()
+            b.add(new BooleanClause(query,BooleanClause.Occur.SHOULD))
+            val lookedUpIds = pc.searchForProfile(fieldValues.map(fvTup => "name:%s".format(fvTup._1)).mkString(" ")).map(_.id).distinct
+            lookedUpIds.foreach(fv => {
+              b.add(new BooleanClause(new TermQuery(new Term("author",fv)),BooleanClause.Occur.SHOULD))
+            })
+            b.build()
+          }).getOrElse(query)
         }},
         "subject" -> {(qTup:Tuple3[Query,String,List[Tuple2[String,Int]]]) => {
           val query = qTup._1
@@ -271,7 +311,7 @@ class ThemeCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
 }
 
 class SessionCache(config:ServerConfiguration,cacheConfig:CacheConfig){
-  protected val sessionCache = new ManagedCache[String,List[SessionRecord]]("sessionsByProfileId",(pid) => config.getSessionsForProfile(pid),cacheConfig)
+  protected val sessionCache = new ManagedCache[String,List[SessionRecord]]("sessionsByProfileId",(pid) => limitSessions(config.getSessionsForProfile(pid)),cacheConfig)
   def startup:Unit = {
     sessionCache.startup
   }
@@ -286,12 +326,18 @@ class SessionCache(config:ServerConfiguration,cacheConfig:CacheConfig){
   }
   def updateSession(sessionRecord:SessionRecord):SessionRecord = {
     val updated = config.updateSession(sessionRecord)
-    sessionCache.update(sessionRecord.profileId,sessionCache.get(sessionRecord.profileId).getOrElse(Nil) ::: List(updated))
+    sessionCache.update(sessionRecord.profileId,limitSessions(sessionCache.get(sessionRecord.profileId).getOrElse(Nil) ::: List(updated)))
     updated
   }
   def getCurrentSessions:List[SessionRecord] = {
-    Nil
-    //sessionCache.getAll(sessionCache.keys).toList.flatMap(_._2)
+    sessionCache.keys.flatMap(k => sessionCache.get(k)).flatten.toList
+  }
+  protected val maxSessionRecordsPerPerson = 10 // there isn't a good reason to keep in memory EVERY session action made by a particular person, but there is value in having the last few.
+  protected def limitSessions(in:List[SessionRecord]):List[SessionRecord] = {
+    in match {
+      case l:List[SessionRecord] if l.length <= maxSessionRecordsPerPerson => l
+      case l:List[SessionRecord] => l.sortBy(_.timestamp).reverse.take(maxSessionRecordsPerPerson)
+    }
   }
 }
 class ResourceCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
@@ -349,19 +395,40 @@ class ResourceCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
   }
 }
 class ProfileCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
-  protected val profileStore = new ManagedCache[String,Profile]("profilesById",(id) => config.getProfiles(id).headOption.getOrElse(Profile.empty),cacheConfig)
+  //protected val profileStore = new ManagedCache[String,Profile]("profilesById",(id) => config.getProfiles(id).headOption.getOrElse(Profile.empty),cacheConfig)
   protected val accountStore = new ManagedCache[Tuple2[String,String],Tuple2[List[String],String]]("profilesByAccount",(acc) => config.getProfileIds(acc._1,acc._2),cacheConfig)
-  
+  protected object profileCache extends IndexedInMemoryStore[Profile]("profileId",List("name")){
+    override protected def getKeyFromIndex(in:Profile):String = in.id
+    override protected def toIndexDoc(s:Profile):Document = {
+      val doc = new Document()
+      doc.add(new StringField("profileId",s.id,Field.Store.YES))
+      doc.add(new TextField("name",s.name,Field.Store.NO))
+      s.attributes.toList.foreach(a => {
+        doc.add(new TextField(a._1,a._2,Field.Store.NO))
+      })
+      doc
+    }
+  }
   def startup:Unit = {
+    val profs = config.getAllProfiles
+    profileCache.addItems(profs)
+    /*
     profileStore.startup
+    */
     accountStore.startup
   }
   def shutdown:Unit = {
+    /*
     profileStore.shutdown
+    */
     accountStore.shutdown
   }
+  def getAllProfiles:List[Profile] = {
+    profileCache.getAll
+  }
   def getProfiles(ids:String *):List[Profile] = {
-    ids.flatMap(id => profileStore.get(id)).toList
+    ids.flatMap(id => profileCache.get(id)).toList
+    //ids.flatMap(id => profileStore.get(id)).toList
     /*
     val id = nextFuncName
     println("%s called getProfiles: %s".format(id,ids))
@@ -377,12 +444,14 @@ class ProfileCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
   }
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = {
     val newP = config.createProfile(name,attrs,audiences)
-    profileStore.update(newP.id,newP)
+    profileCache.updateItem(newP)
+    //profileStore.update(newP.id,newP)
     newP
   }
   def updateProfile(id:String,profile:Profile):Profile = {
     val uP = config.updateProfile(id,profile)
-    profileStore.update(uP.id,uP)
+    profileCache.updateItem(uP)
+    //profileStore.update(uP.id,uP)
     uP
   }
   def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = {
@@ -404,6 +473,10 @@ class ProfileCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = {
     accountStore.get((accountName,accountProvider)).getOrElse((Nil,""))
   }
+  def searchForProfile(query:String):List[Profile] = {
+    val res = profileCache.search(query).map(_._1)
+    res
+  }
 }
 
 class CachingServerAdaptor(
@@ -413,9 +486,9 @@ class CachingServerAdaptor(
   resourceCacheConfig:Option[CacheConfig] = None,
   sessionCacheConfig:Option[CacheConfig] = None
 ) extends PassThroughAdaptor(config) {
-  protected val conversationCache = Some(new ConversationCache(config,config.onConversationDetailsUpdated))
-  protected val themeCache = themeCacheConfig.map(c => new ThemeCache(config,c))
   protected val profileCache = profileCacheConfig.map(c => new ProfileCache(config,c))
+  protected val conversationCache = Some(new ConversationCache(config,config.onConversationDetailsUpdated,profileCache))
+  protected val themeCache = themeCacheConfig.map(c => new ThemeCache(config,c))
   protected val resourceCache = resourceCacheConfig.map(c => new ResourceCache(config,c))
   protected val sessionCache = sessionCacheConfig.map(c => new SessionCache(config,c))
  
@@ -463,6 +536,7 @@ class CachingServerAdaptor(
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = resourceCache.map(_.upsertResource(jid,identifier,data)).getOrElse(config.upsertResource(jid,identifier,data)) 
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = profileCache.map(_.createProfile(name,attrs,audiences)).getOrElse(config.createProfile(name,attrs,audiences))
   override def getProfiles(ids:String *):List[Profile] = profileCache.map(_.getProfiles(ids.toList:_*)).getOrElse(config.getProfiles(ids.toList:_*))
+  override def getAllProfiles:List[Profile] = profileCache.map(_.getAllProfiles).getOrElse(config.getAllProfiles)
   override def updateProfile(id:String,profile:Profile):Profile = profileCache.map(_.updateProfile(id,profile)).getOrElse(config.updateProfile(id,profile))
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = profileCache.map(_.getProfileIds(accountName,accountProvider)).getOrElse(config.getProfileIds(accountName,accountProvider))
   override def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = profileCache.map(_.updateAccountRelationship(accountName,accountProvider,profileId,disabled,default)).getOrElse(config.updateAccountRelationship(accountName,accountProvider,profileId,disabled,default))
@@ -561,21 +635,25 @@ class ManagedCache[A <: Object,B <: Object](name:String,creationFunc:A=>B,cacheC
   def keys:List[A] = cache.getKeys.toList.map(_.asInstanceOf[A])
   def contains(key:A):Boolean = key != null && cache.isKeyInCache(key)
   def get(key:A):Option[B] = {
-    cache.getWithLoader(key,loader,null) match {
-      case null => {
-        warn("getWithLoader(%s) returned null".format(key))
-        None
-      }
-      case e:Element => e.getObjectValue match {
-        case i:B => {
-          trace("getWithLoader(%s) returned %s".format(key,i))
-          Some(i)
+    try {
+      cache.getWithLoader(key,loader,null) match {
+        case null => {
+          warn("getWithLoader(%s) returned null".format(key))
+          None
         }
-        case other => {
-          trace("getWithLoader(%s) returned %s cast to type".format(key,other))
-          Some(other.asInstanceOf[B])
+        case e:Element => e.getObjectValue match {
+          case i:B => {
+            trace("getWithLoader(%s) returned %s".format(key,i))
+            Some(i)
+          }
+          case other => {
+            trace("getWithLoader(%s) returned %s cast to type".format(key,other))
+            Some(other.asInstanceOf[B])
+          }
         }
       }
+    } catch {
+      case e:Exception => None
     }
   }
   def update(key:A,value:B):Unit = {

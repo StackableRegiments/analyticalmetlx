@@ -602,6 +602,13 @@ GROUP BY %s""".format(
     })
   })
 
+  def getAllProfiles:List[Profile] = Stopwatch.time("H2Interface.getAllProfiles",{
+    val s = new java.util.Date().getTime
+    val raw = H2Profile.findAll()
+    val results = raw.groupBy(_.profileId.get).toList.map(_._2).flatMap(_.sortBy(_.timestamp.get).reverse.headOption.map(serializer.toProfile _))
+    warn("H2GetAllProfiles %s (%s)".format(results.length,new java.util.Date().getTime - s))
+    results 
+  })
   def getProfiles(ids:String *):List[Profile] = Stopwatch.time("H2Interface.getProfiles",{
     warn("H2 getProfiles(%s)".format(ids))
     val s = new java.util.Date().getTime

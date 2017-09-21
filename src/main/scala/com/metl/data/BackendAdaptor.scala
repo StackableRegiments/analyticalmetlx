@@ -86,6 +86,7 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   def upsertResource(identifier:String,data:Array[Byte]):String = upsertResource(commonLocation,identifier,data)
   //profile information
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile
+  def getAllProfiles:List[Profile]
   def getProfiles(ids:String *):List[Profile]
   def updateProfile(id:String,profile:Profile):Profile
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
@@ -240,6 +241,7 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def insertResource(data:Array[Byte]):String = ""
   override def upsertResource(identifier:String,data:Array[Byte]):String = ""
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
+  override def getAllProfiles:List[Profile] = Nil
   override def getProfiles(ids:String *):List[Profile] = Nil
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
@@ -299,6 +301,7 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def isReady:Boolean = sc.isReady
   override def getMockHistory:History = sc.getMockHistory
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = sc.createProfile(name,attrs,audiences)
+  override def getAllProfiles:List[Profile] = sc.getAllProfiles
   override def getProfiles(ids:String *):List[Profile] = sc.getProfiles(ids:_*)
   override def updateProfile(id:String,profile:Profile):Profile = sc.updateProfile(id,profile)
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = sc.getProfileIds(accountName,accountProvider)

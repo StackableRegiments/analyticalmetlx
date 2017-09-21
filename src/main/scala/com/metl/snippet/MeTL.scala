@@ -27,14 +27,14 @@ class Metl extends Logger {
   def shouldModifyConversation(username:String, c:Conversation):Boolean = {
     val isNonEmpty = c != Conversation.empty
     val result = (Globals.isSuperUser || username.toLowerCase.trim == c.author.toLowerCase.trim) && isNonEmpty
-    warn("shouldModifyConversation: jid:%s => isSuperUser:%s username:%s c.author:%s isNonEmpty:%s => %s".format(c.jid,Globals.isSuperUser,username,c.author,isNonEmpty,result))
+//    warn("shouldModifyConversation: jid:%s => isSuperUser:%s username:%s c.author:%s isNonEmpty:%s => %s".format(c.jid,Globals.isSuperUser,username,c.author,isNonEmpty,result))
     result
   }
   def shouldDisplayConversation(c:Conversation,showDeleted:Boolean = false,me:String = Globals.currentUser.is,groups:List[OrgUnit] = Globals.getUserGroups):Boolean = {
     val subject = c.subject.trim.toLowerCase
     var fr = c.foreignRelationship
     val show = Globals.isSuperUser || (showDeleted && c.author == me) || (subject != "deleted" && (subject == "unrestricted" || groups.exists((ug:OrgUnit) => ug.name.toLowerCase.trim == subject || fr.exists(fri => ug.foreignRelationship.exists(ufr => ufr.key == fri.key && ufr.system == fri.system)))) && c != Conversation.empty)
-    warn("shouldDisplayConversation: jid:%s => isSuperUser:%s me:%s groups:%s conv:%s => %s".format(c.jid,Globals.isSuperUser,me,groups,c,show))
+//    warn("shouldDisplayConversation: jid:%s => isSuperUser:%s me:%s groups:%s conv:%s => %s".format(c.jid,Globals.isSuperUser,me,groups,c,show))
     show
   }
   def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
