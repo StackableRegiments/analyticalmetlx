@@ -110,11 +110,21 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
     writer.getOrElse(w.close)
 
   }
+  protected val unsafeTokens = List(':','+','-','*','[',']','(',')')
+  protected def safetyQuery(query:String):Query = {
+    try {
+      queryBuilder(query)
+    } catch {
+      case e:Exception => {
+        safetyQuery(unsafeTokens.foldLeft(query)((acc,item) => acc.replace(item,' ')))
+      }
+    }
+  }
   def search(query:String,maxResults:Int):List[Tuple2[String,SearchExplanation]] = {
     maxResults match {
       case 0 => Nil
       case mr => {
-        val q = queryBuilder(query)
+        val q = safetyQuery(query)
         val reader = DirectoryReader.open(index)
         val searcher = new IndexSearcher(reader)
         val topDocs:TopDocs = searcher.search(q,mr)
@@ -133,7 +143,7 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
     }))
   }
   def queryAppliesTo(query:String,item:A):Boolean = {
-    val q = queryBuilder(query)
+    val q = safetyQuery(query)
     val doc:Document = toDoc(item)
     val index = new RAMDirectory()
     val indexConfig = new IndexWriterConfig(analyzer)
@@ -149,7 +159,7 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
 }
 
 class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit,profileCache:Option[ProfileCache] = None) {
-  object ConversationIndex extends LuceneIndex[Conversation]("jid",List("title","subject","tag")){
+  object ConversationIndex extends LuceneIndex[Conversation]("jid",List("title","author","subject","tag")){
     override protected def rewriteQuery(queryString:String,query:Query) = {
       enrichQuery(query,Map(
         "author" -> {(qTup:Tuple3[Query,String,List[Tuple2[String,Int]]]) => {
