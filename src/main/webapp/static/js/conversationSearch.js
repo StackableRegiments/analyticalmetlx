@@ -248,7 +248,7 @@ var Conversations = (function(){
         });
         searchBoxContainer.append(searchBox);
         var searchBoxChangeFunc = function(e){
-            var q = $(this).val().toLowerCase().trim();
+            var q = $(this).val().trim();
             currentQuery = q;
             if (e.keyCode == 13 && searchPermitted){
                 searchFunc(getQueryFunc());
@@ -377,7 +377,7 @@ var Conversations = (function(){
     var searchFunc = function(query){
         $("#searchButton").attr("disabled",true).off("click");
         searchPermitted = false;
-        currentQuery = query.toLowerCase().trim();
+        currentQuery = query.trim();
         updateQueryParams();
         searchForConversations(getQueryFunc()); //injected from Lift
     };
@@ -451,7 +451,7 @@ var Conversations = (function(){
     };
 
     MeTLBus.subscribe("receiveQuery","conversationSearch",function(q){
-        currentQuery = q.toLowerCase().trim();
+        currentQuery = q.trim();
         updateQueryParams();
         searchBox.val(getQueryFunc());
         reRender();

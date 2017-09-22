@@ -169,7 +169,7 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
             val fieldValues = qTup._3
             val b = new BooleanQuery.Builder()
             b.add(new BooleanClause(query,BooleanClause.Occur.SHOULD))
-            val lookedUpIds = pc.searchForProfile(fieldValues.map(fvTup => "name:%s".format(fvTup._1)).mkString(" ")).map(_.id).distinct
+            val lookedUpIds = pc.searchForProfile(fieldValues.map(fvTup => "name:%s".format(fvTup._1)).mkString(" ")).map(_._1.id).distinct
             lookedUpIds.foreach(fv => {
               b.add(new BooleanClause(new TermQuery(new Term("author",fv)),BooleanClause.Occur.SHOULD))
             })
@@ -483,9 +483,11 @@ class ProfileCache(config:ServerConfiguration,cacheConfig:CacheConfig) {
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = {
     accountStore.get((accountName,accountProvider)).getOrElse((Nil,""))
   }
-  def searchForProfile(query:String):List[Profile] = {
-    val res = profileCache.search(query).map(_._1)
-    res
+  def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] = {
+    profileCache.search(query)
+  }
+  def queryAppliesToProfile(query:String,profile:Profile):Boolean = {
+    profileCache.queryAppliesTo(query,profile)
   }
 }
 
@@ -545,6 +547,8 @@ class CachingServerAdaptor(
   override def insertResource(jid:String,data:Array[Byte]):String = resourceCache.map(_.insertResource(jid,data)).getOrElse(config.insertResource(jid,data))
   override def upsertResource(jid:String,identifier:String,data:Array[Byte]):String = resourceCache.map(_.upsertResource(jid,identifier,data)).getOrElse(config.upsertResource(jid,identifier,data)) 
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = profileCache.map(_.createProfile(name,attrs,audiences)).getOrElse(config.createProfile(name,attrs,audiences))
+  override def searchForProfile(query:String) = profileCache.map(_.searchForProfile(query)).getOrElse(config.searchForProfile(query))
+  override def queryAppliesToProfile(query:String,profile:Profile) = profileCache.map(_.queryAppliesToProfile(query,profile)).getOrElse(config.queryAppliesToProfile(query,profile))
   override def getProfiles(ids:String *):List[Profile] = profileCache.map(_.getProfiles(ids.toList:_*)).getOrElse(config.getProfiles(ids.toList:_*))
   override def getAllProfiles:List[Profile] = profileCache.map(_.getAllProfiles).getOrElse(config.getAllProfiles)
   override def updateProfile(id:String,profile:Profile):Profile = profileCache.map(_.updateProfile(id,profile)).getOrElse(config.updateProfile(id,profile))

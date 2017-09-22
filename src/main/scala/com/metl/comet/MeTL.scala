@@ -331,7 +331,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       busArgs(RECEIVE_PROFILES,translateProfileIds(getArgAsListOfStrings(args(0))))
     },Full(METLBUS_CALL))
     def searchForProfiles(updateListing:List[Profile] => List[Profile],queryUpdater:Option[String]=>Option[String]):ClientSideFunction = ClientSideFunction("searchForProfiles",List("query"),(args) => {
-      val q = getArgAsString(args(0)).toLowerCase.trim
+      val q = getArgAsString(args(0)).trim
       queryUpdater(Some(q))
       val searchResults = serverConfig.searchForProfile(q)
       val foundProfiles = searchResults.map(_._1)
@@ -411,7 +411,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       busArgs(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(serverConfig.detailsOfConversation(jid)))
     },Full(METLBUS_CALL))
     def searchForConversation(updateListing:List[Conversation] => List[Conversation],queryUpdater:Option[String]=>Option[String]):ClientSideFunction = ClientSideFunction("searchForConversations",List("query"),(args) => {
-      val q = getArgAsString(args(0)).toLowerCase.trim
+      val q = getArgAsString(args(0)).trim
       queryUpdater(Some(q))
       val searchResults = serverConfig.searchForConversation(q)
       val foundConversations = searchResults.map(_._1)
