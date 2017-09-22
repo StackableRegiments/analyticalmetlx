@@ -57,7 +57,7 @@ var ProfileSearch = (function(){
             noDataContent: "No profiles match your query",
             rowClick:function(obj){
                 if ("id" in obj.item){
-                    window.location.href = sprintf("/profileSummary?profileId=%s&unique=true",obj.item.jid);
+                    window.location.href = sprintf("/profileSummary?profileId=%s&unique=true",obj.item.id);
                 }
             },
             controller: {

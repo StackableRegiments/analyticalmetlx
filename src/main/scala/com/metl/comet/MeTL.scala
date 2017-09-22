@@ -588,7 +588,6 @@ class MeTLAccount extends MeTLActorBase[MeTLAccount]{
     case _ => warn("MeTLAccountActor received unknown message")
   }
 }
-
 class MeTLProfile extends MeTLActorBase[MeTLProfile] {
   import net.liftweb.json.Extraction
   override def registerWith = MeTLProfileActorManager
@@ -671,10 +670,60 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
     case _ => warn("MeTLProfileActor received unknown message")
   }
 }
-/*
-class MeTLForeignProfileActor extends MeTLActorBase[MeTLProfileSearcherActor] {
+
+class MeTLProfileSummaryActor extends MeTLActorBase[MeTLProfileSummaryActor] {
+  import net.liftweb.json.Extraction
+  override def registerWith = MeTLProfileActorManager
+  protected var internalProfile:Option[Profile] = None
+  protected def thisProfile = internalProfile.getOrElse(profile)
+  def profileAccessor:Profile = thisProfile
+  override lazy val functionDefinitions = List(
+    CommonFunctions.getAccount,
+    CommonFunctions.getAvailableProfiles,
+    CommonFunctions.getDefaultProfile,
+    CommonFunctions.getActiveProfile,
+    CommonFunctions.getProfile(() => thisProfile),
+    CommonFunctions.getAttendancesForProfile(profileAccessor _),
+    CommonFunctions.getThemesForProfile(profileAccessor _),
+    CommonFunctions.getConversationsCreatedByCurrentProfile(profileAccessor _)
+  )
+
+  override def lifespan = Globals.searchActorLifespan
+  override def localSetup = {
+    internalProfile = name.flatMap(n => getProfileIdFromName(n)).flatMap(id => serverConfig.getProfiles(id).headOption)
+    warn("localSetup for MeTLProfileSummary [%s]".format(name))
+    super.localSetup
+  }
+  override def render = OnLoad(
+    Call("getAccount") &
+    Call("getAvailableProfiles") &
+    Call("getDefaultProfile") &
+    Call("getActiveProfile") &
+    Call("getProfile") & 
+    Call("getConversations") &
+    Call("getAttendances") &
+    Call("getThemes")
+  )
+  override def lowPriority = {
+    case p:Profile if Globals.currentProfile.is.id == p.id => {
+      partialUpdate(
+        busCall(RECEIVE_ACTIVE_PROFILE,renderProfile(p)) &
+        { if (p.id == thisProfile.id){
+            internalProfile = internalProfile.map(_p => p)
+            busCall(RECEIVE_PROFILE,renderProfile(thisProfile))
+          } else {
+            Noop
+          }
+        })
+    }
+    case p:Profile if thisProfile.id == p.id => {
+      partialUpdate(
+        busCall(RECEIVE_PROFILE,renderProfile(thisProfile))
+      )
+    }
+    case _ => warn("MeTLProfileSummaryActor received unknown message")
+  }
 }
-*/
 class MeTLProfileSearcherActor extends MeTLActorBase[MeTLProfileSearcherActor] {
   protected var query:Option[String] = None
   protected var listing:List[Profile] = Nil
