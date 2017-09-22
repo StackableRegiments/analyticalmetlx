@@ -153,6 +153,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
 
   protected lazy val RECEIVE_PROFILE = "receiveProfile"
   protected lazy val RECEIVE_PROFILES = "receiveProfiles"
+  protected lazy val RECEIVE_PROFILE_SEARCH_RESULTS = "receiveProfileSearchResults"
   protected lazy val RECEIVE_AVAILABLE_PROFILES = "receiveAvailableProfiles"
   protected lazy val RECEIVE_ACTIVE_PROFILE = "receiveCurrentProfile"
   protected lazy val RECEIVE_DEFAULT_PROFILE = "receiveDefaultProfile"
@@ -329,6 +330,19 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
     def getProfilesById:ClientSideFunction = ClientSideFunction("getProfilesByIds",List("profileIds"),(args) => {
       busArgs(RECEIVE_PROFILES,translateProfileIds(getArgAsListOfStrings(args(0))))
     },Full(METLBUS_CALL))
+    def searchForProfiles(updateListing:List[Profile] => List[Profile],queryUpdater:Option[String]=>Option[String]):ClientSideFunction = ClientSideFunction("searchForProfiles",List("query"),(args) => {
+      val q = getArgAsString(args(0)).toLowerCase.trim
+      queryUpdater(Some(q))
+      val searchResults = serverConfig.searchForProfile(q)
+      val foundProfiles = searchResults.map(_._1)
+      val results = updateListing(foundProfiles)
+      busArgs(RECEIVE_PROFILE_SEARCH_RESULTS,JArray(searchResults.map(sr => {
+        JObject(List(
+          JField("profile",renderProfile(sr._1)),
+          JField("explanation",Extraction.decompose(sr._2))
+        ))
+      })))
+    },Full(METLBUS_CALL))
     def createProfile:ClientSideFunction = ClientSideFunction("createProfile",List(),(args) => {
       val orig = Globals.currentProfile.is
       val newName = "%s_%s_%s".format(Globals.currentAccount.provider,Globals.currentAccount.name,nextFuncName)
@@ -396,7 +410,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       val jid = getArgAsString(args(0))
       busArgs(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(serverConfig.detailsOfConversation(jid)))
     },Full(METLBUS_CALL))
-    def searchForConversation(updateListing:List[Conversation] => List[Conversation],queryUpdater:Option[String]=>Option[String]):ClientSideFunction = ClientSideFunction("getSearchResult",List("query"),(args) => {
+    def searchForConversation(updateListing:List[Conversation] => List[Conversation],queryUpdater:Option[String]=>Option[String]):ClientSideFunction = ClientSideFunction("searchForConversations",List("query"),(args) => {
       val q = getArgAsString(args(0)).toLowerCase.trim
       queryUpdater(Some(q))
       val searchResults = serverConfig.searchForConversation(q)
@@ -660,6 +674,66 @@ class MeTLProfile extends MeTLActorBase[MeTLProfile] {
     case _ => warn("MeTLProfileActor received unknown message")
   }
 }
+/*
+class MeTLForeignProfileActor extends MeTLActorBase[MeTLProfileSearcherActor] {
+}
+*/
+class MeTLProfileSearcherActor extends MeTLActorBase[MeTLProfileSearcherActor] {
+  protected var query:Option[String] = None
+  protected var listing:List[Profile] = Nil
+  protected def updateListing(profs:List[Profile]):List[Profile] = {
+    listing = profs
+    trace("searchingWithQuery: %s => %s : %s".format(query,profs.length,listing.length))
+    listing
+  }
+  protected def listingAccessor:List[Profile] = listing
+  protected def updateQuery(q:Option[String]):Option[String] = {
+    query = q
+    query
+  }
+  override lazy val functionDefinitions = List(
+    CommonFunctions.getAccount,
+    CommonFunctions.getAvailableProfiles,
+    CommonFunctions.getDefaultProfile,
+    CommonFunctions.getActiveProfile,
+    CommonFunctions.getUserGroups,
+    CommonFunctions.getUsername,
+    CommonFunctions.searchForProfiles(updateListing _,updateQuery _)
+  )
+  override def registerWith = MeTLConversationSearchActorManager
+  override def lifespan = Globals.searchActorLifespan
+
+  override def localSetup = {
+    val s = new Date().getTime
+    warn("localSetup for ProfileSearch [%s] started".format(name))
+    query = Some(name.flatMap(nameString => {
+      com.metl.snippet.Metl.getQueryFromName(nameString)
+    }).getOrElse(Globals.currentProfile.is.name.toLowerCase.trim))
+    listing = query.toList.flatMap(q => serverConfig.searchForProfile(q).map(_._1))
+    warn("localSetup for ProfileSearch [%s] (%sms)".format(name,new Date().getTime - s))
+    super.localSetup
+  }
+  override def render = {
+    val serList = listing.map(p => renderProfile(p))
+    val thisProfile = renderProfile(Globals.currentProfile.is)
+    val thisGroups = jUserGroups
+    OnLoad(
+      Call("getAccount") &
+      Call("getAvailableProfiles") &
+      Call("getDefaultProfile") &
+      Call("getActiveProfile") &
+      busCall(RECEIVE_USERNAME,jUsername) &
+      busCall(RECEIVE_USER_GROUPS,thisGroups) &
+      busCall(RECEIVE_QUERY,JString(query.getOrElse(""))) &
+      Call("searchForProfiles",JString(query.getOrElse("")))
+    )
+  }
+  protected def queryApplies(in:Profile):Boolean = query.map(q => serverConfig.queryAppliesToProfile(q,in)).getOrElse(false)
+
+  override def lowPriority = {
+    case _ => warn("MeTLProfileSearchActor received unknown message")
+  }
+}
 
 class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversationChooserActor] {
   protected var query:Option[String] = None
@@ -726,7 +800,7 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
       busCall(RECEIVE_USERNAME,jUsername) &
       busCall(RECEIVE_USER_GROUPS,thisGroups) &
       busCall(RECEIVE_QUERY,JString(query.getOrElse(""))) &
-      busCall(RECEIVE_CONVERSATIONS,serList) &
+      Call("searchForConversations",JString(query.getOrElse(""))) &
       busCall(RECEIVE_IMPORT_DESCRIPTIONS,importDescriptions)
     )
     val end = new Date().getTime

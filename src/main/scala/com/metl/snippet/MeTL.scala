@@ -82,6 +82,12 @@ class Metl extends Logger {
   def editConversation(conversationJid:String):String = {
     "/editConversation?conversationJid=%s&unique=true".format(conversationJid)
   }
+  def profileSearch():String = {
+    "/profileSearch?unique=true"
+  }
+  def foreignProfileFor(profileId:String):String = {
+    "/foreignProfile?profileId=%s&unique=true".format(profileId)
+  }
   def conversationSearch():String = {
     "/conversationSearch?unique=true"
   }
@@ -238,6 +244,18 @@ class Metl extends Logger {
     val output = <span class={clazz}>{in}</span>
     output
   }
+  def specificProfileSearch(in:NodeSeq):NodeSeq = {
+    val name = generateName()
+    val clazz = "lift:comet?type=MeTLProfileSearcherActor&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    output
+  }
+  def specificProfileSummary(in:NodeSeq):NodeSeq = {
+    val name = generateName()
+    val clazz = "lift:comet?type=MeTLProfileSummaryActor&amp;name=%s".format(name)
+    val output = <span class={clazz}>{in}</span>
+    output
+  }
   def profile(in:NodeSeq):NodeSeq = {
     val name = generateName()
     val clazz = "lift:comet?type=MeTLProfile&amp;name=%s".format(name)
@@ -387,6 +405,10 @@ class Metl extends Logger {
           S.param("conversationJid").toList.map(cj => {
             (conversationSummary(cj),Text("conversation"))
           }).toList
+      }
+      case "foreignProfile" :: _args => {
+        (profileSearch(),Text("profileSearch")) ::
+        S.param("profileId").map(profileId => (foreignProfileFor(profileId),Text("Profile"))).toList
       }
       case "profile" :: _args => List(
         ("/account",Text("Account")),

@@ -379,7 +379,7 @@ var Conversations = (function(){
         searchPermitted = false;
         currentQuery = query.toLowerCase().trim();
         updateQueryParams();
-        getSearchResult(getQueryFunc()); //injected from Lift
+        searchForConversations(getQueryFunc()); //injected from Lift
     };
     var createFunc = function(title){
         createConversation(title); //injected from Lift

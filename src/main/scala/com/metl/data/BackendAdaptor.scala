@@ -87,6 +87,8 @@ abstract class ServerConfiguration(incomingName:String,incomingHost:String,onCon
   //profile information
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile
   def getAllProfiles:List[Profile]
+  def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] 
+  def queryAppliesToProfile(query:String,profile:Profile):Boolean 
   def getProfiles(ids:String *):List[Profile]
   def updateProfile(id:String,profile:Profile):Profile
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
@@ -242,6 +244,8 @@ object EmptyBackendAdaptor extends ServerConfiguration("empty","empty",(c)=>{}){
   override def upsertResource(identifier:String,data:Array[Byte]):String = ""
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = Profile.empty
   override def getAllProfiles:List[Profile] = Nil
+  override def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] = Nil
+  override def queryAppliesToProfile(query:String,profile:Profile):Boolean = false
   override def getProfiles(ids:String *):List[Profile] = Nil
   override def updateProfile(id:String,profile:Profile):Profile = Profile.empty
   override def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = (Nil,"")  
@@ -300,6 +304,8 @@ class PassThroughAdaptor(sc:ServerConfiguration) extends ServerConfiguration(sc.
   override def shutdown:Unit = sc.shutdown
   override def isReady:Boolean = sc.isReady
   override def getMockHistory:History = sc.getMockHistory
+  override def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] = sc.searchForProfile(query)
+  override def queryAppliesToProfile(query:String,profile:Profile):Boolean = sc.queryAppliesToProfile(query,profile)
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = sc.createProfile(name,attrs,audiences)
   override def getAllProfiles:List[Profile] = sc.getAllProfiles
   override def getProfiles(ids:String *):List[Profile] = sc.getProfiles(ids:_*)

@@ -49,6 +49,8 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def insertResource(data:Array[Byte]):String = resourceProvider.insertResource(data)
   override def upsertResource(identifier:String,data:Array[Byte]):String = resourceProvider.upsertResource(identifier,data)
   override def getAllProfiles:List[Profile] = profileProvider.getAllProfiles
+  override def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] = profileProvider.searchForProfile(query)
+  override def queryAppliesToProfile(query:String,profile:Profile):Boolean = profileProvider.queryAppliesToProfile(query,profile)
   override def getProfiles(ids:String *):List[Profile] = profileProvider.getProfiles(ids:_*)
   override def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = profileProvider.createProfile(name,attrs)
   override def updateProfile(id:String,profile:Profile):Profile = profileProvider.updateProfile(id,profile)

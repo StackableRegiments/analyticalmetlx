@@ -1,0 +1,64 @@
+<div class="lift:surround?with=unstyledDefaultWebMeTL;at=content">
+  <script data-lift="with-resource-id" src="static/js/stable/jquery.ui.widget.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/jquery.iframe-transport.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/jquery.fileupload.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/lodash.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/sprintf-0.7-beta1.js"></script>
+  <script data-lift="with-resource-id" src="static/js/stable/moment.min.js"></script>
+  <script data-lift="with-resource-id" src="static/js/profileSearch.js"></script>
+  <link rel="stylesheet" href="static/css/board.css"></link>
+  <link rel="stylesheet" href="static/css/directlyOnBackground.css"></link>
+  <script data-lift="with-resource-id" src="static/js/stable/jsgrid.min.js"></script>
+  <link rel="stylesheet" href="static/css/jsgrid.min.css"></link>
+  <link rel="stylesheet" href="static/css/jsgrid-theme.min.css"></link>
+  <link rel="stylesheet" href="static/css/jAlert.css"></link>
+  <script src="static/js/stable/jAlert.min.js"></script>
+  <script src="static/js/stable/jAlert-functions.min.js"></script>
+  <style>
+    .gridAction a{
+    color:black !important;
+    }
+    .jsgrid-pager{
+    color:white;
+    }
+    .icon-txt {
+    color:white;
+    }
+  </style>
+
+  <div class="lift:Metl.specificProfileSearch"></div>
+  <div id="masterLayout" class="flex-container-column">
+    <div class="mbt">
+      <div class="indent flex-container-row" id="optionBlocks">
+        <div class="flex-container-column">
+          <h1 class="directlyOnBackground">Find a person</h1>
+          <div id="profileSearchBoxContainer" class="mbt indent">
+            <span id="profileSearchBox"></span>
+            <div class="flex-container-row">
+              <button id="searchButton" type="button" value="Search">
+                <span class="fa fa-search">
+                  <span class="icon-txt">Search</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flex-container-row indent">
+      <div id="profilesDataGrid" class="">
+      </div>
+    </div>
+    <div class="flex-container-row indent directlyOnBackground">
+      <div class="flex-container-column directlyOnBackground" style="margin-left: auto;">
+        <div>
+          <a href="#" style="text-decoration: none" onclick="$.jAlert({
+							title:'Report a Problem',
+							iframe:'/reportProblem?search=true&query=' + ProfileSearch.getQuery(),
+							width:'50%'
+					});"><i class="fa fa-send"></i> Report a Problem</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

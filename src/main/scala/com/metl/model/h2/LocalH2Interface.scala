@@ -601,6 +601,11 @@ GROUP BY %s""".format(
       insertResource(jid,data)
     })
   })
+  def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] = (getAllProfiles.flatMap{
+    case p:Profile if queryAppliesToProfile(query,p) => Some((p,SearchExplanation(query,p.id,true,1.0f,"",Nil)))
+    case _ => None
+  }).toList
+  def queryAppliesToProfile(query:String,profile:Profile):Boolean = profile.name.contains(query)
 
   def getAllProfiles:List[Profile] = Stopwatch.time("H2Interface.getAllProfiles",{
     val s = new java.util.Date().getTime

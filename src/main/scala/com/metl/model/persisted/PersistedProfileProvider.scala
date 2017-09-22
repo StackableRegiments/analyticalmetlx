@@ -14,4 +14,7 @@ class PersistedProfileProvider(override val config:ServerConfiguration,dbInterfa
   def updateProfile(id:String,profile:Profile):Profile = dbInterface.updateProfile(id,profile)
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = dbInterface.getProfileIds(accountName,accountProvider)
   def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = dbInterface.updateAccountRelationship(accountName,accountProvider,profileId,disabled,default)
+  def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] = dbInterface.searchForProfile(query) 
+  def queryAppliesToProfile(query:String,profile:Profile):Boolean = dbInterface.queryAppliesToProfile(query,profile)
+
 }

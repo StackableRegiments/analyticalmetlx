@@ -42,6 +42,8 @@ abstract class PersistenceInterface(config:ServerConfiguration) {
   //profiles
   def getProfiles(ids:String *):List[Profile]
   def getAllProfiles:List[Profile]
+  def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] 
+  def queryAppliesToProfile(query:String,profile:Profile):Boolean 
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile
   def updateProfile(id:String,profile:Profile):Profile
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String]

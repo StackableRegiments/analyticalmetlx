@@ -8,6 +8,8 @@ abstract class ProfileProvider(val config:ServerConfiguration){
   def updateProfile(id:String,profile:Profile):Profile
   def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] 
+  def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] 
+  def queryAppliesToProfile(query:String,profile:Profile):Boolean 
 }
 
 class PassThroughProfileProvider(p:ProfileProvider) extends ProfileProvider(p.config){
@@ -16,8 +18,11 @@ class PassThroughProfileProvider(p:ProfileProvider) extends ProfileProvider(p.co
   def updateProfile(id:String,profile:Profile):Profile = p.updateProfile(id,profile)
   def updateAccountRelationship(accountName:String,accountProvider:String,profileId:String,disabled:Boolean = false, default:Boolean = false):Unit = p.updateAccountRelationship(accountName,accountProvider,profileId,disabled,default)
   def getProfileIds(accountName:String,accountProvider:String):Tuple2[List[String],String] = p.getProfileIds(accountName,accountProvider)
-}
+  def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] = p.searchForProfile(query)
+  def queryAppliesToProfile(query:String,profile:Profile):Boolean = p.queryAppliesToProfile(query,profile)
 
+}
+/*
 class CachingProfileProvider(p:ProfileProvider) extends ProfileProvider(p.config){
   protected val profileStore = scala.collection.mutable.HashMap[String,Profile]()
   protected val accountStore = scala.collection.mutable.HashMap[Tuple2[String,String],Tuple2[List[String],String]]()
@@ -62,4 +67,7 @@ class CachingProfileProvider(p:ProfileProvider) extends ProfileProvider(p.config
       upstream
     })
   }
+  def searchForProfile(query:String):List[Tuple2[Profile,SearchExplanation]] 
+  def queryAppliesToProfile(query:String,profile:Profile):Boolean 
 }
+*/
