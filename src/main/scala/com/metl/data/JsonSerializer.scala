@@ -127,11 +127,10 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     res
   }
   protected def parseMeTLContent(input:MeTLStanza):List[JField] = {
-//    val profileName = Some(input.author).filterNot(a => a == null || a == "").flatMap(a => config.getProfiles(a).headOption)
     List(
       JField("author",JString(input.author)),
       JField("timestamp",JInt(input.timestamp))
-    ) /*::: profileName.map(p => JField("authorName",JString(p.name))).toList*/ ::: parseAudiences(input)
+    ) ::: parseAudiences(input)
   }
   protected def parseCanvasContent(input:MeTLCanvasContent):List[JField] = {
     List(

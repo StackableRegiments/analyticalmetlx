@@ -26,16 +26,6 @@ var ProfileSearch = (function(){
         var DateField = function(config){
             jsGrid.Field.call(this,config);
         };
-        var EditProfileField = function(config){
-            jsGrid.Field.call(this,config);
-        };
-        var ProfileSharingField = function(config){
-            jsGrid.Field.call(this,config);
-        };
-        var JoinProfileField = function(config){
-            jsGrid.Field.call(this,config);
-        };
-
         DateField.prototype = new jsGrid.Field({
             sorter: function(a,b){
                 return new Date(a) - new Date(b);
@@ -92,7 +82,9 @@ var ProfileSearch = (function(){
             pageLoading:false,
             fields: [
                 {name:"name", type:"text", title:"Name", readOnly:true },
-                {name:"timestamp",type:"dateField",title:"Last Updated"}
+                {name:"timestamp",type:"dateField",title:"Last Updated"},
+								{name:"attributes.createdByUser",type:"text",title:"createdByUser", readOnly:true }, 
+								{name:"attributes.createdByProvider",type:"text",title:"createdByProvider", readOnly:true } 
             ]
         });
         profilesDataGrid.jsGrid("sort",{
@@ -142,10 +134,7 @@ var ProfileSearch = (function(){
 
     var reRender = function(){
         var newThreshold = new Date().getTime() - (30 * 60 * 1000); // last 30 minutes
-				var candidates = _.clone(_.filter(_.uniqBy(_.reverse(_.orderBy(currentSearchResults,"lastAccessed")),"jid"),shouldDisplayProfile));
-				// console.log("candidates",candidates);
-        dataGridItems = _.uniqBy(_.reverse(_.orderBy(candidates,"timestamp")),"id");
-				// console.log("rendering",dataGridItems);
+        dataGridItems = _.clone(_.filter(_.uniqBy(_.reverse(_.orderBy(currentSearchResults,"lastAccessed")),"id"),shouldDisplayProfile));
         if (profilesDataGrid != undefined){
             profilesDataGrid.jsGrid("loadData");
             var sortObj = profilesDataGrid.jsGrid("getSorting");

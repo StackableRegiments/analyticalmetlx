@@ -33,20 +33,17 @@ import com.metl.snippet.Metl._
 
 trait ProfileJsonHelpers {
   val config = ServerConfiguration.default
+  val profileSerializer = new JsonSerializer(config)
   val mandatoryAttributes = List("avatarUrl","biography")
   def translateProfileIds(profileIds:List[String]):JObject = {
     JObject(config.getProfiles(profileIds:_*).map(p => {
       JField(p.id,renderProfile(p))
     }))
   }
-  def renderProfile(p:Profile):JObject = {
+  def renderProfile(p:Profile):JValue = {
     val providedAttrs = p.attributes.toList
-    val additionalAttrs = mandatoryAttributes.filterNot(a => providedAttrs.exists(_._1 == a)).map(a => (a,""))
-    JObject(List(
-      JField("id",JString(p.id)),
-      JField("name",JString(p.name)),
-      JField("attributes",JObject((providedAttrs ::: additionalAttrs).map(a => JField(a._1,JString(a._2)))))
-    ))
+    val additionalAttrs:List[Tuple2[String,String]] = mandatoryAttributes.filterNot(a => providedAttrs.exists(_._1 == a)).map(a => (a,""))
+    profileSerializer.fromProfile(p.copy(attributes = additionalAttrs.foldLeft(p.attributes)((acc,item) => acc.updated(item._1,item._2))))
   }
 }
 
