@@ -118,7 +118,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   })
 
   def toMeTLUnhandledData(i:H2UnhandledContent):MeTLUnhandledData = {
-    MeTLUnhandledData(i.unhandled, i.valueType)
+    MeTLUnhandledData(i.unhandled.get, i.valueType.get)
   }
   override def fromMeTLUnhandledData(i:MeTLUnhandledData):H2UnhandledContent = {
     incUnhandled(incMeTLContent(H2UnhandledContent.create,i,"unhandledData"),i)
@@ -127,7 +127,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
 
   def toMeTLUnhandledStanza(i:H2UnhandledStanza):MeTLUnhandledStanza = {
     val c = decStanza(i)
-    MeTLUnhandledStanza(c.author,c.timestamp, i.unhandled, i.valueType, c.audiences)
+    MeTLUnhandledStanza(c.author,c.timestamp, i.unhandled.get, i.valueType.get, c.audiences)
   }
   override def fromMeTLUnhandledStanza(i:MeTLUnhandledStanza):H2UnhandledStanza = {
     incUnhandled(incStanza(H2UnhandledStanza.create,i,"unhandledStanza"),i)//.unhandled(i.unhandled).valueType(i.valueType)
@@ -135,7 +135,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
 
   def toMeTLUnhandledCanvasContent(i:H2UnhandledCanvasContent):MeTLUnhandledCanvasContent = {
     val cc = decCanvasContent(i)
-    MeTLUnhandledCanvasContent(cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences,1.0,1.0, i.unhandled, i.valueType)
+    MeTLUnhandledCanvasContent(cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,cc.audiences,1.0,1.0, i.unhandled.get, i.valueType.get)
   }
   override def fromMeTLUnhandledCanvasContent(i:MeTLUnhandledCanvasContent):H2UnhandledCanvasContent = {
     incUnhandled(incCanvasContent(H2UnhandledCanvasContent.create,i,"unhandledCanvasContent"),i)//.unhandled(i.unhandled).valueType(i.valueType)
@@ -219,7 +219,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   }
   def toMeTLMultiWordText(i:H2MultiWordText):MeTLMultiWordText = {
     val cc = decCanvasContent(i)
-    MeTLMultiWordText(cc.author,cc.timestamp,i.height,i.width,i.requestedWidth.get,i.x.get,i.y.get,i.tag.get,cc.identity,cc.target,cc.privacy,cc.slide,decodeMultiWords(i.words.get),cc.audiences)
+    MeTLMultiWordText(cc.author,cc.timestamp,i.height.get,i.width.get,i.requestedWidth.get,i.x.get,i.y.get,i.tag.get,cc.identity,cc.target,cc.privacy,cc.slide,decodeMultiWords(i.words.get),cc.audiences)
   }
   def encodeMultiWords(words:Seq[MeTLTextWord]):String = net.liftweb.json.Serialization.write(words)
   
@@ -231,7 +231,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   override def fromMeTLText(i:MeTLText):H2Text = incCanvasContent(H2Text.create,i,"text").text(i.text).height(i.height).width(i.width).caret(i.caret).x(i.x).y(i.y).tag(i.tag).style(i.style).family(i.family).weight(i.weight).size(i.size).decoration(i.decoration).color(fromColor(i.color).toString)
   def toMeTLMoveDelta(i:H2MoveDelta):MeTLMoveDelta = {
     val cc = decCanvasContent(i)
-    MeTLMoveDelta(cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,i.xOrigin,i.yOrigin,stringToStrings(i.inkIds.get),stringToStrings(i.textIds.get),stringToStrings(i.multiWordTextIds.get),stringToStrings(i.imageIds.get),stringToStrings(i.videoIds.get),i.xTranslate.get,i.yTranslate.get,i.xScale.get,i.yScale.get,toPrivacy(i.newPrivacy.get),i.isDeleted.get,cc.audiences)
+    MeTLMoveDelta(cc.author,cc.timestamp,cc.target,cc.privacy,cc.slide,cc.identity,i.xOrigin.get,i.yOrigin.get,stringToStrings(i.inkIds.get),stringToStrings(i.textIds.get),stringToStrings(i.multiWordTextIds.get),stringToStrings(i.imageIds.get),stringToStrings(i.videoIds.get),i.xTranslate.get,i.yTranslate.get,i.xScale.get,i.yScale.get,toPrivacy(i.newPrivacy.get),i.isDeleted.get,cc.audiences)
   }
   protected def stringToStrings(s:String):Seq[String] = s match{
     case ss if ss == null => Nil

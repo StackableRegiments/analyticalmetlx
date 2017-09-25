@@ -18,18 +18,14 @@ abstract class ConversationRetriever(config:ServerConfiguration,onConversationDe
 	def searchForSlide(query:String):List[Tuple2[Slide,SearchExplanation]]
   def queryAppliesToConversation(query:String,conversation:Conversation):Boolean
   def queryAppliesToSlide(query:String,slide:Slide):Boolean
-	def searchByCourse(courseId:String):List[Conversation]
 	def detailsOf(jid:String):Conversation 
   def detailsOfSlide(jid:String):Slide
   def getConversationsForSlideId(jid:String):List[String]
 	def createConversation(title:String,author:String):Conversation
-  def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide
+  def createSlide(author:String,slideType:String = "SLIDE"):Slide
 	def deleteConversation(jid:String):Conversation
 	def renameConversation(jid:String,newTitle:String):Conversation
-	def changePermissions(jid:String,newPermissions:Permissions):Conversation
-	def updateSubjectOfConversation(jid:String,newSubject:String):Conversation
 	def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation
-  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation
 	def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation
   def updateConversation(jid:String,conversation:Conversation):Conversation
 }
@@ -41,18 +37,14 @@ object EmptyConversations extends ConversationRetriever(EmptyBackendAdaptor,(c) 
 	override def searchForSlide(query:String) = List.empty[Tuple2[Slide,SearchExplanation]]
   override def queryAppliesToConversation(query:String,conversation:Conversation) = false
   override def queryAppliesToSlide(query:String,slide:Slide) = false
-	override def searchByCourse(courseId:String) = List.empty[Conversation]
 	override def detailsOf(jid:String) = Conversation.empty
   override def detailsOfSlide(jid:String):Slide = Slide.empty
   override def getConversationsForSlideId(jid:String):List[String] = Nil
 	override def createConversation(title:String,author:String):Conversation = Conversation.empty
-  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = Slide.empty
+  override def createSlide(author:String,slideType:String = "SLIDE"):Slide = Slide.empty
 	override def deleteConversation(jid:String):Conversation = Conversation.empty	
 	override def renameConversation(jid:String,newTitle:String):Conversation = Conversation.empty
-	override def changePermissions(jid:String,newPermissions:Permissions):Conversation = Conversation.empty
-	override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = Conversation.empty
 	override def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation = Conversation.empty
-  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = Conversation.empty
 	override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = Conversation.empty
   override def updateConversation(jid:String,conversation:Conversation):Conversation = Conversation.empty
 }

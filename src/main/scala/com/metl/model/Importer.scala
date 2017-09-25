@@ -365,7 +365,7 @@ object Importer extends Logger {
       (s.id,config.createSlide(s.author))
     }):_*)
     val newConvWithOldSlides = newConv.copy(
-      lastAccessed = new java.util.Date().getTime,
+      lastModified = new java.util.Date().getTime,
       slides = oldConv.slides.flatMap(s => newSlides.get(s.id))
     )
     val remoteConv = config.updateConversation(newConv.jid.toString,newConvWithOldSlides)
@@ -393,7 +393,7 @@ object Importer extends Logger {
     onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("ready to create conversation",1,2)),None))
     try {
       val now = new java.util.Date()
-      val conv = Conversation.empty.copy(title = title, author = author,lastAccessed = now.getTime,jid = "")  
+      val conv = Conversation.empty.copy(title = title, author = author,lastModified = now.getTime,jid = "")  
       onUpdate(ImportDescription(importId,title,Globals.currentUser.is,Some(ImportProgress("creating conversation",1,4)),Some(ImportProgress("created conversation",2,2)),None))
       for (
         histories <- foreignConversationParse(importId,filename,conv.jid,bytes,config,author);
@@ -427,7 +427,7 @@ object Importer extends Logger {
       val conversation = server.createConversation(fakeConversation.title,fakeConversation.author)
       val newSlides:Map[Int,Slide] = Map(histories.toList.map(h => (h._1,server.createSlide(onBehalfOfUser))):_*)
       val newConvWithAllSlides = conversation.copy(
-        lastAccessed = new java.util.Date().getTime,
+        lastModified = new java.util.Date().getTime,
         slides = histories.toList.flatMap(h => newSlides.get(h._1).map(s => s.copy(index = h._1 - 1))).toList
       )
       onUpdate(ImportDescription(importId,conversation.title,Globals.currentUser.is,Some(ImportProgress("",3,4)),Some(ImportProgress("slides measured",2,finalCount)),None))

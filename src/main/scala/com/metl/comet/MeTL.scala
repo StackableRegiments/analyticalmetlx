@@ -475,7 +475,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       val slideId = getArgAsString(args(1))
       val c = serverConfig.detailsOfConversation(jid)
       val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
-        case true => StatelessHtml.duplicateSlideInternal(username,slideId.toString,c.jid.toString).getOrElse(c)
+        case true => StatelessHtml.duplicateSlideInternal(slideId,c.jid,(Globals.currentAccount.account,Globals.currentUser.is)).getOrElse(c)
         case _ => c
       })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
@@ -484,7 +484,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
       val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
-        case true => StatelessHtml.duplicateConversationInternal(username,c.jid.toString).openOr(c)
+        case true => StatelessHtml.duplicateConversationInternal(c.jid,(Globals.currentAccount.account,Globals.currentUser.is)).openOr(c)
         case _ => c
       })
       busArgs(RECEIVE_NEW_CONVERSATION_DETAILS,jConv)

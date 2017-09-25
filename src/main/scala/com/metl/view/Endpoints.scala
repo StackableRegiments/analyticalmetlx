@@ -12,7 +12,6 @@ import net.liftweb.http._
 import net.liftweb.http.rest._
 import Helpers._
 import com.metl.model._
-import com.metl.utils.CasUtils._
 
 import scala.xml.{Text, XML}
 
@@ -377,17 +376,52 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         RedirectResponse(referer)
       }
     })
-    case r@Req(List("listGroups", username), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listGroups", StatelessHtml.listGroups(username, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList))
+    case r@Req(List("listGroups", accountProvider,accountName), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listGroups", {
+      val params = r.params
+      var profileId:Option[String] = None
+      val (g,d) = params.flatMap{
+        case ("profileId",pid :: _) => {
+          profileId = Some(pid)
+          Nil
+        }
+        case ("group",groupVals) => {
+          groupVals.flatMap(groupVal => {
+            val parts = groupVal.split("_")
+            parts.headOption.map(k => (true,k,parts.drop(1).mkString("_")))
+          })
+        }
+        case (key,values) => values.map(value => (false,key,value))
+        case _ => Nil
+      }.partition(_._1)
+      val groups = g.map(g => Group(0L,"g_%s_%s_%s".format(accountProvider,g._2,g._3),g._3,accountProvider,g._2)).toList
+      val details = d.map(t => (t._2,t._3)).toList
+      StatelessHtml.listGroups(profileId,Some(Account(accountName,accountProvider)),groups,details)
+    })
     case Req(List("listRooms"), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms", StatelessHtml.listRooms)
     case Req(List("listUsersInRooms"), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms", StatelessHtml.listUsersInRooms)
     case Req(List("listSessions"), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listSessions", StatelessHtml.listSessions)
     case Req(List("sessions","profileId",profileId),_,_) if Globals.availableProfiles.is.exists(_.id == profileId) => () => Stopwatch.time("MeTLStatefulRestHelper.sessionsForProfileId",StatelessHtml.listSessionsForProfile(profileId))
     case Req(List("sessions","accountProvider",accountProvider,"accountName",accountName),_,_) if Globals.currentAccount.name == accountName && Globals.currentAccount.provider == accountProvider => () => Stopwatch.time("MeTLStatefulRestHelper.sessionsForAccount",StatelessHtml.listSessionsForAccount(accountProvider,accountName))
     case Req(List("allSessions"),_,_) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.allSessions",StatelessHtml.listAllSessions)
-    case r@Req(List("impersonate", newUsername), _, _) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.impersonate", StatelessHtml.impersonate(newUsername, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList))
+    case r@Req(List("impersonate", accountProvider, accountName), _, _) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.impersonate",{
+      val params = r.params
+      val (g,d) = params.flatMap{
+        case ("group",groupVals) => {
+          groupVals.flatMap(groupVal => {
+            val parts = groupVal.split("_")
+            parts.headOption.map(k => (true,k,parts.drop(1).mkString("_")))
+          })
+        }
+        case (key,values) => values.map(value => (false,key,value))
+        case _ => Nil
+      }.partition(_._1)
+      val groups = g.map(t => (t._2,t._3)).toList
+      val details = d.map(t => (t._2,t._3)).toList
+       StatelessHtml.impersonate(Account(accountName,accountProvider),groups,details)
+    })
     case Req(List("deImpersonate"), _, _) if Globals.isImpersonator => () => Stopwatch.time("MeTLStatefulRestHelper.deImpersonate", StatelessHtml.deImpersonate)
-    case Req(List("conversationExport", conversation), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation", StatelessHtml.exportConversation(Globals.currentUser.is, conversation))
-    case Req(List("conversationExportForMe", conversation), _, _) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation", StatelessHtml.exportMyConversation(Globals.currentUser.is, conversation))
+    case Req(List("conversationExport", conversationJid), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation", StatelessHtml.exportConversation(conversationJid,(Globals.currentAccount.account,Globals.currentUser.is)))
+    case Req(List("conversationExportForMe", conversationJid), _, _) => () => Stopwatch.time("MeTLStatefulRestHelper.exportConversation", StatelessHtml.exportMyConversation(conversationJid,(Globals.currentAccount.account,Globals.currentUser.is)))
     case r@Req(List("conversationImport"), _, _) => () => Stopwatch.time("MeTLStatefulRestHelper.importConversation", StatelessHtml.importConversation(r))
     case r@Req(List("powerpointImport"), _, _) => () => {
       warn("powerpointImport endpoint triggered: %s".format(r));
@@ -415,9 +449,9 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       () => Stopwatch.time("MeTLStatefulRestHelper.addSubmissionSlideToConversationAtIndex", StatelessHtml.addSubmissionSlideToConversationAtIndex(jid, index.toInt, req))
 
     case Req(List("duplicateSlide", slide, conversation), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide", StatelessHtml.duplicateSlide(Globals.currentUser.is, slide, conversation))
+      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide", StatelessHtml.duplicateSlide(slide, conversation,(Globals.currentAccount.account,Globals.currentUser.is)))
     case Req(List("duplicateConversation", conversation), _, _) =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateConversation", StatelessHtml.duplicateConversation(Globals.currentUser.is, conversation))
+      () => Stopwatch.time("MeTLStatefulRestHelper.duplicateConversation", StatelessHtml.duplicateConversation(conversation,(Globals.currentAccount.account,Globals.currentUser.is)))
     case Req(List("proxyDataUri", slide, source), _, _) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.proxyDataUri", StatelessHtml.proxyDataUri(slide, source))
     case Req(List("proxy", slide, source), _, _) =>

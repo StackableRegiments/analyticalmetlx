@@ -294,6 +294,7 @@ object Globals extends PropertyReader with Logger {
     }
   }
 
+  def getLoggedInUser:AuthState = authenticationState.is
   def getUserGroups:List[Group] = authenticationState.getUserGroups
   
   object currentAccount {

@@ -71,7 +71,7 @@ class ColorSerializer extends net.liftweb.json.Serializer[Color] with JsonSerial
 
 
 
-trait JsonSerializerHelper {
+trait JsonSerializerHelper extends Logger {
 
   lazy implicit val formats = Serialization.formats(NoTypeHints) + new PrivacySerializer + new ColorSerializer
 
@@ -389,6 +389,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val identity = getStringByName(input,"identity")
         MeTLChatMessage(mc.author,mc.timestamp,identity,contentType,content,context,mc.audiences)
       }
+      case _ => MeTLChatMessage.empty
     }
   })
 
@@ -541,7 +542,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       }
     }
     catch{
-      case e => {
+      case e:Throwable => {
         error("JsonSerializer.toMeTLImage failed on %s: %s".format(i,e))
         throw e
       }

@@ -356,7 +356,7 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
 
   protected def updateConversation(c:Conversation):Boolean = {
     try {
-      serializer.fromConversation(c.copy(lastAccessed = new java.util.Date().getTime)).save
+      serializer.fromConversation(c.copy(lastModified = new java.util.Date().getTime)).save
       onConversationDetailsUpdated(c)
       true
     } catch {
@@ -435,7 +435,6 @@ GROUP BY maintable.%s""".format(
   })
   def queryAppliesToSlide(query:String,slide:Slide) = slide.id == query || slide.author == query
   def queryAppliesToConversation(query:String,conversation:Conversation) = conversation.title.toLowerCase.trim.contains(query.toLowerCase.trim) || conversation.author.toLowerCase.trim == query.toLowerCase.trim
-  def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def detailsOfConversation(jid:String):Conversation = {
     val all = H2Conversation.findAll(By(H2Conversation.jid,jid),OrderBy(H2Conversation.lastAccessed,Descending)).map(hc => serializer.toConversation(hc))
     val found = H2Conversation.findAll(By(H2Conversation.jid,jid),OrderBy(H2Conversation.lastAccessed,Descending),MaxRows(1)).headOption.map(hc => serializer.toConversation(hc))
@@ -492,16 +491,17 @@ GROUP BY %s""".format(
   def detailsOfSlide(jid:String):Slide = H2Slide.findAll(By(H2Slide.jid,jid),OrderBy(H2Slide.modified,Descending),MaxRows(1)).headOption.map(hs => serializer.toSlide(hs)).getOrElse(Slide.empty)
   def generateConversationJid:String = "c_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
   def generateSlideJid:String = "s_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
-  def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = {
+  def createSlide(author:String,slideType:String = "SLIDE"):Slide = {
     val now = new java.util.Date().getTime
-    val slide = H2Slide.create.slideType(slideType).creation(now).modified(now).author(author).jid(generateSlideJid).defaultHeight(540).defaultWidth(720).saveMe
-    Slide(slide.author.get,slide.jid.get,0,now,now,slide.defaultHeight.get,slide.defaultWidth.get,true,slideType,grouping)
+    val slide = H2Slide.create.slideType(slideType).creation(now).modified(now).author(author).jid(generateSlideJid).saveMe
+    serializer.toSlide(slide)
   }
   def createConversation(title:String,author:String):Conversation = {
     val now = new Date()
     val newJid = generateConversationJid
     val slide = createSlide(author).copy(index = 0,exposed = true) 
-    val details = Conversation(author,now.getTime,List(slide),"unrestricted","",newJid,title,now.getTime,Permissions.default)
+    val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+    val details = Conversation(author,now.getTime,List(slide),newJid,title,now.getTime,false,permissions)
     updateConversation(details)
     details
   }
@@ -526,19 +526,11 @@ GROUP BY %s""".format(
       }
     }
   })
-  def deleteConversation(jid:String):Conversation = updateSubjectOfConversation(jid,"deleted")
+  def deleteConversation(jid:String):Conversation = findAndModifyConversation(jid,c => c.copy(isDeleted = true))
   def renameConversation(jid:String,newTitle:String):Conversation = findAndModifyConversation(jid,c => c.rename(newTitle))
-  def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation = findAndModifyConversation(jid,c => c.replacePermissions(newPermissions))
-  def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = findAndModifyConversation(jid,c => c.replaceSubject(newSubject))
   def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation = {
     findAndModifyConversation(jid,c => {
       val slide = createSlide(c.author,slideType)
-      c.addSlideAtIndex(index,slide)
-    })
-  }
-  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = {
-    findAndModifyConversation(jid,c => {
-      val slide = createSlide(c.author,"SLIDE",List(grouping))
       c.addSlideAtIndex(index,slide)
     })
   }
@@ -659,7 +651,7 @@ GROUP BY %s""".format(
   })
   protected def createProfileId:String = "p_%s".format(nextFuncName)
   def createProfile(name:String,attrs:Map[String,String],audiences:List[Audience] = Nil):Profile = {
-    val newP = Profile(new Date().getTime,createProfileId,name,attrs,Nil)
+    val newP = Profile(new Date().getTime,createProfileId,name,attrs)
     val hp = serializer.fromProfile(newP)
     hp.save
     serializer.toProfile(hp)

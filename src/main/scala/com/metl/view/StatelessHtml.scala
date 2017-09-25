@@ -1,6 +1,6 @@
 package com.metl.view
 
-import com.metl.data._
+import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.utils._
 
 
@@ -17,7 +17,6 @@ import scala.collection.mutable.StringBuilder
 import net.liftweb.util.Helpers._
 import bootstrap.liftweb.Boot
 import net.liftweb.json._
-import com.metl.liftAuthenticator.{LiftAuthStateData,Detail}
 import java.util.zip._
 
 import com.metl.model._
@@ -76,11 +75,11 @@ object StatelessHtml extends Stemmer with Logger {
     })
   })
 
-  def listGroups(username:String,informationGroups:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.listGroups",{
-    val prelimAuthStateData = LiftAuthStateData(false,username,Nil,informationGroups.map(t => Detail(t._1,t._2)))
-    val groups = Globals.groupsProviders.flatMap(_.getGroupsFor(prelimAuthStateData))
-    val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
-    val lasd = LiftAuthStateData(false,username,groups,personalDetails)
+  def listGroups(profileId:Option[String] = None,account:Option[Account] = None,groupsList:List[MeTLGroup] = Nil,personalDetailsList:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.listGroups",{
+    val prelimAuthStateData = AuthState(false,account.getOrElse(Account.empty),groupsList,personalDetailsList)
+    val groups = Groups.groupsFor(profileId,account)
+    val personalDetails = Groups.personalDetailsFor(profileId,account)
+    val lasd = AuthState(false,account.getOrElse(Account.empty),groups,personalDetails)
     Full(JsonResponse(Extraction.decompose(lasd),200))
   })
 
@@ -108,11 +107,11 @@ object StatelessHtml extends Stemmer with Logger {
   def listAllSessions:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listAllSessions",{
     Full(JsonResponse(Extraction.decompose(config.getCurrentSessions),200))
   })
-  def describeUser(user:com.metl.liftAuthenticator.LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
+  def describeUser(user:AuthState = Globals.getLoggedInUser):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
     Full(JsonResponse(Extraction.decompose(user),200))
   })
-  def impersonate(newUsername:String,params:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.impersonate", {
-    describeUser(Globals.impersonate(newUsername,params))
+  def impersonate(newAccount:Account,groups:List[Tuple2[String,String]] = Nil,personalDetails:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.impersonate", {
+    describeUser(Globals.impersonate(newAccount.name,newAccount.provider,groups,personalDetails))
   })
   def deImpersonate:Box[LiftResponse] = Stopwatch.time("StatelessHtml.deImpersonate", {
     describeUser(Globals.assumeContainerSession)
@@ -276,7 +275,7 @@ object StatelessHtml extends Stemmer with Logger {
     val room = MeTLXConfiguration.getRoom(jid,config.name,RoomMetaDataUtils.fromJid(jid))
     val history = room.getHistory
     val (convHistory,isTeacher) = {
-      room match {
+      room.roomMetaData match {
         case cr:ConversationRoom => {
           val isT = Globals.isSuperUser || config.detailsOfConversation(cr.jid.toString).author == username
           val h = history
@@ -450,7 +449,7 @@ object StatelessHtml extends Stemmer with Logger {
     JObject(List(
       JField("conversations",JArray(
         convs.map(c => {
-          val edits = (c.created :: List(c.lastAccessed).filterNot(_ == c.created) :::
+          val edits = (c.created :: List(c.lastModified).filterNot(_ == c.created) :::
             commands.get(Some(c.jid.toString)).toList.flatten.map(_.timestamp)).groupBy(_ / rounding).values.flatMap(_.headOption).toList.map(JInt(_))
           JObject(List(
             JField("jid",JString(c.jid)),
@@ -494,18 +493,6 @@ object StatelessHtml extends Stemmer with Logger {
       }
     })
   })
-  def addGroupTo(onBehalfOfUser:String,conversation:String,slideId:String,groupDef:GroupSet):Box[LiftResponse] = Stopwatch.time("StatelessHtml.addGroupTo(%s,%s)".format(conversation,slideId),{
-    val conv = config.detailsOfConversation(conversation)
-    for (
-      slide <- conv.slides.find(_.id.toString == slideId);
-      updatedConv = config.updateConversation(conversation,conv.copy(slides = {
-        slide.copy(groupSet = groupDef :: slide.groupSet) :: conv.slides.filterNot(_.id.toString == slideId)
-      }));
-      node <- serializer.fromConversation(updatedConv).headOption
-    ) yield {
-      XmlResponse(node)
-    }
-  })
   def updateConversation(onBehalfOfUser:String,conversationJid:String,req:Req)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.updateConversation(%s)".format(conversationJid),{
     val conv = config.detailsOfConversation(conversationJid)
     for (
@@ -533,7 +520,7 @@ object StatelessHtml extends Stemmer with Logger {
     }
   }
   protected def shouldModifyConversation(c:Conversation):Boolean = {
-    Globals.currentUser.is == c.author
+    com.metl.snippet.Metl.shouldAdministerConversation(c)
   }
   def addQuizViewSlideToConversationAtIndex(jid:String,index:Int,quizId:String):Box[LiftResponse] = {
     val username = Globals.currentUser.is
@@ -635,16 +622,19 @@ object StatelessHtml extends Stemmer with Logger {
               val existingSubmissions = MeTLXConfiguration.getRoom(jid,server).getHistory.getSubmissions
               trace("addSubmissionSlideToConversationAtIndex: existing submissions",existingSubmissions)
               var y:Double = 0.0
-              identities.map{ case JString(submissionId) => existingSubmissions.find(sub => sub.identity == submissionId).map(sub => {
-                trace("Matching submission to be inserted",sub)
-                val now = new java.util.Date().getTime
-                val identity = nextFuncName
-                val tempSubImage = MeTLImage(username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-                val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
-                val subImage = MeTLImage(username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top + y,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
-                y += dimensions.height
-                slideRoom ! LocalToServerMeTLStanza(subImage)
-              })}
+              identities.map{ 
+                case JString(submissionId) => existingSubmissions.find(sub => sub.identity == submissionId).map(sub => {
+                  trace("Matching submission to be inserted",sub)
+                  val now = new java.util.Date().getTime
+                  val identity = nextFuncName
+                  val tempSubImage = MeTLImage(username,now,identity,Full(sub.url),sub.imageBytes,Empty,Double.NaN,Double.NaN,10,10,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+                  val dimensions = slideRoom.slideRenderer.measureImage(tempSubImage)
+                  val subImage = MeTLImage(username,now,identity,Full(sub.url),sub.imageBytes,Empty,dimensions.width,dimensions.height,dimensions.left,dimensions.top + y,"presentationSpace",Privacy.PUBLIC,ho.id.toString,identity)
+                  y += dimensions.height
+                  slideRoom ! LocalToServerMeTLStanza(subImage)
+                })
+                case _ => {}
+              }
             })
             newC
           }
@@ -656,9 +646,9 @@ object StatelessHtml extends Stemmer with Logger {
       case _ => c
     }).headOption.map(n => XmlResponse(n))
   }
-  def duplicateSlideInternal(onBehalfOfUser:String,slide:String,conversation:String):Box[Conversation] = {
+  def duplicateSlideInternal(slide:String,conversation:String,onBehalfOfUser:Tuple2[Account,String]):Box[Conversation] = {
     val conv = config.detailsOfConversation(conversation)
-    if (onBehalfOfUser == conv.author){
+    if (conv.permissions.canAdministerConversation(conv,Some(onBehalfOfUser._1.name),Some(onBehalfOfUser._1.provider),Some(onBehalfOfUser._2))){
       val newConv = conv.slides.find(_.id.toString == slide).map(slide => {
         val step1 = config.addSlideAtIndexOfConversation(conversation,slide.index + 1,"SLIDE")
         step1.slides.find(_.index == slide.index + 1).foreach(newSlide => {
@@ -685,8 +675,8 @@ object StatelessHtml extends Stemmer with Logger {
     }
   }
 
-  def duplicateSlide(onBehalfOfUser:String,slide:String,conversation:String):Box[LiftResponse] = {
-    duplicateSlideInternal(onBehalfOfUser,slide,conversation).map(conv => {
+  def duplicateSlide(slide:String,conversation:String,onBehalfOfUser:Tuple2[Account,String]):Box[LiftResponse] = {
+    duplicateSlideInternal(slide,conversation,onBehalfOfUser).map(conv => {
       serializer.fromConversation(conv).headOption.map(n => XmlResponse(n)) match {
         case Some(r) => Full(r)
         case _ => Empty
@@ -695,16 +685,16 @@ object StatelessHtml extends Stemmer with Logger {
       Full(ForbiddenResponse("only the author may duplicate slides in a conversation"))
     })
   }
-  def duplicateConversationInternal(onBehalfOfUser:String,conversation:String):Box[Conversation] = {
+  def duplicateConversationInternal(conversation:String,onBehalfOfUser:Tuple2[Account,String]):Box[Conversation] = {
     val oldConv = config.detailsOfConversation(conversation)
-    if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,oldConv)){
+    if (oldConv.permissions.canAdministerConversation(oldConv,Some(onBehalfOfUser._1.name),Some(onBehalfOfUser._1.provider),Some(onBehalfOfUser._2))){
       val newConv = config.createConversation(oldConv.title + " (copied at %s)".format(new java.util.Date()),oldConv.author)
       val newSlides = Map(oldConv.slides.map(oldSlide => {
         val newSlide = config.createSlide(oldSlide.author,oldSlide.slideType)
         (oldSlide.id,newSlide)
       }):_*)
       val newConvWithOldSlides = newConv.copy(
-        lastAccessed = new java.util.Date().getTime,
+        lastModified = new java.util.Date().getTime,
         slides = oldConv.slides.flatMap(s => newSlides.get(s.id).map(newS => newS.copy(index = s.index)))
       )
       val remoteConv = config.updateConversation(newConv.jid,newConvWithOldSlides)
@@ -736,8 +726,8 @@ object StatelessHtml extends Stemmer with Logger {
     } else Empty
   }
 
-  def duplicateConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
-    duplicateConversationInternal(onBehalfOfUser,conversation).map(conv => {
+  def duplicateConversation(conversation:String,onBehalfOfUser:Tuple2[Account,String]):Box[LiftResponse] = {
+    duplicateConversationInternal(conversation,onBehalfOfUser).map(conv => {
       serializer.fromConversation(conv).headOption.map(n => XmlResponse(n)) match {
         case Some(r) => Full(r)
         case _ => Empty
@@ -746,10 +736,10 @@ object StatelessHtml extends Stemmer with Logger {
       Full(ForbiddenResponse("only the author may duplicate a conversation"))
     })
   }
-  def exportMyConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
+  def exportMyConversation(conversation:String,onBehalfOfUser:Tuple2[Account,String]):Box[LiftResponse] = {
     for (
       conv <- Some(config.detailsOfConversation(conversation));
-      histories = exportHistories(conv,Some(List(onBehalfOfUser)));
+      histories = exportHistories(conv,Some(List(onBehalfOfUser._2)));
       xml = {
         <export>
         {exportSerializer.fromConversation(conv)}
@@ -761,19 +751,19 @@ object StatelessHtml extends Stemmer with Logger {
       XmlResponse(node)
     }
   }
-  def exportConversation(onBehalfOfUser:String,conversation:String):Box[LiftResponse] = {
-    for (
-      conv <- Some(config.detailsOfConversation(conversation));
-      if (com.metl.snippet.Metl.shouldModifyConversation(onBehalfOfUser,conv));
-      histories = exportHistories(conv,None);
+  def exportConversation(conversationJid:String,onBehalfOfUser:Tuple2[Account,String]):Box[LiftResponse] = {
+    for {
+      conv <- Some(config.detailsOfConversation(conversationJid))
+      if conv.permissions.canAdministerConversation(conv,Some(onBehalfOfUser._1.name),Some(onBehalfOfUser._1.provider),Some(onBehalfOfUser._2))
+      histories = exportHistories(conv,None)
       xml = {
         <export>
         {exportSerializer.fromConversation(conv)}
         <histories>{histories.map(h => exportSerializer.fromHistory(h))}</histories>
         </export>
-      };
+      }
       node <- xml.headOption
-    ) yield {
+    } yield {
       XmlResponse(node)
     }
   }

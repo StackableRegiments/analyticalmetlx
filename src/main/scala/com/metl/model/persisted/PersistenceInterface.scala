@@ -18,17 +18,13 @@ abstract class PersistenceInterface(config:ServerConfiguration) {
   def searchForSlide(query:String):List[Tuple2[Slide,SearchExplanation]]
   def queryAppliesToConversation(query:String,conversation:Conversation):Boolean
   def queryAppliesToSlide(query:String,slide:Slide):Boolean
-  def searchForConversationByCourse(courseId:String):List[Conversation]
   def detailsOfConversation(jid:String):Conversation
   def detailsOfSlide(jid:String):Slide
   def createConversation(title:String,author:String):Conversation
-  def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide
+  def createSlide(author:String,slideType:String = "SLIDE"):Slide
   def deleteConversation(jid:String):Conversation
   def renameConversation(jid:String,newTitle:String):Conversation
-  def changePermissionsOfConversation(jid:String,newPermissions:Permissions):Conversation
-  def updateSubjectOfConversation(jid:String,newSubject:String):Conversation
   def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation
-  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation
   def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation
   def updateConversation(jid:String,conversation:Conversation):Conversation
 

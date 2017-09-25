@@ -22,7 +22,6 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def getAllConversations = conversations.getAllConversations
   override def getAllSlides = conversations.getAllSlides
   override def searchForConversation(query:String) = conversations.searchForConversation(query)
-  override def searchForConversationByCourse(courseId:String) = conversations.searchByCourse(courseId)
   override def searchForSlide(query:String) = conversations.searchForSlide(query)
   override def queryAppliesToSlide(query:String,slide:Slide) = conversations.queryAppliesToSlide(query,slide)
   override def queryAppliesToConversation(query:String,conversation:Conversation) = conversations.queryAppliesToConversation(query,conversation)
@@ -30,13 +29,10 @@ abstract class PersistedAdaptor(name:String,host:String,onConversationUpdated:Co
   override def detailsOfSlide(jid:String) = conversations.detailsOfSlide(jid)
   override def getConversationsForSlideId(jid:String) = conversations.getConversationsForSlideId(jid)
   override def createConversation(title:String,author:String) = conversations.createConversation(title,author)
-  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[GroupSet] = Nil):Slide = conversations.createSlide(author,slideType,grouping)
+  override def createSlide(author:String,slideType:String = "SLIDE"):Slide = conversations.createSlide(author,slideType)
   override def deleteConversation(jid:String):Conversation = conversations.deleteConversation(jid)
   override def renameConversation(jid:String,newTitle:String):Conversation = conversations.renameConversation(jid,newTitle)
-  override def changePermissions(jid:String,newPermissions:Permissions):Conversation = conversations.changePermissions(jid,newPermissions)
-  override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = conversations.updateSubjectOfConversation(jid,newSubject)
   override def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation = conversations.addSlideAtIndexOfConversation(jid,index,slideType)
-  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:GroupSet):Conversation = conversations.addGroupSlideAtIndexOfConversation(jid,index,grouping)
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = conversations.reorderSlidesOfConversation(jid,newSlides)
   override def updateConversation(jid:String,conversation:Conversation):Conversation = conversations.updateConversation(jid,conversation)
   override def getImage(jid:String,identity:String) = history.getMeTLHistory(jid).getImageByIdentity(identity).getOrElse(MeTLImage.empty)

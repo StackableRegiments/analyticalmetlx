@@ -164,75 +164,13 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   protected var attendanceCache:List[String] = Nil
   protected def updatePossibleAttendance = {
     var startingAttendanceCache = attendanceCache
-    attendanceCache = roomMetaData match {
-      case cr:ConversationRoom => {
-        conversationCache.flatMap(conv => {
-          conv.foreignRelationship.map(fr => {
-            (for {
-              gp <- Globals.getGroupsProvider(fr.system).filter(_.canQuery).toList
-              ou <- gp.getOrgUnit(fr.key).toList
-            } yield {
-              gp.getMembersFor(ou).map(_.name)
-            }).flatten
-          })
-        }).getOrElse({
-          (getAttendances.map(_.author) ::: getAttendance).distinct
-        })
-      }
-      case _ => (getAttendances.map(_.author) ::: getAttendance).distinct
-    }
+    attendanceCache = (getAttendances.map(_.author) ::: getAttendance).distinct
     trace("UPDATED POSSIBLE ATTENDANCE!; %s => %s".format(startingAttendanceCache,attendanceCache))
   }
   def getPossibleAttendance:List[String] = attendanceCache.toList
   def getAttendance:List[String] = joinedUsers.map(_._1).distinct
   def getAttendances:List[Attendance] = {
     getHistory.getAttendances
-  }
-  def getGroupSets:List[GroupSet] = {
-    roomMetaData match {
-      case cr:ConversationRoom => cr.cd.slides.flatMap(s => s.groupSet).toList
-      //case s:SlideRoom => s.s.groupSet.toList
-      case _ => Nil
-    }
-  }
-  def updateGroupSets:Option[Conversation] = {
-    roomMetaData match {
-      case cr:ConversationRoom => {
-        trace("updating conversationRoom: %s".format(cr))
-        val details = cr.cd
-        var shouldUpdateConversation = false;
-        val a = getAttendances.map(_.author).distinct.filterNot(_ == details.author)
-        val newSlides = details.slides.map(slide => {
-          slide.copy(groupSet = slide.groupSet.map(gs => {
-            val grouped = gs.groups.flatMap(g => g.members).distinct
-            val ungrouped = a.filterNot(m => grouped.contains(m))
-            if (ungrouped.length > 0){
-              trace("ungrouped: %s".format(ungrouped))
-              shouldUpdateConversation = true
-              ungrouped.foldLeft(gs.copy())((groupSet,person) => {
-                if(person == details.author){
-                  groupSet
-                }
-                else{
-                  groupSet.groupingStrategy.addNewPerson(groupSet,person)
-                }
-              })
-            }
-            else{
-              gs
-            }
-          }))
-        })
-        trace("newSlides: %s".format(newSlides))
-        if (shouldUpdateConversation){
-          warn("pushing conversation update at Rooms::updateGroupSets")
-          Some(cr.cd.copy(slides = newSlides))
-        } else {
-          None
-        }
-      }
-      case _ => None
-    }
   }
   protected val pollInterval = new TimeSpan(2 * 60 * 1000)  // 2 minutes
   protected val chunkExpiry = new TimeSpan(5 * 1000)  // 5 seconds
@@ -293,9 +231,11 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
           val currentConvCache = conversationCache.getOrElse(Conversation.empty)
           val newConv = cr.cd
           conversationCache = Some(newConv)
+          /*
           if (newConv.subject != currentConvCache.subject){
             updatePossibleAttendance
           }
+          */
         }
         case _ => None
       }
@@ -331,6 +271,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         com.metl.comet.MeTLSlideDisplayActorManager ! m
       }
       case (m:Attendance,cr:ConversationRoom) => {
+        /*
         updateGroupSets.foreach(c => {
           trace("Updating %s because of calculating groups based on %s => %s".format(c.jid,m.author,
             (for(
@@ -340,6 +281,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
               member <- group.members) yield member).mkString(",")))
           config.updateConversation(c.jid.toString,c)
         })
+      */
       }
       case (c:MeTLCanvasContent ,_) => chunker.add(c,this)
       case _ => {}
@@ -373,9 +315,11 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             // the author's in the room, so don't perform any automatic action. 
           } else {
             // the author's not in the room, so check whether the conv's permissions include the mustFollowTeacher behaviour, and disable it if it is.
+            /* // this behaviour's gone, but something like it will happen regardless.
             if (conv.permissions.usersAreCompulsorilySynced){
               config.changePermissions(conv.jid.toString,conv.permissions.copy(usersAreCompulsorilySynced = false))
             }
+            */
           }
         })
         if (!oldMembers.contains(j.username)){
@@ -406,9 +350,11 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             // the author's still in the room 
           } else {
             // the author's left, so check whether the conv's permissions include the mustFollowTeacher behaviour.
+            /* //this is gone, but something like it will replace it.
             if (conv.permissions.usersAreCompulsorilySynced){
               config.changePermissions(conv.jid.toString,conv.permissions.copy(usersAreCompulsorilySynced = false))
             }
+            */
           }
         })
         if (oldMembers.contains(l.username) && !newMembers.contains(l.username)){

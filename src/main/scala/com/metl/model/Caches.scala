@@ -7,7 +7,6 @@ import Helpers._
 import _root_.net.liftweb.common._
 import net.liftweb.util
 import net.sf.ehcache.config.PersistenceConfiguration
-import com.metl.liftAuthenticator.OrgUnit
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.{Document,Field,StringField,TextField,IntPoint,LongPoint}
@@ -159,7 +158,7 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
 }
 
 class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:Conversation => Unit,profileCache:Option[ProfileCache] = None) {
-  object ConversationIndex extends LuceneIndex[Conversation]("jid",List("title","author","subject","tag")){
+  object ConversationIndex extends LuceneIndex[Conversation]("jid",List("title","author")){
     override protected def rewriteQuery(queryString:String,query:Query) = {
       enrichQuery(query,Map(
         "author" -> {(qTup:Tuple3[Query,String,List[Tuple2[String,Int]]]) => {
@@ -195,10 +194,8 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
       doc.add(new StringField("jid",c.jid,Field.Store.YES))
       doc.add(new TextField("title",c.title,Field.Store.NO))
       doc.add(new StringField("author",c.author,Field.Store.NO))
-      doc.add(new StringField("subject",c.subject,Field.Store.NO))
-      doc.add(new StringField("tag",c.tag,Field.Store.NO))
       doc.add(new LongPoint("created",c.created))
-      doc.add(new LongPoint("lastModified",c.lastAccessed))
+      doc.add(new LongPoint("lastModified",c.lastModified))
       doc.add(new TextField("slides",c.slides.map(_.id).mkString(" "),Field.Store.NO))
       doc
     }
@@ -247,7 +244,6 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   def queryAppliesToSlide(query:String,s:Slide):Boolean = {
     SlideIndex.queryAppliesTo(query,s)
   }
-  def searchForConversationByCourse(courseId:String):List[Conversation] = getAllConversations.filter(c => c.subject.toLowerCase.trim.equals(courseId.toLowerCase.trim) || c.foreignRelationship.exists(_.key.toLowerCase.trim == courseId.toLowerCase.trim)).toList
   def detailsOfConversation(jid:String):Conversation = conversationCache.get(jid).getOrElse(Conversation.empty)
   def detailsOfSlide(jid:String):Slide = slideCache.get(jid).getOrElse(Slide.empty)
   protected def updateConversation(c:Conversation):Conversation = {
@@ -263,18 +259,15 @@ class ConversationCache(config:ServerConfiguration,onConversationDetailsUpdated:
   def createConversation(title:String,author:String):Conversation = {
     updateConversation(config.createConversation(title,author))
   }
-  def createSlide(author:String,slideType:String = "SLIDE",grouping:List[com.metl.data.GroupSet] = Nil):Slide = {
-    val s = config.createSlide(author,slideType,grouping)
+  def createSlide(author:String,slideType:String = "SLIDE"):Slide = {
+    val s = config.createSlide(author,slideType)
     slideCache.update(s.id,s)
     SlideIndex.updateItem(s)
     s
   }
   def deleteConversation(jid:String):Conversation = updateConversation(config.deleteConversation(jid))
   def renameConversation(jid:String,newTitle:String):Conversation = updateConversation(config.renameConversation(jid,newTitle))
-  def changePermissions(jid:String,newPermissions:Permissions):Conversation = updateConversation(config.changePermissions(jid,newPermissions))
-  def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = updateConversation(config.updateSubjectOfConversation(jid,newSubject))
   def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation = updateConversation(config.addSlideAtIndexOfConversation(jid,index,slideType))
-  def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = updateConversation(config.addGroupSlideAtIndexOfConversation(jid,index,grouping))
   def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = updateConversation(config.reorderSlidesOfConversation(jid,newSlides))
   def updateConversation(jid:String,conversation:Conversation):Conversation = updateConversation(config.updateConversation(jid,conversation))
   def getConversationsByAuthor(author:String):List[Conversation] = getAllConversations.filter(_.author == author)
@@ -522,20 +515,16 @@ class CachingServerAdaptor(
   override def getAllSlides = conversationCache.map(_.getAllSlides).getOrElse(config.getAllSlides)
   override def getConversationsForSlideId(jid:String) = conversationCache.map(_.getConversationsForSlideId(jid)).getOrElse(config.getConversationsForSlideId(jid))
   override def searchForConversation(query:String) = conversationCache.map(_.searchForConversation(query)).getOrElse(config.searchForConversation(query))
-  override def searchForConversationByCourse(courseId:String) = conversationCache.map(_.searchForConversationByCourse(courseId)).getOrElse(config.searchForConversationByCourse(courseId))
   override def searchForSlide(query:String) = conversationCache.map(_.searchForSlide(query)).getOrElse(config.searchForSlide(query))
   override def queryAppliesToConversation(query:String,conversation:Conversation) = conversationCache.map(_.queryAppliesToConversation(query,conversation)).getOrElse(config.queryAppliesToConversation(query,conversation))
   override def queryAppliesToSlide(query:String,slide:Slide) = conversationCache.map(_.queryAppliesToSlide(query,slide)).getOrElse(config.queryAppliesToSlide(query,slide))
   override def detailsOfConversation(jid:String) = conversationCache.map(_.detailsOfConversation(jid)).getOrElse(config.detailsOfConversation(jid))
   override def detailsOfSlide(jid:String) = conversationCache.map(_.detailsOfSlide(jid)).getOrElse(config.detailsOfSlide(jid))
   override def createConversation(title:String,author:String) = conversationCache.map(_.createConversation(title,author)).getOrElse(config.createConversation(title,author))
-  override def createSlide(author:String,slideType:String = "SLIDE",grouping:List[com.metl.data.GroupSet] = Nil):Slide = conversationCache.map(_.createSlide(author,slideType,grouping)).getOrElse(config.createSlide(author,slideType,grouping))
+  override def createSlide(author:String,slideType:String = "SLIDE"):Slide = conversationCache.map(_.createSlide(author,slideType)).getOrElse(config.createSlide(author,slideType))
   override def deleteConversation(jid:String):Conversation = conversationCache.map(_.deleteConversation(jid)).getOrElse(config.deleteConversation(jid))
   override def renameConversation(jid:String,newTitle:String):Conversation = conversationCache.map(_.renameConversation(jid,newTitle)).getOrElse(config.renameConversation(jid,newTitle))
-  override def changePermissions(jid:String,newPermissions:Permissions):Conversation = conversationCache.map(_.changePermissions(jid,newPermissions)).getOrElse(config.changePermissions(jid,newPermissions))
-  override def updateSubjectOfConversation(jid:String,newSubject:String):Conversation = conversationCache.map(_.updateSubjectOfConversation(jid,newSubject)).getOrElse(config.updateSubjectOfConversation(jid,newSubject))
   override def addSlideAtIndexOfConversation(jid:String,index:Int,slideType:String):Conversation = conversationCache.map(_.addSlideAtIndexOfConversation(jid,index,slideType)).getOrElse(config.addSlideAtIndexOfConversation(jid,index,slideType))
-  override def addGroupSlideAtIndexOfConversation(jid:String,index:Int,grouping:com.metl.data.GroupSet):Conversation = conversationCache.map(_.addGroupSlideAtIndexOfConversation(jid,index,grouping)).getOrElse(config.addGroupSlideAtIndexOfConversation(jid,index,grouping))
   override def reorderSlidesOfConversation(jid:String,newSlides:List[Slide]):Conversation = conversationCache.map(_.reorderSlidesOfConversation(jid,newSlides)).getOrElse(config.reorderSlidesOfConversation(jid,newSlides))
   override def updateConversation(jid:String,conversation:Conversation):Conversation = conversationCache.map(_.updateConversation(jid,conversation)).getOrElse(config.updateConversation(jid,conversation))
   override def getConversationsByAuthor(author:String):List[Conversation] = conversationCache.map(_.getConversationsByAuthor(author)).getOrElse(config.getConversationsByAuthor(author))
