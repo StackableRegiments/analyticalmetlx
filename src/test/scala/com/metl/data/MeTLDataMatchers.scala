@@ -732,14 +732,14 @@ trait ConversationMatchers {
 		  )
 	  }
 
-	def lastAccessed(expectedValue: Long) =
+	def lastModified(expectedValue: Long) =
 	  new HavePropertyMatcher[Conversation, Long] {
 		def apply(stanza: Conversation) =
 		  HavePropertyMatchResult(
-			stanza.lastAccessed == expectedValue,
-			"lastAccessed",
+			stanza.lastModified == expectedValue,
+			"lastModified",
 			expectedValue,
-			stanza.lastAccessed
+			stanza.lastModified
 		  )
 	  }
 
@@ -751,28 +751,6 @@ trait ConversationMatchers {
 			"slides",
 			expectedValue,
 			stanza.slides
-		  )
-	  }
-
-	def subject(expectedValue: String) =
-	  new HavePropertyMatcher[Conversation, String] {
-		def apply(stanza: Conversation) =
-		  HavePropertyMatchResult(
-			stanza.subject == expectedValue,
-			"subject",
-			expectedValue,
-			stanza.subject
-		  )
-	  }
-
-	def tag(expectedValue: String) =
-	  new HavePropertyMatcher[Conversation, String] {
-		def apply(stanza: Conversation) =
-		  HavePropertyMatchResult(
-			stanza.tag == expectedValue,
-			"tag",
-			expectedValue,
-			stanza.tag
 		  )
 	  }
 
@@ -808,16 +786,15 @@ trait ConversationMatchers {
 			stanza.created
 		  )
 	  }
-
-	def permissions(expectedValue: Permissions) =
-	  new HavePropertyMatcher[Conversation, Permissions] {
+	def isDeleted(expectedValue: Boolean) =
+	  new HavePropertyMatcher[Conversation, Boolean] {
 		def apply(stanza: Conversation) =
 		  HavePropertyMatchResult(
-			stanza.permissions == expectedValue,
-			"permissions",
+			stanza.isDeleted == expectedValue,
+			"isDeleted",
 			expectedValue,
-			stanza.permissions
+			stanza.isDeleted
 		  )
 	  }
-}
 
+}

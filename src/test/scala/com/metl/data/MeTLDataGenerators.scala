@@ -272,15 +272,13 @@ trait MeTLDataGenerators {
 
   def genConversation = for {
     author <- genString(32)
-    lastAccessed <- arbitrary[Long]
-    subject <- genString(32)
-    tag <- genString(32)
+    lastModified <- arbitrary[Long]
     jid <- genString(64)//arbitrary[Int]
     title <- genString(32)
     created <- arbitrary[Long]
-    permissions <- genPermissions
     slides <- Gen.containerOfN[List, Slide](1,genSlide)
-  } yield Conversation(author, lastAccessed, slides, subject, tag, jid, title, created, permissions)
+    isDeleted <- arbitrary[Boolean]
+  } yield Conversation(author, lastModified, slides, jid, title, created, isDeleted)
 
   def genSlide = for {
     author <- genString(32)
@@ -290,13 +288,6 @@ trait MeTLDataGenerators {
     modified <- arbitrary[Long]
   } yield Slide(author, id, index, created, modified)
 
-  def genPermissions = for {
-    studentsCanOptionFriends <- arbitrary[Boolean]
-    studentsCanPublish <- arbitrary[Boolean]
-    usersAreCompulsorilySynced <- arbitrary[Boolean]
-    studentsMayBroadcast <- arbitrary[Boolean]
-    studentsMayChatPublicly <- arbitrary[Boolean]
-  } yield Permissions(studentsCanOptionFriends, studentsCanPublish, usersAreCompulsorilySynced, studentsMayBroadcast, studentsMayChatPublicly)
   def genForeignRelationship = for {
     sys <- genString(32)
     key <- genString(32)
