@@ -585,7 +585,7 @@ var Plugins = (function(){
                         catch(e){
                             console.log("Groups plugin render e",e);
                         }
-                    }
+                    };
                     bus.gradeValueReceived["Groups plugin"] = function(gv){
                         var linkedGradeLoc = sprintf("groupWork_%s",Conversations.getCurrentSlideJid());
                         var linkedGrade = _.find(Grades.getGrades(),function(grade){
@@ -594,7 +594,7 @@ var Plugins = (function(){
                         if(linkedGrade && gv.gradeId == linkedGrade.id){
                             render();
                         }
-                    }
+                    };
                     bus.currentSlideJidReceived["Groups plugin"] = render;
                     bus.conversationDetailsReceived["Groups plugin"] = render;
                     return overContainer;
@@ -609,13 +609,41 @@ var Plugins = (function(){
 $(function(){
     var pluginBar = $("#pluginBar");
     var styleContainer = $("<style></style>").appendTo($("body"));
+    styleContainer.append(".pluginHidden {display:none}"+
+                          " .collapserOpen{background:green}"+
+                          " .collapserClosed{background:red}");
     _.each(Plugins,function(plugin,label){
-        var container = $("<div />",{
+        console.log("Creating plugin", plugin);
+        var pluginContainer = $("<div />",{
             class:"plugin"
         });
-        plugin.load(Progress).appendTo(container);
+        var collapserContainer = $("<div />", {
+            class:"collapserOpen"
+        });
+        collapserContainer.append('<div class="collapseContainer">'+
+            '<button class="collapseButton collapserOpen">- '+label+'</button>'+
+            '</div>');
+        var contentContainer = plugin.load(Progress);
+        console.log("Content container",contentContainer);
+        contentContainer.appendTo(pluginContainer);
+        var collapseButton = collapserContainer.find(".collapseButton");
+        collapseButton.on("click",function() {
+            var hidePluginClass = "pluginHidden";
+            if( contentContainer.hasClass(hidePluginClass)) {
+                contentContainer.removeClass(hidePluginClass);
+                collapseButton.removeClass("collapserClosed");
+                collapseButton.addClass("collapserOpen");
+                collapseButton.text("- "+label);
+            } else {
+                contentContainer.addClass(hidePluginClass);
+                collapseButton.removeClass("collapserOpen");
+                collapseButton.addClass("collapserClosed");
+                collapseButton.text("+ "+label);
+            }
+        });
+        collapserContainer.appendTo(pluginContainer);
         styleContainer.append(plugin.style);
-        container.appendTo(pluginBar);
+        pluginContainer.appendTo(pluginBar);
         plugin.initialize();
     });
 });
