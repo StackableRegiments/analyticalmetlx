@@ -1,8 +1,7 @@
 package com.metl.comet
 
-import com.metl.data._
+import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.utils._
-import com.metl.liftAuthenticator._
 import com.metl.liftExtensions._
 
 import net.liftweb._
@@ -101,26 +100,14 @@ object ConversationSummaryActorManager extends LiftActor with ListenerManager wi
 }
 
 trait ConversationFilter {
-  protected def refreshForeignRelationship(c:Conversation,me:String,myGroups:List[OrgUnit]):Conversation = {
-    (for {
-      fr <- c.foreignRelationship
-      newFr <- Globals.casState.is.eligibleGroups.find(g => g.foreignRelationship.exists(gfr => gfr.key == fr.key && gfr.system == fr.system)).flatMap(_.foreignRelationship)
-    } yield {
-      c.copy(foreignRelationship = Some(newFr))
-    }).getOrElse(c)
-  }
-  protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[OrgUnit],includeDeleted:Boolean = false):Boolean = {
-    val subject = c.subject.trim.toLowerCase
-    val author = c.author.trim.toLowerCase
-    com.metl.snippet.Metl.shouldDisplayConversation(c,includeDeleted)
+  protected def conversationFilterFunc(c:Conversation,includeDeleted:Boolean = false):Boolean = {
+    (includeDeleted || c.isDeleted) && com.metl.snippet.Metl.shouldViewConversation(c) 
   }
   def filterConversations(in:List[Conversation],includeDeleted:Boolean = false):List[Conversation] = {
-    lazy val me = Globals.currentUser.is.toLowerCase.trim
-    lazy val myGroups = Globals.casState.is.eligibleGroups.toList
     in.groupBy(_.jid).flatMap{
       case (jid,result :: _) => Some(result)
       case _ => None
-    }.toList.filter(c => conversationFilterFunc(c,me,myGroups,includeDeleted))
+    }.toList.filter(c => conversationFilterFunc(c,includeDeleted))
   }
 }
 
@@ -178,7 +165,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
   protected lazy val RECEIVE_USER_OPTIONS = "receiveUserOptions"
 
   protected def username:String = Globals.currentUser.is
-  protected def userGroups:List[OrgUnit] = Globals.getUserGroups
+  protected def userGroups:List[MeTLGroup] = Globals.getUserGroups
   protected def profile:Profile = Globals.currentProfile.is
   protected def account:Tuple2[String,String] = (Globals.currentAccount.name,Globals.currentAccount.provider)
   protected def jUsername = JString(username)
@@ -189,9 +176,9 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
     JField("accountProvider",JString(account._2))
   ))
 
-  protected def shouldModifyConversation(c:Conversation):Boolean = com.metl.snippet.Metl.shouldModifyConversation(username,c)
-  protected def shouldDisplayConversation(c:Conversation):Boolean = com.metl.snippet.Metl.shouldDisplayConversation(c)
-  protected def shouldPublishInConversation(c:Conversation):Boolean = com.metl.snippet.Metl.shouldPublishInConversation(username,c)
+  protected def shouldAdministerConversation(c:Conversation):Boolean = com.metl.snippet.Metl.shouldAdministerConversation(c)
+  protected def shouldViewConversation(c:Conversation):Boolean = com.metl.snippet.Metl.shouldViewConversation(c)
+  protected def shouldInteractInConversation(c:Conversation):Boolean = com.metl.snippet.Metl.shouldInteractInConversation(c)
 
   object TokBoxFunctions {
      lazy val RECEIVE_TOK_BOX_ENABLED = "receiveTokBoxEnabled"
@@ -247,7 +234,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       val layout = getArgAsString(args(0))
         val jBroadcast = JArray((for {
           tb <- Globals.tokBox
-          if (shouldModifyConversation(conversationAccessor()))
+          if (shouldAdministerConversation(conversationAccessor()))
           s <- tokSessions().toList.flatMap(_._2).headOption
           b = tb.startBroadcast(s,layout)
         } yield {
@@ -260,7 +247,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       val layout = getArgAsString(args(1))
       val jBroadcast = JArray((for {
           tb <- Globals.tokBox
-          if (shouldModifyConversation(conversationAccessor()))
+          if (shouldAdministerConversation(conversationAccessor()))
           s <- tokSessions().toList.flatMap(_._2).headOption
           a = tb.updateBroadcast(s,id,layout)
         } yield {
@@ -271,7 +258,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
     def stopBroadcast(tokSessions:() => scala.collection.mutable.HashMap[String,Option[TokBoxSession]],conversationAccessor:() => Conversation) = ClientSideFunction("stopBroadcast",List.empty[String],(args) => {
       val jBroadcast = JArray((for {
         tb <- Globals.tokBox
-        if (shouldModifyConversation(conversationAccessor()))
+        if (shouldAdministerConversation(conversationAccessor()))
         s <- tokSessions().toList.flatMap(_._2).headOption
         b <- tb.getBroadcast(s)
         a = tb.stopBroadcast(s,b.id)
@@ -432,7 +419,7 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       val newSlides = getArgAsJArray(args(1))
       trace("reorderSlidesOfConversation(%s,%s)".format(jid,newSlides))
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => {
           (newSlides.arr.length == c.slides.length) match {
             case true => {
@@ -443,14 +430,14 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
           }
         }
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL)) 
 
     def deleteConversation:ClientSideFunction = ClientSideFunction("deleteConversation",List("conversationJid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => {
           trace("deleting conversation %s".format(c.jid))
           serverConfig.deleteConversation(c.jid.toString)
@@ -459,69 +446,47 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
           trace("refusing to delete conversation %s".format(c.jid))
           c
         }
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL))
     def renameConversation:ClientSideFunction = ClientSideFunction("renameConversation",List("jid","newTitle"),(args) => {
       val jid = getArgAsString(args(0))
       val newTitle = getArgAsString(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      var jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      var jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => serverConfig.renameConversation(c.jid.toString,newTitle)
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
-    },Full(METLBUS_CALL))
-    def changeSubjectOfConversation:ClientSideFunction = ClientSideFunction("changeSubjectOfConversation",List("conversationJid","newSubject","newRelationshipSystem","newRelationshipKey"),(args) => {
-      val jid = getArgAsString(args(0))
-      val newSubject = getArgAsString(args(1))
-      val newRelationshipSystem = tryo(getArgAsString(args(2)))
-      val newRelationshipKey = tryo(getArgAsString(args(3)))
-      var c = serverConfig.detailsOfConversation(jid)
-      busArgs(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(if (shouldModifyConversation(c) && (newSubject.toLowerCase == "unrestricted" || newSubject.toLowerCase == username || userGroups.exists(_.name == newSubject))){
-        var newRelationship = for {
-          sys <- newRelationshipSystem
-          key <- newRelationshipKey
-          if (sys != null && sys != "")
-          if (key != null && key != "")
-          newFr <- Globals.casState.is.eligibleGroups.find(g => g.foreignRelationship.exists(fr => fr.key == key && fr.system == sys)).flatMap(_.foreignRelationship)
-        } yield {
-          newFr
-        }
-        var newC = c.replaceSubject(newSubject).setForeignRelationship(newRelationship)
-        serverConfig.updateConversation(c.jid.toString,newC)
-      } else {
-        c
-      },username,userGroups)))
     },Full(METLBUS_CALL))
     def addSlideToConversationAtIndex:ClientSideFunction = ClientSideFunction("addSlideToConversationAtIndex",List("jid","index","slideType"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
       val slideType = args.drop(2).headOption.map(a => getArgAsString(a)).getOrElse("SLIDE")
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => serverConfig.addSlideAtIndexOfConversation(c.jid,index,slideType)
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL))
     def duplicateSlideById = ClientSideFunction("duplicateSlideById",List("jid","slideId"),(args) => {
       val jid = getArgAsString(args(0))
       val slideId = getArgAsString(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => StatelessHtml.duplicateSlideInternal(username,slideId.toString,c.jid.toString).getOrElse(c)
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL))
     def duplicateConversation = ClientSideFunction("duplicateConversation",List("jid"),(args) => {
       val jid = getArgAsString(args(0))
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => StatelessHtml.duplicateConversationInternal(username,c.jid.toString).openOr(c)
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_NEW_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL))
     def changeExposureOfSlide = ClientSideFunction("changeExposureOfSlide",List("jid","slideId","exposed"),(args) => {
@@ -529,12 +494,12 @@ trait MeTLActorBase[T <: ReturnToMeTLBus[T]] extends ReturnToMeTLBus[T] with Pro
       val slideId = getArgAsString(args(1))
       val exposed = getArgAsBool(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => {
           serverConfig.updateConversation(c.jid.toString,c.copy(slides = c.slides.find(_.id == slideId).map(_.copy(exposed = exposed)).toList ::: c.slides.filterNot(_.id == slideId)))
         }
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL))
     def getHistory(historyFunc:String => History) = ClientSideFunction("getHistory",List("slide"),(args)=> {
@@ -830,7 +795,7 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
     }
     val importDescriptions = JArray(imports.map(serialize _))
     printSince("imports")
-    val startingList = listing.map(c => refreshForeignRelationship(c,username,userGroups))
+    val startingList = listing
     printSince("listing, mapped by foreignRelationship (%s)".format(startingList.length))
     val serList = serializer.fromConversationList(startingList)
     printSince("listing, serialized")
@@ -857,7 +822,7 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
 
   protected def queryApplies(in:Conversation):Boolean = query.map(q => serverConfig.queryAppliesToConversation(q,in)).getOrElse(false)
 
-  override protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[OrgUnit],includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,me,myGroups,includeDeleted) && queryApplies(c)
+  override protected def conversationFilterFunc(c:Conversation,includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,includeDeleted) && queryApplies(c)
 
   override def lowPriority = {
     case id:ImportDescription => {
@@ -877,7 +842,7 @@ class MeTLJsonConversationChooserActor extends MeTLActorBase[MeTLJsonConversatio
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") => {
       trace("receivedCommand: %s".format(c))
       val newJid = c.commandParameters(0)
-      val newConv = refreshForeignRelationship(serverConfig.detailsOfConversation(newJid.toString),username,userGroups)
+      val newConv = serverConfig.detailsOfConversation(newJid.toString)
       val inOldListing = listing.exists(_.jid == newJid)
       listing = filterConversations(List(newConv) ::: listing.filterNot(_.jid == newConv.jid))
       val inNewListing = listing.exists(_.jid == newJid)
@@ -904,7 +869,6 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
     CommonFunctions.reorderSlidesOfConversation,
     CommonFunctions.deleteConversation,
     CommonFunctions.renameConversation,
-    CommonFunctions.changeSubjectOfConversation,
     CommonFunctions.addSlideToConversationAtIndex,
     CommonFunctions.duplicateSlideById,
     CommonFunctions.duplicateConversation,
@@ -918,7 +882,7 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
     super.localSetup
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
-      conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => refreshForeignRelationship(serverConfig.detailsOfConversation(jid),username,userGroups))
+      conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => serverConfig.detailsOfConversation(jid))
       warn("editConversationActor has: %s".format(conversation))
       showLinks = com.metl.snippet.Metl.getLinksFromName(nameString).getOrElse(true)
     })
@@ -926,7 +890,7 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
 
   override def render = {
     OnLoad(conversation.filter(c => {
-      val shouldModify = shouldModifyConversation(c)
+      val shouldModify = shouldAdministerConversation(c)
       warn("shouldModify returned: %s for %s".format(shouldModify,c))
       shouldModify
     }).map(c => {
@@ -937,7 +901,7 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
       Call("getActiveProfile") &
       busCall(RECEIVE_USERNAME,jUsername) &
       busCall(RECEIVE_USER_GROUPS,jUserGroups) &
-      busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(c,username,userGroups))) &
+      busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c)) &
       busCall(RECEIVE_SHOW_CONVERSATION_LINKS,JBool(showLinks))
     }).getOrElse({
       warn("editConversation kicking: %s from %s".format(username,conversation))
@@ -947,7 +911,7 @@ class MeTLEditConversationActor extends MeTLActorBase[MeTLEditConversationActor]
   override def lowPriority = {
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") && c.commandParameters.headOption.exists(cid => conversation.exists(_.jid == cid))  => {
       conversation.foreach(c => {
-        val newConv = refreshForeignRelationship(serverConfig.detailsOfConversation(c.jid),username,userGroups)
+        val newConv = serverConfig.detailsOfConversation(c.jid)
         trace("receivedUpdatedConversation: %s => %s".format(c,newConv))
         conversation = Some(newConv)
         reRender
@@ -971,7 +935,6 @@ class ConversationSummaryActor extends MeTLActorBase[ConversationSummaryActor] {
     CommonFunctions.reorderSlidesOfConversation,
     CommonFunctions.deleteConversation,
     CommonFunctions.renameConversation,
-    CommonFunctions.changeSubjectOfConversation,
     CommonFunctions.addSlideToConversationAtIndex,
     CommonFunctions.duplicateSlideById,
     CommonFunctions.duplicateConversation,
@@ -984,7 +947,7 @@ class ConversationSummaryActor extends MeTLActorBase[ConversationSummaryActor] {
     super.localSetup
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
-      conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => refreshForeignRelationship(serverConfig.detailsOfConversation(jid.toString),username,userGroups))
+      conversation = com.metl.snippet.Metl.getConversationFromName(nameString).map(jid => serverConfig.detailsOfConversation(jid.toString))
       conversation.foreach(c => {
         relevantProfiles = (serverConfig.getProfiles(c.author) ::: relevantProfiles).distinct
       })
@@ -992,7 +955,7 @@ class ConversationSummaryActor extends MeTLActorBase[ConversationSummaryActor] {
   }
 
   override def render = {
-    OnLoad(conversation.filter(c => shouldDisplayConversation(c)).map(c => {
+    OnLoad(conversation.filter(c => shouldViewConversation(c)).map(c => {
       Call("getAccount") &
       Call("getProfiles") &
       Call("getAvailableProfiles") &
@@ -1000,13 +963,13 @@ class ConversationSummaryActor extends MeTLActorBase[ConversationSummaryActor] {
       Call("getActiveProfile") &
       busCall(RECEIVE_USERNAME,jUsername) &
       busCall(RECEIVE_USER_GROUPS,jUserGroups) &
-      busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(c,username,userGroups)))
+      busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(c))
     }).getOrElse(RedirectTo(conversationSearch())))
   }
   override def lowPriority = {
     case c:MeTLCommand if (c.command == "/UPDATE_CONVERSATION_DETAILS") && c.commandParameters.headOption.exists(cid => conversation.exists(_.jid.toString == cid.toString))  => {
       conversation.foreach(c => {
-        val newConv = refreshForeignRelationship(serverConfig.detailsOfConversation(c.jid.toString),username,userGroups)
+        val newConv = serverConfig.detailsOfConversation(c.jid)
         trace("receivedUpdatedConversation: %s => %s".format(c,newConv))
         conversation = Some(newConv)
         reRender
@@ -1181,11 +1144,11 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
     val allGrades = Map(convHistory.getGrades.groupBy(_.id).values.toList.flatMap(_.sortWith((a,b) => a.timestamp > b.timestamp).headOption.map(g => (g.id,g)).toList):_*)
     val finalHistory = convHistory.filter{
       case g:MeTLGrade => true
-      case gv:MeTLGradeValue if shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) => true
+      case gv:MeTLGradeValue if shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) => true
       case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == true) && gv.getGradedUser == username => true
       case gv:MeTLGradeValue => false
-      case qr:MeTLQuizResponse if (qr.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
-      case s:MeTLSubmission if (s.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case qr:MeTLQuizResponse if (qr.author != username && !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case s:MeTLSubmission if (s.author != username && !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))) => false
       case _ => true
     }
     finalHistory
@@ -1195,8 +1158,8 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
     val privHistory = MeTLXConfiguration.getRoom(jid+username,serverName).getHistory
     val finalHistory = pubHistory.merge(privHistory).filter{
       case g:MeTLGrade => true
-      case qr:MeTLQuizResponse if (qr.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
-      case s:MeTLSubmission if (s.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case qr:MeTLQuizResponse if (qr.author != username && !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case s:MeTLSubmission if (s.author != username && !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))) => false
       case _ => true
     }
     debug("final %s".format(jid))
@@ -1297,7 +1260,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
         })
         sendToPrivates.foreach(privTup => {
           val privateAuthor = privTup._1
-          if (username == privateAuthor || shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))){
+          if (username == privateAuthor || shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))){
             val privRoom = MeTLXConfiguration.getRoom(m.slide+privateAuthor,serverName) // rooms.getOrElse((serverName,m.slide+privateAuthor),() => EmptyRoom)()
               privTup._2.foreach(privStanza => {
                 trace("OUT TO PRIV -> %s".format(privStanza))
@@ -1349,14 +1312,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
             val roomId = cc.jid.toString
             rooms.get((serverName,roomId)).map(r =>{
               debug("sendStanzaToServer sending chatMessage: "+r)
-              if( cc.blackList.contains(username)) {
-                // Banned students can only whisper the teacher.
-                r() ! LocalToServerMeTLStanza(s.adjustAudience(List(Audience("metl", cc.author, "user", "read"))))
-              }
-              else
-              {
-                r() ! LocalToServerMeTLStanza(s)
-              }
+              r() ! LocalToServerMeTLStanza(s)
             })
           })
         }
@@ -1407,7 +1363,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
                 (true,c.slide+username,c)
               }
               case Privacy.PUBLIC => {
-                if (shouldPublishInConversation(cc)){
+                if (shouldInteractInConversation(cc)){
                   (true,c.slide,c)
                 } else {
                   (true,c.slide+username,c match {
@@ -1434,7 +1390,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
         } else warn("attemped to send a stanza to the server which wasn't yours: %s".format(c))
       }
       case c:MeTLCommand => {
-        if (c.author == username && shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))){
+        if (c.author == username && shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))){
           val conversationSpecificCommands = List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION")
           val slideSpecificCommands = List("/TEACHER_VIEW_MOVED")
           val roomTarget = c.command match {
@@ -1505,7 +1461,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
         val newJid = c.commandParameters(0)
         val newConv = serverConfig.detailsOfConversation(newJid)
         if (currentConversation.exists(_.jid == newConv.jid)){
-          if (!shouldDisplayConversation(newConv)){
+          if (!shouldViewConversation(newConv)){
             debug("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
             currentConversation = Empty
             currentSlide = Empty
@@ -1518,7 +1474,7 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
               } else cc
             })
             trace("updating conversation to: %s".format(newConv))
-            partialUpdate(busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(newConv,username,userGroups))))
+            partialUpdate(busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
           }
         }
       }
@@ -1533,21 +1489,21 @@ class ActivityActor extends MeTLActorBase[ActivityActor]{
       case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
         //not relaying teacherInConversation to page
       }
-      //case a:Attendance if (shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => getAttendance.map(attendances => partialUpdate(busCall(RECEIVE_ATTENDANCE,attendances)))
-      case s:MeTLSubmission if !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) && s.author != username => {
+      //case a:Attendance if (shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))) => getAttendance.map(attendances => partialUpdate(busCall(RECEIVE_ATTENDANCE,attendances)))
+      case s:MeTLSubmission if !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) && s.author != username => {
         //not sending the submission to the page, because you're not the author and it's not yours
       }
-      case qr:MeTLQuizResponse if !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) && qr.author != username => {
+      case qr:MeTLQuizResponse if !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) && qr.author != username => {
         //not sending the quizResponse to the page, because you're not the author and it's not yours
       }
       /*
-       case g:MeTLGrade if !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) && !g.visible => {
+       case g:MeTLGrade if !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) && !g.visible => {
        //not sending a grade to the page because you're not the author, and this one's not visible
        }
        */
       case gv:MeTLGradeValue => {
         currentConversation.foreach(cc => {
-          if (shouldModifyConversation(cc)){
+          if (shouldAdministerConversation(cc)){
             partialUpdate(busCall(RECEIVE_METL_STANZA,serializer.fromMeTLData(gv)))
           } else {
             if (gv.getGradedUser == username){
@@ -1654,7 +1610,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val metlData = serializer.toMeTLData(stanza)
       metlData match {
         case m:MeTLCanvasContent => {
-          if (m.author == username || shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))){
+          if (m.author == username || shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))){
             currentConversation.map(cc => {
               val t = m match {
                 case i:MeTLInk => "ink"
@@ -1709,26 +1665,6 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
     },Empty),
     ClientSideFunction("getRooms",List.empty[String],(unused) => List(JString("receiveRoomListing"),JArray(rooms.map(kv => JObject(List(JField("server",JString(kv._1._1)),JField("jid",JString(kv._1._2)),JField("room",JString(kv._2.toString))))).toList)),Full(METLBUS_CALL)),
     ClientSideFunction("getUser",List.empty[String],(unused) => List(JString(RECEIVE_USERNAME),JString(username)),Full(METLBUS_CALL)),
-    ClientSideFunction("changePermissionsOfConversation",List("jid","newPermissions"),(args) => {
-      val jid = getArgAsString(args(0))
-      val newPermissions = getArgAsJValue(args(1))
-      val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
-        case true => serverConfig.changePermissions(c.jid.toString,serializer.toPermissions(newPermissions))
-        case _ => c
-      },username,userGroups))
-      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
-    },Full(METLBUS_CALL)),
-    ClientSideFunction("changeBlacklistOfConversation",List("jid","newBlacklist"),(args) => {
-      val jid = getArgAsString(args(0))
-      val rawBlacklist = getArgAsListOfStrings(args(1))
-      val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
-        case true => serverConfig.updateConversation(c.jid.toString,c.copy(blackList = rawBlacklist))
-        case _ => c
-      },username,userGroups))
-      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
-    },Full(METLBUS_CALL)),
     ClientSideFunction("banContent",List("conversationJid","slideJid","inkIds","textIds","multiWordTextIds","imageIds","videoIds"),(args) => {
       val conversationJid = getArgAsString(args(0))
       val slideJid = getArgAsString(args(1))
@@ -1752,8 +1688,8 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
 
       val authors = (inks ::: images ::: texts ::: highlighters ::: multiWordTexts ::: videos).map(_.author).distinct
       val conv = serverConfig.detailsOfConversation(conversationJid)
-      if (shouldModifyConversation(conv)){
-        serverConfig.updateConversation(conv.jid.toString,conv.copy(blackList = (conv.blackList ::: authors).distinct.toList))
+      if (shouldAdministerConversation(conv)){
+        //serverConfig.updateConversation(conv.jid.toString,conv.copy(blackList = (conv.blackList ::: authors).distinct.toList))
         alertScreen("banning users","Blacklisted users: %s".format(authors))
         def getColorForAuthor(name:String):Color = {
           new Color(128,128,128,128)
@@ -1815,37 +1751,6 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       }
       Nil
     },Empty),
-    ClientSideFunction("overrideAllocation",List("conversationJid","slideObject"),(args) => {
-      debug("Override allocation: %s".format(args))
-      val newSlide = serializer.toSlide(getArgAsJValue(args(1)))
-      val c = serverConfig.detailsOfConversation(getArgAsString(args(0)))
-      debug("Parsed values: %s".format(newSlide,c))
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
-        case true => serverConfig.updateConversation(c.jid.toString,c.copy(slides = newSlide :: c.slides.filterNot(_.id == newSlide.id)))
-        case false => c
-      },username,userGroups))
-      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
-    },Full(METLBUS_CALL)),
-    ClientSideFunction("addGroupSlideToConversationAtIndex",List("jid","index","grouping","initialGroups","parameter"),(args) => {
-      val jid = getArgAsString(args(0))
-      val index = getArgAsInt(args(1))
-      val initialGroups = args(3) match {
-        case JArray(groups) => groups.map(getArgAsListOfStrings _).map(members => com.metl.data.Group(nextFuncName,jid,new Date().getTime,members))
-        case _ => Nil
-      }
-      val c = serverConfig.detailsOfConversation(jid)
-      val grouping = getArgAsString(args(2)) match {
-        case "byTotalGroups" => com.metl.data.GroupSet(nextFuncName,jid,ByTotalGroups(getArgAsInt(args(4))),initialGroups)
-        case "byMaximumSize" => com.metl.data.GroupSet(nextFuncName,jid,ByMaximumSize(getArgAsInt(args(4))),initialGroups)
-        case "groupsOfOne" => com.metl.data.GroupSet(nextFuncName,jid,OnePersonPerGroup,initialGroups)
-        case _ => com.metl.data.GroupSet(nextFuncName,jid,ByMaximumSize(4),initialGroups)
-      }
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
-        case true => serverConfig.addGroupSlideAtIndexOfConversation(c.jid.toString,index,grouping)
-        case _ => c
-      },username,userGroups))
-      busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
-    },Full(METLBUS_CALL)),
     ClientSideFunction("addImageSlideToConversationAtIndex",List("jid","index","resourceId","caption"),(args) => {
       val jid = getArgAsString(args(0))
       val index = getArgAsInt(args(1))
@@ -1853,7 +1758,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val captionArg = getArgAsJValue(args(3))
       val caption = serializer.toMeTLMultiWordText(captionArg)
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1870,7 +1775,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           newC
         }
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL)),
 
@@ -1879,7 +1784,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val index = getArgAsInt(args(1))
       val submissionId = getArgAsString(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1896,7 +1801,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           newC
         }
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL)),
     ClientSideFunction("addQuizViewSlideToConversationAtIndex",List("jid","index","quizId"),(args) => {
@@ -1904,7 +1809,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val index = getArgAsInt(args(1))
       val quizId = getArgAsString(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1929,7 +1834,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           newC
         }
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv)
     },Full(METLBUS_CALL)),
     ClientSideFunction("addQuizResultsViewSlideToConversationAtIndex",List("jid","index","quizId"),(args) => {
@@ -1937,7 +1842,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val index = getArgAsInt(args(1))
       val quizId = getArgAsString(args(2))
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => {
           val newC = serverConfig.addSlideAtIndexOfConversation(c.jid,index,"SLIDE")
           newC.slides.sortBy(s => s.id).reverse.headOption.map(ho => {
@@ -1982,14 +1887,14 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           newC
         }
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv) 
     },Full(METLBUS_CALL)),
     ClientSideFunction("reorderSlidesOfCurrentConversation",List("jid","newSlides"),(args) => {
       val jid = getArgAsString(args(0))
       val newSlides = getArgAsJArray(args(1))
       val c = serverConfig.detailsOfConversation(jid)
-      val jConv = serializer.fromConversation(refreshForeignRelationship(shouldModifyConversation(c) match {
+      val jConv = serializer.fromConversation(shouldAdministerConversation(c) match {
         case true => {
           (newSlides.arr.length == c.slides.length) match {
             case true => serverConfig.reorderSlidesOfConversation(c.jid.toString,newSlides.arr.map(i => serializer.toSlide(i)).toList)
@@ -1997,7 +1902,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           }
         }
         case _ => c
-      },username,userGroups))
+      })
       busArgs(RECEIVE_CONVERSATION_DETAILS,jConv) 
     },Full(METLBUS_CALL)),
     ClientSideFunction("getQuizzesForConversation",List("conversationJid"),(args) => {
@@ -2017,72 +1922,12 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       val response = MeTLQuizResponse(username,new Date().getTime,chosenOptionName,username,quizId)
       rooms.get((server,conversationJid)).map(r => r() ! LocalToServerMeTLStanza(response))
       Nil
-    },Empty),
-    ClientSideFunction("getGroupsProviders",Nil,(args) => {
-      busArgs("receiveGroupsProviders",JObject(List(
-        JField("groupsProviders",JArray(Globals.getGroupsProviders.filter(_.canQuery).map(gp => JObject(List(JField("storeId",JString(gp.storeId)),JField("displayName",JString(gp.name)))))))
-      )))
-    },Full(METLBUS_CALL)),
-    ClientSideFunction("getOrgUnitsFromGroupProviders",List("storeId"),(args) => {
-      val sid = getArgAsString(args(0))
-      val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
-      busArgs("receiveOrgUnitsFromGroupsProviders",JObject(List(
-        JField("groupsProvider",gp),
-        JField("orgUnits",JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
-          gp.getGroupsFor(Globals.casState.is).map(g => Extraction.decompose(g))
-        }).toList))
-      )))
-    },Full(METLBUS_CALL)),
-    ClientSideFunction("getGroupSetsForOrgUnit",List("storeId","orgUnit"),(args) => {
-      val sid = getArgAsString(args(0))
-      val orgUnitJValue = getArgAsJValue(args(1))
-      val orgUnit = orgUnitJValue.extract[OrgUnit]
-      val members = for {
-        cc <- currentConversation.toList
-        r <- rooms.get((server,cc.jid.toString)).toList
-        a <- r().getPossibleAttendance
-      } yield {
-        Member(a,Nil,None)
-      }
-      val groupSets = JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
-        gp.getGroupSetsFor(orgUnit,members).map(gs => Extraction.decompose(gs))
-      }).toList)
-      val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
-      busArgs("receiveGroupSetsForOrgUnit",JObject(List(
-        JField("groupsProvider",gp),
-        JField("orgUnit",orgUnitJValue),
-        JField("groupSets",groupSets)
-      )))
-    },Full(METLBUS_CALL)),
-    ClientSideFunction("getGroupsForGroupSet",List("storeId","orgUnit","groupSet"),(args) => {
-      val sid = getArgAsString(args(0))
-      val orgUnitJValue = getArgAsJValue(args(1))
-      val orgUnit = orgUnitJValue.extract[OrgUnit]
-      val groupSetJValue = getArgAsJValue(args(2))
-      val groupSet = groupSetJValue.extract[com.metl.liftAuthenticator.GroupSet]
-      val members = for {
-        cc <- currentConversation.toList
-        r <- rooms.get((server,cc.jid.toString)).toList
-        a <- r().getPossibleAttendance
-      } yield {
-        Member(a,Nil,None)
-      }
-      val groups = JArray(Globals.getGroupsProvider(sid).toList.flatMap(gp => {
-        gp.getGroupsFor(orgUnit,groupSet,members).map(gs => Extraction.decompose(gs))
-      }).toList)
-      val gp = JObject(List(JField("storeId",JString(sid))) ::: Globals.getGroupsProviders.find(_.storeId == sid).toList.map(gp => JField("displayName",JString(gp.name))))
-      busArgs("receiveGroupsForGroupSet",JObject(List(
-        JField("groupsProvider",gp),
-        JField("orgUnit",orgUnitJValue),
-        JField("groupSet",groupSetJValue),
-        JField("groups",groups)
-      )))
-    },Full(METLBUS_CALL))
+    },Empty)
   )
   private def getQuizResponsesForQuizInConversation(jid:String,quizId:String):List[MeTLQuizResponse] = {
     rooms.get((server,jid)).map(r => r().getHistory.getQuizResponses.filter(q => q.id == quizId)).map(allQuizResponses => {
       val conversation = serverConfig.detailsOfConversation(jid)
-      shouldModifyConversation(conversation) match {
+      shouldAdministerConversation(conversation) match {
         case true => allQuizResponses
         case _ => allQuizResponses.filter(qr => qr.answerer == username)
       }
@@ -2122,7 +1967,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       partialUpdate(refreshClientSideStateJs(true))
     }
     case HealthyWelcomeFromRoom => {}
-    case cp@ConversationParticipation(jid,currentMembers,possibleMembers) if shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) => {
+    case cp@ConversationParticipation(jid,currentMembers,possibleMembers) if shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) => {
       trace("CONVERSATION PARTICIPATION: %s".format(cp))
       partialUpdate(busCall(RECEIVE_ATTENDANCE,JObject(List(
         JField("location",JString(jid)),
@@ -2178,7 +2023,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
   })
   private def refreshClientSideStateJs(refreshDetails:Boolean) = {
     currentConversation.map(cc => {
-      if (!shouldDisplayConversation(cc)){
+      if (!shouldViewConversation(cc)){
         warn("refreshClientSideState kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
         currentConversation = Empty
         currentSlide = Empty
@@ -2198,11 +2043,11 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
     trace(receiveUserGroups)
     val receiveCurrentConversation:Box[JsCmd] = currentConversation.map(cc => busCall(RECEIVE_CURRENT_CONVERSATION,JString(cc.jid.toString)))
     trace(receiveCurrentConversation)
-    val receiveConversationDetails:Box[JsCmd] = if(refreshDetails) currentConversation.map(cc => busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(cc,username,userGroups)))) else Empty
+    val receiveConversationDetails:Box[JsCmd] = if(refreshDetails) currentConversation.map(cc => busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(cc))) else Empty
     trace(receiveConversationDetails)
     val receiveCurrentSlide:Box[JsCmd] = currentSlide.map(cc => busCall(RECEIVE_CURRENT_SLIDE, JString(cc)))
     trace(receiveCurrentSlide)
-    val receiveLastSyncMove:Box[JsCmd] = if(shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))){
+    val receiveLastSyncMove:Box[JsCmd] = if(shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))){
       Empty
     } else {
       currentConversation.map(cc => {
@@ -2234,7 +2079,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       (for {
         cc <- currentConversation
         tb <- Globals.tokBox
-        role = shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) match {
+        role = shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) match {
           case true => TokRole.Moderator
           case false => TokRole.Publisher
         }
@@ -2292,22 +2137,14 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
     val details = serverConfig.detailsOfConversation(jid)
     leaveAllRooms()
     debug("joinConversation: %s".format(details))
-    if (shouldDisplayConversation(details)){
+    if (shouldViewConversation(details)){
       debug("conversation available")
       currentConversation = Full(details)
       val conversationJid = details.jid
       tokSessions += ((conversationJid,None))
       joinRoomByJid(conversationJid)
-      /*
-       if (shouldModifyConversation(username,details)){
-       MeTLXConfiguration.getRoom(cj,serverConfig.name) ! LocalToServerMeTLStanza(MeTLCommand(serverConfig,Globals.currentUser.is,-1L,"/SYNC_MOVE",List(sid)))
-       }
-       */
-      //      rooms.get((server,"global")).foreach(r => r ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conversationJid,true,Nil)))
-      //joinRoomByJid(conversationJid,"loopback")
       currentConversation
     } else {
-      debug("conversation denied: %s, %s.".format(jid,details.subject))
       trace("joinConversation kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
       currentConversation = Empty
       currentSlide = Empty
@@ -2333,11 +2170,11 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
     trace("conv found %s".format(convHistory.getGradeValues))
     val finalHistory = pubHistory.merge(privHistory).merge(convHistory).filter{
       case g:MeTLGrade => true
-      case gv:MeTLGradeValue if shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) => true
+      case gv:MeTLGradeValue if shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) => true
       case gv:MeTLGradeValue if allGrades.get(gv.getGradeId).exists(_.visible == true) && gv.getGradedUser == username => true
       case gv:MeTLGradeValue => false
-      case qr:MeTLQuizResponse if (qr.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
-      case s:MeTLSubmission if (s.author != username && !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case qr:MeTLQuizResponse if (qr.author != username && !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))) => false
+      case s:MeTLSubmission if (s.author != username && !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))) => false
       case _ => true
     }
     debug("final %s".format(jid))
@@ -2399,15 +2236,6 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
           }
         }
         tokSlideSpecificSessions.clear()
-        tokSlideSpecificSessions ++= (for {
-          slide <- cc.slides
-          if slide.id == slideId
-          groupSet <- slide.groupSet
-          group <- groupSet.groups
-          if (group.members.contains(username) || shouldModifyConversation(cc))
-            } yield {
-          (group.id,None)
-        })
       }
     })
   }
@@ -2515,7 +2343,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
         })
         sendToPrivates.foreach(privTup => {
           val privateAuthor = privTup._1
-          if (username == privateAuthor || shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))){
+          if (username == privateAuthor || shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))){
             val privRoom = MeTLXConfiguration.getRoom(m.slide+privateAuthor,server) // rooms.getOrElse((serverName,m.slide+privateAuthor),() => EmptyRoom)()
               privTup._2.foreach(privStanza => {
                 trace("OUT TO PRIV -> %s".format(privStanza))
@@ -2546,14 +2374,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
             val roomId = cc.jid.toString
             rooms.get((serverName,roomId)).map(r =>{
               debug("sendStanzaToServer sending chatMessage: "+r)
-              if( cc.blackList.contains(username)) {
-                // Banned students can only whisper the teacher.
-                r() ! LocalToServerMeTLStanza(s.adjustAudience(List(Audience("metl", cc.author, "user", "read"))))
-              }
-              else
-              {
-                r() ! LocalToServerMeTLStanza(s)
-              }
+              r() ! LocalToServerMeTLStanza(s)
             })
           })
         }
@@ -2574,7 +2395,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       case q:MeTLQuiz => {
         if (q.author == username) {
           currentConversation.map(cc => {
-            if (shouldModifyConversation(cc)){
+            if (shouldAdministerConversation(cc)){
               trace("sending quiz: %s".format(q))
               val roomId = cc.jid.toString
               rooms.get((serverName,roomId)).map(r => r() ! LocalToServerMeTLStanza(q))
@@ -2604,7 +2425,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
                 (true,c.slide+username,c)
               }
               case Privacy.PUBLIC => {
-                if (shouldPublishInConversation(cc)){
+                if (shouldInteractInConversation(cc)){
                   (true,c.slide,c)
                 } else {
                   (true,c.slide+username,c match {
@@ -2631,7 +2452,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
         } else warn("attemped to send a stanza to the server which wasn't yours: %s".format(c))
       }
       case c:MeTLCommand => {
-        if (c.author == username && shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))){
+        if (c.author == username && shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))){
           val conversationSpecificCommands = List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION")
           val slideSpecificCommands = List("/TEACHER_VIEW_MOVED")
           val roomTarget = c.command match {
@@ -2702,7 +2523,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
         val newJid = c.commandParameters(0)
         val newConv = serverConfig.detailsOfConversation(newJid)
         if (currentConversation.exists(_.jid == newConv.jid)){
-          if (!shouldDisplayConversation(newConv)){
+          if (!shouldViewConversation(newConv)){
             debug("sendMeTLStanzaToPage kicking this cometActor(%s) from the conversation because it's no longer permitted".format(name))
             currentConversation = Empty
             currentSlide = Empty
@@ -2715,7 +2536,7 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
               } else cc
             })
             trace("updating conversation to: %s".format(newConv))
-            partialUpdate(busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(refreshForeignRelationship(newConv,username,userGroups))))
+            partialUpdate(busCall(RECEIVE_CONVERSATION_DETAILS,serializer.fromConversation(newConv)))
           }
         }
       }
@@ -2730,21 +2551,21 @@ class MeTLActor extends MeTLActorBase[MeTLActor]{
       case c:MeTLCommand if (c.command == "/TEACHER_IN_CONVERSATION") => {
         //not relaying teacherInConversation to page
       }
-      //case a:Attendance if (shouldModifyConversation(currentConversation.getOrElse(Conversation.empty))) => getAttendance.map(attendances => partialUpdate(busCall(RECEIVE_ATTENDANCE,attendances)))
-      case s:MeTLSubmission if !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) && s.author != username => {
+      //case a:Attendance if (shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty))) => getAttendance.map(attendances => partialUpdate(busCall(RECEIVE_ATTENDANCE,attendances)))
+      case s:MeTLSubmission if !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) && s.author != username => {
         //not sending the submission to the page, because you're not the author and it's not yours
       }
-      case qr:MeTLQuizResponse if !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) && qr.author != username => {
+      case qr:MeTLQuizResponse if !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) && qr.author != username => {
         //not sending the quizResponse to the page, because you're not the author and it's not yours
       }
       /*
-       case g:MeTLGrade if !shouldModifyConversation(currentConversation.getOrElse(Conversation.empty)) && !g.visible => {
+       case g:MeTLGrade if !shouldAdministerConversation(currentConversation.getOrElse(Conversation.empty)) && !g.visible => {
        //not sending a grade to the page because you're not the author, and this one's not visible
        }
        */
       case gv:MeTLGradeValue => {
         currentConversation.foreach(cc => {
-          if (shouldModifyConversation(cc)){
+          if (shouldAdministerConversation(cc)){
             partialUpdate(busCall(RECEIVE_METL_STANZA,serializer.fromMeTLData(gv)))
           } else {
             if (gv.getGradedUser == username){

@@ -6,7 +6,6 @@ import com.metl.model._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 import java.util.Date
-import com.metl.liftAuthenticator.ForeignRelationship
 
 object PointConverter {
   def fromText(t:String):List[Point] = parsePoints(t.split(" ").toList)
@@ -96,101 +95,42 @@ object Presentation{
   def empty = Presentation(Conversation.empty)
 }
 
-case class GroupSet(id:String,location:String,groupingStrategy:GroupingStrategy,groups:List[Group],override val audiences:List[Audience] = Nil) extends MeTLData(audiences){
-  def contains(person:String) = groups.exists(_.members.contains(person))
-}
-object GroupSet {
-  def empty = GroupSet("","",EveryoneInOneGroup,Nil,Nil)
-}
-
-abstract class GroupingStrategy extends Logger {
-  def addNewPerson(g:GroupSet,person:String):GroupSet
-}
-
-case class ByMaximumSize(groupSize:Int) extends GroupingStrategy {
-  override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    val oldGroups = g.groups
-    val newGroups = {
-      oldGroups.find(group => {
-        group.members.length < groupSize
-      }).map(fg => {
-        fg.copy(members = person :: fg.members) :: oldGroups.filter(_.id != fg.id)
-      }).getOrElse({
-        Group(nextFuncName,g.location,new Date().getTime,List(person)) :: oldGroups
-      })
-    }
-    warn("ByMaximumSize adding %s yields %s".format(person,newGroups))
-    g.copy(groups = newGroups)
-  }
-}
-case class ByTotalGroups(numberOfGroups:Int) extends GroupingStrategy {
-  override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    if(g.contains(person)){
-      trace("Already grouped: %s".format(person))
-      g
-    }
-    else{
-      val oldGroups = g.groups
-      val newGroups = g.copy(groups = {
-        oldGroups match {
-          case l:List[Group] if l.length < numberOfGroups => {
-            trace("Adding a group")
-            Group(nextFuncName,g.location,new Date().getTime,List(person)) :: l
-          }
-          case l:List[Group] => {
-            trace("Adding to an existing group")
-            l.sortWith((a,b) => a.members.length < b.members.length).headOption.map(fg => {
-              trace("  Adding to %s".format(fg))
-              fg.copy(members = person :: fg.members) :: l.filter(_.id != fg.id)
-            }).getOrElse({
-              trace("  Adding to %s".format(l.head))
-              l.head.copy(members = person :: l.head.members) :: l.drop(1)
-            })
-          }
-        }
-      })
-      trace("ByTotalGroups adding %s yields %s".format(person,newGroups))
-      newGroups
-    }
-  }
-}
-case class ComplexGroupingStrategy(data:Map[String,String]) extends GroupingStrategy {
-  protected var groupingFunction:Tuple2[GroupSet,String]=>GroupSet = (t:Tuple2[GroupSet,String]) => t._1
-  override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    groupingFunction((g,person))
-  }
-  def replaceGroupingFunction(func:Tuple2[GroupSet,String]=>GroupSet):ComplexGroupingStrategy = {
-    groupingFunction = func
-    this
-  }
-}
-case object OnePersonPerGroup extends GroupingStrategy {
-  override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    g.copy(groups = Group(nextFuncName,g.location,new Date().getTime,List(person)) :: g.groups)
-  }
-}
-case object EveryoneInOneGroup extends GroupingStrategy {
-  override def addNewPerson(g:GroupSet,person:String):GroupSet = {
-    g.copy(groups = List(Group(g.groups.headOption.map(_.id).getOrElse(nextFuncName),g.location,new Date().getTime,(person :: g.groups.flatMap(_.members)).distinct)))
-  }
-}
-
-case class Group(id:String,location:String,timestamp:Long,members:List[String],override val audiences:List[Audience] = Nil) extends MeTLData(audiences)
-object Group {
-  def empty = Group("","",0,Nil,Nil)
-}
-
 case class SearchExplanation(query:String,documentId:String,isMatch:Boolean,score:Float,description:String,subResults:List[SearchExplanation])
 
-case class Conversation(author:String,lastAccessed:Long,slides:List[Slide],subject:String,tag:String,jid:String,title:String,created:Long,permissions:Permissions, blackList:List[String] = List.empty[String],override val audiences:List[Audience] = Nil,foreignRelationship:Option[ForeignRelationship] = None) extends MeTLData(audiences) with Logger{
-  def delete = copy(subject="deleted",lastAccessed=new Date().getTime)//Conversation(author,new Date().getTime,slides,"deleted",tag,jid,title,created,permissions,blackList,audiences)
-  def rename(newTitle:String) = copy(title=newTitle,lastAccessed = new Date().getTime)
-  def replacePermissions(newPermissions:Permissions) = copy(permissions = newPermissions, lastAccessed = new Date().getTime)
-  def shouldDisplayFor(username:String,userGroups:List[String]):Boolean = {
-    val trimmedSubj = subject.toLowerCase.trim
-    (trimmedSubj == "unrestricted" || author.toLowerCase.trim == username.toLowerCase.trim || userGroups.exists(ug => ug.toLowerCase.trim == trimmedSubj)) && trimmedSubj != "deleted"
-  }
-  def replaceSubject(newSubject:String) = copy(subject=newSubject,lastAccessed=new Date().getTime)
+trait AccessControl {
+  def canAccess(accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groups:List[String] = Nil):Boolean
+}
+case class GroupAccessControl(groupIdValue:String) extends AccessControl {
+  override def canAccess(accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = groupIds.contains(groupIdValue)
+}
+case class AccountAccessControl(accountNameValue:String,accountProviderValue:String) extends AccessControl {
+  override def canAccess(accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = accountName.contains(accountNameValue) && accountProvider.contains(accountProviderValue)
+}
+case class ProfileAccessControl(profileIdValue:String) extends AccessControl {
+  override def canAccess(accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = profileId.contains(profileIdValue)
+}
+case object EveryoneCanAccess extends AccessControl {
+  override def canAccess(accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = true
+}
+case object NoOneCanAccess extends AccessControl {
+  override def canAccess(accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = false
+}
+case class AccessControlList(accessControls:List[AccessControl]) extends AccessControl {
+  override def canAccess(accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = accessControls.exists(_.canAccess(accountName,accountProvider,profileId,groupIds))
+}
+
+case class StructurePermission(canView:AccessControl = EveryoneCanAccess,canInteract:AccessControl = EveryoneCanAccess,canAdminister:AccessControl = NoOneCanAccess) {
+  def canViewConversation(c:Conversation,accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = profileId.exists(_ == c.author) || canView.canAccess(accountName,accountProvider,profileId,groupIds)
+  def canInteractConversation(c:Conversation,accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = profileId.exists(_ == c.author) || canInteract.canAccess(accountName,accountProvider,profileId,groupIds)
+  def canAdministerConversation(c:Conversation,accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = profileId.exists(_ == c.author) || canAdminister.canAccess(accountName,accountProvider,profileId,groupIds)
+  def canViewSlide(s:Slide,accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = profileId.exists(_ == s.author) || canView.canAccess(accountName,accountProvider,profileId,groupIds)
+  def canInteractSlide(s:Slide,accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = profileId.exists(_ == s.author) || canInteract.canAccess(accountName,accountProvider,profileId,groupIds)
+  def canAdministerSlide(s:Slide,accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = profileId.exists(_ == s.author) || canAdminister.canAccess(accountName,accountProvider,profileId,groupIds)
+}
+
+case class Conversation(author:String,lastModified:Long,slides:List[Slide],jid:String,title:String,created:Long,isDeleted:Boolean = false,permissions:StructurePermission = StructurePermission()) extends MeTLData(Nil) {
+  def delete = copy(isDeleted = true, lastModified = new Date().getTime())
+  def rename(newTitle:String) = copy(title=newTitle,lastModified = new Date().getTime)
   def addSlideAtIndex(index:Int,slide:Slide) = {
     val oldSlides = slides.map(s => {
       if (s.index >= index){
@@ -202,30 +142,23 @@ case class Conversation(author:String,lastAccessed:Long,slides:List[Slide],subje
     val newSlides = slide.copy(index = index) :: oldSlides
     replaceSlides(newSlides)
   }
-  def replaceSlides(newSlides:List[Slide]) = copy(slides=newSlides,lastAccessed = new Date().getTime)
-  def setForeignRelationship(fr:Option[ForeignRelationship]) = copy(foreignRelationship = fr,lastAccessed=new Date().getTime)
+  def replaceSlides(newSlides:List[Slide]) = copy(slides = newSlides,lastModified = new Date().getTime)
 }
 object Conversation{
-  def empty = Conversation("",0L,List.empty[Slide],"","","","",0L,Permissions.default,Nil,Nil)
+  def empty = Conversation("",0L,List.empty[Slide],"","",0L,true,StructurePermission(NoOneCanAccess,NoOneCanAccess,NoOneCanAccess))
 }
 
-case class Slide(author:String,id:String,index:Int,created:Long,modified:Long,defaultHeight:Int = 540, defaultWidth:Int = 720, exposed:Boolean = true, slideType:String = "SLIDE",groupSet:List[GroupSet] = Nil,override val audiences:List[Audience] = Nil) extends MeTLData(audiences){
+case class Slide(author:String,id:String,index:Int,created:Long,modified:Long, exposed:Boolean = true, slideType:String = "SLIDE",permissions:StructurePermission = StructurePermission()) extends MeTLData(Nil){
   def replaceIndex(newIndex:Int) = copy(index=newIndex)
 }
 object Slide{
-  def empty = Slide("","",0,0L,0L)
+  def empty = Slide("","",0,0L,0L,false,"",StructurePermission(NoOneCanAccess,NoOneCanAccess,NoOneCanAccess))
 }
 
-case class Audience(domain:String,name:String,audienceType:String,action:String,override val audiences:List[Audience] = Nil) extends MeTLData(audiences)
+case class Audience(domain:String,name:String,audienceType:String,action:String) extends MeTLData(Nil)
 object Audience {
   def empty = Audience("","","","")
   def default = Audience("","","","")
-}
-
-case class Permissions(studentsCanOpenFriends:Boolean,studentsCanPublish:Boolean,usersAreCompulsorilySynced:Boolean,studentsMayBroadcast:Boolean,studentsMayChatPublicly:Boolean) extends MeTLData(Nil)
-object Permissions{
-  def empty = Permissions(false,false,false,false,false)
-  def default = Permissions(false,true,false,true,true)
 }
 
 abstract class MeTLData(val audiences:List[Audience] = Nil){
@@ -262,10 +195,21 @@ object MeTLTheme {
 case class MeTLTheme(override val author:String,override val timestamp:Long,location:String,theme:Theme,override val audiences:List[Audience]) extends MeTLStanza(author,timestamp,audiences){
   override def adjustTimestamp(newTimestamp:Long) = copy(timestamp = newTimestamp)
 }
-object Profile {
-  def empty = Profile(0L,"","",Map.empty[String,String],Nil)
+object Account {
+  def empty = Account("","")
 }
-case class Profile(override val timestamp:Long, id:String, name:String, attributes:Map[String,String],override val audiences:List[Audience] = Nil) extends MeTLStanza("",timestamp,audiences){
+case class Account(name:String,provider:String)
+
+object Profile {
+  def empty = Profile(0L,"","",Map.empty[String,String])
+}
+case class Profile(override val timestamp:Long, id:String, name:String, attributes:Map[String,String]) extends MeTLStanza("",timestamp,Nil){
+  override def adjustTimestamp(newTimestamp:Long) = copy(timestamp = newTimestamp)
+}
+object Group {
+  def empty = Group(0L,"","","")
+}
+case class Group(override val timestamp:Long, id:String,name:String, provider:String, category:String = "") extends MeTLStanza("",timestamp,Nil){
   override def adjustTimestamp(newTimestamp:Long) = copy(timestamp = newTimestamp)
 }
 

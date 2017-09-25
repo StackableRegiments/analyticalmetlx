@@ -377,109 +377,6 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         RedirectResponse(referer)
       }
     })
-    //gradebook integration
-    case Req("getExternalGradebooks" :: Nil, _, _) => () => Full(JsonResponse(JArray(Globals.getGradebookProviders.map(gb => JObject(List(JField("name", JString(gb.name)), JField("id", JString(gb.id)))))), 200))
-    case Req("getExternalGradebookOrgUnits" :: externalGradebookId :: Nil, _, _) => {
-      for {
-        gbp <- Globals.getGradebookProvider(externalGradebookId)
-      } yield {
-        gbp.getGradeContexts() match {
-          case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gcs) => JsonResponse(JArray(gcs.map(Extraction.decompose _)), 200)
-        }
-      }
-    }
-    case Req("getExternalGradebookOrgUnitClasslist" :: externalGradebookId :: orgUnitId :: Nil, _, _) => {
-      for {
-        gbp <- Globals.getGradebookProvider(externalGradebookId)
-      } yield {
-        gbp.getGradeContextClasslist(orgUnitId) match {
-          case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(cls) => JsonResponse(Extraction.decompose(cls), 200)
-        }
-      }
-    }
-    case Req("getExternalGrade" :: externalGradebookId :: orgUnitId :: gradeId :: Nil, _, _) => {
-      for {
-        gbp <- Globals.getGradebookProvider(externalGradebookId)
-      } yield {
-        gbp.getGradeInContext(orgUnitId, gradeId) match {
-          case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc), 200)
-        }
-      }
-    }
-    case Req("getExternalGrades" :: externalGradebookId :: orgUnitId :: Nil, _, _) => {
-      for {
-        gbp <- Globals.getGradebookProvider(externalGradebookId)
-      } yield {
-        gbp.getGradesFromContext(orgUnitId) match {
-          case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gc) => JsonResponse(JArray(gc.map(go => jsonSerializer.fromGrade(go))), 200)
-        }
-      }
-    }
-    case r@Req("createExternalGrade" :: externalGradebookId :: orgUnitId :: Nil, _, _) => {
-      for {
-        gbp <- Globals.getGradebookProvider(externalGradebookId)
-        json <- r.json
-      } yield {
-        val grade = jsonSerializer.toGrade(json)
-        gbp.createGradeInContext(orgUnitId, grade) match {
-          case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc), 200)
-        }
-      }
-    }
-    case r@Req("updateExternalGrade" :: externalGradebookId :: orgUnitId :: Nil, _, _) => {
-      for {
-        gbp <- Globals.getGradebookProvider(externalGradebookId)
-        json <- r.json
-      } yield {
-        val grade = jsonSerializer.toGrade(json)
-        gbp.updateGradeInContext(orgUnitId, grade) match {
-          case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gc) => JsonResponse(jsonSerializer.fromGrade(gc), 200)
-        }
-      }
-    }
-    case Req("getExternalGradeValues" :: externalGradebookId :: orgUnit :: gradeId :: Nil, _, _) => {
-      for {
-        gbp <- Globals.getGradebookProvider(externalGradebookId)
-      } yield {
-        gbp.getGradeValuesForGrade(orgUnit, gradeId) match {
-          case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gcs) => JsonResponse(JArray(gcs.map {
-            case ngv: MeTLNumericGradeValue => jsonSerializer.fromNumericGradeValue(ngv)
-            case bgv: MeTLBooleanGradeValue => jsonSerializer.fromBooleanGradeValue(bgv)
-            case tgv: MeTLTextGradeValue => jsonSerializer.fromTextGradeValue(tgv)
-          }), 200)
-        }
-      }
-    }
-    case r@Req("updateExternalGradeValues" :: externalGradebookId :: orgUnit :: gradeId :: Nil, _, _) => {
-      for {
-        gbp <- Globals.getGradebookProvider(externalGradebookId)
-        json <- r.json
-      } yield {
-        val grades: List[MeTLGradeValue] = json match {
-          case ja: JArray => json.children.map(jo => jsonSerializer.toMeTLData(jo)).filter(_.isInstanceOf[MeTLGradeValue]).map(_.asInstanceOf[MeTLGradeValue]).toList
-          case jo: JObject => jsonSerializer.toMeTLData(jo) match {
-            case gv: MeTLGradeValue => List(gv)
-            case _ => Nil
-          }
-          case _ => Nil
-        }
-        gbp.updateGradeValuesForGrade(orgUnit, gradeId, grades) match {
-          case Left(e) => JsonResponse(JObject(List(JField("error", JString(e.getMessage)))), 500)
-          case Right(gcs) => JsonResponse(JArray(gcs.map {
-            case ngv: MeTLNumericGradeValue => jsonSerializer.fromNumericGradeValue(ngv)
-            case bgv: MeTLBooleanGradeValue => jsonSerializer.fromBooleanGradeValue(bgv)
-            case tgv: MeTLTextGradeValue => jsonSerializer.fromTextGradeValue(tgv)
-          }), 200)
-        }
-      }
-    }
     case r@Req(List("listGroups", username), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listGroups", StatelessHtml.listGroups(username, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList))
     case Req(List("listRooms"), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms", StatelessHtml.listRooms)
     case Req(List("listUsersInRooms"), _, _) if Globals.isSuperUser => () => Stopwatch.time("MeTLStatefulRestHelper.listRooms", StatelessHtml.listUsersInRooms)
@@ -521,10 +418,6 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
       () => Stopwatch.time("MeTLStatefulRestHelper.duplicateSlide", StatelessHtml.duplicateSlide(Globals.currentUser.is, slide, conversation))
     case Req(List("duplicateConversation", conversation), _, _) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.duplicateConversation", StatelessHtml.duplicateConversation(Globals.currentUser.is, conversation))
-    case Req(List("requestMaximumSizedGrouping", conversation, slide, groupSize), _, _) if Globals.isSuperUser =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.requestMaximumSizedGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(nextFuncName, slide, ByMaximumSize(groupSize.toInt), Nil, Nil)))
-    case Req(List("requestClassroomSplitGrouping", conversation, slide, numberOfGroups), _, _) if Globals.isSuperUser =>
-      () => Stopwatch.time("MeTLStatefulRestHelper.requestClassroomSplitGrouping", StatelessHtml.addGroupTo(Globals.currentUser.is, conversation, slide, GroupSet(nextFuncName, slide, ByTotalGroups(numberOfGroups.toInt), Nil, Nil)))
     case Req(List("proxyDataUri", slide, source), _, _) =>
       () => Stopwatch.time("MeTLStatefulRestHelper.proxyDataUri", StatelessHtml.proxyDataUri(slide, source))
     case Req(List("proxy", slide, source), _, _) =>
@@ -630,17 +523,6 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         PlainTextResponse("loggedUserAgent")
       })
     }
-    case Req("studentActivity" :: Nil,_,_) if Globals.isAnalyst => () => Stopwatch.time("MeTLRestHelper.studentActivity", {
-      val courseId = S.param("courseId")
-//      val from = S.param("from").map()
-//      val to = S.param("to")
-      Full(PlainTextResponse(StudentActivityReportHelper.studentActivityCsv(courseId,None,None),
-        List(("Content-Type", "text/csv"),
-          ("Content-Disposition", "attachment; filename=studentActivity-" + courseId + ".csv"),
-          ("Pragma", "no-cache"),
-          ("Expires", "0")),
-        200))
-    })
     case r@Req(List("submitProblemReport"), _, PostRequest) =>
       () =>
       Stopwatch.time("MeTLStatefulRestHelper.submitProblemReport", {
@@ -656,21 +538,22 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
           val detectedState = (for {
             s <- S.session
             ds <- tryo({S.initIfUninitted(s){
-              (Globals.currentUser.is,Option(Globals.casState.is))
+              (Globals.currentAccount.account,Globals.currentProfile.is,Globals.getUserGroups)
             }})
           } yield {
             ds
-          }).getOrElse((reporter,None))
+          }).getOrElse((reporter,Account("",""),Nil))
 
           val detectedUser = detectedState._1
-          val casState = detectedState._2.getOrElse("").toString
+          val profile = detectedState._2
+          val userGroups = detectedState._3
 
           val userAgent = r.userAgent.getOrElse("")
 
-          error("Problem report from %s (#%s). Reporter: %s, Context: %s, Report: %s, UserAgent: %s, CAS State: %s".format(r.hostName, reportId, detectedUser, context, report, userAgent, casState))
+          error("Problem report from %s (#%s). Reporter: %s, Context: %s, Report: %s, UserAgent: %s, Profile: %s, Groups: %s".format(r.hostName, reportId, detectedUser, context, report, userAgent, profile, userGroups))
           if (Globals.mailer.nonEmpty) {
             Globals.mailer.get.sendMailMessage("Problem Report from %s (#%s)".format(r.hostName, reportId),
-              "Host: %s\nReport ID: %s\nReporter: %s\nContext: %s\n\nReport:\n%s\n\nUserAgent:\n%s\n\nCAS State:\n%s".format(r.hostName, reportId, detectedUser, context, report, userAgent, casState))
+              "Host: %s\nReport ID: %s\nReporter: %s\nContext: %s\n\nReport:\n%s\n\nUserAgent:\n%s\n\nAccount:\n%s\nProfile:\n%s\nGroups:%s".format(r.hostName, reportId, detectedUser, context, report, userAgent, detectedUser,profile,userGroups))
           }
 
           val output = (

@@ -2,8 +2,6 @@ package com.metl.snippet
 
 import com.metl.data._
 import com.metl.utils._
-import com.metl.liftAuthenticator._
-
 
 import net.liftweb._
 import http._
@@ -24,22 +22,25 @@ import net.liftweb.json.JsonAST._
 object Metl extends Metl
 class Metl extends Logger {
   val config = ServerConfiguration.default
-  def shouldModifyConversation(username:String, c:Conversation):Boolean = {
-    val isNonEmpty = c != Conversation.empty
-    val result = (Globals.isSuperUser || username.toLowerCase.trim == c.author.toLowerCase.trim) && isNonEmpty
-//    warn("shouldModifyConversation: jid:%s => isSuperUser:%s username:%s c.author:%s isNonEmpty:%s => %s".format(c.jid,Globals.isSuperUser,username,c.author,isNonEmpty,result))
-    result
+  def shouldAdministerConversation(c:Conversation):Boolean = {
+    c != Conversation.empty && (Globals.isSuperUser || c.permissions.canAdministerConversation(c,Some(Globals.currentAccount.name),Some(Globals.currentAccount.provider),Some(Globals.currentUser.is),Globals.getUserGroups.map(_.id).toList))
   }
-  def shouldDisplayConversation(c:Conversation,showDeleted:Boolean = false,me:String = Globals.currentUser.is,groups:List[OrgUnit] = Globals.getUserGroups):Boolean = {
-    val subject = c.subject.trim.toLowerCase
-    var fr = c.foreignRelationship
-    val show = Globals.isSuperUser || (showDeleted && c.author == me) || (subject != "deleted" && (subject == "unrestricted" || groups.exists((ug:OrgUnit) => ug.name.toLowerCase.trim == subject || fr.exists(fri => ug.foreignRelationship.exists(ufr => ufr.key == fri.key && ufr.system == fri.system)))) && c != Conversation.empty)
-//    warn("shouldDisplayConversation: jid:%s => isSuperUser:%s me:%s groups:%s conv:%s => %s".format(c.jid,Globals.isSuperUser,me,groups,c,show))
-    show
+  def shouldViewConversation(c:Conversation):Boolean = {
+    c != Conversation.empty && (Globals.isSuperUser || c.permissions.canViewConversation(c,Some(Globals.currentAccount.name),Some(Globals.currentAccount.provider),Some(Globals.currentUser.is),Globals.getUserGroups.map(_.id).toList))
   }
-  def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
-    (Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username)))) && c != Conversation.empty
+  def shouldInteractInConversation(c:Conversation):Boolean = {
+    c != Conversation.empty && (Globals.isSuperUser || c.permissions.canInteractConversation(c,Some(Globals.currentAccount.name),Some(Globals.currentAccount.provider),Some(Globals.currentUser.is),Globals.getUserGroups.map(_.id).toList))
   }
+  def shouldAdministerSlide(s:Slide):Boolean = {
+    s != Slide.empty && (Globals.isSuperUser || s.permissions.canAdministerSlide(s,Some(Globals.currentAccount.name),Some(Globals.currentAccount.provider),Some(Globals.currentUser.is),Globals.getUserGroups.map(_.id).toList))
+  }
+  def shouldViewSlide(s:Slide):Boolean = {
+    s != Slide.empty && (Globals.isSuperUser || s.permissions.canViewSlide(s,Some(Globals.currentAccount.name),Some(Globals.currentAccount.provider),Some(Globals.currentUser.is),Globals.getUserGroups.map(_.id).toList))
+  }
+  def shouldInteractOnSlide(s:Slide):Boolean = {
+    s != Slide.empty && (Globals.isSuperUser || s.permissions.canInteractSlide(s,Some(Globals.currentAccount.name),Some(Globals.currentAccount.provider),Some(Globals.currentUser.is),Globals.getUserGroups.map(_.id).toList))
+  }
+
   def boardFor():String = {
     "/metl"
   }
@@ -104,7 +105,7 @@ class Metl extends Logger {
       try {
         name = constructNameString(name,"CONVERSATION",cj)
         val conversation = serverConfig.detailsOfConversation(cj)
-        if (!shouldDisplayConversation(conversation,showDeleted)){
+        if (!(shouldViewConversation(conversation) && (showDeleted || !conversation.isDeleted))){
           warn("snippet.Metl is kicking the user from this conversation")
           S.redirectTo(noBoard)
         }

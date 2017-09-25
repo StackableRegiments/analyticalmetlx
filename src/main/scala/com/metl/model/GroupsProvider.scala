@@ -1,6 +1,6 @@
 package com.metl.model
 
-import com.metl.data.{GroupSet=>MeTLGroupSet,Group=>MeTLGroup,_}
+import com.metl.data.{Group=>MeTLGroup,_}
 import com.metl.utils._
 import com.metl.view._
 
@@ -12,8 +12,34 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.Props
 import scala.io.Source
 import scala.xml.{Source=>XmlSource,Group=>XmlGroup,_}
-import com.metl.liftAuthenticator._//LiftAuthStateData
 
+object Groups {
+  protected var groupsProviders = scala.collection.mutable.HashMap[String,GroupsProvider]()
+  def addGroupsProvider(gp:GroupsProvider) = {
+    groupsProviders += ((gp.name,gp))
+  }
+  def removeGroupsProvider(name:String) = {
+    groupsProviders -= name
+  }
+  def groupsFor(profileId:Option[String] = None, account:Option[Account] = None):List[MeTLGroup] = groupsProviders.values.flatMap(_.groupsFor(profileId,account)).toList
+  def personalDetailsFor(profileId:Option[String] = None, account:Option[Account] = None):List[Tuple2[String,String]] = groupsProviders.values.flatMap(_.personalDetailsFor(profileId,account)).toList
+  def membersFor(groupId:Option[String] = None):List[String] = groupsProviders.values.flatMap(_.membersFor(groupId)).toList
+}
+
+abstract class GroupsProvider(val name:String) {
+  def groupsFor(profileId:Option[String] = None, account:Option[Account] = None):List[MeTLGroup]
+  def personalDetailsFor(profileId:Option[String] = None, account:Option[Account] = None):List[Tuple2[String,String]]
+  def membersFor(groupId:Option[String] = None):List[String] 
+}
+class SpecificToProviders(providerNames:List[String],gp:GroupsProvider) extends GroupsProvider(gp.name) {
+  def groupsFor(profileId:Option[String] = None, account:Option[Account] = None):List[MeTLGroup] = account.toList.filter(a => providerNames.contains(a.provider)).flatMap(a => gp.groupsFor(profileId,account)).toList
+  def personalDetailsFor(profileId:Option[String] = None, account:Option[Account] = None):List[Tuple2[String,String]] = account.toList.filter(a => providerNames.contains(a.provider)).flatMap(a => gp.personalDetailsFor(profileId,account)).toList
+  def membersFor(groupId:Option[String] = None) = gp.membersFor(groupId)
+}
+
+// old implementation
+
+/*
 object GroupsProvider {
   def sanityCheck(g:GroupStoreData):Boolean = {
     g.groupsForMembers.keys.toList.length > 0
@@ -522,12 +548,6 @@ trait GroupStoreDataSerializers {
       intermediaryMemberGrouping += ((member,ou :: intermediaryMemberGrouping.get(member).getOrElse(Nil)))
     }
     val groupsForMembers = intermediaryMemberGrouping.map(t => (t._1.name,t._2)).toMap 
-  /*
-    val members = orgUnits.flatMap(_.members).distinct
-    val groupsForMembers = Map(members.map(m => {
-      (m,orgUnits.filter(_.members.contains(m)).toList)
-    }):_*)
-  */
     //mark("fromXml groupsForMembers(%s (%s avg)) formed".format(groupsForMembers.keys.toList.length,groupsForMembers.values.toList.map(_.length).sum))
     val membersForGroups = orgUnits.groupBy(_.name).map(g => (g._1,g._2.flatMap(_.members).toList))
     //mark("fromXml membersForGroups formed")
@@ -719,3 +739,4 @@ class StLeoFlatFileGroupsProvider(override val storeId:String,override val name:
     rawData
   }
 }
+*/

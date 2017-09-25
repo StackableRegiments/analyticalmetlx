@@ -1,6 +1,5 @@
 package com.metl.model
 
-import com.metl.liftAuthenticator._
 import com.metl.data._
 import com.metl.auth._
 import com.metl.utils._
@@ -168,19 +167,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       }
     })
   }
-  def setupExternalGradebooksFromFile(filePath:String) = {
-    val nodes = XML.load(filePath) \\ "externalGradebooks"
-    Globals.gradebookProviders = ExternalGradebooks.configureFromXml(nodes)
-  }
-  def setupAuthorizersFromFile(filePath:String) = {
-    val propFile = XML.load(filePath)
-    val authorizationNodes = propFile \\ "serverConfiguration" \\ "groupsProvider"
-    Globals.groupsProviders = GroupsProvider.constructFromXml(authorizationNodes)
-    info("configured groupsProviders: %s".format(Globals.groupsProviders))
-  }
-  def setupMetlingPotsFromFile(filePath:String) = {
-    Globals.metlingPots = MeTLingPot.configureFromXml(XML.load(filePath) \\ "metlingPotAdaptors")
-  }
   def setupCachesFromFile(filePath:String) = {
     import net.sf.ehcache.config.{MemoryUnit}
     import net.sf.ehcache.store.{MemoryStoreEvictionPolicy}
@@ -243,7 +229,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     LiftRules.dispatch.append(MeTLStatefulRestHelper)
     LiftRules.dispatch.append(WebMeTLStatefulRestHelper)
 
-    setupAuthorizersFromFile(Globals.configurationFileLocation)
     setupServersFromFile(Globals.configurationFileLocation)
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
 
@@ -251,11 +236,9 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       getRoom("global",c._1.name,GlobalRoom,true)
       debug("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
-    setupExternalGradebooksFromFile(Globals.configurationFileLocation)
     S.addAnalyzer((req,timeTaken,_entries) => {
       req.foreach(r => SecurityListener.maintainIPAddress(r))
     })
-    setupMetlingPotsFromFile(Globals.configurationFileLocation)
     LiftRules.unloadHooks.append(() => {
       Globals.metlingPots.foreach(_.shutdown)
       SecurityListener.cleanupAllSessions

@@ -1,7 +1,5 @@
 package com.metl.model
 
-import com.metl.liftAuthenticator._
-
 import com.metl.data._
 import com.metl.utils._
 import com.metl.view._
@@ -12,12 +10,14 @@ import net.liftweb.common._
 import net.liftweb.util.Helpers._
 
 import net.liftweb.util.Props
-import scala.xml._
+import scala.xml.{Group=>XmlGroup,_}
 import scala.util._
 import com.metl.renderer.RenderDescription
 
 import net.liftweb.http._
 
+case class AuthState(authenticated:Boolean,account:Account,groups:List[Group],personalDetails:List[Tuple2[String,String]])
+   
 case class PropertyNotFoundException(key: String) extends Exception(key) {
   override def getMessage: String = "Property not found: " + key
 }
@@ -176,29 +176,9 @@ object Globals extends PropertyReader with Logger {
   val d2lThreadPoolMultiplier = readInt(propFile,"d2lThreadPoolMultiplier").getOrElse(5)
   val h2ThreadPoolMultiplier = readInt(propFile,"h2ThreadPoolMultiplier").getOrElse(8)
 
-  def stackOverflowName(location:String):String = "%s_StackOverflow_%s".format(location,currentUser.is)
-  def stackOverflowName(who:String,location:String):String = "%s_StackOverflow_%s".format(location,who)
-
-  def noticesName(user:String):String = "%s_Notices".format(user)
-
   case class PropertyNotFoundException(key: String) extends Exception(key) {
     override def getMessage: String = "Property not found: " + key
   }
-
-  object currentStack extends SessionVar[Topic](Topic.defaultValue)
-  def getUserGroups:List[OrgUnit] = {
-    casState.is.eligibleGroups.toList
-  }
-  var userProfileProvider:Option[UserProfileProvider] = Some(new CachedInMemoryProfileProvider())
-
-  var groupsProviders:List[GroupsProvider] = Nil
-
-  var gradebookProviders:List[ExternalGradebook] = Nil
-  def getGradebookProvider(providerId:String):Option[ExternalGradebook] = gradebookProviders.find(_.id == providerId)
-  def getGradebookProviders:List[ExternalGradebook] = gradebookProviders
-
-  def getGroupsProvider(providerStoreId:String):Option[GroupsProvider] = getGroupsProviders.find(_.storeId == providerStoreId)
-  def getGroupsProviders:List[GroupsProvider] = groupsProviders
 
   var mailer:Option[SimpleMailer] = for {
     mailerNode <- (propFile \\ "mailer").headOption
@@ -213,124 +193,121 @@ object Globals extends PropertyReader with Logger {
     SimpleMailer(smtp, port, ssl, username, password, Full(fromAddress), recipients)
   }
 
-  object casState {
-    import com.metl.liftAuthenticator._
+  protected object authenticationState {
     import net.liftweb.http.S
-    private object validState extends SessionVar[Option[LiftAuthStateData]](None)
-    private object actualUsername extends SessionVar[String]("forbidden")
+    
+    val config = ServerConfiguration.default
+
     private object actuallyIsImpersonator extends SessionVar[Boolean](false)
-    private object AccountName extends SessionVar[Option[String]](None)
-    private object AccountProvider extends SessionVar[Option[String]](None)
-    object currentAccountName {
-      def is:String = AccountName.is.getOrElse(throw new Exception("no logged-in account"))
+    private object LoggedInUser extends SessionVar[Option[AuthState]](None)
+    private object UserState extends SessionVar[Option[AuthState]](None)
+
+    protected object AuthzGroupsProvider extends GroupsProvider("authz") {
+      def groupsFor(profileId:Option[String] = None, account:Option[Account] = None):List[Group] = LoggedInUser.is.toList.flatMap(_.groups).toList
+      def personalDetailsFor(profileId:Option[String] = None, account:Option[Account] = None):List[Tuple2[String,String]] = LoggedInUser.is.toList.flatMap(_.personalDetails).toList
+      def membersFor(groupId:Option[String] = None):List[String] = Nil
     }
-    object currentAccountProvider {
-      def is:String = AccountProvider.is.getOrElse(throw new Exception("no logged-in account"))
+    Groups.addGroupsProvider(AuthzGroupsProvider)
+
+    protected def createProfileForAccount(account:Account):Profile = {
+      val newProf = config.createProfile(account.name,Map(
+        "createdByUser" -> account.name,
+        "createdByProvider" -> account.provider,
+        "autoCreatedProfile" -> "true",
+        "avatarUrl" -> ""))
+      config.updateAccountRelationship(account.name,account.provider,newProf.id,false,true)
+      newProf
     }
-    private def updateUser(state:LiftAuthStateData,userAccountProvider:String):LiftAuthStateData = {
-      validState(Some(state))
-      val config = ServerConfiguration.default
-      config.getProfileIds(state.username,userAccountProvider) match {
+    private def updateUser(state:AuthState):AuthState = {
+      val updatedState = config.getProfileIds(state.account.name,state.account.provider) match {
         case (Nil,_) => {
-          val newProf = config.createProfile(state.username,Map(
-            "createdByUser" -> state.username,
-            "createdByProvider" -> userAccountProvider,
-            "autoCreatedProfile" -> "true",
-            "avatarUrl" -> ""))
-          config.updateAccountRelationship(state.username,userAccountProvider:String,newProf.id,false,true)
+          val newProf = createProfileForAccount(state.account)
           Globals.availableProfiles(List(newProf))
-          println("creating profile: %s".format(newProf))
           Globals.currentProfile(newProf)
+          trace("creating profile: %s".format(newProf))
+          val groups = Groups.groupsFor(Some(newProf.id),Some(state.account))
+          val personalDetails = Groups.personalDetailsFor(Some(newProf.id),Some(state.account))
+          state.copy(groups = groups, personalDetails = personalDetails)
         }
         case (items,defaultId) => {
-          val profiles = config.getProfiles(items:_*)
+          val ps = config.getProfiles(items:_*)
+          val (prof,profiles) = ps.find(_.id == defaultId).map(p => (p,ps)).getOrElse(ps.headOption.map(ho => (ho,ps)).getOrElse({
+            val p = createProfileForAccount(state.account)
+            (p,List(p))
+          }))
           Globals.availableProfiles(profiles)
-          profiles.find(_.id == defaultId).map(p => {
-            Globals.currentProfile(p)
-            println("using pre-existing profile: %s".format(p))
-          })
+          Globals.currentProfile(prof)
+          val groups = Groups.groupsFor(Some(prof.id),Some(state.account))
+          val personalDetails = Groups.personalDetailsFor(Some(prof.id),Some(state.account))
+          state.copy(groups = groups, personalDetails = personalDetails)
         }
       }
-      warn("settings user to: %s".format(Globals.currentProfile.is))
+      trace("settings user to: %s".format(Globals.currentProfile.is))
+      UserState(Some(updatedState))
       SecurityListener.ensureSessionRecord
-      state
+      updatedState
     }
-    def is:LiftAuthStateData = {
-      validState.getOrElse(assumeContainerSession)
-    }
-    def isSuperUser:Boolean = {
-      is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "superuser")
-    }
-    def isAnalyst:Boolean = {
-      is.eligibleGroups.exists(g => g.ouType == "special" && g.name == "analyst")
-    }
+    protected def notLoggedIn = throw new Exception("no logged-in account")
+    def is:AuthState = UserState.is.getOrElse(assumeContainerSession)
+    def getUserGroups:List[Group] = UserState.is.map(_.groups).getOrElse(notLoggedIn)
+    def isSuperUser:Boolean = is.groups.exists(g => g.category == "special" && g.name == "superuser" && g.provider == "authz")
     def isImpersonator:Boolean = actuallyIsImpersonator.is
-    def authenticatedUsername:String = actualUsername.is
-    def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil,userAccountProvider:String = ""):LiftAuthStateData = {
+
+    def impersonate(account:Account,groups:List[Group],personalAttributes:List[Tuple2[String,String]] = Nil):AuthState = {
       if (isImpersonator){
-        val prelimAuthStateData = LiftAuthStateData(true,newUsername,Nil,(personalAttributes.map(pa => Detail(pa._1,pa._2)) ::: userProfileProvider.toList.flatMap(_.getProfiles(newUsername).right.toOption.toList.flatten.flatMap(_.foreignRelationships.toList)).map(pa => Detail(pa._1,pa._2))))
-        val groups = Globals.groupsProviders.filter(_.canRestrictConversations).flatMap(_.getGroupsFor(prelimAuthStateData))
-        val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
-        val impersonatedState = LiftAuthStateData(true,newUsername,groups,personalDetails)
-        updateUser(impersonatedState,userAccountProvider)
+        val impersonatedState = AuthState(true,account,groups,personalAttributes)
+        updateUser(impersonatedState)
       } else {
-        LiftAuthStateDataForbidden
+        UserState.is.getOrElse(notLoggedIn)
       }
     }
-    def assumeContainerSession:LiftAuthStateData = {
+    def assumeContainerSession:AuthState = {
       S.containerSession.map(s => {
         val accountProvider = s.attribute("userAccountProvider").asInstanceOf[String]
         val username = s.attribute("user").asInstanceOf[String]
         val authenticated = s.attribute("authenticated").asInstanceOf[Boolean]
-        val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => OrgUnit(t._1,t._2,List(Member(username,Nil,None)),Nil))
+        val userGroups = s.attribute("userGroups").asInstanceOf[List[Tuple2[String,String]]].map(t => Group(0L,"g_%s_%s_%s".format(accountProvider,t._1,t._2),t._2,accountProvider,t._1))
         val userAttributes = s.attribute("userAttributes").asInstanceOf[List[Tuple2[String,String]]]
-        val prelimAuthStateData = LiftAuthStateData(authenticated,username,userGroups,userAttributes.map(ua => Detail(ua._1,ua._2)))
+        val account = Account(username,accountProvider)
+        val prelimAuthStateData = AuthState(authenticated,account,userGroups,userAttributes)
         if (authenticated){
-          actualUsername(username)
-          AccountName(Some(username))
-          AccountProvider(Some(accountProvider))
-          val groups = Globals.groupsProviders.filter(_.canRestrictConversations).flatMap(_.getGroupsFor(prelimAuthStateData))
-          actuallyIsImpersonator(groups.exists(g => g.ouType == "special" && g.name == "impersonator"))
-          val personalDetails = Globals.groupsProviders.flatMap(_.getPersonalDetailsFor(prelimAuthStateData))
-          val lasd = LiftAuthStateData(true,username,groups,personalDetails)
-          updateUser(lasd,accountProvider)
-          info("generated authState: %s".format(lasd))
-          lasd
+          LoggedInUser(Some(prelimAuthStateData))
+          val groups = Groups.groupsFor(None,Some(Globals.currentAccount.account))
+          actuallyIsImpersonator(groups.exists(g => g.category == "special" && g.name == "impersonator" && g.provider == "authz"))
+          val personalDetails = Groups.personalDetailsFor(None,Some(Globals.currentAccount.account))
+          updateUser(AuthState(true,Account(username,accountProvider),groups,personalDetails))
         } else {
-          info("authentication failed")
-          LiftAuthStateDataForbidden
+          trace("authentication failed")
+          notLoggedIn
         }
       }).getOrElse({
-        info("not in a container session")
-        LiftAuthStateDataForbidden
+        warn("not in a container session")
+        throw new Exception("not in a container session")
       })
-
     }
   }
-  
+ 
   object currentUser {
     def is:String = {
-      casState.is  // ensure population of the userIdentities
+      authenticationState.is  // ensure population of the userIdentities
       currentProfile.is.id
     }
   }
+
+  def getUserGroups:List[Group] = authenticationState.getUserGroups
   
   object currentAccount {
-    def name:String = {
-      casState.currentAccountName.is
-    }
-    def provider:String = {
-      casState.currentAccountProvider.is
-    }
+    def account:Account = authenticationState.is.account
+    def name:String = account.name
+    def provider:String = account.provider
   }
   object availableProfiles extends SessionVar[List[Profile]](Nil)
   object currentProfile extends SessionVar[Profile](Profile.empty)
   // special roles
-  def isSuperUser:Boolean = casState.isSuperUser
-  def isImpersonator:Boolean = casState.isImpersonator
-  def isAnalyst:Boolean = casState.isAnalyst
-  def assumeContainerSession:LiftAuthStateData = casState.assumeContainerSession
-  def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = casState.impersonate(newUsername,personalAttributes)
+  def isSuperUser:Boolean = authenticationState.isSuperUser
+  def isImpersonator:Boolean = authenticationState.isImpersonator
+  def assumeContainerSession:AuthState = authenticationState.assumeContainerSession
+  def impersonate(newUsername:String,newAccountProvider:String,groups:List[Tuple2[String,String]] = Nil, personalAttributes:List[Tuple2[String,String]] = Nil):AuthState = authenticationState.impersonate(Account(newUsername,newAccountProvider),groups.map(g => Group(0L,"g_%s_%s_%s".format(newAccountProvider,g._1,g._2),g._2,newAccountProvider,g._1)),personalAttributes)
 
   object oneNoteAuthToken extends SessionVar[Box[String]](Empty)
 
@@ -343,9 +320,3 @@ object Globals extends PropertyReader with Logger {
   val snapshotSizes = List(ThumbnailSize/*,SmallSize,MediumSize,LargeSize*//*,PrintSize*/)
 }
 
-object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
-
-object CurrentStreamEncryptor extends SessionVar[Box[Crypto]](Empty)
-object CurrentHandshakeEncryptor extends SessionVar[Box[Crypto]](Empty)
-
-//object UserAgent extends SessionVar[Box[String]](S.userAgent)

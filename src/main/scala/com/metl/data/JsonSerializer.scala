@@ -8,7 +8,6 @@ import net.liftweb.util.Helpers._
 import Privacy._
 import net.liftweb.json.{Serialization, NoTypeHints, TypeInfo, Formats, MappingException}
 import net.liftweb.json.JsonAST._
-import com.metl.liftAuthenticator.ForeignRelationship
 
 object ConversionHelper extends Logger {
   def toDouble(a:Any):Double = a match{
@@ -854,37 +853,14 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
     i match {
       case input:JObject => {
         val author = getStringByName(input,"author")
-        val lastAccessed = getLongByName(input,"lastAccessed")
+        val lastModified = getLongByName(input,"lastModified")
         val slides = getListOfObjectsByName(input,"slides").map(s => toSlide(s)).toList
-        val subject = getStringByName(input,"subject")
-        val tag = getStringByName(input,"tag")
         val jid = getStringByName(input,"jid")
         val title = getStringByName(input,"title")
-        val created = try {
-          getLongByName(input,"creation")
-        } catch {
-          case e:Exception => {
-            dateFormat.parse(getStringByName(input,"created")).getTime
-          }
-        }
-        val permissions = toPermissions(getObjectByName(input,"permissions"))
-        val blacklist = getListOfStringsByName(input,"blacklist")
-        val audiences = parseJObjForAudiences(input,config)
-        val foreignRelationship = getOptionalObjectByName(input,"foreignRelationship").flatMap(n => {
-          n.value match {
-            case jo:JObject => {
-              for {
-                sys <- getOptionalStringByName(jo,"system")
-                key <- getOptionalStringByName(jo,"key")
-                displayName = getOptionalStringByName(jo,"displayName")
-              } yield {
-                ForeignRelationship(sys,key,displayName)
-              }
-            }
-            case _ => None
-          }
-        })
-        Conversation(author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist,audiences,foreignRelationship)
+        val created = getLongByName(input,"creation")
+        val isDeleted = getBooleanByName(input,"isDeleted")
+        val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+        Conversation(author,lastModified,slides,jid,title,created,isDeleted,permissions)
       }
       case _ => Conversation.empty
     }
@@ -893,22 +869,13 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
   override def fromConversation(input:Conversation):JValue = Stopwatch.time("JsonSerializer.fromConversation",{
     JObject(List(
       JField("author",JString(input.author)),
-      JField("lastAccessed",JInt(input.lastAccessed)),
+      JField("lastModified",JInt(input.lastModified)),
       JField("slides",JArray(input.slides.map(s => fromSlide(s)).toList)),
-      JField("subject",JString(input.subject)),
-      JField("tag",JString(input.tag)),
       JField("jid",JString(input.jid)),
       JField("title",JString(input.title)),
-      JField("created",JString(new java.util.Date(input.created).toString())),
-      JField("creation",JInt(input.created)),
-      JField("permissions",fromPermissions(input.permissions)),
-      JField("blacklist",JArray(input.blackList.map(bli => JString(bli)).toList))
-    ) ::: config.getProfiles(input.author).headOption.map(p => JField("authorName",JString(p.name))).toList ::: input.foreignRelationship.toList.map(fr => {
-      JField("foreignRelationship",JObject(List(
-        JField("system",JString(fr.system)),
-        JField("key",JString(fr.key))
-      ) ::: fr.displayName.toList.map(dn => JField("displayName",JString(dn)))))
-    }) ::: parseAudiences(input))
+      JField("isDeleted",JBool(input.isDeleted)),
+      JField("creation",JInt(input.created))
+    ) ::: parseAudiences(input))
   })
   override def toSlide(i:JValue):Slide = Stopwatch.time("JsonSerializer.toSlide",{
     i match {
@@ -916,14 +883,12 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val author = getStringByName(input,"author")
         val id = getStringByName(input,"id")
         val index = getIntByName(input,"index")
-        val defaultHeight = getIntByName(input,"defaultHeight")
-        val defaultWidth = getIntByName(input,"defaultWidth")
         val created = getLongByName(input,"created")
         val modified = getLongByName(input,"modified")
         val exposed = getBooleanByName(input,"exposed")
         val slideType = getStringByName(input,"slideType")
-        val groupSet = getListOfObjectsByName(input,"groupSets").map(gs => toGroupSet(gs))
-        Slide(author,id,index,created,modified,defaultHeight,defaultWidth,exposed,slideType,groupSet)
+        val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+        Slide(author,id,index,created,modified,exposed,slideType,permissions)
       }
       case _ => Slide.empty
     }
@@ -935,102 +900,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("index",JInt(input.index)),
       JField("created",JInt(input.created)),
       JField("modified",JInt(input.modified)),
-      JField("defaultHeight",JInt(input.defaultHeight)),
-      JField("defaultWidth",JInt(input.defaultWidth)),
       JField("exposed",JBool(input.exposed)),
-      JField("slideType",JString(input.slideType)),
-      JField("groupSets",JArray(input.groupSet.map(fromGroupSet _)))))
-  })
-  override def toGroupSet(i:JValue):GroupSet = Stopwatch.time("JsonSerializer.toGroupSet",{
-    i match {
-      case input:JObject => {
-        val audiences = parseJObjForAudiences(input)
-        val id = getStringByName(input,"id")
-        val location = getStringByName(input,"location")
-        val groupingStrategy = toGroupingStrategy((input \ "groupingStrategy").extract[JObject])
-        val groups = getListOfObjectsByName(input,"groups").map(gn => toGroup(gn))
-        GroupSet(id,location,groupingStrategy,groups,audiences)
-      }
-      case _ => GroupSet.empty
-    }
-  })
-  override def fromGroupSet(input:GroupSet):JValue = Stopwatch.time("JsonSerializer.fromGroupSet",{
-    toJsObj("groupSet",List(
-      JField("id",JString(input.id)),
-      JField("location",JString(input.location)),
-      JField("groupingStrategy",fromGroupingStrategy(input.groupingStrategy)),
-      JField("groups",JArray(input.groups.map(g => fromGroup(g)).toList))
-    ) ::: parseAudiences(input))
-  })
-
-  override def toGroupingStrategy(i:JValue):GroupingStrategy = Stopwatch.time("JsonSerializer.toGroupingStrategy",{
-    i match {
-      case input:JObject => {
-        getStringByName(input,"name") match {
-          case "byMaximumSize" => ByMaximumSize(getIntByName(input,"groupSize"))
-          case "byTotalGroups" => ByTotalGroups(getIntByName(input,"groupCount"))
-          case "onePersonPerGroup" => OnePersonPerGroup
-          case "everyoneInOneGroup" => EveryoneInOneGroup
-          case "complexGroupingStrategy" => ComplexGroupingStrategy(Map("json" -> (input \ "data").extract[JObject].toString)) // let's make this actually read the JFields of the JObject at input \ data and put them recursively into a Map.
-          case _ => EveryoneInOneGroup
-        }
-      }
-      case _ => EveryoneInOneGroup
-    }
-  })
-  override def fromGroupingStrategy(input:GroupingStrategy):JValue = Stopwatch.time("JsonSerializer.fromGroupingStrategy",{
-    val contents = input match {
-      case ByMaximumSize(groupSize) => List(JField("name",JString("byMaximumSize")),JField("groupSize",JInt(groupSize)))
-      case ByTotalGroups(groupCount) => List(JField("name",JString("byTotalGroups")),JField("groupCount",JInt(groupCount)))
-      case OnePersonPerGroup => List(JField("name",JString("onePersonPerGroup")))
-      case EveryoneInOneGroup => List(JField("name",JString("everyoneInOneGroup")))
-      case ComplexGroupingStrategy(data) => List(JField("name",JString("complexGroupingStrategy")),JField("data",JString(data.toString))) // let's serialize this more strongly into a recursive JObject
-      case _ => List(JField("name",JString("unknown")))
-    }
-    toJsObj("groupingStrategy",contents)
-  })
-
-  override def toGroup(i:JValue):Group = Stopwatch.time("JsonSerializer.toGroup",{
-    i match {
-      case input:JObject => {
-        val audiences = parseJObjForAudiences(input,config)
-        val id = getStringByName(input,"id")
-        val location = getStringByName(input,"location")
-        val timestamp = getLongByName(input,"timestamp")
-        val members = getListOfStringsByName(input,"members")
-        Group(id,location,timestamp,members,audiences)
-      }
-      case _ => Group.empty
-    }
-  })
-  override def fromGroup(input:Group):JValue = Stopwatch.time("JsonSerializer.fromGroup",{
-    toJsObj("group",List(
-      JField("id",JString(input.id)),
-      JField("location",JString(input.location)),
-      JField("timestamp",JInt(input.timestamp)),
-      JField("members",JArray(input.members.map(m => JString(m))))
-    ) ::: parseAudiences(input))
-  })
-  override def toPermissions(i:JValue):Permissions = Stopwatch.time("JsonSerializer.toPermissions", {
-    i match {
-      case input:JObject => {
-        val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
-        val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
-        val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
-        val studentsMayBroadcast = getOptionalBooleanByName(input,"studentsMayBroadcast").getOrElse(false)
-        val studentsMayChatPublicly = getOptionalBooleanByName(input,"studentsMayChatPublicly").getOrElse(true)
-        Permissions(studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
-      }
-      case _ => Permissions.default
-    }
-  })
-  override def fromPermissions(input:Permissions):JValue = Stopwatch.time("JsonSerializer.fromPermissions",{
-    JObject(List(
-      JField("studentCanOpenFriends",JBool(input.studentsCanOpenFriends)),
-      JField("studentCanPublish",JBool(input.studentsCanPublish)),
-      JField("usersAreCompulsorilySynced",JBool(input.usersAreCompulsorilySynced)),
-      JField("studentsMayBroadcast",JBool(input.studentsMayBroadcast)),
-      JField("studentsMayChatPublicly",JBool(input.studentsMayChatPublicly))
+      JField("slideType",JString(input.slideType))
     ))
   })
   protected def convert2AfterN(h:String,n:Int):Int = hexToInt(h.drop(n).take(2).mkString)
@@ -1227,7 +1098,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         } yield {
           (attrName,attrValue)
         }):_*)
-        Profile(m.timestamp, id, name, attrs, m.audiences)
+        Profile(m.timestamp, id, name, attrs)
       }
       case _ => Profile.empty
     }

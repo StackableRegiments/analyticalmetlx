@@ -6,7 +6,6 @@ import com.metl.model._
 import scala.xml._
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
-import com.metl.liftAuthenticator.ForeignRelationship
 import Privacy._
 
 trait XmlUtils {
@@ -595,51 +594,25 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
   override def toConversation(input:NodeSeq):Conversation = Stopwatch.time("GenericXmlSerializer.toConversation",{
     val m = parseMeTLContent(input,config)
     val author = getStringByName(input,"author")
-    val lastAccessed = getLongByName(input,"lastAccessed")
+    val lastModified = getLongByName(input,"lastModified")
     val slides = getXmlByName(input,"slide").map(s => toSlide(s)).toList
-    val subject = getStringByName(input,"subject")
-    val tag = getStringByName(input,"tag")
     val jid = getStringByName(input,"jid")
     val title = getStringByName(input,"title")
-    val created = try {
-      getLongByName(input,"creation")
-    } catch {
-      case e:Exception => {
-        dateFormat.parse(getStringByName(input,"created")).getTime
-      }
-    }
-    val permissions = getXmlByName(input,"permissions").map(p => toPermissions(p)).headOption.getOrElse(Permissions.default)
-    val blacklist = getXmlByName(input,"blacklist").flatMap(bl => getXmlByName(bl,"user")).map(_.text)
-    val foreignRelationship = (input \\ "foreignRelationship").headOption.flatMap(n => {
-      for {
-        sys <- (n \ "@system").headOption.map(_.text)
-        key <- (n \ "@key").headOption.map(_.text)
-        displayName = (n \ "@displayName").headOption.map(_.text)
-      } yield {
-        ForeignRelationship(sys,key)
-      }
-    })
-    Conversation(author,lastAccessed,slides,subject,tag,jid,title,created,permissions,blacklist.toList,m.audiences,foreignRelationship)
+    val created = getLongByName(input,"creation")
+    val isDeleted = getBooleanByName(input,"isDeleted")
+    val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+    Conversation(author,lastModified,slides,jid,title,created,isDeleted,permissions)
   })
   override def fromConversation(input:Conversation):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversation",{
     metlXmlToXml("conversation",List(
       <author>{input.author}</author>,
-      <lastAccessed>{input.lastAccessed}</lastAccessed>,
+      <lastModified>{input.lastModified}</lastModified>,
       <slides>{input.slides.map(s => fromSlide(s))}</slides>,
-      <subject>{input.subject}</subject>,
-      <tag>{input.tag}</tag>,
       <jid>{input.jid}</jid>,
       <title>{input.title}</title>,
-      <created>{new java.util.Date(input.created).toString()}</created>,
-      <creation>{input.created}</creation>,
-      <blacklist>{
-        input.blackList.map(bu => <user>{bu}</user> )
-      }</blacklist>,
-      //                        <configName>{input.server.name}</configName>,
-      fromPermissions(input.permissions)
-    ) ::: input.foreignRelationship.toList.map(t => {
-      <foreignRelationship system={t.system} key={t.key} displayName={t.displayName.map(dn => Text(dn))} />
-    }))
+      <isDeleted>{input.isDeleted}</isDeleted>,
+      <creation>{input.created}</creation>
+    ))
   })
   override def fromConversationList(input:List[Conversation]):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversationList",{
     <conversations>{input.map(c => fromConversation(c))}</conversations>
@@ -649,111 +622,24 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val author = getStringByName(input,"author")
     val id = getStringByName(input,"id")
     val index = getIntByName(input,"index")
-    val defHeight = getIntByName(input,"defaultHeight")
-    val defWidth = getIntByName(input,"defaultWidth")
     val created = getLongByName(input,"created")
     val modified = getLongByName(input,"modified")
     val exposed = getBooleanByName(input,"exposed")
     val slideType = getStringByName(input,"type")
-    val groupSets = (input \ "groupSet").map(gs => toGroupSet(gs)).toList
-    Slide(author,id,index,created,modified,defHeight,defWidth,exposed,slideType,groupSets,m.audiences)
+    val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+    Slide(author,id,index,created,modified,exposed,slideType,permissions)
   })
   override def fromSlide(input:Slide):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSlide",{
     metlXmlToXml("slide",List(
       <id>{input.id}</id>,
       <author>{input.author}</author>,
       <index>{input.index}</index>,
-      <defaultHeight>{input.defaultHeight}</defaultHeight>,
-      <defaultWidth>{input.defaultWidth}</defaultWidth>,
       <created>{input.created}</created>,
       <modified>{input.modified}</modified>,
       <exposed>{input.exposed}</exposed>,
       <type>{input.slideType}</type>
-    ) ::: List(input.groupSet.map(gs => fromGroupSet(gs))).flatten.flatMap(_.theSeq).toList)
-  })
-  override def toGroupSet(input:NodeSeq):GroupSet = Stopwatch.time("GenericXmlSerializer.toGroupSet",{
-    val m = parseMeTLContent(input,config)
-    val id = getStringByName(input,"id")
-    val location = getStringByName(input,"location")
-    val groupingStrategy = toGroupingStrategy((input \ "groupingStrategy"))
-    val groups = ((input \ "groups") \ "group").map(gn => toGroup(gn)).toList
-    GroupSet(id,location,groupingStrategy,groups,m.audiences)
-  })
-  override def fromGroupSet(input:GroupSet):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromGroupSet",{
-    metlXmlToXml("groupSet",List(
-      <id>{input.id}</id>,
-      <location>{input.location}</location>,
-      fromGroupingStrategy(input.groupingStrategy).head,
-      <groups>{input.groups.map(g => fromGroup(g))}</groups>
     ))
   })
-
-  override def toGroupingStrategy(input:NodeSeq):GroupingStrategy = {
-    getStringByName(input,"name") match {
-      case "byMaximumSize" => ByMaximumSize(getIntByName(input,"groupSize"))
-      case "byTotalGroups" => ByTotalGroups(getIntByName(input,"groupCount"))
-      case "onePersonPerGroup" => OnePersonPerGroup
-      case "everyoneInOneGroup" => EveryoneInOneGroup
-      case "complexGroupingStrategy" => ComplexGroupingStrategy(Map("xml" -> input.toString))
-      case _ => EveryoneInOneGroup
-    }
-  }
-  override def fromGroupingStrategy(input:GroupingStrategy):NodeSeq = {
-    input match {
-      case ByMaximumSize(groupSize) => <groupingStrategy><name>byMaximumSize</name><groupSize>{groupSize.toString}</groupSize></groupingStrategy>
-      case ByTotalGroups(groupCount) => <groupingStrategy><name>byTotalGroups</name><groupCount>{groupCount.toString}</groupCount></groupingStrategy>
-      case OnePersonPerGroup => <groupingStrategy><name>onePersonPerGroup</name></groupingStrategy>
-      case EveryoneInOneGroup => <groupingStrategy><name>everyoneInOneGroup</name></groupingStrategy>
-      case ComplexGroupingStrategy(data) => <groupingStrategy><name>complexGroupingStrategy</name>{data.toString}<data></data></groupingStrategy>
-      case _ => <groupingStrategy><name>everyoneInOneGroup</name></groupingStrategy>
-    }
-  }
-
-  override def toGroup(input:NodeSeq):Group = Stopwatch.time("GenericXmlSerializer.toGroup",{
-    val m = parseMeTLContent(input,config)
-    val id = getStringByName(input,"id")
-    val location = getStringByName(input,"location")
-    val timestamp = getLongByName(input,"timestamp")
-    val members = ((input \ "members") \ "member").map(_.text).toList
-    Group(id,location,timestamp,members,m.audiences)
-  })
-  override def fromGroup(input:Group):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromGroup",{
-    metlXmlToXml("group",List(
-      <id>{input.id}</id>,
-      <location>{input.location}</location>,
-      <timestamp>{input.timestamp}</timestamp>,
-      <members>{input.members.map(m => {
-        <member>{m}</member>
-      })}</members>
-    ))
-  })
-
-  override def toPermissions(input:NodeSeq):Permissions = Stopwatch.time("GenericXmlSerializer.toPermissions",{
-    try {
-      val studentsCanOpenFriends = getBooleanByName(input,"studentCanOpenFriends")
-      val studentsCanPublish = getBooleanByName(input,"studentCanPublish")
-      val usersAreCompulsorilySynced = getBooleanByName(input,"usersAreCompulsorilySynced")
-      val studentsMayBroadcast = tryo(getValueOfNode(input,"studentsMayBroadcast").toBoolean).openOr(true)
-      val studentsMayChatPublicly = tryo(getValueOfNode(input,"studentsMayChatPublicly").toBoolean).openOr(true)
-      Permissions(studentsCanOpenFriends,studentsCanPublish,usersAreCompulsorilySynced,studentsMayBroadcast,studentsMayChatPublicly)
-    } catch {
-      case e:Exception => {
-        Permissions.default
-      }
-    }
-  })
-  override def fromPermissions(input:Permissions):Node = Stopwatch.time("GenericXmlSerializer.fromPermissions",{
-    <permissions><studentCanOpenFriends>{input.studentsCanOpenFriends}</studentCanOpenFriends><studentCanPublish>{input.studentsCanPublish}</studentCanPublish><usersAreCompulsorilySynced>{input.usersAreCompulsorilySynced}</usersAreCompulsorilySynced><studentsMayBroadcast>{input.studentsMayBroadcast}</studentsMayBroadcast><studentsMayChatPublicly>{input.studentsMayChatPublicly}</studentsMayChatPublicly></permissions>
-  })
-  override def toColor(input:AnyRef):Color = Stopwatch.time("GenericXmlSerializer.toColor",{
-    Color.empty
-  })
-  override def fromColor(input:Color):AnyRef = "%s %s %s %s".format(input.alpha,input.red,input.green,input.blue)
-  override def toPointList(input:AnyRef):List[Point] = List.empty[Point]
-  override def fromPointList(input:List[Point]):AnyRef = ""
-  override def toPoint(input:AnyRef):Point = {
-    Point.empty
-  }
   override def fromPoint(input:Point):String = "%s %s %s".format(input.x,input.y,input.thickness)
   override def toGrade(input:NodeSeq):MeTLGrade = Stopwatch.time("GenericXmlSerializer.toGrade",{
     val m = parseMeTLContent(input,config)
@@ -874,7 +760,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     } yield {
       (attrName,attrValue)
     }):_*)
-    Profile(m.timestamp,id,name,attrs,m.audiences)
+    Profile(m.timestamp,id,name,attrs)
   })
   override def fromProfile(input:Profile):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromProfile",{
     metlContentToXml("profile",input,List(
