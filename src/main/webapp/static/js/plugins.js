@@ -202,14 +202,16 @@ var Plugins = (function(){
         "Face to face":(function(){
             var container = $("<div />");
             return {
-                style:".publishedStream {background:green;}, .subscribedStream {background:red;}"+
+                style:
+                    " #videoConfSessionsContainer {display:none;}"+
+                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer" +
+                    " .publishedStream {background:green;}, .subscribedStream {background:red;}"+
+                    " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
                     " .videoConfStartButton, .videoConfSubscribeButton{padding-top:0;margin-top:0;}"+
                     " .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
-                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer" +
                     " .videoConfPermitStudentBroadcastContainer{display:flex;}"+
-                    " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
-                    " .videoConfStartButton{padding-top:0;margin-top:0;}, .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
-                    " #videoConfSessionsContainer{display:none;}"+
+                    " .videoConfStartButton{padding-top:0;margin-top:0;}," +
+                    " .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
                     " .videoContainer{display:flex;}"+
                     " .context, .publisherName{font-size:1rem;}"+
                     " .thumbWide{width:160px;}"+
@@ -612,38 +614,65 @@ $(function(){
     styleContainer.append(".pluginHidden {display:none}"+
                           " .collapserOpen{background:green}"+
                           " .collapserClosed{background:red}");
+    var hidePluginClass = "pluginHidden";
+    var collapserOpenClass = "collapserOpen";
+    var collapserClosedClass = "collapserClosed";
     _.each(Plugins,function(plugin,label){
         console.log("Creating plugin", plugin);
         var pluginContainer = $("<div />",{
             class:"plugin"
         });
-        var collapserContainer = $("<div />", {
-            class:"collapserOpen"
-        });
-        collapserContainer.append('<div class="collapseContainer">'+
-            '<button class="collapseButton collapserOpen">- '+label+'</button>'+
-            '</div>');
+
         var contentContainer = plugin.load(Progress);
-        console.log("Content container",contentContainer);
         contentContainer.appendTo(pluginContainer);
-        var collapseButton = collapserContainer.find(".collapseButton");
-        collapseButton.on("click",function() {
-            var hidePluginClass = "pluginHidden";
-            if( contentContainer.hasClass(hidePluginClass)) {
-                contentContainer.removeClass(hidePluginClass);
-                collapseButton.removeClass("collapserClosed");
-                collapseButton.addClass("collapserOpen");
-                collapseButton.text("- "+label);
-            } else {
-                contentContainer.addClass(hidePluginClass);
-                collapseButton.removeClass("collapserOpen");
-                collapseButton.addClass("collapserClosed");
-                collapseButton.text("+ "+label);
-            }
-        });
-        collapserContainer.appendTo(pluginContainer);
         styleContainer.append(plugin.style);
         pluginContainer.appendTo(pluginBar);
         plugin.initialize();
+
+        var contentContainerNode = $(contentContainer);
+        console.log("Content container",contentContainerNode);
+        console.log("Top level children",contentContainerNode.children());
+
+        var isNonHidden = function(elem) {
+            return !elem.hidden;
+        };
+        var isVisible = function(elem) {
+            return elem.visible;
+        };
+        var checkNestedElements = function(elem,f){
+            return f(elem) &&
+                (!elem.is(':empty') ||
+                    (elem.children().length > 0 && _.filter(elem.children(), function(i,e){
+                        return checkNestedElements($(e),f);
+                    }).length > 0));
+        };
+        var hasNonHiddenContent = checkNestedElements(contentContainerNode,isNonHidden);
+        console.log("Has non-hidden content",hasNonHiddenContent);
+        var hasVisibleContent = checkNestedElements(contentContainerNode,isVisible);
+        console.log("Has visible content",hasVisibleContent);
+
+        if(hasNonHiddenContent || hasVisibleContent) {
+            var collapserContainer = $("<div />", {
+                class:"collapserOpen"
+            });
+            collapserContainer.append('<div class="collapseContainer">'+
+                '<button class="collapseButton collapserOpen">- '+label+'</button>'+
+                '</div>');
+            var collapseButton = collapserContainer.find(".collapseButton");
+            collapseButton.on("click",function() {
+                if( contentContainer.hasClass(hidePluginClass)) {
+                    contentContainer.removeClass(hidePluginClass);
+                    collapseButton.removeClass(collapserClosedClass);
+                    collapseButton.addClass(collapserOpenClass);
+                    collapseButton.text("- "+label);
+                } else {
+                    contentContainer.addClass(hidePluginClass);
+                    collapseButton.removeClass(collapserOpenClass);
+                    collapseButton.addClass(collapserClosedClass);
+                    collapseButton.text("+ "+label);
+                }
+            });
+            collapserContainer.appendTo(pluginContainer);
+        }
     });
 });
