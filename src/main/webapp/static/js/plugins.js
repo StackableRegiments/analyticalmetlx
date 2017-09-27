@@ -17,7 +17,6 @@ var Plugins = (function(){
                 return initRes;
             },
             changeVisualState:function(newIsEnabled,newIsCollapsed,newDesiresAttention){
-                // console.log("Changing visual state",name,newIsEnabled,newIsCollapsed,newDesiresAttention);
                 if (newIsEnabled !== undefined) {
                     isEnabled = newIsEnabled;
                 }
@@ -127,7 +126,6 @@ var Plugins = (function(){
                             }
                         }
                         var plugin = Plugins.chat;
-                        console.log("Received a chat stanza",plugin.getIsEnabled(),plugin.getIsCollapsed(),plugin.getDesiresAttention());
                         if (plugin !== undefined && plugin.getIsCollapsed()) {
                             plugin.changeVisualState(plugin.getIsEnabled(),plugin.getIsCollapsed(),true);
                         }
@@ -152,7 +150,6 @@ var Plugins = (function(){
                     context:context || loc,
                     audiences:audiences || []
                 };
-                console.log("created chat message:",cm);
                 return cm;
             };
             var sendChatMessage = function(text){
@@ -317,7 +314,6 @@ var Plugins = (function(){
                 }).appendTo(b);
                 return b;
             };
-            var enabled = false;
             var groupsPlugin = createPlugin(
                 "Groups",
                 ".groupsPluginMember{margin-left:0.5em;display:flex;}"+
@@ -337,6 +333,7 @@ var Plugins = (function(){
                 " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
                 function(bus,params) {
                     var render = function(){
+                        var enabled = false;
                         try {
                             overContainer.empty();
                             var groups = Conversations.getCurrentGroups();
@@ -642,6 +639,7 @@ var Plugins = (function(){
                         catch(e){
                             console.log("Groups plugin render e",e);
                         }
+                        groupsPlugin.changeVisualState(enabled,groupsPlugin.getIsCollapsed(),groupsPlugin.getDesiresAttention());
                     };
                     bus.gradeValueReceived["Groups plugin"] = function(gv){
                         var linkedGradeLoc = sprintf("groupWork_%s",Conversations.getCurrentSlideJid());
@@ -659,9 +657,9 @@ var Plugins = (function(){
                 function(){},
                 function(){}
             );
-            groupsPlugin.changeVisualState(enabled,groupsPlugin.getIsCollapsed(),groupsPlugin.getDesiresAttention());
             return groupsPlugin;
         })()
+/*
         ,
         "dummy":(function(){
             var containerId = "dummyPlugin";
@@ -710,6 +708,7 @@ var Plugins = (function(){
             dummyPlugin.changeVisualState(true,true,false);
             return dummyPlugin;
         })()
+*/
     };
 })();
 
@@ -728,7 +727,6 @@ $(function(){
     var collapserOpenClass = "collapserOpen";
     var collapserClosedClass = "collapserClosed";
     _.each(Plugins,function(plugin,label){
-        console.log("Creating " + label + " plugin",plugin);
         var pluginContainer = $("<div />",{
             class:"plugin"
         });
@@ -777,7 +775,6 @@ $(function(){
                     attentionRequestor.removeClass("fa-envelope");
                 }
             } else {
-                console.log("this is disabling");
                 collapseButton.hide();
             }
         };
