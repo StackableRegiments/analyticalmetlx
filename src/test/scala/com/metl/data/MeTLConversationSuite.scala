@@ -16,9 +16,11 @@ import Privacy._
 class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks with BeforeAndAfter with ShouldMatchers with QueryXml with MeTLDataGenerators with ConversationMatchers {
 
 	var xmlSerializer: GenericXmlSerializer = _
+	var jsonSerializer: JsonSerializer = _
 
 	before {
 	  xmlSerializer = new GenericXmlSerializer(EmptyBackendAdaptor)
+	  jsonSerializer = new JsonSerializer(EmptyBackendAdaptor)
 	}
 
 	test("extract conversation from xml") {
@@ -173,5 +175,20 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                permissions ((xml \ "permissions").headOption.map(p => xmlSerializer.toStructurePermission(p)).getOrElse(StructurePermission.empty))
             )
         }
+    }
+    test("serialize to JSON and back") {
+      forAll (genConversation) { (conversation:Conversation) => 
+        val json = jsonSerializer.fromConversation(conversation)
+        val conv2 = jsonSerializer.toConversation(json)
+        conv2 should have(
+          author (conversation.author),
+          lastModified (conversation.lastModified),
+          jid (conversation.jid),
+          title (conversation.title),
+          created (conversation.created),
+          slides (conversation.slides),
+          permissions (conversation.permissions)
+        )
+      }
     }
 }
