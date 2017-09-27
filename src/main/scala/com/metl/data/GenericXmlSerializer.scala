@@ -607,7 +607,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val title = getStringByName(input,"title")
     val created = getLongByName(input,"creation")
     val isDeleted = getBooleanByName(input,"isDeleted")
-    val permissions = getXmlByName(input,"permissions").headOption.map(x => toStructurePermission(x)).getOrElse(StructurePermission.default)
+    val permissions = (input \ "permissions").headOption.map(x => toStructurePermission(x)).getOrElse(StructurePermission.default)
     Conversation(author,lastModified,slides,jid,title,created,isDeleted,permissions)
   })
   override def fromConversation(input:Conversation):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversation",{
@@ -634,7 +634,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val modified = getLongByName(input,"modified")
     val exposed = getBooleanByName(input,"exposed")
     val slideType = getStringByName(input,"type")
-    val permissions = getXmlByName(input,"permissions").headOption.map(x => toStructurePermission(x)).getOrElse(StructurePermission.default)
+    val permissions = (input \ "permissions").headOption.map(x => toStructurePermission(x)).getOrElse(StructurePermission.default)
     Slide(author,id,index,created,modified,exposed,slideType,permissions)
   })
   override def fromSlide(input:Slide):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSlide",{

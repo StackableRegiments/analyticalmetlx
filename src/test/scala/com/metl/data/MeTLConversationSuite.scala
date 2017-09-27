@@ -37,6 +37,20 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                   <modified>23524634634344</modified>
                   <exposed>true</exposed>
                   <type>SLIDE</type>
+                  <permissions>
+                    <structurePermission>
+                      <canView>
+                        <everyoneCanAccess />
+                      </canView>
+                      <canInteract>
+                        <accountAccess name="a" provider="b"/>
+                      </canInteract>
+                      <canAdminister>
+                        <noOneCanAccess />
+                      </canAdminister>
+                    </structurePermission>
+                  </permissions>
+
               </slide>
               <slide>
                   <author>eecrole</author>
@@ -46,6 +60,21 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                   <modified>23524634634344</modified>
                   <exposed>false</exposed>
                   <type>SLIDE</type>
+                  <permissions>
+                    <structurePermission>
+                      <canView>
+                        <accountAccess name="a" provider="b"/>
+                      </canView>
+                      <canInteract>
+                        <everyoneCanAccess />
+                      </canInteract>
+                      <canAdminister>
+                        <noOneCanAccess />
+                      </canAdminister>
+                    </structurePermission>
+                  </permissions>
+
+
               </slide>
               <slide>
                   <author>eecrole</author>
@@ -55,6 +84,21 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                   <modified>23524634634344</modified>
                   <exposed>true</exposed>
                   <type>SLIDE</type>
+                  <permissions>
+                    <structurePermission>
+                      <canView>
+                        <noOneCanAccess />
+                      </canView>
+                      <canInteract>
+                        <everyoneCanAccess />
+                      </canInteract>
+                      <canAdminister>
+                        <accountAccess name="a" provider="b"/>
+                      </canAdminister>
+                    </structurePermission>
+                  </permissions>
+
+
               </slide>
           </slides>
           <jid>232523454</jid>
@@ -76,7 +120,7 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
         </conversation>
       </message>
 
-		val result = xmlSerializer.toConversation(content)
+		val result = xmlSerializer.toConversation(content \ "conversation")
 
     val creation = 23524634634343L
     val modification = 23524634634344L
@@ -87,10 +131,22 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
       title ("The quest for answers"),
       created (creation),
       slides (List(
-        Slide(author = "eecrole", id = "3453463", index = 0, created = creation, modified = modification, exposed = true),
-        Slide(author = "eecrole", id = "3453464", index = 1, created = creation, modified = modification, exposed = false),
-        Slide(author = "eecrole", id = "3453465", index = 2, created = creation, modified = modification, exposed = true))
-      ),
+        Slide(author = "eecrole", id = "3453463", index = 0, created = creation, modified = modification, exposed = true, permissions = StructurePermission(
+          EveryoneCanAccess,
+          AccountAccessControl("a","b"),
+          NoOneCanAccess
+        )),
+        Slide(author = "eecrole", id = "3453464", index = 1, created = creation, modified = modification, exposed = false, permissions = StructurePermission(
+          AccountAccessControl("a","b"),
+          EveryoneCanAccess,
+          NoOneCanAccess
+        )),
+        Slide(author = "eecrole", id = "3453465", index = 2, created = creation, modified = modification, exposed = true, permissions = StructurePermission(
+          NoOneCanAccess,
+          EveryoneCanAccess,
+          AccountAccessControl("a","b")
+        ))
+      )),
       permissions (StructurePermission(
         EveryoneCanAccess,
         NoOneCanAccess,
