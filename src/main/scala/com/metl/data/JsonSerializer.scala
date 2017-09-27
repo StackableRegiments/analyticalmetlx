@@ -860,7 +860,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val title = getStringByName(input,"title")
         val created = getLongByName(input,"creation")
         val isDeleted = getBooleanByName(input,"isDeleted")
-        val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+        val permissions = getListOfObjectsByName(input,"permissions").headOption.map(p => toStructurePermission(p)).getOrElse(StructurePermission.default)
         Conversation(author,lastModified,slides,jid,title,created,isDeleted,permissions)
       }
       case _ => Conversation.empty
@@ -875,7 +875,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("jid",JString(input.jid)),
       JField("title",JString(input.title)),
       JField("isDeleted",JBool(input.isDeleted)),
-      JField("creation",JInt(input.created))
+      JField("creation",JInt(input.created)),
+      JField("permissions",fromStructurePermission(input.permissions))
     ) ::: parseAudiences(input))
   })
   override def toSlide(i:JValue):Slide = Stopwatch.time("JsonSerializer.toSlide",{
@@ -888,7 +889,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val modified = getLongByName(input,"modified")
         val exposed = getBooleanByName(input,"exposed")
         val slideType = getStringByName(input,"slideType")
-        val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+        val permissions = getListOfObjectsByName(input,"permissions").headOption.map(p => toStructurePermission(p)).getOrElse(StructurePermission.default)
         Slide(author,id,index,created,modified,exposed,slideType,permissions)
       }
       case _ => Slide.empty
@@ -902,7 +903,8 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("created",JInt(input.created)),
       JField("modified",JInt(input.modified)),
       JField("exposed",JBool(input.exposed)),
-      JField("slideType",JString(input.slideType))
+      JField("slideType",JString(input.slideType)),
+      JField("permissions",fromStructurePermission(input.permissions))
     ))
   })
   protected def convert2AfterN(h:String,n:Int):Int = hexToInt(h.drop(n).take(2).mkString)
@@ -1156,7 +1158,7 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("wootArgs",net.liftweb.json.parse(input.wootArgs))
     ) ::: parseMeTLContent(input))
   })
-  protected def toStructurePermission(input:JValue):StructurePermission = Stopwatch.time("JsonSerializer.toStructureOperation",{
+  def toStructurePermission(input:JValue):StructurePermission = Stopwatch.time("JsonSerializer.toStructureOperation",{
     input match {
       case j:JObject => {
         val JString("structurePermission") = (j \ "type")
@@ -1168,13 +1170,13 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
           canInteract <- toAccessControl(ci)
           canAdminister <- toAccessControl(ca)
         } yield {
-          StructurePermission(canView,canInteract,canAdminister)
+          StructurePermission.construct(canView,canInteract,canAdminister)
         }).getOrElse(StructurePermission.empty)
       }
       case _ => StructurePermission.empty
     }
   })
-  protected def fromStructurePermission(input:StructurePermission):JValue = Stopwatch.time("JsonSerializer.fromStructureOperation",{
+  def fromStructurePermission(input:StructurePermission):JValue = Stopwatch.time("JsonSerializer.fromStructureOperation",{
     JObject(List(
       JField("type",JString("structurePermission")),
       JField("canView",fromAccessControl(input.canView)),

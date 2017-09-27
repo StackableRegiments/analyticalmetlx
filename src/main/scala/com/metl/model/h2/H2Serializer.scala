@@ -349,11 +349,11 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
     incStanza(H2QuizResponse.create,i,"quizResponse").answer(i.answer).answerer(i.answerer).quizId(i.id)
   }
   def toSlide(i:H2Slide):Slide = {
-    val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+    val permissions = tryo(xmlSerializer.toStructurePermission(scala.xml.XML.loadString(i.permissions.get))).getOrElse(StructurePermission.default)
     Slide(i.author.get,i.jid.get,0,i.creation.get,i.modified.get,true,i.slideType.get,permissions)
   }
   override def fromSlide(i:Slide):H2Slide = {
-    incMeTLContent(H2Slide.create,i,"slide").author(i.author).creation(i.created).jid(i.id).slideType(i.slideType).modified(i.modified)
+    incMeTLContent(H2Slide.create,i,"slide").author(i.author).creation(i.created).jid(i.id).slideType(i.slideType).modified(i.modified).permissions(xmlSerializer.fromStructurePermission(i.permissions).toString)
   }
   def toConversation(i:H2Conversation):Conversation = {
     val structure:Map[String,Slide] = Map((for {
@@ -371,7 +371,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
         modified=0L,
         exposed=exposed,
         slideType="",
-        permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+        permissions = StructurePermission.empty
       ))
     }):_*)
 
@@ -381,6 +381,7 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
       slideId = sr.jid.get
       cs <- structure.get(slideId)
     } yield {
+      val permissions = tryo(xmlSerializer.toStructurePermission(scala.xml.XML.loadString(sr.permissions.get))).getOrElse(StructurePermission.default)
       Slide(
         author=sr.author.get,
         id=slideId,
@@ -389,17 +390,17 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
         modified=sr.modified.get,
         exposed=cs.exposed,
         slideType=sr.slideType.get,
-        permissions=StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+        permissions=permissions
       )
     }).toList
-    val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+    val permissions = tryo(xmlSerializer.toStructurePermission(scala.xml.XML.loadString(i.permissions.get))).getOrElse(StructurePermission.default)
     Conversation(i.author.get,i.lastAccessed.get,slides,i.jid.get,i.title.get,i.creation.get,i.isDeleted.get,permissions)
   }
   override def fromConversation(i:Conversation):H2Conversation = {
     val structure = <slides>{i.slides.map(slide => {
       <slide id={slide.id} exposed={slide.exposed.toString} index={slide.index.toString} />
     })}</slides>
-    incMeTLContent(H2Conversation.create,i,"conversation").author(i.author).lastAccessed(i.lastModified).jid(i.jid).title(i.title).created(new java.util.Date(i.created).toString()).creation(i.created).structure(structure.toString).isDeleted(i.isDeleted)
+    incMeTLContent(H2Conversation.create,i,"conversation").author(i.author).lastAccessed(i.lastModified).jid(i.jid).title(i.title).created(new java.util.Date(i.created).toString()).creation(i.created).structure(structure.toString).isDeleted(i.isDeleted).permissions(xmlSerializer.fromStructurePermission(i.permissions).toString)
   }
   def optionsToString(ls:List[QuizOption]):String = {
     val xml = <options>{ls.map(o => xmlSerializer.fromQuizOption(o))}</options>

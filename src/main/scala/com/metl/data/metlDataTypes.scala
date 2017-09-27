@@ -97,6 +97,16 @@ object Presentation{
 
 case class SearchExplanation(query:String,documentId:String,isMatch:Boolean,score:Float,description:String,subResults:List[SearchExplanation])
 
+object AccessControl {
+  def simplify(in:AccessControl):AccessControl = {
+    in match {
+      case AccessControlList(Nil) => NoOneCanAccess
+      case AccessControlList(first :: Nil) => simplify(first)
+      case AccessControlList(items) => AccessControlList(items.map(i => simplify(i)))
+      case other => other
+    }
+  }
+}
 trait AccessControl {
   def canAccess(accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groups:List[String] = Nil):Boolean
 }
@@ -131,6 +141,9 @@ case class StructurePermission(canView:AccessControl = EveryoneCanAccess,canInte
 object StructurePermission {
   def empty = StructurePermission(NoOneCanAccess,NoOneCanAccess,NoOneCanAccess)
   def default = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+  def construct(v:AccessControl,i:AccessControl,a:AccessControl):StructurePermission = {
+    StructurePermission(AccessControl.simplify(v),AccessControl.simplify(i),AccessControl.simplify(a))
+  }
 }
 
 case class Conversation(author:String,lastModified:Long,slides:List[Slide],jid:String,title:String,created:Long,isDeleted:Boolean = false,permissions:StructurePermission = StructurePermission()) extends MeTLData(Nil) {

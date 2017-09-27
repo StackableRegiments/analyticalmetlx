@@ -267,6 +267,7 @@ class H2Slide extends H2MeTLContent[H2Slide]{
   object modified extends MappedLong(this)
   object jid extends H2MeTLIndexedString(this,64)
   object slideType extends MappedMeTLString(this,64)
+  object permissions extends MappedText(this)
 }
 object H2Slide extends H2Slide with LongKeyedMetaMapper[H2Slide]{
 }
@@ -280,6 +281,7 @@ class H2Conversation extends H2MeTLContent[H2Conversation]{
   object creation extends MappedLong(this)
   object structure extends MappedText(this)
   object isDeleted extends MappedBoolean(this)
+  object permissions extends MappedText(this)
 }
 object H2Conversation extends H2Conversation with LongKeyedMetaMapper[H2Conversation]{
 }

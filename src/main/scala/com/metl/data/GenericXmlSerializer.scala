@@ -20,6 +20,13 @@ trait XmlUtils {
   def getValueOfNode(content:NodeSeq,nodeName:String):String = tryo((content \\ nodeName).head.text).openOr("")
   def getXmlByName(content:NodeSeq,name:String):NodeSeq = tryo((content \\ name)).openOr(NodeSeq.Empty)
   def getAttributeOfNode(content:NodeSeq,nodeName:String,attributeName:String):String = tryo((content \\ nodeName).seq(0).attribute(attributeName).getOrElse(NodeSeq.Empty).text).openOr("")
+  def withinRootNode[A](content:NodeSeq,nodeName:String,func:NodeSeq => A):Option[A] = {
+    content match {
+      case e:Elem if e.label == nodeName => Some(func(e))
+      case e:Elem => (e \ nodeName).headOption.map(ho => func(e))
+      case _ => None
+    }
+  }
   def parseCanvasContent(i:NodeSeq):ParsedCanvasContent = {
     val target = getStringByName(i,"target")
     val privacy = getPrivacyByName(i,"privacy")
@@ -600,7 +607,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val title = getStringByName(input,"title")
     val created = getLongByName(input,"creation")
     val isDeleted = getBooleanByName(input,"isDeleted")
-    val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+    val permissions = getXmlByName(input,"permissions").headOption.map(x => toStructurePermission(x)).getOrElse(StructurePermission.default)
     Conversation(author,lastModified,slides,jid,title,created,isDeleted,permissions)
   })
   override def fromConversation(input:Conversation):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversation",{
@@ -611,7 +618,8 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <jid>{input.jid}</jid>,
       <title>{input.title}</title>,
       <isDeleted>{input.isDeleted}</isDeleted>,
-      <creation>{input.created}</creation>
+      <creation>{input.created}</creation>,
+      <permissions>{fromStructurePermission(input.permissions)}</permissions>
     ))
   })
   override def fromConversationList(input:List[Conversation]):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromConversationList",{
@@ -626,7 +634,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val modified = getLongByName(input,"modified")
     val exposed = getBooleanByName(input,"exposed")
     val slideType = getStringByName(input,"type")
-    val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+    val permissions = getXmlByName(input,"permissions").headOption.map(x => toStructurePermission(x)).getOrElse(StructurePermission.default)
     Slide(author,id,index,created,modified,exposed,slideType,permissions)
   })
   override def fromSlide(input:Slide):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromSlide",{
@@ -637,7 +645,8 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <created>{input.created}</created>,
       <modified>{input.modified}</modified>,
       <exposed>{input.exposed}</exposed>,
-      <type>{input.slideType}</type>
+      <type>{input.slideType}</type>,
+      <permissions>{fromStructurePermission(input.permissions)}</permissions>
     ))
   })
   override def fromPoint(input:Point):String = "%s %s %s".format(input.x,input.y,input.thickness)
@@ -803,21 +812,30 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <wootArgs>{input.wootArgs}</wootArgs>
     ))
   })
-  protected def toStructurePermission(input:NodeSeq):StructurePermission = Stopwatch.time("GenericXmlSerializer.toStructureOperation",{
-    (input \ "structurePermission").headOption.flatMap(spx => {
-      for {
-        cvx <- (spx \ "canView").headOption
-        canView <- toAccessControl(cvx)
-        cvi <- (spx \ "canInteract").headOption
-        canInteract <- toAccessControl(cvi)
-        cva <- (spx \ "canAdminister").headOption
-        canAdminister <- toAccessControl(cva)
+  def toStructurePermission(input:NodeSeq):StructurePermission = Stopwatch.time("GenericXmlSerializer.toStructureOperation",{
+    withinRootNode[StructurePermission](input,"structurePermission",(spx:NodeSeq) => {
+      (for {
+        cvx <- (spx \ "canView").headOption.flatMap{
+          case e:Elem => Some(e)
+          case _ => None
+        }
+        canView = AccessControlList(cvx.child.toList.flatMap(i => toAccessControl(i)))
+        cvi:Elem <- (spx \ "canInteract").headOption.flatMap{
+          case e:Elem => Some(e)
+          case _ => None
+        }
+        canInteract = AccessControlList(cvi.child.toList.flatMap(i => toAccessControl(i)))
+        cva:Elem <- (spx \ "canAdminister").headOption.flatMap{
+          case e:Elem => Some(e)
+          case _ => None
+        }
+        canAdminister = AccessControlList(cva.child.toList.flatMap(i => toAccessControl(i)))
       } yield {
-        StructurePermission(canView,canInteract,canAdminister)
-      }
+        StructurePermission.construct(canView,canInteract,canAdminister)
+      }).getOrElse(StructurePermission.empty)
     }).getOrElse(StructurePermission.empty)
   })
-  protected def fromStructurePermission(input:StructurePermission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromStructureOperation",{
+  def fromStructurePermission(input:StructurePermission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromStructureOperation",{
     <structurePermission>
       <canView>{fromAccessControl(input.canView)}</canView>
       <canInteract>{fromAccessControl(input.canInteract)}</canInteract>

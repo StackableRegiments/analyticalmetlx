@@ -493,14 +493,15 @@ GROUP BY %s""".format(
   def generateSlideJid:String = "s_%s_t_%s_".format(nextFuncName,new java.util.Date().getTime)
   def createSlide(author:String,slideType:String = "SLIDE"):Slide = {
     val now = new java.util.Date().getTime
-    val slide = H2Slide.create.slideType(slideType).creation(now).modified(now).author(author).jid(generateSlideJid).saveMe
-    serializer.toSlide(slide)
+    val slide = Slide(author,generateSlideJid,0,now,now,true,slideType,StructurePermission.default)
+    serializer.fromSlide(slide).save
+    slide
   }
   def createConversation(title:String,author:String):Conversation = {
     val now = new Date()
     val newJid = generateConversationJid
     val slide = createSlide(author).copy(index = 0,exposed = true) 
-    val permissions = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+    val permissions = StructurePermission.default
     val details = Conversation(author,now.getTime,List(slide),newJid,title,now.getTime,false,permissions)
     updateConversation(details)
     details
