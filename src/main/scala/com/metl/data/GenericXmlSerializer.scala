@@ -23,7 +23,7 @@ trait XmlUtils {
   def withinRootNode[A](content:NodeSeq,nodeName:String,func:NodeSeq => A):Option[A] = {
     content match {
       case e:Elem if e.label == nodeName => Some(func(e))
-      case e:Elem => (e \ nodeName).headOption.map(ho => func(e))
+      case e:Elem => (e \ nodeName).headOption.map(ho => func(ho))
       case _ => None
     }
   }

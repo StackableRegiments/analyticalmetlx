@@ -73,6 +73,28 @@ trait MeTLDataGenerators {
     audiences.toArray.toList.map(_.asInstanceOf[Audience])
   }
 
+  val genAccessControl:Gen[AccessControl] = for {
+    typeNum <- Gen.choose(0,5)
+    paramA <- genString(8)
+    paramB <- genString(4)
+    paramC <- Gen.choose(0,3)
+  } yield {
+    typeNum match {
+      case 0 => EveryoneCanAccess
+      case 1 => NoOneCanAccess
+      case 2 => ProfileAccessControl(paramA)
+      case 3 => GroupAccessControl(paramA)
+      case 4 => AccountAccessControl(paramA,paramB)
+      case 5 => AccessControlList(Range(0,paramC).flatMap(i => genAccessControl.sample).toList)
+      case _ => NoOneCanAccess
+    }
+  }
+  val genStructurePermission = for {
+    canView <- genAccessControl
+    canInteract <- genAccessControl
+    canAdminister <- genAccessControl
+  } yield StructurePermission.construct(canView,canInteract,canAdminister)
+
   val genTheme = for {
     author <- genString(32)
     target <- genString(32)
@@ -278,15 +300,30 @@ trait MeTLDataGenerators {
     created <- arbitrary[Long]
     slides <- Gen.containerOfN[List, Slide](1,genSlide)
     isDeleted <- arbitrary[Boolean]
-  } yield Conversation(author, lastModified, slides, jid, title, created, isDeleted)
+    permissions <- genStructurePermission
+  } yield Conversation(author, lastModified, slides, jid, title, created, isDeleted, permissions)
 
+  def genSlideType = for {
+    typeNum <- Gen.choose(0,4)
+  } yield {
+    typeNum match {
+      case 0 => "SLIDE"
+      case 1 => "QUIZ"
+      case 2 => "TEXTDOCUMENT"
+      case 3 => "FORUM"
+      case 4 => "UNKNOWN"
+    }
+  }
   def genSlide = for {
     author <- genString(32)
     id <- genString(64)
     index <- arbitrary[Int]
     created <- arbitrary[Long]
     modified <- arbitrary[Long]
-  } yield Slide(author, id, index, created, modified)
+    exposed <- arbitrary[Boolean]
+    slideType <- genSlideType
+    permissions <- genStructurePermission
+  } yield Slide(author, id, index, created, modified, exposed, slideType, permissions)
 
   def genForeignRelationship = for {
     sys <- genString(32)

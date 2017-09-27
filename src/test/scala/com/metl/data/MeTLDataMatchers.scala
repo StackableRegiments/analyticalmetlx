@@ -719,6 +719,96 @@ trait MeTLCommandMatchers extends MeTLStanzaMatchers {
 	  }
 }
 
+trait SlideMatchers {
+
+	def author(expectedValue: String) =
+	  new HavePropertyMatcher[Slide, String] {
+		def apply(stanza: Slide) =
+		  HavePropertyMatchResult(
+			stanza.author == expectedValue,
+			"author",
+			expectedValue,
+			stanza.author
+		  )
+	  }
+
+	def modified(expectedValue: Long) =
+	  new HavePropertyMatcher[Slide, Long] {
+		def apply(stanza: Slide) =
+		  HavePropertyMatchResult(
+			stanza.modified == expectedValue,
+			"modified",
+			expectedValue,
+			stanza.modified
+		  )
+	  }
+
+	def id(expectedValue: String) =
+	  new HavePropertyMatcher[Slide, String] {
+		def apply(stanza: Slide) =
+		  HavePropertyMatchResult(
+			stanza.id == expectedValue,
+			"id",
+			expectedValue,
+			stanza.id
+		  )
+	  }
+
+	def slideType(expectedValue: String) =
+	  new HavePropertyMatcher[Slide, String] {
+		def apply(stanza: Slide) =
+		  HavePropertyMatchResult(
+			stanza.slideType == expectedValue,
+			"slideType",
+			expectedValue,
+			stanza.slideType
+		  )
+	  }
+	def index(expectedValue: Int) =
+	  new HavePropertyMatcher[Slide, Int] {
+		def apply(stanza: Slide) =
+		  HavePropertyMatchResult(
+			stanza.index == expectedValue,
+			"index",
+			expectedValue,
+			stanza.index
+		  )
+	  }
+
+
+	def created(expectedValue: Long) =
+	  new HavePropertyMatcher[Slide, Long] {
+		def apply(stanza: Slide) =
+		  HavePropertyMatchResult(
+			stanza.created == expectedValue,
+			"created",
+			expectedValue,
+			stanza.created
+		  )
+	  }
+	def exposed(expectedValue: Boolean) =
+	  new HavePropertyMatcher[Slide, Boolean] {
+		def apply(stanza: Slide) =
+		  HavePropertyMatchResult(
+			stanza.exposed == expectedValue,
+			"exposed",
+			expectedValue,
+			stanza.exposed
+		  )
+	  }
+  def permissions(expectedValue:StructurePermission) = 
+    new HavePropertyMatcher[Slide,StructurePermission] {
+      def apply(stanza:Slide) = 
+        HavePropertyMatchResult(
+          stanza.permissions == expectedValue,
+          "permissions",
+          expectedValue,
+          stanza.permissions
+        )
+    }
+
+}
+
 trait ConversationMatchers {
 
 	def author(expectedValue: String) =
@@ -796,5 +886,14 @@ trait ConversationMatchers {
 			stanza.isDeleted
 		  )
 	  }
-
+  def permissions(expectedValue:StructurePermission) = 
+    new HavePropertyMatcher[Conversation,StructurePermission] {
+      def apply(stanza:Conversation) = 
+        HavePropertyMatchResult(
+          stanza.permissions == expectedValue,
+          "permissions",
+          expectedValue,
+          stanza.permissions
+        )
+    }
 }
