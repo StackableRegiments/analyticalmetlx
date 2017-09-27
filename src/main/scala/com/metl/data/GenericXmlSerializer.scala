@@ -803,4 +803,61 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
       <wootArgs>{input.wootArgs}</wootArgs>
     ))
   })
+  protected def toStructurePermission(input:NodeSeq):StructurePermission = Stopwatch.time("GenericXmlSerializer.toStructureOperation",{
+    (input \ "structurePermission").headOption.flatMap(spx => {
+      for {
+        cvx <- (spx \ "canView").headOption
+        canView <- toAccessControl(cvx)
+        cvi <- (spx \ "canInteract").headOption
+        canInteract <- toAccessControl(cvi)
+        cva <- (spx \ "canAdminister").headOption
+        canAdminister <- toAccessControl(cva)
+      } yield {
+        StructurePermission(canView,canInteract,canAdminister)
+      }
+    }).getOrElse(StructurePermission.empty)
+  })
+  protected def fromStructurePermission(input:StructurePermission):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromStructureOperation",{
+    <structurePermission>
+      <canView>{fromAccessControl(input.canView)}</canView>
+      <canInteract>{fromAccessControl(input.canInteract)}</canInteract>
+      <canAdminister>{fromAccessControl(input.canAdminister)}</canAdminister>
+    </structurePermission>
+  })
+  protected def toAccessControl(input:NodeSeq):Option[AccessControl] = Stopwatch.time("GenericXmlSerializer.toAccessControl",{
+    input match {
+      case e:Elem if e.label == "list" => Some(AccessControlList(e.child.toList.flatMap(c => toAccessControl(c))))
+      case e:Elem if e.label == "groupAccess" => for {
+        groupId <- (e \ "@id").headOption.map(_.text)
+      } yield {
+        GroupAccessControl(groupId)
+      }
+      case e:Elem if e.label == "profileAccess" => for {
+        profileId <- (e \ "@id").headOption.map(_.text)
+      } yield {
+        ProfileAccessControl(profileId)
+      }
+      case e:Elem if e.label == "accountAccess" => for {
+        accountName <- (e \ "@name").headOption.map(_.text)
+        accountProvider <- (e \ "@provider").headOption.map(_.text)
+      } yield {
+        AccountAccessControl(accountName,accountProvider)
+      }
+      case e:Elem if e.label == "noOneCanAccess" => Some(NoOneCanAccess)
+      case e:Elem if e.label == "everyoneCanAccess" => Some(EveryoneCanAccess)
+      case _ => None
+    }
+  })
+  protected def fromAccessControl(input:AccessControl):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromAccessControl",{
+    input match {
+      case EveryoneCanAccess => <everyoneCanAccess />
+      case NoOneCanAccess => <noOneCanAccess />
+      case GroupAccessControl(groupId) => <groupAccess id={groupId} />
+      case AccountAccessControl(accountName,accountProvider) => <accountAccess name={accountName} provider={accountProvider} />
+      case ProfileAccessControl(profileId) => <profileAccess id={profileId} />
+      case AccessControlList(accessControls) => <list>{accessControls.map(ac => fromAccessControl(ac))}</list>
+      case _ => NodeSeq.Empty
+    }
+  })
+
 }
