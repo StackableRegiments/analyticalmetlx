@@ -1156,4 +1156,67 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
       JField("wootArgs",net.liftweb.json.parse(input.wootArgs))
     ) ::: parseMeTLContent(input))
   })
+  protected def toStructurePermission(input:JValue):StructurePermission = Stopwatch.time("JsonSerializer.toStructureOperation",{
+    input match {
+      case j:JObject => {
+        val JString("structurePermission") = (j \ "type")
+        val cv:JValue = (j \ "canView")
+        val ci:JValue = (j \ "canInteract")
+        val ca:JValue = (j \ "canAdminister")
+        (for {
+          canView <- toAccessControl(cv)
+          canInteract <- toAccessControl(ci)
+          canAdminister <- toAccessControl(ca)
+        } yield {
+          StructurePermission(canView,canInteract,canAdminister)
+        }).getOrElse(StructurePermission.empty)
+      }
+      case _ => StructurePermission.empty
+    }
+  })
+  protected def fromStructurePermission(input:StructurePermission):JValue = Stopwatch.time("JsonSerializer.fromStructureOperation",{
+    JObject(List(
+      JField("type",JString("structurePermission")),
+      JField("canView",fromAccessControl(input.canView)),
+      JField("canInteract",fromAccessControl(input.canInteract)),
+      JField("canAdminister",fromAccessControl(input.canAdminister))
+    ))
+  })
+  protected def toAccessControl(input:JValue):Option[AccessControl] = Stopwatch.time("JsonSerializer.toAccessControl",{
+    input match {
+      case j:JArray => Some(AccessControlList(j.arr.flatMap(i => toAccessControl(i))))
+      case JString("everyoneCanAccess") => Some(EveryoneCanAccess)
+      case JString("noOneCanAccess") => Some(NoOneCanAccess)
+      case j:JObject => {
+        (j \ "type") match {
+          case JString("groupAccess") => {
+            val JString(groupId) = j \ "groupId"
+            Some(GroupAccessControl(groupId))
+          }
+          case JString("profileAccess") => {
+            val JString(profileId) = j \ "profileId"
+            Some(ProfileAccessControl(profileId))
+          }
+          case JString("accountAccess") => {
+            val JString(accountName) = j \ "accountName"
+            val JString(accountProvider) = j \ "accountProvider"
+            Some(AccountAccessControl(accountName,accountProvider))
+          }
+          case _ => None
+        }
+      }
+      case _ => None
+    }
+  })
+  protected def fromAccessControl(input:AccessControl):JValue = Stopwatch.time("JsonSerializer.fromAccessControl",{
+    input match {
+      case EveryoneCanAccess => JString("everyoneCanAccess")
+      case NoOneCanAccess => JString("noOneCanAccess")
+      case GroupAccessControl(groupId) => JObject(List(JField("type",JString("groupAccess")),JField("groupId",JString(groupId))))
+      case AccountAccessControl(accountName,accountProvider) => JObject(List(JField("type",JString("accountAccess")),JField("accountName",JString(accountName)),JField("accountProvider",JString(accountProvider))))
+      case ProfileAccessControl(profileId) => JObject(List(JField("type",JString("profileAccess")),JField("profileId",JString(profileId))))
+      case AccessControlList(accessControls) => JArray(accessControls.map(ac => fromAccessControl(ac)))
+      case _ => JArray(List()) 
+    }
+  })
 }

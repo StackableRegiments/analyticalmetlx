@@ -128,6 +128,11 @@ case class StructurePermission(canView:AccessControl = EveryoneCanAccess,canInte
   def canAdministerSlide(s:Slide,accountName:Option[String] = None,accountProvider:Option[String] = None,profileId:Option[String] = None,groupIds:List[String] = Nil):Boolean = profileId.exists(_ == s.author) || canAdminister.canAccess(accountName,accountProvider,profileId,groupIds)
 }
 
+object StructurePermission {
+  def empty = StructurePermission(NoOneCanAccess,NoOneCanAccess,NoOneCanAccess)
+  def default = StructurePermission(EveryoneCanAccess,EveryoneCanAccess,NoOneCanAccess)
+}
+
 case class Conversation(author:String,lastModified:Long,slides:List[Slide],jid:String,title:String,created:Long,isDeleted:Boolean = false,permissions:StructurePermission = StructurePermission()) extends MeTLData(Nil) {
   def delete = copy(isDeleted = true, lastModified = new Date().getTime())
   def rename(newTitle:String) = copy(title=newTitle,lastModified = new Date().getTime)
@@ -145,14 +150,14 @@ case class Conversation(author:String,lastModified:Long,slides:List[Slide],jid:S
   def replaceSlides(newSlides:List[Slide]) = copy(slides = newSlides,lastModified = new Date().getTime)
 }
 object Conversation{
-  def empty = Conversation("",0L,List.empty[Slide],"","",0L,true,StructurePermission(NoOneCanAccess,NoOneCanAccess,NoOneCanAccess))
+  def empty = Conversation("",0L,List.empty[Slide],"","",0L,true,StructurePermission.empty)
 }
 
 case class Slide(author:String,id:String,index:Int,created:Long,modified:Long, exposed:Boolean = true, slideType:String = "SLIDE",permissions:StructurePermission = StructurePermission()) extends MeTLData(Nil){
   def replaceIndex(newIndex:Int) = copy(index=newIndex)
 }
 object Slide{
-  def empty = Slide("","",0,0L,0L,false,"",StructurePermission(NoOneCanAccess,NoOneCanAccess,NoOneCanAccess))
+  def empty = Slide("","",0,0L,0L,false,"",StructurePermission.empty)
 }
 
 case class Audience(domain:String,name:String,audienceType:String,action:String) extends MeTLData(Nil)
