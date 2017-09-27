@@ -4,6 +4,7 @@ var TokBox = (function(){
     var setTokBoxEnabledStateFunc = function(isEnabled){
         enabled = isEnabled;
         //refreshAllVisualStates();
+        Plugins.streaming.changeVisualState(enabled);
     };
     var initialized = false;
     var sessions = {};
@@ -37,7 +38,7 @@ var TokBox = (function(){
             })){
                 session.shutdown();
                 delete sessions[session.id];
-            };
+            }
         });
     };
     var sessionsContainer = undefined;
@@ -427,7 +428,7 @@ var TokBoxSession = function(desc,sessionContainer){
             if (thisPublisher != undefined){
                 stopPublishFunc();
                 startPublisherFunc();
-            };
+            }
             _.forEach(streams,function(stream){
                 if ("subscriber" in stream && stream.subscriber != null){
                     stream.subscriber.setPreferredResolution({
@@ -438,7 +439,7 @@ var TokBoxSession = function(desc,sessionContainer){
                         stream.refreshVisual();
                     }
                 }
-            })
+            });
             refreshVisualState();
         }
     };

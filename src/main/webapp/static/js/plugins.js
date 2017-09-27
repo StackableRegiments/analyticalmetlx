@@ -1,41 +1,49 @@
 var Plugins = (function(){
     var createPlugin = function(name,style,loadFunc,initFunc,reRenderAfterVisualStateChangedFunc){
+        var isEnabled = true;
         var isCollapsed = false;
         var desiresAttention = false;
-        var onVisualStateChanged = function(isCollapsed,desiresAttention){};
+        var onVisualStateChanged = function(isEnabled,isCollapsed,desiresAttention){};
         return {
-          style:style,
-          initialize:function() {
-              var initRes = initFunc();
-              onVisualStateChanged(isCollapsed,desiresAttention);
-              reRenderAfterVisualStateChangedFunc(isCollapsed,desiresAttention);
-              return initRes;
-          },
-          load:function(bus,params,onVisualStateFunc) {
-              onVisualStateChanged = onVisualStateFunc;
-              return loadFunc(bus,params);
-          },
-          changeVisualState:function(newIsCollapsed,newDesiresAttention){
-             if (newIsCollapsed !== undefined){
-                  isCollapsed = newIsCollapsed;
-              } else {
-                  isCollapsed = !isCollapsed;
-              }
-              if (!isCollapsed) {
-                  desiresAttention = false;
-              }
-              if (newDesiresAttention !== undefined){
-                  desiresAttention = newDesiresAttention;
-              }
-              onVisualStateChanged(isCollapsed,desiresAttention);
-              reRenderAfterVisualStateChangedFunc(isCollapsed,desiresAttention);
-          },
-          getIsCollapsed:function(){return isCollapsed;},
-          getDesiresAttention:function(){return desiresAttention;}
-      }
+            style:style,
+            load:function(bus,params,onVisualStateFunc) {
+                onVisualStateChanged = onVisualStateFunc;
+                return loadFunc(bus,params);
+            },
+            initialize:function() {
+                var initRes = initFunc();
+                onVisualStateChanged(isEnabled,isCollapsed,desiresAttention);
+                reRenderAfterVisualStateChangedFunc(isEnabled,isCollapsed,desiresAttention);
+                return initRes;
+            },
+            changeVisualState:function(newIsEnabled,newIsCollapsed,newDesiresAttention){
+                // console.log("Changing visual state",name,newIsEnabled,newIsCollapsed,newDesiresAttention);
+                if (newIsEnabled !== undefined) {
+                    isEnabled = newIsEnabled;
+                }
+                if (newIsCollapsed !== undefined) {
+                    isCollapsed = newIsCollapsed;
+                } else {
+                    isCollapsed = !isCollapsed;
+                }
+                if (!isCollapsed) {
+                    desiresAttention = false;
+                }
+                if (newDesiresAttention !== undefined) {
+                    desiresAttention = newDesiresAttention;
+                }
+                onVisualStateChanged(isEnabled,isCollapsed,desiresAttention);
+                reRenderAfterVisualStateChangedFunc(isEnabled,isCollapsed,desiresAttention);
+            },
+            getIsEnabled:function(){return isEnabled;},
+            getIsCollapsed:function(){return isCollapsed;},
+            getDesiresAttention:function(){return desiresAttention;},
+            getName:function(){return name;}
+        }
     };
     return {
-        "Chat":(function(){
+        "chat":(function(){
+            var chatPlugin = undefined;
             var chatMessages = {};
             var outer = {};
             var cmHost = {};
@@ -119,6 +127,9 @@ var Plugins = (function(){
                                 }
                             }
                         }
+                        if (plugin !== undefined) {
+                            plugin.changeVisualState(enabled,plugin.getIsCollapsed(),plugin.getDesiresAttention());
+                        }
                     }
                 }
             };
@@ -184,7 +195,7 @@ var Plugins = (function(){
                 }
             };
 
-            return createPlugin(
+            chatPlugin = createPlugin(
                 "Chat",
                 ".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
                 ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
@@ -235,8 +246,9 @@ var Plugins = (function(){
                 },
                 function(){}
             );
+            return chatPlugin;
         })(),
-        "Face to face":(function(){
+        "streaming":(function(){
             return createPlugin(
                 "Face to face",
                 " #videoConfSessionsContainer {display:none;}"+
@@ -291,7 +303,7 @@ var Plugins = (function(){
                 function(){}
             );
         })(),
-        "Groups":(function(){
+        "groups":(function(){
             var overContainer = $("<div />");
             var button = function(icon,content,behaviour){
                 var b = $("<button />",{
@@ -304,7 +316,8 @@ var Plugins = (function(){
                 }).appendTo(b);
                 return b;
             };
-            return createPlugin(
+            var enabled = false;
+            var groupsPlugin = createPlugin(
                 "Groups",
                 ".groupsPluginMember{margin-left:0.5em;display:flex;}"+
                 " .groupsPluginGroupContainer{display:flex;margin-right:1em;}"+
@@ -470,7 +483,7 @@ var Plugins = (function(){
                                                         return $("<div />",{
                                                             class:"rowC"
                                                         }).appendTo(grades);
-                                                    }
+                                                    };
                                                     var gradeC = rowC();
                                                     switch (linkedGrade.gradeType) {
                                                         case "numeric" :
@@ -599,6 +612,7 @@ var Plugins = (function(){
                                                 }
                                             });
                                         });
+                                        enabled = true;
                                     }
                                 }
                             }
@@ -619,6 +633,7 @@ var Plugins = (function(){
                                         $("<div />",{
                                             text:sprintf("Group %s",group.title)
                                         }).prependTo(members);
+                                        enabled = true;
                                     }
                                 });
                             }
@@ -643,8 +658,11 @@ var Plugins = (function(){
                 function(){},
                 function(){}
             );
-        })(),
-        "Dummy":(function(){
+            groupsPlugin.changeVisualState(enabled,groupsPlugin.getIsCollapsed(),groupsPlugin.getDesiresAttention());
+            return groupsPlugin;
+        })()
+        /*,
+        "dummy":(function(){
             var containerId = "dummyPlugin";
             var initialText = "dummyPlugin";
             var container = $("<div />",{
@@ -658,30 +676,28 @@ var Plugins = (function(){
             var intCollapseButton = $("<button/>",{text:"clickMe",class:"intCollapseButton"});
             container.append(intCollapseButton);
             console.log("container",container[0]);
-            var plugin = undefined;
+            var dummyPlugin = undefined;
             var internalEngineLoop = function(){
                 _.delay(function(){
-                    if (plugin !== undefined) {
-                        var desiresAttention = plugin.getDesiresAttention();
-                        var isCollapsed = plugin.getIsCollapsed();
+                    if (dummyPlugin !== undefined) {
+                        var desiresAttention = dummyPlugin.getDesiresAttention();
+                        var isCollapsed = dummyPlugin.getIsCollapsed();
                         if (!desiresAttention && isCollapsed) {
                             console.log("attention!");
                             desiresAttention = Math.random() > 0.5;
-                            plugin.changeVisualState(isCollapsed, desiresAttention);
+                            dummyPlugin.changeVisualState(dummyPlugin.getIsEnabled(),isCollapsed, desiresAttention);
                         }
                     }
                     internalEngineLoop();
                 },engineDelay);
             };
-            plugin = createPlugin(
+            dummyPlugin = createPlugin(
                 "Dummy",
                 "", // no style
                 function(bus,params){
-                    console.log("load - container",container[0]);
                     return container;
                 },
                 function(){
-                    console.log("init - container",container[0]);
                     internalEngineLoop();
                 },
                 function(isC,isD){
@@ -690,10 +706,12 @@ var Plugins = (function(){
                 }
             );
             intCollapseButton.on("click",function(){
-                plugin.changeVisualState();
+                dummyPlugin.changeVisualState();
             });
-            return plugin;
+            dummyPlugin.changeVisualState(true,true,false);
+            return dummyPlugin;
         })()
+        */
     };
 })();
 
@@ -701,20 +719,23 @@ $(function(){
     var pluginBar = $("#pluginBar");
     var styleContainer = $("<style></style>").appendTo($("body"));
     styleContainer.append(".pluginHidden {display:none}"+
-                          " .collapserOpen{background:green}"+
-                          " .collapserClosed{background:red}");
+                          " .collapserOpen{background:#9999cc;border-width:1px;border-style:solid}"+
+                          // " .collapserOpen a:hover{font-style:normal}"+
+                          " .collapserClosed{background:#aaaaaa;border-width:1px;border-style:solid}"+
+                          " .attentionRequestor{color:#ffcc00}");
     var hidePluginClass = "pluginHidden";
     var collapserOpenClass = "collapserOpen";
     var collapserClosedClass = "collapserClosed";
     _.each(Plugins,function(plugin,label){
-        console.log("Creating plugin", plugin);
+        console.log("Creating " + label + " plugin",plugin);
         var pluginContainer = $("<div />",{
             class:"plugin"
         });
         var params = {}; // these are passed to the plugin's initialize function, but as yet no plugins are using them.
-        var contentContainer = plugin.load(Progress,params,function(isCollapsedValue,desiresAttentionValue){
-            updateCollapserButton(isCollapsedValue,desiresAttentionValue);
+        var contentContainer = plugin.load(Progress,params,function(isEnabledValue,isCollapsedValue,desiresAttentionValue){
+            updateCollapserButton(isEnabledValue,isCollapsedValue,desiresAttentionValue);
         }); // it's not yet in the DOM
+
         var collapsableContainer = $("<div />",{
             class:"pluginCollapsable"
         }).append(contentContainer);
@@ -727,22 +748,37 @@ $(function(){
         }).on("click",function(){
             plugin.changeVisualState();
         });
-        var attentionRequestor = $("<span/>",{
-            class:"attentionRequestor"
+        var collapseButtonSymbol = $("<span/>",{
+            class:"fa fa-fw"
         });
-        collapserContainer.append(collapseButton).append(attentionRequestor);
-        var updateCollapserButton = function(isCollapsed,desiresAttention){
-            if (isCollapsed) {
-                collapsableContainer.addClass(hidePluginClass);
-                collapseButton.removeClass(collapserOpenClass).addClass(collapserClosedClass).text("+ " + label);
+        var collapseButtonText = $("<span/>",{
+            text:plugin.getName()
+        });
+        var attentionRequestor = $("<span/>",{
+            class:"attentionRequestor fa fa-fw"
+        });
+        collapseButton.append(collapseButtonSymbol).append(collapseButtonText).append(attentionRequestor);
+        collapserContainer.append(collapseButton);
+        var updateCollapserButton = function(isEnabled,isCollapsed,desiresAttention){
+            if (isEnabled) {
+                collapseButton.show();
+                if (isCollapsed) {
+                    collapsableContainer.addClass(hidePluginClass);
+                    collapseButton.removeClass(collapserOpenClass).addClass(collapserClosedClass);
+                    collapseButtonSymbol.removeClass("fa-minus-square-o").addClass("fa-plus-square-o");
+                    if (desiresAttention){
+                        attentionRequestor.addClass("fa-exclamation");
+                    } else {
+                        attentionRequestor.removeClass("fa-exclamation");
+                    }
+                } else {
+                    collapsableContainer.removeClass(hidePluginClass);
+                    collapseButton.removeClass(collapserClosedClass).addClass(collapserOpenClass);
+                    collapseButtonSymbol.removeClass("fa-plus-square-o").addClass("fa-minus-square-o");
+                }
             } else {
-                collapsableContainer.removeClass(hidePluginClass);
-                collapseButton.removeClass(collapserClosedClass).addClass(collapserOpenClass).text("- " + label);
-            }
-            if (desiresAttention){
-                attentionRequestor.text("!");
-            } else {
-                attentionRequestor.text("");
+                console.log("this is disabling");
+                collapseButton.hide();
             }
         };
         updateCollapserButton();
