@@ -43,7 +43,11 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
                         <everyoneCanAccess />
                       </canView>
                       <canInteract>
-                        <accountAccess name="a" provider="b"/>
+                        <list>
+                          <accountAccess name="a" provider="b"/>
+                          <profileAccess id="p"/>
+                          <groupAccess id="g"/>
+                        </list>
                       </canInteract>
                       <canAdminister>
                         <noOneCanAccess />
@@ -133,7 +137,7 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
       slides (List(
         Slide(author = "eecrole", id = "3453463", index = 0, created = creation, modified = modification, exposed = true, permissions = StructurePermission(
           EveryoneCanAccess,
-          AccountAccessControl("a","b"),
+          AccessControlList(List(AccountAccessControl("a","b"),ProfileAccessControl("p"),GroupAccessControl("g"))),
           NoOneCanAccess
         )),
         Slide(author = "eecrole", id = "3453464", index = 1, created = creation, modified = modification, exposed = false, permissions = StructurePermission(
@@ -156,10 +160,10 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
 	}
 
     test("serialise conversation to xml") {
-        forAll (genConversation) { (genConversation: Conversation) =>
+        forAll (genConversation) { (conversation: Conversation) =>
             
-            implicit val xml = xmlSerializer.fromConversation(genConversation)
-            genConversation should have(
+            implicit val xml = xmlSerializer.fromConversation(conversation)
+            conversation should have(
                author (queryXml[String]("author")),
                lastModified (queryXml[Long]("lastModified")),
                jid (queryXml[String]("jid")),

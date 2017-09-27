@@ -860,7 +860,10 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val title = getStringByName(input,"title")
         val created = getLongByName(input,"creation")
         val isDeleted = getBooleanByName(input,"isDeleted")
-        val permissions = getListOfObjectsByName(input,"permissions").headOption.map(p => toStructurePermission(p)).getOrElse(StructurePermission.default)
+        val permissions = (input \ "permissions") match {
+          case p:JObject => toStructurePermission(p)
+          case _ => StructurePermission.default
+        }
         Conversation(author,lastModified,slides,jid,title,created,isDeleted,permissions)
       }
       case _ => Conversation.empty
@@ -889,7 +892,10 @@ class JsonSerializer(config:ServerConfiguration) extends Serializer with JsonSer
         val modified = getLongByName(input,"modified")
         val exposed = getBooleanByName(input,"exposed")
         val slideType = getStringByName(input,"slideType")
-        val permissions = getListOfObjectsByName(input,"permissions").headOption.map(p => toStructurePermission(p)).getOrElse(StructurePermission.default)
+        val permissions = (input \ "permissions") match {
+          case p:JObject => toStructurePermission(p)
+          case _ => StructurePermission.default
+        }
         Slide(author,id,index,created,modified,exposed,slideType,permissions)
       }
       case _ => Slide.empty
