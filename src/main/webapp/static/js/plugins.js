@@ -43,7 +43,6 @@ var Plugins = (function(){
     };
     return {
         "chat":(function(){
-            var chatPlugin = undefined;
             var chatMessages = {};
             var outer = {};
             var cmHost = {};
@@ -127,8 +126,10 @@ var Plugins = (function(){
                                 }
                             }
                         }
-                        if (plugin !== undefined) {
-                            plugin.changeVisualState(enabled,plugin.getIsCollapsed(),plugin.getDesiresAttention());
+                        var plugin = Plugins.chat;
+                        console.log("Received a chat stanza",plugin.getIsEnabled(),plugin.getIsCollapsed(),plugin.getDesiresAttention());
+                        if (plugin !== undefined && plugin.getIsCollapsed()) {
+                            plugin.changeVisualState(plugin.getIsEnabled(),plugin.getIsCollapsed(),true);
                         }
                     }
                 }
@@ -661,7 +662,7 @@ var Plugins = (function(){
             groupsPlugin.changeVisualState(enabled,groupsPlugin.getIsCollapsed(),groupsPlugin.getDesiresAttention());
             return groupsPlugin;
         })()
-        /*,
+        ,
         "dummy":(function(){
             var containerId = "dummyPlugin";
             var initialText = "dummyPlugin";
@@ -675,7 +676,6 @@ var Plugins = (function(){
             var engineDelay = 2 * 1000;
             var intCollapseButton = $("<button/>",{text:"clickMe",class:"intCollapseButton"});
             container.append(intCollapseButton);
-            console.log("container",container[0]);
             var dummyPlugin = undefined;
             var internalEngineLoop = function(){
                 _.delay(function(){
@@ -683,7 +683,6 @@ var Plugins = (function(){
                         var desiresAttention = dummyPlugin.getDesiresAttention();
                         var isCollapsed = dummyPlugin.getIsCollapsed();
                         if (!desiresAttention && isCollapsed) {
-                            console.log("attention!");
                             desiresAttention = Math.random() > 0.5;
                             dummyPlugin.changeVisualState(dummyPlugin.getIsEnabled(),isCollapsed, desiresAttention);
                         }
@@ -711,7 +710,6 @@ var Plugins = (function(){
             dummyPlugin.changeVisualState(true,true,false);
             return dummyPlugin;
         })()
-        */
     };
 })();
 
@@ -719,10 +717,13 @@ $(function(){
     var pluginBar = $("#pluginBar");
     var styleContainer = $("<style></style>").appendTo($("body"));
     styleContainer.append(".pluginHidden {display:none}"+
-                          " .collapserOpen{background:#9999cc;border-width:1px;border-style:solid}"+
+                          " .collapserOpen{background:#fbcd4b;border-width:1px;border-style:solid}"+
                           // " .collapserOpen a:hover{font-style:normal}"+
-                          " .collapserClosed{background:#aaaaaa;border-width:1px;border-style:solid}"+
-                          " .attentionRequestor{color:#ffcc00}");
+                          " .collapserClosed{background:#ffffff;border-width:1px;border-style:solid}"+
+                          " .collapseButtonSymbol, .attentionRequestor{text-decoration:none}"+
+                          // " .attentionRequestor{color:#66cc00}");
+                          // " .attentionRequestor{color:#9900ff}");
+                          " .attentionRequestor{color:#cc66ff}");
     var hidePluginClass = "pluginHidden";
     var collapserOpenClass = "collapserOpen";
     var collapserClosedClass = "collapserClosed";
@@ -749,7 +750,7 @@ $(function(){
             plugin.changeVisualState();
         });
         var collapseButtonSymbol = $("<span/>",{
-            class:"fa fa-fw"
+            class:"collapseButtonSymbol fa fa-fw"
         });
         var collapseButtonText = $("<span/>",{
             text:plugin.getName()
@@ -765,16 +766,15 @@ $(function(){
                 if (isCollapsed) {
                     collapsableContainer.addClass(hidePluginClass);
                     collapseButton.removeClass(collapserOpenClass).addClass(collapserClosedClass);
-                    collapseButtonSymbol.removeClass("fa-minus-square-o").addClass("fa-plus-square-o");
+                    collapseButtonSymbol.removeClass("fa-check").addClass("fa-square-o");
                     if (desiresAttention){
-                        attentionRequestor.addClass("fa-exclamation");
-                    } else {
-                        attentionRequestor.removeClass("fa-exclamation");
+                        attentionRequestor.addClass("fa-envelope");
                     }
                 } else {
                     collapsableContainer.removeClass(hidePluginClass);
                     collapseButton.removeClass(collapserClosedClass).addClass(collapserOpenClass);
-                    collapseButtonSymbol.removeClass("fa-plus-square-o").addClass("fa-minus-square-o");
+                    collapseButtonSymbol.removeClass("fa-square-o").addClass("fa-check");
+                    attentionRequestor.removeClass("fa-envelope");
                 }
             } else {
                 console.log("this is disabling");
@@ -782,6 +782,7 @@ $(function(){
             }
         };
         updateCollapserButton();
+        plugin.changeVisualState(plugin.getIsEnabled(),true);
         collapserContainer.appendTo(pluginContainer);
         styleContainer.append(plugin.style);
         pluginContainer.append(collapsableContainer);
