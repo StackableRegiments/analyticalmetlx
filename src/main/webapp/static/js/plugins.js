@@ -1,4 +1,39 @@
 var Plugins = (function(){
+    var createPlugin = function(name,style,loadFunc,initFunc,reRenderAfterVisualStateChangedFunc){
+        var isCollapsed = false;
+        var desiresAttention = false;
+        var onVisualStateChanged = function(isCollapsed,desiresAttention){};
+        return {
+          style:style,
+          initialize:function() {
+              var initRes = initFunc();
+              onVisualStateChanged(isCollapsed,desiresAttention);
+              reRenderAfterVisualStateChangedFunc(isCollapsed,desiresAttention);
+              return initRes;
+          },
+          load:function(bus,params,onVisualStateFunc) {
+              onVisualStateChanged = onVisualStateFunc;
+              return loadFunc(bus,params);
+          },
+          changeVisualState:function(newIsCollapsed,newDesiresAttention){
+             if (newIsCollapsed !== undefined){
+                  isCollapsed = newIsCollapsed;
+              } else {
+                  isCollapsed = !isCollapsed;
+              }
+              if (!isCollapsed) {
+                  desiresAttention = false;
+              }
+              if (newDesiresAttention !== undefined){
+                  desiresAttention = newDesiresAttention;
+              }
+              onVisualStateChanged(isCollapsed,desiresAttention);
+              reRenderAfterVisualStateChangedFunc(isCollapsed,desiresAttention);
+          },
+          getIsCollapsed:function(){return isCollapsed;},
+          getDesiresAttention:function(){return desiresAttention;}
+      }
+    };
     return {
         "Chat":(function(){
             var chatMessages = {};
@@ -149,40 +184,41 @@ var Plugins = (function(){
                 }
             };
 
-            return {
-                style:".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
-                    ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
-                    ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
-                    ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
-                    ".chatboxContainer {display:flex;flex-direction:row;width:100%;flex-shrink:0;}"+
-                    ".chatboxContainer input{flex-grow:1;}"+
-                    ".chatbox {background-color:white;display:inline-block; padding:0px; margin:0px;}"+
-                    ".chatboxSend {display:inline-block; background:white;padding:0px; margin:0px;}"+
-                    ".groupChat {color:darkorange}"+
-                    ".whisper {color:darkblue}",
-                load:function(bus,params){
+            return createPlugin(
+                "Chat",
+                ".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
+                ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
+                ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
+                ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
+                ".chatboxContainer {display:flex;flex-direction:row;width:100%;flex-shrink:0;}"+
+                ".chatboxContainer input{flex-grow:1;}"+
+                ".chatbox {background-color:white;display:inline-block; padding:0px; margin:0px;}"+
+                ".chatboxSend {display:inline-block; background:white;padding:0px; margin:0px;}"+
+                ".groupChat {color:darkorange}"+
+                ".whisper {color:darkblue}",
+                function(bus,params){
                     bus.stanzaReceived["Chatbox"] = actOnStanzaReceived;
                     bus.historyReceived["Chatbox"] = actOnHistoryReceived;
                     container.append('<div class="chatContainer" >'+
-                                     '<div class="chatMessageContainer" >'+
-                                     '<div class="chatMessage" >'+
-                                     '<span class="chatMessageTimestamp" >'+
-                                     '</span>'+
-                                     '<span class="chatMessageAuthor" >'+
-                                     '</span>'+
-                                     '<span class="chatMessageContent">'+
-                                     '</span>'+
-                                     '</div>'+
-                                     '</div>'+
-                                     '<div class="chatboxContainer">'+
-                                     '<input type="text" class="chatbox">'+
-                                     '</input>'+
-                                     '<button class="chatboxSend">Send</button>'+
-                                     '</div>'+
-                                     '</div>');
+                        '<div class="chatMessageContainer" >'+
+                        '<div class="chatMessage" >'+
+                        '<span class="chatMessageTimestamp" >'+
+                        '</span>'+
+                        '<span class="chatMessageAuthor" >'+
+                        '</span>'+
+                        '<span class="chatMessageContent">'+
+                        '</span>'+
+                        '</div>'+
+                        '</div>'+
+                        '<div class="chatboxContainer">'+
+                        '<input type="text" class="chatbox">'+
+                        '</input>'+
+                        '<button class="chatboxSend">Send</button>'+
+                        '</div>'+
+                        '</div>');
                     return container;
                 },
-                initialize:function(){
+                function(){
                     outer = $("#"+containerId);
                     cmHost = outer.find(".chatMessageContainer");
                     cmTemplate = cmHost.find(".chatMessage").clone();
@@ -196,62 +232,64 @@ var Plugins = (function(){
                     var sendButton = outer.find(".chatboxContainer .chatboxSend").on("click",function(){
                         chatbox.val(sendChatMessage(chatbox.val()));
                     });
-                }
-            };
+                },
+                function(){}
+            );
         })(),
         "Face to face":(function(){
-            var container = $("<div />");
-            return {
-                style:
-                    " #videoConfSessionsContainer {display:none;}"+
-                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer" +
-                    " .publishedStream {background:green;}, .subscribedStream {background:red;}"+
-                    " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
-                    " .videoConfStartButton, .videoConfSubscribeButton{padding-top:0;margin-top:0;}"+
-                    " .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
-                    " .videoConfPermitStudentBroadcastContainer{display:flex;}"+
-                    " .videoConfStartButton{padding-top:0;margin-top:0;}," +
-                    " .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
-                    " .videoContainer{display:flex;}"+
-                    " .context, .publisherName{font-size:1rem;}"+
-                    " .thumbWide{width:160px;}"+
-                    " .broadcastContainer{display:none;}",
-                load:function(bus,params){
+            return createPlugin(
+                "Face to face",
+                " #videoConfSessionsContainer {display:none;}"+
+                " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer" +
+                " .publishedStream {background:green;}, .subscribedStream {background:red;}"+
+                " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
+                " .videoConfStartButton, .videoConfSubscribeButton{padding-top:0;margin-top:0;}"+
+                " .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
+                " .videoConfPermitStudentBroadcastContainer{display:flex;}"+
+                " .videoConfStartButton{padding-top:0;margin-top:0;}," +
+                " .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
+                " .videoContainer{display:flex;}"+
+                " .context, .publisherName{font-size:1rem;}"+
+                " .thumbWide{width:160px;}"+
+                " .broadcastContainer{display:none;}",
+                function(bus,params){
+                    var container = $("<div />");
                     container.append('<span id="videoConfSessionsContainer">'+
-                                     '<div class="videoConfSessionContainer">'+
-                                     '<div>'+
-                                     '<div class="videoConfStartButtonContainer" style="margin-bottom:-0.3em">'+
-                                     '<button class="videoConfStartButton">'+
-                                     '<div>Start sending</div>'+
-                                     '</button>'+
-                                     '<span class="context mr"></span>'+
-                                     '<span style="display:none;" class="teacherControls mr">'+
-                                     '<input type="checkbox" id="canBroadcast">'+
-                                     '<label for="canBroadcast" class="checkbox-sim"><span class="icon-txt">Students can stream</span></label>'+
-                                     '</span>'+
-                                     '</div>'+
-                                     '<div class="viewscreen"></div>'+
-                                     '</div>'+
-                                     '<div class="broadcastContainer">'+
-                                     '<a class="floatingToolbar btn-menu fa fa-television btn-icon broadcastLink">'+
-                                     '<div class="icon-txt">Watch class</div>'+
-                                     '</a>'+
-                                     '</div>'+
-                                     '<div class="videoSubscriptionsContainer"></div>'+
-                                     '<div class="videoConfContainer">'+
-                                     '<span class="videoContainer thumbWide">'+
-                                     '<button class="videoConfSubscribeButton">'+
-                                     '<div>Toggle</div>'+
-                                     '</button>'+
-                                     '<span class="publisherName"></span>'+
-                                     '</span>'+
-                                     '</div>'+
-                                     '</div>'+
-                                     '</span>');
+                        '<div class="videoConfSessionContainer">'+
+                        '<div>'+
+                        '<div class="videoConfStartButtonContainer" style="margin-bottom:-0.3em">'+
+                        '<button class="videoConfStartButton">'+
+                        '<div>Start sending</div>'+
+                        '</button>'+
+                        '<span class="context mr"></span>'+
+                        '<span style="display:none;" class="teacherControls mr">'+
+                        '<input type="checkbox" id="canBroadcast">'+
+                        '<label for="canBroadcast" class="checkbox-sim"><span class="icon-txt">Students can stream</span></label>'+
+                        '</span>'+
+                        '</div>'+
+                        '<div class="viewscreen"></div>'+
+                        '</div>'+
+                        '<div class="broadcastContainer">'+
+                        '<a class="floatingToolbar btn-menu fa fa-television btn-icon broadcastLink">'+
+                        '<div class="icon-txt">Watch class</div>'+
+                        '</a>'+
+                        '</div>'+
+                        '<div class="videoSubscriptionsContainer"></div>'+
+                        '<div class="videoConfContainer">'+
+                        '<span class="videoContainer thumbWide">'+
+                        '<button class="videoConfSubscribeButton">'+
+                        '<div>Toggle</div>'+
+                        '</button>'+
+                        '<span class="publisherName"></span>'+
+                        '</span>'+
+                        '</div>'+
+                        '</div>'+
+                        '</span>');
                     return container;
                 },
-                initialize:TokBox.initialize
-            }
+                TokBox.initialize,
+                function(){}
+            );
         })(),
         "Groups":(function(){
             var overContainer = $("<div />");
@@ -266,23 +304,24 @@ var Plugins = (function(){
                 }).appendTo(b);
                 return b;
             };
-            return {
-                style:".groupsPluginMember{margin-left:0.5em;display:flex;}"+
-                    " .groupsPluginGroupContainer{display:flex;margin-right:1em;}"+
-                    " .groupsPluginGroup{display:inline-block;text-align:center;vertical-align:top;}"+
-                    " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;margin-top:0;}"+
-                    " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;margin-top:0;}"+
-                    " .isolateGroup label{margin-top:1px;}"+
-                    " .isolateGroup{margin-top:0.8em;}"+
-                    " .rowT{display:table;width:100%;}"+
-                    " .rowC{display:table-row;}"+
-                    " .rowC *{display:table-cell;}"+
-                    " .rowC label{text-align:left;vertical-align:middle;font-weight:bold;}"+
-                    " .memberCurrentGrade{background-color:white;margin-right:0.5em;padding:0 .5em;}"+
-                    " .groupsPluginGroupControls{display:flex;}"+
-                    " .groupsPluginGroupGrade{background-color:white;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
-                    " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
-                load:function(bus,params) {
+            return createPlugin(
+                "Groups",
+                ".groupsPluginMember{margin-left:0.5em;display:flex;}"+
+                " .groupsPluginGroupContainer{display:flex;margin-right:1em;}"+
+                " .groupsPluginGroup{display:inline-block;text-align:center;vertical-align:top;}"+
+                " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;margin-top:0;}"+
+                " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;margin-top:0;}"+
+                " .isolateGroup label{margin-top:1px;}"+
+                " .isolateGroup{margin-top:0.8em;}"+
+                " .rowT{display:table;width:100%;}"+
+                " .rowC{display:table-row;}"+
+                " .rowC *{display:table-cell;}"+
+                " .rowC label{text-align:left;vertical-align:middle;font-weight:bold;}"+
+                " .memberCurrentGrade{background-color:white;margin-right:0.5em;padding:0 .5em;}"+
+                " .groupsPluginGroupControls{display:flex;}"+
+                " .groupsPluginGroupGrade{background-color:white;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
+                " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
+                function(bus,params) {
                     var render = function(){
                         try {
                             overContainer.empty();
@@ -316,59 +355,59 @@ var Plugins = (function(){
                                             $("#masterFooter").scrollLeft(xOffset);
                                         })).append($("<label />",{
                                             for:"showAll"
-                                                }).css({
-                                                    "flex-grow":0
-                                                }).append($("<span />",{
-                                                    class:"icon-txt",
-                                                    text:"Show all"
-                                                }))).append(
-                                                    button("fa-share-square","Share all",function(){
-                                                        var origFilters = _.map(ContentFilter.getFilters(),function(of){return _.cloneDeep(of);});
-                                                        var audiences = ContentFilter.getAudiences();
-                                                        _.forEach(groups,function(g){
-                                                            ContentFilter.setFilter(g.id,false);
-                                                        });
-                                                        Progress.call("deisolated");
+                                        }).css({
+                                            "flex-grow":0
+                                        }).append($("<span />",{
+                                            class:"icon-txt",
+                                            text:"Show all"
+                                        }))).append(
+                                            button("fa-share-square","Share all",function(){
+                                                var origFilters = _.map(ContentFilter.getFilters(),function(of){return _.cloneDeep(of);});
+                                                var audiences = ContentFilter.getAudiences();
+                                                _.forEach(groups,function(g){
+                                                    ContentFilter.setFilter(g.id,false);
+                                                });
+                                                Progress.call("deisolated");
+                                                blit();
+                                                var sendSubs = function(listOfGroups,afterFunc){
+                                                    var group = listOfGroups[0];
+                                                    if (group){
+                                                        ContentFilter.setFilter(group.id,true);
+                                                        ContentFilter.setAudience(group.id);
                                                         blit();
-                                                        var sendSubs = function(listOfGroups,afterFunc){
-                                                            var group = listOfGroups[0];
-                                                            if (group){
-                                                                ContentFilter.setFilter(group.id,true);
-                                                                ContentFilter.setAudience(group.id);
-                                                                blit();
-                                                                _.defer(function(){
-                                                                    Submissions.sendSubmission(function(succeeded){
-                                                                        if (succeeded){
-                                                                            ContentFilter.setFilter(group.id,false);
-                                                                            blit();
-                                                                            _.defer(function(){
-                                                                                sendSubs(_.drop(listOfGroups,1),afterFunc);
-                                                                            });
-                                                                        } else {
-                                                                            errorAlert("Submission failed","Storing this submission failed.");
-                                                                        }
-                                                                    });
-                                                                });
-                                                            } else {
-                                                                successAlert("Submissions sent",sprintf("%s group submissions stored.  You can check them in the submissions tab.",_.size(groups)));
-                                                                afterFunc();
-                                                            }
-                                                        };
                                                         _.defer(function(){
-                                                            sendSubs(groups,function(){
-                                                                _.forEach(origFilters,function(filter){
-                                                                    ContentFilter.setFilter(filter.id,filter.enabled);
-                                                                });
-                                                                if (audiences.length){
-                                                                    ContentFilter.setAudience(audiences[0]);
+                                                            Submissions.sendSubmission(function(succeeded){
+                                                                if (succeeded){
+                                                                    ContentFilter.setFilter(group.id,false);
+                                                                    blit();
+                                                                    _.defer(function(){
+                                                                        sendSubs(_.drop(listOfGroups,1),afterFunc);
+                                                                    });
                                                                 } else {
-                                                                    ContentFilter.clearAudiences();
+                                                                    errorAlert("Submission failed","Storing this submission failed.");
                                                                 }
-                                                                blit();
                                                             });
                                                         });
-                                                    }).css({"margin-top":0})
-                                                ).appendTo(overContainer);
+                                                    } else {
+                                                        successAlert("Submissions sent",sprintf("%s group submissions stored.  You can check them in the submissions tab.",_.size(groups)));
+                                                        afterFunc();
+                                                    }
+                                                };
+                                                _.defer(function(){
+                                                    sendSubs(groups,function(){
+                                                        _.forEach(origFilters,function(filter){
+                                                            ContentFilter.setFilter(filter.id,filter.enabled);
+                                                        });
+                                                        if (audiences.length){
+                                                            ContentFilter.setAudience(audiences[0]);
+                                                        } else {
+                                                            ContentFilter.clearAudiences();
+                                                        }
+                                                        blit();
+                                                    });
+                                                });
+                                            }).css({"margin-top":0})
+                                        ).appendTo(overContainer);
                                         var container = $("<div />").css({display:"flex"}).appendTo(overContainer);
                                         _.each(groups,function(group){
                                             var gc = $("<div />",{
@@ -434,47 +473,47 @@ var Plugins = (function(){
                                                     }
                                                     var gradeC = rowC();
                                                     switch (linkedGrade.gradeType) {
-                                                    case "numeric" :
-                                                        $("<label/>",{
-                                                            text:"Score",
-                                                            "for":gradeValueId
-                                                        }).appendTo(gradeC);
-                                                        $("<input/>",{
-                                                            id:gradeValueId,
-                                                            type:"number",
-                                                            max:linkedGrade.numericMaximum,
-                                                            min:linkedGrade.numericMinimum
-                                                        }).on("change",function(ev){
-                                                            gradeValue = parseFloat($(this).val());
-                                                        }).appendTo(gradeC);
-                                                        break;
-                                                    case "text":
-                                                        $("<label/>",{
-                                                            text:"Score",
-                                                            "for":gradeValueId
-                                                        }).appendTo(gradeC);
-                                                        $("<input/>",{
-                                                            id:gradeValueId,
-                                                            type:"text"
-                                                        }).on("change",function(ev){
-                                                            gradeValue = $(this).val();
-                                                        }).appendTo(gradeC);
-                                                        break;
-                                                    case "boolean":
-                                                        gradeValue = false;
-                                                        $("<input/>",{
-                                                            type:"checkbox",
-                                                            id:gradeValueId
-                                                        }).on("change",function(ev){
-                                                            gradeValue = $(this).prop("checked");
-                                                        }).appendTo(gradeC);
-                                                        $("<label/>",{
-                                                            text:"Score",
-                                                            "for":gradeValueId
-                                                        }).appendTo(gradeC);
-                                                        break;
-                                                    default:
-                                                        break;
+                                                        case "numeric" :
+                                                            $("<label/>",{
+                                                                text:"Score",
+                                                                "for":gradeValueId
+                                                            }).appendTo(gradeC);
+                                                            $("<input/>",{
+                                                                id:gradeValueId,
+                                                                type:"number",
+                                                                max:linkedGrade.numericMaximum,
+                                                                min:linkedGrade.numericMinimum
+                                                            }).on("change",function(ev){
+                                                                gradeValue = parseFloat($(this).val());
+                                                            }).appendTo(gradeC);
+                                                            break;
+                                                        case "text":
+                                                            $("<label/>",{
+                                                                text:"Score",
+                                                                "for":gradeValueId
+                                                            }).appendTo(gradeC);
+                                                            $("<input/>",{
+                                                                id:gradeValueId,
+                                                                type:"text"
+                                                            }).on("change",function(ev){
+                                                                gradeValue = $(this).val();
+                                                            }).appendTo(gradeC);
+                                                            break;
+                                                        case "boolean":
+                                                            gradeValue = false;
+                                                            $("<input/>",{
+                                                                type:"checkbox",
+                                                                id:gradeValueId
+                                                            }).on("change",function(ev){
+                                                                gradeValue = $(this).prop("checked");
+                                                            }).appendTo(gradeC);
+                                                            $("<label/>",{
+                                                                text:"Score",
+                                                                "for":gradeValueId
+                                                            }).appendTo(gradeC);
+                                                            break;
+                                                        default:
+                                                            break;
                                                     }
                                                     var commentC = rowC();
                                                     var commentId = sprintf("gradeValueComment_%s",_.uniqueId());
@@ -601,9 +640,59 @@ var Plugins = (function(){
                     bus.conversationDetailsReceived["Groups plugin"] = render;
                     return overContainer;
                 },
-                initialize:function(){
-                }
+                function(){},
+                function(){}
+            );
+        })(),
+        "Dummy":(function(){
+            var containerId = "dummyPlugin";
+            var initialText = "dummyPlugin";
+            var container = $("<div />",{
+                id:containerId
+            });
+            var dummyLabel = $("<span />",{
+                text: initialText
+            });
+            container.append(dummyLabel);
+            var engineDelay = 2 * 1000;
+            var intCollapseButton = $("<button/>",{text:"clickMe",class:"intCollapseButton"});
+            container.append(intCollapseButton);
+            console.log("container",container[0]);
+            var plugin = undefined;
+            var internalEngineLoop = function(){
+                _.delay(function(){
+                    if (plugin !== undefined) {
+                        var desiresAttention = plugin.getDesiresAttention();
+                        var isCollapsed = plugin.getIsCollapsed();
+                        if (!desiresAttention && isCollapsed) {
+                            console.log("attention!");
+                            desiresAttention = Math.random() > 0.5;
+                            plugin.changeVisualState(isCollapsed, desiresAttention);
+                        }
+                    }
+                    internalEngineLoop();
+                },engineDelay);
             };
+            plugin = createPlugin(
+                "Dummy",
+                "", // no style
+                function(bus,params){
+                    console.log("load - container",container[0]);
+                    return container;
+                },
+                function(){
+                    console.log("init - container",container[0]);
+                    internalEngineLoop();
+                },
+                function(isC,isD){
+                    intCollapseButton.text("int_" + (isC ? "show" : "hide"));
+                    dummyLabel.text(initialText + " : " + isC);
+                }
+            );
+            intCollapseButton.on("click",function(){
+                plugin.changeVisualState();
+            });
+            return plugin;
         })()
     };
 })();
@@ -622,57 +711,45 @@ $(function(){
         var pluginContainer = $("<div />",{
             class:"plugin"
         });
-
-        var contentContainer = plugin.load(Progress);
-        contentContainer.appendTo(pluginContainer);
+        var params = {}; // these are passed to the plugin's initialize function, but as yet no plugins are using them.
+        var contentContainer = plugin.load(Progress,params,function(isCollapsedValue,desiresAttentionValue){
+            updateCollapserButton(isCollapsedValue,desiresAttentionValue);
+        }); // it's not yet in the DOM
+        var collapsableContainer = $("<div />",{
+            class:"pluginCollapsable"
+        }).append(contentContainer);
+        contentContainer.appendTo(collapsableContainer);
+        var collapserContainer = $("<div />", {
+            class:"collapserContainer"
+        });
+        var collapseButton = $("<button/>",{
+            class:"collapseButton"
+        }).on("click",function(){
+            plugin.changeVisualState();
+        });
+        var attentionRequestor = $("<span/>",{
+            class:"attentionRequestor"
+        });
+        collapserContainer.append(collapseButton).append(attentionRequestor);
+        var updateCollapserButton = function(isCollapsed,desiresAttention){
+            if (isCollapsed) {
+                collapsableContainer.addClass(hidePluginClass);
+                collapseButton.removeClass(collapserOpenClass).addClass(collapserClosedClass).text("+ " + label);
+            } else {
+                collapsableContainer.removeClass(hidePluginClass);
+                collapseButton.removeClass(collapserClosedClass).addClass(collapserOpenClass).text("- " + label);
+            }
+            if (desiresAttention){
+                attentionRequestor.text("!");
+            } else {
+                attentionRequestor.text("");
+            }
+        };
+        updateCollapserButton();
+        collapserContainer.appendTo(pluginContainer);
         styleContainer.append(plugin.style);
+        pluginContainer.append(collapsableContainer);
         pluginContainer.appendTo(pluginBar);
-        plugin.initialize();
-
-        var contentContainerNode = $(contentContainer);
-        console.log("Content container",contentContainerNode);
-        console.log("Top level children",contentContainerNode.children());
-
-        var isNonHidden = function(elem) {
-            return !elem.hidden;
-        };
-        var isVisible = function(elem) {
-            return elem.visible;
-        };
-        var checkNestedElements = function(elem,f){
-            return f(elem) &&
-                (!elem.is(':empty') ||
-                    (elem.children().length > 0 && _.filter(elem.children(), function(i,e){
-                        return checkNestedElements($(e),f);
-                    }).length > 0));
-        };
-        var hasNonHiddenContent = checkNestedElements(contentContainerNode,isNonHidden);
-        console.log("Has non-hidden content",hasNonHiddenContent);
-        var hasVisibleContent = checkNestedElements(contentContainerNode,isVisible);
-        console.log("Has visible content",hasVisibleContent);
-
-        if(hasNonHiddenContent || hasVisibleContent) {
-            var collapserContainer = $("<div />", {
-                class:"collapserOpen"
-            });
-            collapserContainer.append('<div class="collapseContainer">'+
-                '<button class="collapseButton collapserOpen">- '+label+'</button>'+
-                '</div>');
-            var collapseButton = collapserContainer.find(".collapseButton");
-            collapseButton.on("click",function() {
-                if( contentContainer.hasClass(hidePluginClass)) {
-                    contentContainer.removeClass(hidePluginClass);
-                    collapseButton.removeClass(collapserClosedClass);
-                    collapseButton.addClass(collapserOpenClass);
-                    collapseButton.text("- "+label);
-                } else {
-                    contentContainer.addClass(hidePluginClass);
-                    collapseButton.removeClass(collapserOpenClass);
-                    collapseButton.addClass(collapserClosedClass);
-                    collapseButton.text("+ "+label);
-                }
-            });
-            collapserContainer.appendTo(pluginContainer);
-        }
+        plugin.initialize(); // it's in the DOM now
     });
 });
