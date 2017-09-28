@@ -6,9 +6,6 @@ var HealthChecker = (function(){
 
     var clockOffset = 0;
 
-    // function bob(){
-    // }();
-
     var addMeasureFunc = function(category,success,duration){
         if (!(category in store)){
             store[category] = timedQueue(storeLifetime);
