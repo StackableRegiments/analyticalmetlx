@@ -13,7 +13,7 @@ var timedQueue = function(period){
             item:function(){return item;},
             instant:function(){return instant;}
         };
-    }
+    };
     var start,end;
     var clearExpired = function(){
         var now = new Date().getTime();
@@ -71,10 +71,18 @@ var timedQueue = function(period){
         }
         return items;
     };
+    var oldestFunc = function(){
+        return end;
+    };
+    var newestFunc = function(){
+        return start;
+    };
     return {
         enqueue:enqFunc,
         dequeue:deqFunc,
         peek:peekFunc,
-        items:itemsFunc
+        items:itemsFunc,
+        oldest:oldestFunc,
+        newest:newestFunc
     };
 };
