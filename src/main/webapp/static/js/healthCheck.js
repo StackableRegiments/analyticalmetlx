@@ -1,6 +1,10 @@
 var HealthChecker = (function(){
-    var storeLifetime = 5 * 60 * 1000; //5 minutes
+    var storeLifetime = 60 * 60 * 1000; //60 minutes
     var serverStatusInterval = 20000; //every 20 seconds
+    var recentInterestPeriod = 10 * 1000; // 10 seconds
+    var maxGraphDataPoints = 100; // Never display more than this many data points in a graph
+    var minimumGranularity = 1000; // Never have less time range than this spanning a bucket.
+
     var store = {};
     var healthChecking = true;
 
@@ -16,6 +20,7 @@ var HealthChecker = (function(){
             duration:duration,
             success:success
         });
+        // console.log("Adding measure to category",category,catStore.items.length,success,duration);
         updateGraph();
     };
     var setLatencyIndeterminate = function(isIndeterminate){
@@ -65,7 +70,7 @@ var HealthChecker = (function(){
         });
     };
     var updateGraph = _.throttle(function(){
-        var checkData = getAggregatedMeasuresFunc(1000);
+        var checkData = getAggregatedMeasuresFunc();
         var describedData = describeHealthFunction();
         HealthCheckViewer.refreshDisplays(checkData,describedData);
     },1000);
@@ -83,9 +88,13 @@ var HealthChecker = (function(){
     var getMeasuresFunc = function(){
         return _.mapValues(store,function(v){return v.items();});
     };
-    var getAggregatedMeasuresFunc = function(granularity){
-        return _.mapValues(store,function(v){
+    var getAggregatedMeasuresFunc = function(){
+        return _.mapValues(store,function(v,k){
             var set = {};
+            var granularity = Math.round((v.newest().instant() - v.oldest().instant()) / maxGraphDataPoints);
+            if (_.isNaN(granularity) || granularity < minimumGranularity){
+                granularity = minimumGranularity;
+            }
             _.forEach(v.items(),function(item){
                 var sample = (Math.floor(item.instant / granularity) * granularity);
                 var oldValue = set[sample];
@@ -101,13 +110,13 @@ var HealthChecker = (function(){
                 if (item.success){
                     obj.successCount += 1;
                 }
-                if (obj.min == undefined || obj.min > item.duration){
+                if (obj.min === undefined || obj.min > item.duration){
                     obj.min = item.duration;
                 }
-                if (obj.max == undefined || obj.max < item.duration){
+                if (obj.max === undefined || obj.max < item.duration){
                     obj.max = item.duration;
                 }
-                if (obj.avg == undefined){
+                if (obj.avg === undefined){
                     obj.avg = item.duration;
                 } else {
                     obj.avg = ((item.duration - obj.avg) / obj.count) + obj.avg;
@@ -120,22 +129,30 @@ var HealthChecker = (function(){
     var describeHealthFunction = function(){
         return _.mapValues(store,function(catStore,k){
             var v = catStore.items();
-            var count = v.length;
+            var count = _.size(v);
             var durations = _.map(v,"duration");
+            var startTime = new Date().getTime() - recentInterestPeriod;
             if (count > 0){
+                var recent = _.mean(_.map(_.takeRightWhile(v,function(d){
+                    return d.instant > startTime;
+                }),"duration"));
+                if (_.isNaN(recent) || recent < 0){
+                    recent = 0;
+                }
                 return {
                     name:k,
                     count:count,
                     max:_.max(durations),
                     min:_.min(durations),
                     average:_.mean(durations),
-                    recent:_.mean(_.takeRight(durations,10)),
+                    recent:recent,
                     successful:count == 0 || v[count-1].success,
                     successRate:_.countBy(v,"success")[true] / count
                 };
             }
         });
     };
+    var getStoreSizeFunc = function(){return store;};
     $(function(){
         resumeHealthCheckFunc(true);
     });
@@ -398,6 +415,9 @@ var HealthCheckViewer = (function(){
         if(data.render){
             health -= Math.min(8,data.render.recent / 20);
         }
+        if (_.isNaN(health)) {
+            health = 0;
+        }
         $(".meters").css("background-color", (function(){
             if (_.some(["latency","serverResponse"], function(category){
                     return !(category in data) || (data[category] === undefined || data[category].successRate < 1);
@@ -437,7 +457,7 @@ var HealthCheckViewer = (function(){
         });
         if(viewing){
             var overallLatencyData = descriptionData["latency"];
-            if (overallLatencyData != undefined){
+            if (overallLatencyData !== undefined){
                 c(".healthCheckSummaryLatencyContainer").show();
                 c(".latencyAverage").text(parseInt(overallLatencyData.average));
                 c(".worstLatency").text(parseInt(overallLatencyData.min));
@@ -454,7 +474,7 @@ var HealthCheckViewer = (function(){
                 c(".healthCheckSummaryLatencyContainer").hide();
             }
             var overallServerResponseData = descriptionData["serverResponse"];
-            if (overallServerResponseData != undefined){
+            if (overallServerResponseData !== undefined){
                 c(".heathCheckSummaryServerResponseContainer").show();
                 var serverHealthData = overallServerResponseData.average;
                 c(".serverResponseAverage").text(parseInt(serverHealthData));

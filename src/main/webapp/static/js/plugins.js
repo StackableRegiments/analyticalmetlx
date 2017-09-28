@@ -1,6 +1,47 @@
 var Plugins = (function(){
+    var createPlugin = function(name,style,loadFunc,initFunc,reRenderAfterVisualStateChangedFunc){
+        var isEnabled = true;
+        var isCollapsed = false;
+        var desiresAttention = false;
+        var onVisualStateChanged = function(isEnabled,isCollapsed,desiresAttention){};
+        return {
+            style:style,
+            load:function(bus,params,onVisualStateFunc) {
+                onVisualStateChanged = onVisualStateFunc;
+                return loadFunc(bus,params);
+            },
+            initialize:function() {
+                var initRes = initFunc();
+                onVisualStateChanged(isEnabled,isCollapsed,desiresAttention);
+                reRenderAfterVisualStateChangedFunc(isEnabled,isCollapsed,desiresAttention);
+                return initRes;
+            },
+            changeVisualState:function(newIsEnabled,newIsCollapsed,newDesiresAttention){
+                if (newIsEnabled !== undefined) {
+                    isEnabled = newIsEnabled;
+                }
+                if (newIsCollapsed !== undefined) {
+                    isCollapsed = newIsCollapsed;
+                } else {
+                    isCollapsed = !isCollapsed;
+                }
+                if (!isCollapsed) {
+                    desiresAttention = false;
+                }
+                if (newDesiresAttention !== undefined) {
+                    desiresAttention = newDesiresAttention;
+                }
+                onVisualStateChanged(isEnabled,isCollapsed,desiresAttention);
+                reRenderAfterVisualStateChangedFunc(isEnabled,isCollapsed,desiresAttention);
+            },
+            getIsEnabled:function(){return isEnabled;},
+            getIsCollapsed:function(){return isCollapsed;},
+            getDesiresAttention:function(){return desiresAttention;},
+            getName:function(){return name;}
+        }
+    };
     return {
-        "Chat":(function(){
+        "chat":(function(){
             var chatMessages = {};
             var outer = {};
             var cmHost = {};
@@ -84,6 +125,10 @@ var Plugins = (function(){
                                 }
                             }
                         }
+                        var plugin = Plugins.chat;
+                        if (plugin !== undefined && plugin.getIsCollapsed()) {
+                            plugin.changeVisualState(plugin.getIsEnabled(),plugin.getIsCollapsed(),true);
+                        }
                     }
                 }
             };
@@ -105,7 +150,6 @@ var Plugins = (function(){
                     context:context || loc,
                     audiences:audiences || []
                 };
-                console.log("created chat message:",cm);
                 return cm;
             };
             var sendChatMessage = function(text){
@@ -149,40 +193,41 @@ var Plugins = (function(){
                 }
             };
 
-            return {
-                style:".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
-                    ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
-                    ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
-                    ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
-                    ".chatboxContainer {display:flex;flex-direction:row;width:100%;flex-shrink:0;}"+
-                    ".chatboxContainer input{flex-grow:1;}"+
-                    ".chatbox {background-color:white;display:inline-block; padding:0px; margin:0px;}"+
-                    ".chatboxSend {display:inline-block; background:white;padding:0px; margin:0px;}"+
-                    ".groupChat {color:darkorange}"+
-                    ".whisper {color:darkblue}",
-                load:function(bus,params){
+            chatPlugin = createPlugin(
+                "Chat",
+                ".chatMessageContainer {overflow-y:auto; flex-grow:1;}"+
+                ".chatContainer {margin-left:1em;width:320px;height:140px;display:flex;flex-direction:column;}"+
+                ".chatMessageAuthor {color:slategray;margin-right:1em;}"+
+                ".chatMessageTimestamp {color:red;font-size:small;display:none;}"+
+                ".chatboxContainer {display:flex;flex-direction:row;width:100%;flex-shrink:0;}"+
+                ".chatboxContainer input{flex-grow:1;}"+
+                ".chatbox {background-color:white;display:inline-block; padding:0px; margin:0px;}"+
+                ".chatboxSend {display:inline-block; background:white;padding:0px; margin:0px;}"+
+                ".groupChat {color:darkorange}"+
+                ".whisper {color:darkblue}",
+                function(bus,params){
                     bus.stanzaReceived["Chatbox"] = actOnStanzaReceived;
                     bus.historyReceived["Chatbox"] = actOnHistoryReceived;
                     container.append('<div class="chatContainer" >'+
-                                     '<div class="chatMessageContainer" >'+
-                                     '<div class="chatMessage" >'+
-                                     '<span class="chatMessageTimestamp" >'+
-                                     '</span>'+
-                                     '<span class="chatMessageAuthor" >'+
-                                     '</span>'+
-                                     '<span class="chatMessageContent">'+
-                                     '</span>'+
-                                     '</div>'+
-                                     '</div>'+
-                                     '<div class="chatboxContainer">'+
-                                     '<input type="text" class="chatbox">'+
-                                     '</input>'+
-                                     '<button class="chatboxSend">Send</button>'+
-                                     '</div>'+
-                                     '</div>');
+                        '<div class="chatMessageContainer" >'+
+                        '<div class="chatMessage" >'+
+                        '<span class="chatMessageTimestamp" >'+
+                        '</span>'+
+                        '<span class="chatMessageAuthor" >'+
+                        '</span>'+
+                        '<span class="chatMessageContent">'+
+                        '</span>'+
+                        '</div>'+
+                        '</div>'+
+                        '<div class="chatboxContainer">'+
+                        '<input type="text" class="chatbox">'+
+                        '</input>'+
+                        '<button class="chatboxSend">Send</button>'+
+                        '</div>'+
+                        '</div>');
                     return container;
                 },
-                initialize:function(){
+                function(){
                     outer = $("#"+containerId);
                     cmHost = outer.find(".chatMessageContainer");
                     cmTemplate = cmHost.find(".chatMessage").clone();
@@ -196,62 +241,67 @@ var Plugins = (function(){
                     var sendButton = outer.find(".chatboxContainer .chatboxSend").on("click",function(){
                         chatbox.val(sendChatMessage(chatbox.val()));
                     });
-                }
-            };
+                },
+                function(){}
+            );
+            return chatPlugin;
         })(),
-        "Face to face":(function(){
-            var container = $("<div />");
-            return {
-                style:".publishedStream {background:green;}, .subscribedStream {background:red;}"+
-                    " .videoConfStartButton, .videoConfSubscribeButton{padding-top:0;margin-top:0;}"+
-                    " .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
-                    " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer" +
-                    " .videoConfPermitStudentBroadcastContainer{display:flex;}"+
-                    " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
-                    " .videoConfStartButton{padding-top:0;margin-top:0;}, .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
-                    " #videoConfSessionsContainer{display:none;}"+
-                    " .videoContainer{display:flex;}"+
-                    " .context, .publisherName{font-size:1rem;}"+
-                    " .thumbWide{width:160px;}"+
-                    " .broadcastContainer{display:none;}",
-                load:function(bus,params){
+        "streaming":(function(){
+            return createPlugin(
+                "Face to face",
+                " #videoConfSessionsContainer {display:none;}"+
+                " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer" +
+                " .publishedStream {background:green;}, .subscribedStream {background:red;}"+
+                " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
+                " .videoConfStartButton, .videoConfSubscribeButton{padding-top:0;margin-top:0;}"+
+                " .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
+                " .videoConfPermitStudentBroadcastContainer{display:flex;}"+
+                " .videoConfStartButton{padding-top:0;margin-top:0;}," +
+                " .videoConfPermitStudentBroadcastButton{padding:0 1em;font-size:1rem;}"+
+                " .videoContainer{display:flex;}"+
+                " .context, .publisherName{font-size:1rem;}"+
+                " .thumbWide{width:160px;}"+
+                " .broadcastContainer{display:none;}",
+                function(bus,params){
+                    var container = $("<div />");
                     container.append('<span id="videoConfSessionsContainer">'+
-                                     '<div class="videoConfSessionContainer">'+
-                                     '<div>'+
-                                     '<div class="videoConfStartButtonContainer" style="margin-bottom:-0.3em">'+
-                                     '<button class="videoConfStartButton">'+
-                                     '<div>Start sending</div>'+
-                                     '</button>'+
-                                     '<span class="context mr"></span>'+
-                                     '<span style="display:none;" class="teacherControls mr">'+
-                                     '<input type="checkbox" id="canBroadcast">'+
-                                     '<label for="canBroadcast" class="checkbox-sim"><span class="icon-txt">Students can stream</span></label>'+
-                                     '</span>'+
-                                     '</div>'+
-                                     '<div class="viewscreen"></div>'+
-                                     '</div>'+
-                                     '<div class="broadcastContainer">'+
-                                     '<a class="floatingToolbar btn-menu fa fa-television btn-icon broadcastLink">'+
-                                     '<div class="icon-txt">Watch class</div>'+
-                                     '</a>'+
-                                     '</div>'+
-                                     '<div class="videoSubscriptionsContainer"></div>'+
-                                     '<div class="videoConfContainer">'+
-                                     '<span class="videoContainer thumbWide">'+
-                                     '<button class="videoConfSubscribeButton">'+
-                                     '<div>Toggle</div>'+
-                                     '</button>'+
-                                     '<span class="publisherName"></span>'+
-                                     '</span>'+
-                                     '</div>'+
-                                     '</div>'+
-                                     '</span>');
+                        '<div class="videoConfSessionContainer">'+
+                        '<div>'+
+                        '<div class="videoConfStartButtonContainer" style="margin-bottom:-0.3em">'+
+                        '<button class="videoConfStartButton">'+
+                        '<span class="videoConfStartButtonLabel">Start sending </span>'+
+                        '<span class="context"></span>'+
+                        '</button>'+
+                        '<span style="display:none;" class="teacherControls mr">'+
+                        '<input type="checkbox" id="canBroadcast">'+
+                        '<label for="canBroadcast" class="checkbox-sim"><span class="icon-txt">Students can stream</span></label>'+
+                        '</span>'+
+                        '</div>'+
+                        '<div class="viewscreen"></div>'+
+                        '</div>'+
+                        '<div class="broadcastContainer">'+
+                        '<a class="floatingToolbar btn-menu fa fa-television btn-icon broadcastLink">'+
+                        '<div class="icon-txt">Watch class</div>'+
+                        '</a>'+
+                        '</div>'+
+                        '<div class="videoSubscriptionsContainer"></div>'+
+                        '<div class="videoConfContainer">'+
+                        '<span class="videoContainer thumbWide">'+
+                        '<button class="videoConfSubscribeButton">'+
+                        '<span>Toggle</span>'+
+                        '</button>'+
+                        '<span class="publisherName"></span>'+
+                        '</span>'+
+                        '</div>'+
+                        '</div>'+
+                        '</span>');
                     return container;
                 },
-                initialize:TokBox.initialize
-            }
+                TokBox.initialize,
+                function(){}
+            );
         })(),
-        "Groups":(function(){
+        "groups":(function(){
             var overContainer = $("<div />");
             var button = function(icon,content,behaviour){
                 var b = $("<button />",{
@@ -264,24 +314,26 @@ var Plugins = (function(){
                 }).appendTo(b);
                 return b;
             };
-            return {
-                style:".groupsPluginMember{margin-left:0.5em;display:flex;}"+
-                    " .groupsPluginGroupContainer{display:flex;margin-right:1em;}"+
-                    " .groupsPluginGroup{display:inline-block;text-align:center;vertical-align:top;}"+
-                    " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;margin-top:0;}"+
-                    " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;margin-top:0;}"+
-                    " .isolateGroup label{margin-top:1px;}"+
-                    " .isolateGroup{margin-top:0.8em;}"+
-                    " .rowT{display:table;width:100%;}"+
-                    " .rowC{display:table-row;}"+
-                    " .rowC *{display:table-cell;}"+
-                    " .rowC label{text-align:left;vertical-align:middle;font-weight:bold;}"+
-                    " .memberCurrentGrade{background-color:white;margin-right:0.5em;padding:0 .5em;}"+
-                    " .groupsPluginGroupControls{display:flex;}"+
-                    " .groupsPluginGroupGrade{background-color:white;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
-                    " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
-                load:function(bus,params) {
+            var groupsPlugin = createPlugin(
+                "Groups",
+                ".groupsPluginMember{margin-left:0.5em;display:flex;}"+
+                " .groupsPluginGroupContainer{display:flex;margin-right:1em;}"+
+                " .groupsPluginGroup{display:inline-block;text-align:center;vertical-align:top;}"+
+                " .groupsPluginGroupGrade button, .groupsPluginGroupGrade .icon-txt{padding:0;margin-top:0;}"+
+                " .groupsPluginGroupControls button, .groupsPluginGroupControls .icon-txt{padding:0;margin-top:0;}"+
+                " .isolateGroup label{margin-top:1px;}"+
+                " .isolateGroup{margin-top:0.8em;}"+
+                " .rowT{display:table;width:100%;}"+
+                " .rowC{display:table-row;}"+
+                " .rowC *{display:table-cell;}"+
+                " .rowC label{text-align:left;vertical-align:middle;font-weight:bold;}"+
+                " .memberCurrentGrade{background-color:white;margin-right:0.5em;padding:0 .5em;}"+
+                " .groupsPluginGroupControls{display:flex;}"+
+                " .groupsPluginGroupGrade{background-color:white;margin:2px;padding:0 0.3em;height:3em;display:inline;}"+
+                " .groupsPluginAllGroupsControls{margin-bottom:0.5em;border-bottom:0.5px solid white;padding-left:1em;display:flex;}",
+                function(bus,params) {
                     var render = function(){
+                        var enabled = false;
                         try {
                             overContainer.empty();
                             var groups = Conversations.getCurrentGroups();
@@ -314,59 +366,59 @@ var Plugins = (function(){
                                             $("#masterFooter").scrollLeft(xOffset);
                                         })).append($("<label />",{
                                             for:"showAll"
-                                                }).css({
-                                                    "flex-grow":0
-                                                }).append($("<span />",{
-                                                    class:"icon-txt",
-                                                    text:"Show all"
-                                                }))).append(
-                                                    button("fa-share-square","Share all",function(){
-                                                        var origFilters = _.map(ContentFilter.getFilters(),function(of){return _.cloneDeep(of);});
-                                                        var audiences = ContentFilter.getAudiences();
-                                                        _.forEach(groups,function(g){
-                                                            ContentFilter.setFilter(g.id,false);
-                                                        });
-                                                        Progress.call("deisolated");
+                                        }).css({
+                                            "flex-grow":0
+                                        }).append($("<span />",{
+                                            class:"icon-txt",
+                                            text:"Show all"
+                                        }))).append(
+                                            button("fa-share-square","Share all",function(){
+                                                var origFilters = _.map(ContentFilter.getFilters(),function(of){return _.cloneDeep(of);});
+                                                var audiences = ContentFilter.getAudiences();
+                                                _.forEach(groups,function(g){
+                                                    ContentFilter.setFilter(g.id,false);
+                                                });
+                                                Progress.call("deisolated");
+                                                blit();
+                                                var sendSubs = function(listOfGroups,afterFunc){
+                                                    var group = listOfGroups[0];
+                                                    if (group){
+                                                        ContentFilter.setFilter(group.id,true);
+                                                        ContentFilter.setAudience(group.id);
                                                         blit();
-                                                        var sendSubs = function(listOfGroups,afterFunc){
-                                                            var group = listOfGroups[0];
-                                                            if (group){
-                                                                ContentFilter.setFilter(group.id,true);
-                                                                ContentFilter.setAudience(group.id);
-                                                                blit();
-                                                                _.defer(function(){
-                                                                    Submissions.sendSubmission(function(succeeded){
-                                                                        if (succeeded){
-                                                                            ContentFilter.setFilter(group.id,false);
-                                                                            blit();
-                                                                            _.defer(function(){
-                                                                                sendSubs(_.drop(listOfGroups,1),afterFunc);
-                                                                            });
-                                                                        } else {
-                                                                            errorAlert("Submission failed","Storing this submission failed.");
-                                                                        }
-                                                                    });
-                                                                });
-                                                            } else {
-                                                                successAlert("Submissions sent",sprintf("%s group submissions stored.  You can check them in the submissions tab.",_.size(groups)));
-                                                                afterFunc();
-                                                            }
-                                                        };
                                                         _.defer(function(){
-                                                            sendSubs(groups,function(){
-                                                                _.forEach(origFilters,function(filter){
-                                                                    ContentFilter.setFilter(filter.id,filter.enabled);
-                                                                });
-                                                                if (audiences.length){
-                                                                    ContentFilter.setAudience(audiences[0]);
+                                                            Submissions.sendSubmission(function(succeeded){
+                                                                if (succeeded){
+                                                                    ContentFilter.setFilter(group.id,false);
+                                                                    blit();
+                                                                    _.defer(function(){
+                                                                        sendSubs(_.drop(listOfGroups,1),afterFunc);
+                                                                    });
                                                                 } else {
-                                                                    ContentFilter.clearAudiences();
+                                                                    errorAlert("Submission failed","Storing this submission failed.");
                                                                 }
-                                                                blit();
                                                             });
                                                         });
-                                                    }).css({"margin-top":0})
-                                                ).appendTo(overContainer);
+                                                    } else {
+                                                        successAlert("Submissions sent",sprintf("%s group submissions stored.  You can check them in the submissions tab.",_.size(groups)));
+                                                        afterFunc();
+                                                    }
+                                                };
+                                                _.defer(function(){
+                                                    sendSubs(groups,function(){
+                                                        _.forEach(origFilters,function(filter){
+                                                            ContentFilter.setFilter(filter.id,filter.enabled);
+                                                        });
+                                                        if (audiences.length){
+                                                            ContentFilter.setAudience(audiences[0]);
+                                                        } else {
+                                                            ContentFilter.clearAudiences();
+                                                        }
+                                                        blit();
+                                                    });
+                                                });
+                                            }).css({"margin-top":0})
+                                        ).appendTo(overContainer);
                                         var container = $("<div />").css({display:"flex"}).appendTo(overContainer);
                                         _.each(groups,function(group){
                                             var gc = $("<div />",{
@@ -429,50 +481,50 @@ var Plugins = (function(){
                                                         return $("<div />",{
                                                             class:"rowC"
                                                         }).appendTo(grades);
-                                                    }
+                                                    };
                                                     var gradeC = rowC();
                                                     switch (linkedGrade.gradeType) {
-                                                    case "numeric" :
-                                                        $("<label/>",{
-                                                            text:"Score",
-                                                            "for":gradeValueId
-                                                        }).appendTo(gradeC);
-                                                        $("<input/>",{
-                                                            id:gradeValueId,
-                                                            type:"number",
-                                                            max:linkedGrade.numericMaximum,
-                                                            min:linkedGrade.numericMinimum
-                                                        }).on("change",function(ev){
-                                                            gradeValue = parseFloat($(this).val());
-                                                        }).appendTo(gradeC);
-                                                        break;
-                                                    case "text":
-                                                        $("<label/>",{
-                                                            text:"Score",
-                                                            "for":gradeValueId
-                                                        }).appendTo(gradeC);
-                                                        $("<input/>",{
-                                                            id:gradeValueId,
-                                                            type:"text"
-                                                        }).on("change",function(ev){
-                                                            gradeValue = $(this).val();
-                                                        }).appendTo(gradeC);
-                                                        break;
-                                                    case "boolean":
-                                                        gradeValue = false;
-                                                        $("<input/>",{
-                                                            type:"checkbox",
-                                                            id:gradeValueId
-                                                        }).on("change",function(ev){
-                                                            gradeValue = $(this).prop("checked");
-                                                        }).appendTo(gradeC);
-                                                        $("<label/>",{
-                                                            text:"Score",
-                                                            "for":gradeValueId
-                                                        }).appendTo(gradeC);
-                                                        break;
-                                                    default:
-                                                        break;
+                                                        case "numeric" :
+                                                            $("<label/>",{
+                                                                text:"Score",
+                                                                "for":gradeValueId
+                                                            }).appendTo(gradeC);
+                                                            $("<input/>",{
+                                                                id:gradeValueId,
+                                                                type:"number",
+                                                                max:linkedGrade.numericMaximum,
+                                                                min:linkedGrade.numericMinimum
+                                                            }).on("change",function(ev){
+                                                                gradeValue = parseFloat($(this).val());
+                                                            }).appendTo(gradeC);
+                                                            break;
+                                                        case "text":
+                                                            $("<label/>",{
+                                                                text:"Score",
+                                                                "for":gradeValueId
+                                                            }).appendTo(gradeC);
+                                                            $("<input/>",{
+                                                                id:gradeValueId,
+                                                                type:"text"
+                                                            }).on("change",function(ev){
+                                                                gradeValue = $(this).val();
+                                                            }).appendTo(gradeC);
+                                                            break;
+                                                        case "boolean":
+                                                            gradeValue = false;
+                                                            $("<input/>",{
+                                                                type:"checkbox",
+                                                                id:gradeValueId
+                                                            }).on("change",function(ev){
+                                                                gradeValue = $(this).prop("checked");
+                                                            }).appendTo(gradeC);
+                                                            $("<label/>",{
+                                                                text:"Score",
+                                                                "for":gradeValueId
+                                                            }).appendTo(gradeC);
+                                                            break;
+                                                        default:
+                                                            break;
                                                     }
                                                     var commentC = rowC();
                                                     var commentId = sprintf("gradeValueComment_%s",_.uniqueId());
@@ -558,6 +610,7 @@ var Plugins = (function(){
                                                 }
                                             });
                                         });
+                                        enabled = true;
                                     }
                                 }
                             }
@@ -578,6 +631,7 @@ var Plugins = (function(){
                                         $("<div />",{
                                             text:sprintf("Group %s",group.title)
                                         }).prependTo(members);
+                                        enabled = true;
                                     }
                                 });
                             }
@@ -585,7 +639,8 @@ var Plugins = (function(){
                         catch(e){
                             console.log("Groups plugin render e",e);
                         }
-                    }
+                        groupsPlugin.changeVisualState(enabled,groupsPlugin.getIsCollapsed(),groupsPlugin.getDesiresAttention());
+                    };
                     bus.gradeValueReceived["Groups plugin"] = function(gv){
                         var linkedGradeLoc = sprintf("groupWork_%s",Conversations.getCurrentSlideJid());
                         var linkedGrade = _.find(Grades.getGrades(),function(grade){
@@ -594,28 +649,141 @@ var Plugins = (function(){
                         if(linkedGrade && gv.gradeId == linkedGrade.id){
                             render();
                         }
-                    }
+                    };
                     bus.currentSlideJidReceived["Groups plugin"] = render;
                     bus.conversationDetailsReceived["Groups plugin"] = render;
                     return overContainer;
                 },
-                initialize:function(){
-                }
-            };
+                function(){},
+                function(){}
+            );
+            return groupsPlugin;
         })()
+/*
+        ,
+        "dummy":(function(){
+            var containerId = "dummyPlugin";
+            var initialText = "dummyPlugin";
+            var container = $("<div />",{
+                id:containerId
+            });
+            var dummyLabel = $("<span />",{
+                text: initialText
+            });
+            container.append(dummyLabel);
+            var engineDelay = 2 * 1000;
+            var intCollapseButton = $("<button/>",{text:"clickMe",class:"intCollapseButton"});
+            container.append(intCollapseButton);
+            var dummyPlugin = undefined;
+            var internalEngineLoop = function(){
+                _.delay(function(){
+                    if (dummyPlugin !== undefined) {
+                        var desiresAttention = dummyPlugin.getDesiresAttention();
+                        var isCollapsed = dummyPlugin.getIsCollapsed();
+                        if (!desiresAttention && isCollapsed) {
+                            desiresAttention = Math.random() > 0.5;
+                            dummyPlugin.changeVisualState(dummyPlugin.getIsEnabled(),isCollapsed, desiresAttention);
+                        }
+                    }
+                    internalEngineLoop();
+                },engineDelay);
+            };
+            dummyPlugin = createPlugin(
+                "Dummy",
+                "", // no style
+                function(bus,params){
+                    return container;
+                },
+                function(){
+                    internalEngineLoop();
+                },
+                function(isC,isD){
+                    intCollapseButton.text("int_" + (isC ? "show" : "hide"));
+                    dummyLabel.text(initialText + " : " + isC);
+                }
+            );
+            intCollapseButton.on("click",function(){
+                dummyPlugin.changeVisualState();
+            });
+            dummyPlugin.changeVisualState(true,true,false);
+            return dummyPlugin;
+        })()
+*/
     };
 })();
 
 $(function(){
     var pluginBar = $("#pluginBar");
     var styleContainer = $("<style></style>").appendTo($("body"));
+    styleContainer.append(".pluginHidden {display:none}"+
+                          " .collapserOpen{background:#fbcd4b;border-width:1px;border-style:solid}"+
+                          // " .collapserOpen a:hover{font-style:normal}"+
+                          " .collapserClosed{background:#ffffff;border-width:1px;border-style:solid}"+
+                          " .collapseButtonSymbol, .attentionRequestor{text-decoration:none}"+
+                          // " .attentionRequestor{color:#66cc00}");
+                          // " .attentionRequestor{color:#9900ff}");
+                          " .attentionRequestor{color:#cc66ff}");
+    var hidePluginClass = "pluginHidden";
+    var collapserOpenClass = "collapserOpen";
+    var collapserClosedClass = "collapserClosed";
     _.each(Plugins,function(plugin,label){
-        var container = $("<div />",{
+        var pluginContainer = $("<div />",{
             class:"plugin"
         });
-        plugin.load(Progress).appendTo(container);
+        var params = {}; // these are passed to the plugin's initialize function, but as yet no plugins are using them.
+        var contentContainer = plugin.load(Progress,params,function(isEnabledValue,isCollapsedValue,desiresAttentionValue){
+            updateCollapserButton(isEnabledValue,isCollapsedValue,desiresAttentionValue);
+        }); // it's not yet in the DOM
+
+        var collapsableContainer = $("<div />",{
+            class:"pluginCollapsable"
+        }).append(contentContainer);
+        contentContainer.appendTo(collapsableContainer);
+        var collapserContainer = $("<div />", {
+            class:"collapserContainer"
+        });
+        var collapseButton = $("<button/>",{
+            class:"collapseButton"
+        }).on("click",function(){
+            plugin.changeVisualState();
+        });
+        var collapseButtonSymbol = $("<span/>",{
+            class:"collapseButtonSymbol fa fa-fw"
+        });
+        var collapseButtonText = $("<span/>",{
+            text:plugin.getName()
+        });
+        var attentionRequestor = $("<span/>",{
+            class:"attentionRequestor fa fa-fw"
+        });
+        collapseButton.append(collapseButtonSymbol).append(collapseButtonText).append(attentionRequestor);
+        collapserContainer.append(collapseButton);
+        var updateCollapserButton = function(isEnabled,isCollapsed,desiresAttention){
+            if (isEnabled) {
+                collapseButton.show();
+                if (isCollapsed) {
+                    collapsableContainer.addClass(hidePluginClass);
+                    collapseButton.removeClass(collapserOpenClass).addClass(collapserClosedClass);
+                    collapseButtonSymbol.removeClass("fa-check").addClass("fa-square-o");
+                    if (desiresAttention){
+                        attentionRequestor.addClass("fa-envelope");
+                    }
+                } else {
+                    collapsableContainer.removeClass(hidePluginClass);
+                    collapseButton.removeClass(collapserClosedClass).addClass(collapserOpenClass);
+                    collapseButtonSymbol.removeClass("fa-square-o").addClass("fa-check");
+                    attentionRequestor.removeClass("fa-envelope");
+                }
+            } else {
+                collapseButton.hide();
+            }
+        };
+        updateCollapserButton();
+        plugin.changeVisualState(plugin.getIsEnabled(),true);
+        collapserContainer.appendTo(pluginContainer);
         styleContainer.append(plugin.style);
-        container.appendTo(pluginBar);
-        plugin.initialize();
+        pluginContainer.append(collapsableContainer);
+        pluginContainer.appendTo(pluginBar);
+        plugin.initialize(); // it's in the DOM now
     });
 });
