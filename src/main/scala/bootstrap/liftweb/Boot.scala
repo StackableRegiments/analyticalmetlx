@@ -41,6 +41,9 @@ class Boot extends Logger {
       case Props.RunModes.Staging => false
       case Props.RunModes.Pilot => false
       case _ => true
+    }/*
+    LiftRules.liftRequest.append{
+      case Req("static" :: "js" :: _,_,_) => true
     }
     LiftRules.onBeginServicing.prepend{
       case r:Req => println("onBeginServicing: %s".format(r))
@@ -51,8 +54,9 @@ class Boot extends Logger {
     LiftRules.afterSend.prepend{
       case (resp,hResp,headers,req) => println("afterSend: %s => %s".format(req,headers))
     }
+    */
     LiftRules.defaultHeaders = {
-      //fun fact - static/js/anything.js doesn't get caught.
+      //fun fact - these only apply to items which are liftServed files//static/js/anything.js doesn't get caught.
       case (_, Req("static"::"js"::"stable"::_, _, _)) => Boot.noCache
       case (_, Req("proxyDataUri"::_, _, _)) => Boot.cacheStrongly
       case (_, Req("proxy"::_, _, _)) => Boot.cacheStrongly
