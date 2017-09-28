@@ -736,7 +736,6 @@ var createCanvasRenderer = function(canvasElem,textInputInvisibleHost){
 			}
 			var rawWidth = (ink.bounds[2] - ink.bounds[0] + (ink.thickness));
 			var rawHeight = (ink.bounds[3] - ink.bounds[1] + (ink.thickness));
-
 			var scaleMeasurements = determineScaling(rawWidth,rawHeight);
 
 			var scaleX = scaleMeasurements.scaleX;
@@ -879,7 +878,7 @@ var createCanvasRenderer = function(canvasElem,textInputInvisibleHost){
 			var minimumWidth = 100;
 			var minimumHeight = 30;
 			var host = textInputInvisibleHost;
-			if (host[0] === undefined){
+			if (host === undefined || host[0] === undefined){
 				host = $("<div/>");
 			}
 			editor.doc = carota.editor.create(
@@ -1333,8 +1332,8 @@ var createCanvasRenderer = function(canvasElem,textInputInvisibleHost){
 								var sH = img.height;
 								var xFactor = img.width / cWidth;
 								var yFactor = img.height / cHeight;
-								var iX = inset * xFactor;
-								var iY = inset * yFactor;
+								var iX = scaleWorldToScreen(inset);
+								var iY = scaleWorldToScreen(inset);
 
 								var tX = sBounds.screenPos.x - iX;
 								var tY = sBounds.screenPos.y - iY;
