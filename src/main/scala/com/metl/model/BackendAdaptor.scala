@@ -243,9 +243,6 @@ object MeTLXConfiguration extends PropertyReader with Logger {
       Globals.metlingPots.foreach(_.shutdown)
       SecurityListener.cleanupAllSessions
     })
-    LiftRules.dispatch.append(new BrightSparkIntegrationDispatch)
-    LiftRules.statelessDispatch.append(new BrightSparkIntegrationStatelessDispatch)
-    Globals.metlingPots.foreach(_.init)
     info(configs)
   }
   def listRooms(configName:String):List[MeTLRoom] = configs(configName)._2.list

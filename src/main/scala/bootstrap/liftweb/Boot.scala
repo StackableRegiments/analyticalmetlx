@@ -42,12 +42,27 @@ class Boot extends Logger {
       case Props.RunModes.Pilot => false
       case _ => true
     }
+    LiftRules.onBeginServicing.prepend{
+      case r:Req => println("onBeginServicing: %s".format(r))
+    }
+    LiftRules.beforeSend.prepend{
+      case (resp,hResp,headers,req) => println("beforeSend: %s => %s".format(req,headers))
+    }
+    LiftRules.afterSend.prepend{
+      case (resp,hResp,headers,req) => println("afterSend: %s => %s".format(req,headers))
+    }
     LiftRules.defaultHeaders = {
+      //fun fact - static/js/anything.js doesn't get caught.
       case (_, Req("static"::"js"::"stable"::_, _, _)) => Boot.noCache
       case (_, Req("proxyDataUri"::_, _, _)) => Boot.cacheStrongly
       case (_, Req("proxy"::_, _, _)) => Boot.cacheStrongly
-      case (_, Req("static" ::_,_,_)) => Boot.noCache
-      case any => defaultHeaders(any)
+      case (_, r@Req("static" :: _,_,_)) => {
+        println("found static: %s".format(r)) 
+        Boot.noCache
+      }
+      case any => {
+        defaultHeaders(any)
+      }
     }
     LiftRules.supplementalHeaders.default.set(List(
       ("Access-Control-Allow-Origin", "*"),
@@ -57,10 +72,10 @@ class Boot extends Logger {
     ))
     LiftRules.attachResourceId = {
       if (isDebug){
-        s => "%s?%s".format(s,nextFuncName)
+        s => "%s?sig=%s".format(s,nextFuncName)
       } else {
         val prodRunId = nextFuncName
-        s => "%s?%s".format(s,prodRunId)
+        s => "%s?sig=%s".format(s,prodRunId)
       }
     }
     LiftRules.passNotFoundToChain = false

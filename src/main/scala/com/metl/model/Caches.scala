@@ -110,12 +110,17 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
 
   }
   protected val unsafeTokens = List(':','+','-','*','[',']','(',')')
-  protected def safetyQuery(query:String):Query = {
-    try {
-      queryBuilder(query)
-    } catch {
-      case e:Exception => {
-        safetyQuery(unsafeTokens.foldLeft(query)((acc,item) => acc.replace(item,' ')))
+  protected val maxAttempts = 1
+  protected def safetyQuery(query:String,attempts:Int = 0):Option[Query] = {
+    if (query == null || query.trim == "" || attempts > maxAttempts){
+      None
+    } else {
+      try {
+        Some(queryBuilder(query))
+      } catch {
+        case e:Exception => {
+          safetyQuery(unsafeTokens.foldLeft(query)((acc,item) => acc.replace(item,' ')),attempts + 1)
+        }
       }
     }
   }
@@ -123,16 +128,17 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
     maxResults match {
       case 0 => Nil
       case mr => {
-        val q = safetyQuery(query)
-        val reader = DirectoryReader.open(index)
-        val searcher = new IndexSearcher(reader)
-        val topDocs:TopDocs = searcher.search(q,mr)
-        val hits:Array[ScoreDoc] = topDocs.scoreDocs
-        hits.toList.map(h => {
-          val d:Document = searcher.doc(h.doc)
-          val docId = d.get(keyTerm)
-          (docId,toSearchExplanation(query,docId,searcher.explain(q,h.doc)))
-        })
+        safetyQuery(query).map(q => {
+          val reader = DirectoryReader.open(index)
+          val searcher = new IndexSearcher(reader)
+          val topDocs:TopDocs = searcher.search(q,mr)
+          val hits:Array[ScoreDoc] = topDocs.scoreDocs
+          hits.toList.map(h => {
+            val d:Document = searcher.doc(h.doc)
+            val docId = d.get(keyTerm)
+            (docId,toSearchExplanation(query,docId,searcher.explain(q,h.doc)))
+          })
+        }).getOrElse(Nil)
       }
     }
   }
@@ -142,18 +148,19 @@ abstract class LuceneIndex[A](keyTerm:String,defaultFields:List[String]) {
     }))
   }
   def queryAppliesTo(query:String,item:A):Boolean = {
-    val q = safetyQuery(query)
-    val doc:Document = toDoc(item)
-    val index = new RAMDirectory()
-    val indexConfig = new IndexWriterConfig(analyzer)
-    val writer = new IndexWriter(index,indexConfig)
-    writer.addDocument(doc)
-    writer.close()
-    val reader = DirectoryReader.open(index)
-    val searcher = new IndexSearcher(reader)
-    val topDocs:TopDocs = searcher.search(q,1)
-    val hits:Array[ScoreDoc] = topDocs.scoreDocs
-    hits.length > 0
+    safetyQuery(query).map(q => {
+      val doc:Document = toDoc(item)
+      val index = new RAMDirectory()
+      val indexConfig = new IndexWriterConfig(analyzer)
+      val writer = new IndexWriter(index,indexConfig)
+      writer.addDocument(doc)
+      writer.close()
+      val reader = DirectoryReader.open(index)
+      val searcher = new IndexSearcher(reader)
+      val topDocs:TopDocs = searcher.search(q,1)
+      val hits:Array[ScoreDoc] = topDocs.scoreDocs
+      hits.length > 0
+    }).getOrElse(false)
   }
 }
 

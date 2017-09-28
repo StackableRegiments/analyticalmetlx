@@ -272,10 +272,10 @@ object Globals extends PropertyReader with Logger {
         val prelimAuthStateData = AuthState(authenticated,account,userGroups,userAttributes)
         if (authenticated){
           LoggedInUser(Some(prelimAuthStateData))
-          val groups = Groups.groupsFor(None,Some(Globals.currentAccount.account))
+          val groups = Groups.groupsFor(None,Some(account))
           actuallyIsImpersonator(groups.exists(g => g.category == "special" && g.name == "impersonator" && g.provider == "authz"))
-          val personalDetails = Groups.personalDetailsFor(None,Some(Globals.currentAccount.account))
-          updateUser(AuthState(true,Account(username,accountProvider),groups,personalDetails))
+          val personalDetails = Groups.personalDetailsFor(None,Some(account))
+          updateUser(AuthState(true,account,groups,personalDetails))
         } else {
           trace("authentication failed")
           notLoggedIn
