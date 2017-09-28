@@ -4,7 +4,7 @@ var TokBox = (function(){
     var setTokBoxEnabledStateFunc = function(isEnabled){
         enabled = isEnabled;
         //refreshAllVisualStates();
-        Plugins.streaming.changeVisualState(enabled);
+        Plugins.streaming.changeVisualState(enabled,true,false);
     };
     var initialized = false;
     var sessions = {};
@@ -190,12 +190,12 @@ var TokBoxSession = function(desc,sessionContainer){
                     label = sprintf("group %s",groupContext[0].title);
                 }
             }
-            publishButtonContainer.find(".context").text(label);
+            streamButton.find(".context").text(label);
         }
         if (thisPublisher != undefined){
-            streamButton.addClass("publishedStream").find("div").text("Hide from");
+            streamButton.addClass("publishedStream").find(".videoConfStartButtonLabel").text("Hide from ");
         } else {
-            streamButton.removeClass("publishedStream").find("div").text("Stream to");
+            streamButton.removeClass("publishedStream").find(".videoConfStartButtonLabel").text("Stream to ");
         }
         _.forEach(streams,function(s){
             if ("refreshVisual" in s){

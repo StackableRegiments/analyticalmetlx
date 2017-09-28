@@ -269,9 +269,9 @@ var Plugins = (function(){
                         '<div>'+
                         '<div class="videoConfStartButtonContainer" style="margin-bottom:-0.3em">'+
                         '<button class="videoConfStartButton">'+
-                        '<div>Start sending</div>'+
+                        '<span class="videoConfStartButtonLabel">Start sending </span>'+
+                        '<span class="context"></span>'+
                         '</button>'+
-                        '<span class="context mr"></span>'+
                         '<span style="display:none;" class="teacherControls mr">'+
                         '<input type="checkbox" id="canBroadcast">'+
                         '<label for="canBroadcast" class="checkbox-sim"><span class="icon-txt">Students can stream</span></label>'+
@@ -288,7 +288,7 @@ var Plugins = (function(){
                         '<div class="videoConfContainer">'+
                         '<span class="videoContainer thumbWide">'+
                         '<button class="videoConfSubscribeButton">'+
-                        '<div>Toggle</div>'+
+                        '<span>Toggle</span>'+
                         '</button>'+
                         '<span class="publisherName"></span>'+
                         '</span>'+
