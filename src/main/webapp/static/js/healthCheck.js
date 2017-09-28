@@ -1,10 +1,13 @@
 var HealthChecker = (function(){
-    var storeLifetime = 5 * 60 * 1000; //5 minutes
+    var storeLifetime = 60 * 60 * 1000; //60 minutes
     var serverStatusInterval = 20000; //every 20 seconds
     var store = {};
     var healthChecking = true;
 
     var clockOffset = 0;
+
+    // function bob(){
+    // }();
 
     var addMeasureFunc = function(category,success,duration){
         if (!(category in store)){
@@ -16,6 +19,7 @@ var HealthChecker = (function(){
             duration:duration,
             success:success
         });
+        // console.log("Adding measure to category",category,catStore.items.length,success,duration);
         updateGraph();
     };
     var setLatencyIndeterminate = function(isIndeterminate){
@@ -101,13 +105,13 @@ var HealthChecker = (function(){
                 if (item.success){
                     obj.successCount += 1;
                 }
-                if (obj.min == undefined || obj.min > item.duration){
+                if (obj.min === undefined || obj.min > item.duration){
                     obj.min = item.duration;
                 }
-                if (obj.max == undefined || obj.max < item.duration){
+                if (obj.max === undefined || obj.max < item.duration){
                     obj.max = item.duration;
                 }
-                if (obj.avg == undefined){
+                if (obj.avg === undefined){
                     obj.avg = item.duration;
                 } else {
                     obj.avg = ((item.duration - obj.avg) / obj.count) + obj.avg;
@@ -136,6 +140,7 @@ var HealthChecker = (function(){
             }
         });
     };
+    var getStoreSizeFunc = function(){return store;};
     $(function(){
         resumeHealthCheckFunc(true);
     });
@@ -437,7 +442,7 @@ var HealthCheckViewer = (function(){
         });
         if(viewing){
             var overallLatencyData = descriptionData["latency"];
-            if (overallLatencyData != undefined){
+            if (overallLatencyData !== undefined){
                 c(".healthCheckSummaryLatencyContainer").show();
                 c(".latencyAverage").text(parseInt(overallLatencyData.average));
                 c(".worstLatency").text(parseInt(overallLatencyData.min));
@@ -454,7 +459,7 @@ var HealthCheckViewer = (function(){
                 c(".healthCheckSummaryLatencyContainer").hide();
             }
             var overallServerResponseData = descriptionData["serverResponse"];
-            if (overallServerResponseData != undefined){
+            if (overallServerResponseData !== undefined){
                 c(".heathCheckSummaryServerResponseContainer").show();
                 var serverHealthData = overallServerResponseData.average;
                 c(".serverResponseAverage").text(parseInt(serverHealthData));
