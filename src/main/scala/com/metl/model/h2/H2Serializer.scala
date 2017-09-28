@@ -355,15 +355,18 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
   override def fromSlide(i:Slide):H2Slide = {
     incMeTLContent(H2Slide.create,i,"slide").author(i.author).creation(i.created).jid(i.id).slideType(i.slideType).modified(i.modified).permissions(xmlSerializer.fromStructurePermission(i.permissions).toString)
   }
+  protected def enrichSlidesForConversation(c:H2Conversation,slides:List[Slide]):List[H2Slide] = {
+    H2Slide.findAll(ByList(H2Slide.jid,slides.map(_.id).toList))
+  }
   def toConversation(i:H2Conversation):Conversation = {
-    val structure:Map[String,Slide] = Map((for {
-      structureXml <- List(i.structure.get).filterNot(s => s == null || s.trim == "").map(scala.xml.XML.loadString _)
+    val structureXml = Some(i.structure.get).filterNot(s => s == null || s.trim == "").map(scala.xml.XML.loadString _).getOrElse(scala.xml.NodeSeq.Empty)
+    val structureSlides:List[Slide] = (for {
       sx <- (structureXml \ "slide").toList
       sid:String <- (sx \ "@id").headOption.map(_.text)
       exposed:Boolean <- (sx \ "@exposed").headOption.map(_.text.toBoolean)
       index:Int <- (sx \ "@index").headOption.map(_.text.toInt)
     } yield {
-      (sid,Slide(
+      Slide(
         author="",
         id=sid,
         index=index,
@@ -372,14 +375,15 @@ class H2Serializer(config:ServerConfiguration) extends Serializer with LiftLogge
         exposed=exposed,
         slideType="",
         permissions = StructurePermission.empty
-      ))
-    }):_*)
+      )
+    }).toList
 
-    val slideRecords = H2Slide.findAll(ByList(H2Slide.jid,structure.keys.toList))
+    val slideRecords = enrichSlidesForConversation(i,structureSlides)
+    val structureMap = Map(structureSlides.map(s => (s.id,s)):_*)
     val slides = (for {
       sr <- slideRecords
       slideId = sr.jid.get
-      cs <- structure.get(slideId)
+      cs <- structureMap.get(slideId)
     } yield {
       val permissions = tryo(xmlSerializer.toStructurePermission(scala.xml.XML.loadString(sr.permissions.get))).getOrElse(StructurePermission.default)
       Slide(
