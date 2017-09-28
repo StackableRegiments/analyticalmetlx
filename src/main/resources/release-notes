@@ -1,3 +1,8 @@
+1.20.9
+METL-729: Improvement: Make plugins collapsible.
+METL-730: Improvement: Change status bar temporal display range to 1hr.
+METL-666: Bugfix: Fixed JS bug preventing poll deletion.
+
 1.20.8
 METL-725: Bugfix: Fixed JS bugs affecting cumulative total on enterprise dashboard.
 
