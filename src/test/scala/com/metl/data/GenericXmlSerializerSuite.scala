@@ -577,4 +577,32 @@ class GenericXmlSerializerSuite extends FunSuite with GeneratorDrivenPropertyChe
       stanza should equal(gennedStanza)
     }}
   }
+  test("parse conversation to xml and back") {
+    forAll (genConversation) { (s:Conversation) => {
+      val ser = xmlSerializer.fromConversation(s)
+      val res = xmlSerializer.toConversation(ser)
+      s should equal(res)
+    }}
+  }
+  test("parse wootOperation to xml and back") {
+    forAll (genWootOperation) { (s:WootOperation) => {
+      val ser = xmlSerializer.fromWootOperation(s)
+      val res = xmlSerializer.toWootOperation(ser)
+      s should equal(res)
+    }}
+  }
+  test("parse slide to xml and back") {
+    forAll (genSlide) { (s:Slide) => {
+      val ser = xmlSerializer.fromSlide(s)
+      val res = xmlSerializer.toSlide(ser)
+      s should equal(res)
+    }}
+  }
+  test("parse forumPost to xml and back") {
+    forAll (genForumPost) { (s:ForumPost) => {
+      val ser = xmlSerializer.fromForumPost(s)
+      val res = xmlSerializer.toForumPost(ser)
+      s should equal(res)
+    }}
+  }
 }

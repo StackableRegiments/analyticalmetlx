@@ -301,7 +301,34 @@ class JsonSerializerSuite extends FunSuite with GeneratorDrivenPropertyChecks wi
       gradeValue should equal(gennedGradeValue)
     }}
   }
-
+  test("parse conversation to json and back") {
+    forAll (genConversation) { (s:Conversation) => {
+      val ser = jsonSerializer.fromConversation(s)
+      val res = jsonSerializer.toConversation(ser)
+      s should equal(res)
+    }}
+  }
+  test("parse slide to json and back") {
+    forAll (genSlide) { (s:Slide) => {
+      val ser = jsonSerializer.fromSlide(s)
+      val res = jsonSerializer.toSlide(ser)
+      s should equal(res)
+    }}
+  }
+  test("parse wootOperation to json and back") {
+    forAll (genWootOperation) { (s:WootOperation) => {
+      val ser = jsonSerializer.fromWootOperation(s)
+      val res = jsonSerializer.toWootOperation(ser)
+      s should equal(res)
+    }}
+  }
+  test("parse forumPost to json and back") {
+    forAll (genForumPost) { (s:ForumPost) => {
+      val ser = jsonSerializer.fromForumPost(s)
+      val res = jsonSerializer.toForumPost(ser)
+      s should equal(res)
+    }}
+  }
 
 
 }

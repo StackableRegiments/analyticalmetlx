@@ -191,4 +191,19 @@ class MeTLConversationSuite extends FunSuite with GeneratorDrivenPropertyChecks 
         )
       }
     }
+    test("serialize to Xml and back") {
+      forAll (genConversation) { (conversation:Conversation) => 
+        val xml = xmlSerializer.fromConversation(conversation)
+        val conv2 = xmlSerializer.toConversation(xml)
+        conv2 should have(
+          author (conversation.author),
+          lastModified (conversation.lastModified),
+          jid (conversation.jid),
+          title (conversation.title),
+          created (conversation.created),
+          slides (conversation.slides),
+          permissions (conversation.permissions)
+        )
+      }
+    }
 }

@@ -785,7 +785,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
     val text = getStringByName(input,"text")
     val identity = getStringByName(input,"identity")
     val slide = getStringByName(input,"slide")
-    val inResponseTo = Some(getStringByName(input,"text")).filterNot(_ == "")
+    val inResponseTo = Some(getStringByName(input,"inResponseTo")).filterNot(_ == "")
     ForumPost(m.author,m.timestamp,identity,inResponseTo,slide,text,m.audiences)
   })
   override def fromForumPost(input:ForumPost):NodeSeq = Stopwatch.time("GenericXmlSerializer.fromForumPost",{
@@ -798,7 +798,7 @@ class GenericXmlSerializer(config:ServerConfiguration) extends Serializer with X
   })
   override def toWootOperation(input:NodeSeq):WootOperation = Stopwatch.time("GenericXmlSerializer.toWootOperation",{
     val m = parseMeTLContent(input,config)
-    val identity = getStringByName(input,"text")
+    val identity = getStringByName(input,"identity")
     val slide = getStringByName(input,"slide")
     val wootMessage = getStringByName(input,"wootMessage")
     val wootArgs = getStringByName(input,"wootArgs")

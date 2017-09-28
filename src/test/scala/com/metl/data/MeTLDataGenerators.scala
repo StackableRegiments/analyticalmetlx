@@ -215,6 +215,112 @@ trait MeTLDataGenerators {
     runs <- genTextWords(scala.util.Random.nextInt(10) + 2)
   } yield MeTLMultiWordText(author, timestamp, height, width, requestedWidth, x, y, tag, identity, target, privacy, slide.toString, runs, audiences)
 
+  def genWootOperation = for {
+    author <- genString(32)
+    timestamp <- validTimestamp
+    identity <- genString(32)
+    //wootMessage <- genString(64)
+    wootMessage <- genString(4)
+    wootArgs <- genJson(5)//genString(4)
+    //wootArgs <- genString(15368)
+    slideId <- genString(64)
+    audiences <- genAudiences(scala.util.Random.nextInt(3))
+  } yield WootOperation(author,timestamp,identity,wootMessage,net.liftweb.json.JsonAST.compactRender(wootArgs),slideId,audiences)
+
+  import net.liftweb.json._
+  def genJson(maxObjectDepth:Int = 1,maxArrayLength:Int = 3,maxObjectFields:Int = 5):Gen[JValue] = for {
+    chosenType <- oneOf(List("int","long","float","double","string","bool") ::: List("array","obj").filterNot(_i => maxObjectDepth < 1))
+    intVal <- arbitrary[Int]
+    longVal <- arbitrary[Long]
+    floatVal <- arbitrary[Float]
+    doubleVal <- arbitrary[Double]
+    stringVal <- genString(64)
+    boolVal <- arbitrary[Boolean]
+  } yield {
+    chosenType match {
+      case "int" => JInt(intVal)
+      case "long" => JInt(longVal)
+      case "float" => JDouble(floatVal)
+      case "double" => JDouble(doubleVal)
+      case "string" => JString(stringVal)
+      case "bool" => JBool(boolVal)
+      case "array" => JArray(Range(0,maxArrayLength).flatMap(i => {
+        for {
+          json <- genJson(maxObjectDepth - 1,maxArrayLength,maxObjectFields).sample
+        } yield json
+      }).toList)
+      case "obj" => JObject(Range(0,maxObjectFields).flatMap(i => {
+        for {
+          fieldName <- genString(8).sample
+          fieldValue <- genJson(maxObjectDepth - 1,maxArrayLength,maxObjectFields).sample
+        } yield JField(fieldName,fieldValue)
+      }).toList)
+      case _ => JNothing
+    }
+  }
+  import scala.xml._
+  def genXmlAttributes(max:Int):Gen[MetaData] = for {
+    attrPrefix <- genString(4)
+    attrName <- genString(8)
+    attrValue <- genString(8)
+    prefixed <- arbitrary[Boolean]
+    next <- genXmlAttributes(max - 1)
+  } yield {
+    (max,prefixed) match {
+      case (i,true) if i > 0 => {
+        val attr:MetaData = new PrefixedAttribute(attrPrefix,attrName,Text(attrValue),next)
+        attr
+      }
+      case (i,false) if i > 0 => {
+        val attr:MetaData = new UnprefixedAttribute(attrName,Text(attrValue),next)
+        attr
+      }
+      case _ => Null:MetaData
+    }
+  }
+  def genXml(maxObjectDepth:Int = 1,maxArrayLength:Int = 3,maxObjectFields:Int = 5):Gen[NodeSeq] = for {
+    chosenType <- oneOf(List("array","text") ::: List("prefixedElem","unprefixedElem").filterNot(_i => maxObjectDepth < 1))
+  } yield {
+    (chosenType match {
+      case "array" => Some(Range(0,maxArrayLength).foldLeft(NodeSeq.Empty)((acc,item) => acc ++ genXml(maxObjectDepth - 1,maxArrayLength,maxObjectFields).sample.getOrElse(NodeSeq.Empty)))
+      case "text" => {
+        for {
+          text <- genString(64).sample
+        } yield Text(text)
+      }
+      case "prefixedElem" => {
+        for {
+          prefix <- genString(4).sample
+          label <- genString(4).sample
+          attributes <- genXmlAttributes(maxObjectFields).sample
+          children <- genXml(maxObjectDepth - 1,maxArrayLength,maxObjectFields).sample
+        } yield {
+          Elem(prefix,label,attributes,TopScope,children.theSeq:_*)
+        }
+      }
+      case "unprefixedElem" => {
+        for {
+          label <- genString(4).sample
+          attributes <- genXmlAttributes(maxObjectFields).sample
+          children <- genXml(maxObjectDepth - 1,maxArrayLength,maxObjectFields).sample
+        } yield {
+          Elem(null,label,attributes,TopScope,children.theSeq:_*)
+        }
+      }
+      case _ => None
+    }).getOrElse(NodeSeq.Empty)
+  }
+
+  def genForumPost = for {
+    author <- genString(32)
+    timestamp <- validTimestamp
+    identity <- genString(32)
+    inResponseTo <- genOpt(genString(32))
+    slideId <- genString(64)
+    //text <- genString(15368)
+    text <- genString(4)
+    audiences <- genAudiences(scala.util.Random.nextInt(3))
+  } yield ForumPost(author,timestamp,identity,inResponseTo,slideId,text,audiences)
 
   def genDirtyInk = for {
     author <- genString(32)
