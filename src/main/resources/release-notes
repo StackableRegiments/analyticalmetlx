@@ -1,3 +1,6 @@
+1.20.13
+METL-732: Bugfix: CSS/icon/font files are cached in production.
+
 1.20.12
 METL-731: Bugfix: JS files are cached in production.
 
