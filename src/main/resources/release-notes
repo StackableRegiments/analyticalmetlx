@@ -7,6 +7,13 @@ METL-710: Improvement: Move all D2L-related code from core MeTL into a plugin.
 1.21.1
 METL-726: Improvement: Updated Jetty version.
 
+1.20.14
+METL-734: Bugfix: Stylesheet unable to reference spinner-apng.png.
+METL-735: Bugfix: Ink strokes should not shift on creation.
+
+1.20.13
+METL-732: Bugfix: CSS/icon/font files are cached in production.
+
 1.20.12
 METL-731: Bugfix: JS files are cached in production.
 

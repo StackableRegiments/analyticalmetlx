@@ -882,8 +882,6 @@ function drawInk(ink,incCanvasContext){
     if(!c){
         c = ink.canvas = prerenderInk(ink,canvasContext);
     }
-    var cWidth = c.width;
-    var cHeight = c.height;
     if (sBounds.screenHeight >= 1 && sBounds.screenWidth >= 1){
         var img = multiStageRescale(c,sBounds.screenWidth,sBounds.screenHeight,ink);
         if(img){
@@ -891,10 +889,8 @@ function drawInk(ink,incCanvasContext){
                 var inset = ink.thickness / 2;
                 var sW = img.width;
                 var sH = img.height;
-                var xFactor = img.width / cWidth;
-                var yFactor = img.height / cHeight;
-                var iX = inset * xFactor;
-                var iY = inset * yFactor;
+                var iX = scaleWorldToScreen(inset);
+                var iY = scaleWorldToScreen(inset);
                 canvasContext.drawImage(img,
                                         0, 0,
                                         sW, sH,

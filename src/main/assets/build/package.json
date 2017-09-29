@@ -1,12 +1,13 @@
 {
-  "name": "monash-assets-global",
+  "name": "analytical-metlx-theme",
   "version": "0.0.1",
-  "description": "build of minimal brand assets for Monash university",
-  "author": "Application solutions web",
-  "repository" : {
-    "type" : "git",
-    "url" : "http://stash.its.monash.edu:7990/scm/cwaa/minimal-brand.git"
+  "description": "Build of brand assets for MeTL",
+  "author": "Stackable Regiments",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StackableRegiments/analyticalmetlx.git"
   },
+  "license": "Apache-2.0",
   "dependencies": {
     "grunt": "0.x.x",
     "grunt-contrib-copy": "~0.5.x",
