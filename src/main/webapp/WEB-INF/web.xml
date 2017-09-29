@@ -45,7 +45,15 @@
     <init-param>
       <param-name>useFileMappedBuffer</param-name>
       <param-value>false</param-value>
-    </init-param>
+		</init-param>
+		<init-param>
+			<param-name>>cacheControl</param-name>
+			<param-value>public,max-age=32486400</param-value>
+		</init-param>
+		<init-param>
+			<param-name>>pragma</param-name>
+			<param-value>public</param-value>
+		</init-param>
   </servlet>
   <session-config>
     <cookie-config>
