@@ -41,10 +41,14 @@ class Boot extends Logger {
       case Props.RunModes.Staging => false
       case Props.RunModes.Pilot => false
       case _ => true
-    }/*
+    }
+    LiftRules.liftRequest.append{
+      case Req("static" :: _,_,_) => false
+    }
+    /*
     LiftRules.liftRequest.append{
       case Req("static" :: "js" :: _,_,_) => true
-    }
+   }
     LiftRules.onBeginServicing.prepend{
       case r:Req => println("onBeginServicing: %s".format(r))
     }

@@ -41,26 +41,34 @@
   <!-- file locking issue on windows.         -->
   <!--REMOVE THIS SECTION TO DEPLOY TO CLOUDBEES -->
   <servlet>
-    <servlet-name>default</servlet-name>
+		<servlet-name>default</servlet-name>
+		<servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
     <init-param>
       <param-name>useFileMappedBuffer</param-name>
       <param-value>false</param-value>
 		</init-param>
 		<init-param>
-			<param-name>>cacheControl</param-name>
-			<param-value>public,max-age=32486400</param-value>
+			<param-name>>acceptRanges</param-name>
+			<param-value>true</param-value>
 		</init-param>
 		<init-param>
-			<param-name>>pragma</param-name>
-			<param-value>public</param-value>
+			<param-name>>etags</param-name>
+			<param-value>true</param-value>
+		</init-param>
+		<init-param>
+			<param-name>>maxCachedFiles</param-name>
+			<param-value>500</param-value>
+		</init-param>
+		<init-param>
+			<param-name>>cacheControl</param-name>
+			<param-value>max-age=3600,public</param-value>
 		</init-param>
   </servlet>
   <session-config>
     <cookie-config>
       <name>JSESSIONID</name>
-      <!-- leaving http-only cookies turned off until the C# client is dead -->
       <http-only>true</http-only>
-      <!--<secure>true</secure>-->
+			<!--<secure>true</secure>-->
     </cookie-config>
     <session-timeout>5</session-timeout>
   </session-config>
