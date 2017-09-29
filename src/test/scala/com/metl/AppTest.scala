@@ -38,7 +38,7 @@ class AppTest extends TestCase("app") {
     var failed: List[File] = Nil
 
     def excluded(file: String): Boolean =
-      file.contains("ckeditor")
+      false
 
     def handledXml(file: String) =
       file.endsWith(".xml")
