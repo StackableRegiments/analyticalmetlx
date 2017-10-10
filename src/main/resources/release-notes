@@ -1,3 +1,7 @@
+1.20.15
+METL-737: Improvement: Make header and footer opaque.
+METL-738: Bugfix: Search by author is not correctly case-insensitive.
+
 1.20.14
 METL-734: Bugfix: Stylesheet unable to reference spinner-apng.png.
 METL-735: Bugfix: Ink strokes should not shift on creation.
