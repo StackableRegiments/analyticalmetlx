@@ -239,7 +239,7 @@ var DeviceConfiguration = (function(){
                 var flexDirection = flexContainer.css("flex-direction");
                 if (flexDirection == "row"){
                     bwidth = width - (showTools ? toolsColumn.width() : 0) - (showSlides ? thumbsColumn.width(): 0) - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
-                    bheight = height - headerHeight - footerHeight - marginsFor([masterHeader,masterFooter,boardColumn]).y - gutterHeight;
+                    bheight = height - headerHeight - footerHeight - marginsFor([masterHeader,masterFooter,boardColumn]).y;
                 } else {
                     bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;
                     bheight = bheight - gutterHeight;
