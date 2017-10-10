@@ -228,8 +228,9 @@ var DeviceConfiguration = (function(){
                 var board = comp("#board");
                 var masterHeader = comp("#masterHeader");
                 var headerHeight = masterHeader.height();
+                var footerHeight = masterFooter.height();
                 DeviceConfiguration.headerHeight = headerHeight;
-                DeviceConfiguration.footerHeight = masterFooter.height();
+                DeviceConfiguration.footerHeight = footerHeight;
                 thumbs.attr("width",px(comp("#thumbColumnWidth").val()));
                 thumbs.attr("height",px(showSlides ? DeviceConfiguration.preferredSizes.thumbColumn.height : 0));
 
@@ -238,10 +239,10 @@ var DeviceConfiguration = (function(){
                 var flexDirection = flexContainer.css("flex-direction");
                 if (flexDirection == "row"){
                     bwidth = width - (showTools ? toolsColumn.width() : 0) - (showSlides ? thumbsColumn.width(): 0) - marginsFor([toolsColumn,thumbsColumn,boardColumn]).x - gutterWidth;
-                    bheight = height -  marginsFor([masterHeader,boardColumn]).y - gutterHeight;
+                    bheight = height - headerHeight - footerHeight - marginsFor([masterHeader,masterFooter,boardColumn]).y - gutterHeight;
                 } else {
                     bwidth = comp("#masterLayout").width() - marginsFor([boardColumn]).x;
-                    bheight = bwidth - gutterHeight;
+                    bheight = bheight - gutterHeight;
                     if(showKeyboard){
                         var keyboardSize = (currentDevice == "iPad"? DeviceConfiguration.preferredSizes.keyboard.iphone : DeviceConfiguration.preferredSizes.keyboard.ipad);
                         bheight -= bwidth;
@@ -272,8 +273,8 @@ var DeviceConfiguration = (function(){
                 });
                 board.width(bwidth);
                 board.height(bheight);
-                toolsColumn.height(bheight - headerHeight).css({"margin-top":sprintf("%spx",headerHeight + gutterWidth)});
-                thumbsColumn.height(bheight - headerHeight).css({"margin-top":sprintf("%spx",headerHeight)});
+                toolsColumn.height(bheight - headerHeight);
+                thumbsColumn.height(bheight - headerHeight);
                 boardColumn.height(bheight);
 
                 boardContext.canvas.width = bwidth;
@@ -282,7 +283,7 @@ var DeviceConfiguration = (function(){
                 boardContext.height = bheight;
                 boardWidth = bwidth;
                 boardHeight = bheight;
-            }
+            };
             performRemeasure();
             IncludeView.default();
             blit();
@@ -324,7 +325,7 @@ var DeviceConfiguration = (function(){
         tryToDetermineCurrentDevice();
         actOnCurrentDevice();
         outerFit();
-    }
+    };
 
     var updateToolsToggleButton = function(){
         var button = $("#slidesToggleButton");
