@@ -228,7 +228,7 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   )
   protected def serialize(id:ImportDescription):JValue = net.liftweb.json.Extraction.decompose(id)(net.liftweb.json.DefaultFormats);
 
-  protected def queryApplies(in:Conversation):Boolean = query.map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q || in.jid.toString == q).getOrElse(false)
+  protected def queryApplies(in:Conversation):Boolean = query.map(q => q.toLowerCase.trim).map(q => in.title.toLowerCase.trim.contains(q) || in.author.toLowerCase.trim == q || in.jid.toString == q).getOrElse(false)
 
   override protected def conversationFilterFunc(c:Conversation,me:String,myGroups:List[OrgUnit],includeDeleted:Boolean = false):Boolean = super.conversationFilterFunc(c,me,myGroups,includeDeleted) && queryApplies(c)
 
