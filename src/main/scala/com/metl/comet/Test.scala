@@ -9,24 +9,44 @@ import actor._
 
 import scala.xml._
 
+object TestCounter {
+  protected var count:Int = 0
+  def add:Unit = {
+    synchronized {
+      count += 1
+    }
+  }
+  def remove:Unit = {
+    synchronized {
+      count -= 1
+    }
+  }
+  def getCount:Int = count
+}
+
 class TestActor extends CometActor with Logger {
   override def lifespan = Full(1 minute)
-  override def render = NodeSeq.Empty
-  protected var hasSetup = false
-  protected var hasShutdown = false
+  override def render = <span>comet created successfully, {TestCounter.getCount.toString()} live</span>
   override def localSetup = {
-    warn("creating testActor: %s".format(this))
     super.localSetup
-    hasSetup = true
-    warn("created testActor: %s".format(this))
+    TestCounter.add
   }
   override def localShutdown = {
-    warn("shutting down testActor: %s".format(this))
     super.localShutdown
-    hasShutdown = true
-    warn("shutdown testActor: %s".format(this))
+    TestCounter.remove
   }
   override def lowPriority = {
     case _ => {}
   }
+}
+
+object SessionMonitor extends LiftActor {
+  protected var currentInfo:Option[SessionWatcherInfo] = None
+  override def messageHandler = {
+    case swi:SessionWatcherInfo => {
+      currentInfo = Some(swi)
+    }
+    case _ => {}
+  }
+  def getSessionInfo:Option[SessionWatcherInfo] = currentInfo
 }

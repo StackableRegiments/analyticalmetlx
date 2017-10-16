@@ -111,13 +111,17 @@ class Boot extends Logger {
       //Default
       Menu(Loc("Static", Link(List("static"), true, "/static/index"), "Static Content", Hidden)),
       //Help
-      Menu(Loc("reportProblem", "reportProblem" :: Nil, "Report a Problem")))
+      Menu(Loc("reportProblem", "reportProblem" :: Nil, "Report a Problem")),
+      //test endpoint
+      Menu(Loc("testCreateComet", "testCreateComet" :: Nil, "Test Comet Creation"))
+    )
 
-     LiftRules.setSiteMapFunc(() => sitemap())
+    LiftRules.setSiteMapFunc(() => sitemap())
 
     LiftRules.loggedInTest = Full(() => true)
     info("Started version: %s\r\n".format(com.metl.BuildInfo.version)) // initialize the loading of the version number in the app, for the about page, and also dump it into the logs so that we can see it.
 //    info("release-notes:\r\n%s".format(com.metl.snippet.VersionFacts.releaseNotes.mkString("\r\n")))
+    net.liftweb.http.SessionMaster.sessionWatchers = List(com.metl.comet.SessionMonitor)
     trace("Boot ends")
   }
 }

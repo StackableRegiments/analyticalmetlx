@@ -190,15 +190,6 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       val room = MeTLXConfiguration.getRoom("global",ServerConfiguration.default.name,GlobalRoom(ServerConfiguration.default.name))
       Full(PlainTextResponse(room.roomMetaData.getJid, List.empty[Tuple2[String,String]], 200))
     })
-    case Req("testCometCreate" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testCometCreate", {
-      for {
-        s <- S.session
-        //c <- s.findOrCreateComet[TestActor](Full(nextFuncName),scala.xml.NodeSeq.empty,Map.empty)
-      } yield {
-        s.setupComet("TestComet",Full(nextFuncName),true)
-        PlainTextResponse("created cometActor")
-      }
-    })
     case Req("testCountConversations" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testCountConversations", {
       for {
         query <- S.param("query")
@@ -225,6 +216,22 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   val jsonSerializer = new JsonSerializer(ServerConfiguration.default)
   serve {
+    /*
+    case Req("testCometCreate" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testCometCreate", {
+      warn("testCometCreate: %s".format(S.session))
+      for {
+        s <- S.session
+        //c <- s.findOrCreateComet[TestActor](Full(nextFuncName),scala.xml.NodeSeq.empty,Map.empty)
+      } yield {
+        val cometName = nextFuncName
+        val nodes = com.metl.snippet.Metl.specificTestComet(cometName)(scala.xml.NodeSeq.Empty)//<span class={"lift:comet?type=TestActor;name=%s".format(cometName)}/>
+        val x = s.runTemplate("testPage",nodes)
+        s.setupComet("TestComet",Full(cometName),true)
+        val c = s.findComet("TestComet",Full(cometName))
+        PlainTextResponse("created cometActor: %s => %s".format(c,x))
+      }
+    })
+    */
     case Req("logout" :: Nil, _, _) => () =>
       Stopwatch.time("MeTLRestHelper.logout", {
         S.session.foreach(_.destroySession())
@@ -477,6 +484,36 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case Req(List("listSessions"), _, _) if Globals.isSuperUser =>
       () => StatelessHtml.listSessions
 
+    case Req("describeSessions" :: Nil, _, _) if Globals.isSuperUser => {
+      () => {
+        for {
+          swi <- com.metl.comet.SessionMonitor.getSessionInfo
+        } yield {
+          JsonResponse(JArray(swi.sessions.values.map(s => {
+            JObject(List(
+              JField("type",JString("session")),
+              JField("lastAccess",JInt(s.lastAccess)),
+              JField("requestCount",JInt(s.requestCnt)),
+              JField("actors",JArray({
+                List("MeTLActor","RemotePluginConversationChooserActor","MeTLConversationSearchActor","MeTLJsonConversationChooserActor","MeTLEditConversationActor").flatMap(typeName => {
+                  s.session.findComet(typeName).map(ca => {
+                    JObject(List(
+                      JField("type",JString(typeName)),
+                      JField("name",JString(ca.name.toString)),
+                      JField("uniqueId",JString(ca.uniqueId))
+                    ))
+                  })
+                })
+              }))
+            ) 
+            ::: s.userAgent.map(ua => JField("userAgent",JString(ua))).toList
+            ::: s.ipAddress.map(ip => JField("ipAddress",JString(ip))).toList
+
+            )
+          }).toList),200)
+        }
+      }
+    }
     case r@Req(List("impersonate", newUsername), _, _) if Globals.isImpersonator =>
       () => StatelessHtml.impersonate(newUsername, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList)
     case Req(List("deImpersonate"), _, _) if Globals.isImpersonator =>
