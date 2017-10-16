@@ -60,49 +60,64 @@ class PassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor) extends MeTLingPotAdapto
   override def shutdown:Unit = a.shutdown
 }
 
-class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 20,delay:TimeSpan = new TimeSpan(0L)) extends PassThroughMeTLingPotAdaptor(a) with LiftActor {
+class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 20,delay:Option[TimeSpan] = None,delayOnError:Option[TimeSpan] = None) extends PassThroughMeTLingPotAdaptor(a) with LiftActor {
   case object RequestSend
   protected val buffer = new scala.collection.mutable.ListBuffer[MeTLingPotItem]()
   override def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
     trace("adding items to the queue: %s".format(items.length))
-    buffer ++= items
-    this ! RequestSend
+    addItems(items)
     Right(true)
   }
-  protected var sending:Boolean = false
+  protected val delayTs = delay.getOrElse(new TimeSpan(1000L))
+  protected val errorDelayTs = delay.getOrElse(new TimeSpan(delayTs.millis * 10))
   protected var lastSend:Long = new Date().getTime()
-  override def messageHandler = {
-    case RequestSend if sending => {
-      trace("delaying queue")
-      Schedule.schedule(this,RequestSend,delay)
-    }
-    case RequestSend if ((lastSend + delay.millis) < new Date().getTime) => {
-      sending = true
-      val items:List[MeTLingPotItem] = buffer.take(burstSize).toList
-      buffer --= items
-      trace("processing items: %s".format(items.length))
-      a.postItems(items).left.toOption.foreach(e => {
-        trace("repeating items: %s".format(items.length))
-        items ++=: buffer //put the items back on the queue, at the front, so that they'll be retried later.
-        error("failed to send items",e)
-      })
-      sending = false
-      if (buffer.length > 0){
-        trace("continuingToProcess items from %s".format(buffer.length))
-        Schedule.schedule(this,RequestSend,delay)
+  protected var sendRequested = false
+  protected def reschedule(after:TimeSpan):Unit = Schedule.schedule(this,RequestSend,after)
+  protected def addItems(items:List[MeTLingPotItem],front:Boolean = false) = {
+    try {
+      if (front){
+        items ++=: buffer
+      } else {
+        buffer ++= items
+      }
+    } catch {
+      case e:Exception => {
+        error("failed to add items to buffer: %s".format(e.getMessage),e)
       }
     }
-    case RequestSend => {
-      trace("delaying queue")
-      Schedule.schedule(this,RequestSend,delay)
-    }
+  }
+  protected def doUpload = {
+    val items:List[MeTLingPotItem] = buffer.take(burstSize).toList
+    buffer --= items
+    trace("processing items: %s".format(items.length))
+    a.postItems(items).left.map(e => {
+      trace("repeating items: %s".format(items.length))
+      addItems(items,true)
+      error("failed to send items",e)
+      reschedule(errorDelayTs)
+      e
+    }).right.map(res => {
+      if (buffer.length > 0){
+        trace("continuingToProcess items from %s".format(buffer.length))
+      }
+      reschedule(delayTs)
+    })
+  }
+  override def messageHandler = {
+    case RequestSend if ((lastSend + delayTs.millis) < new Date().getTime) && buffer.length > 0 => doUpload
+    case RequestSend => reschedule(delayTs)
     case _ => {}
   }
   override def shutdown:Unit = {
-    while (sending && buffer.length > 0){
+    while (buffer.length > 0){
+      trace("waiting for buffer to empty, to shutdown: %s".format(buffer.length))
       Thread.sleep(100) // wait for the buffer to clear before shutting down
     }
     super.shutdown
+  }
+  override def init:Unit = {
+    super.init
+    this ! RequestSend
   }
 }
 
@@ -271,7 +286,9 @@ object MeTLingPot extends Logger {
       (for {
         size <- (n \ "@burstSize").headOption.map(_.text.toInt)
       } yield {
-        val bptmpa = new BurstingPassThroughMeTLingPotAdaptor(a,size)
+        val delay = (n \ "@delayBetweenSends").headOption.map(_.text.toLong).map(d => new TimeSpan(d))
+        val delayOnError = (n \ "@delayAfterError").headOption.map(_.text.toLong).map(d => new TimeSpan(d))
+        val bptmpa = new BurstingPassThroughMeTLingPotAdaptor(a,size,delay,delayOnError)
         info("creating burstingMetlingPotAdaptor: %s".format(bptmpa))
         bptmpa
       }).getOrElse(a)
