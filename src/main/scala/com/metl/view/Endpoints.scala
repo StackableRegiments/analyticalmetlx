@@ -484,8 +484,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
     case Req(List("listSessions"), _, _) if Globals.isSuperUser =>
       () => StatelessHtml.listSessions
 
-    case Req("describeSessions" :: Nil, _, _) if Globals.isSuperUser => {
-      () => {
+    case Req("describeSessions" :: Nil, _, _) if Globals.isSuperUser => () => {
         for {
           swi <- com.metl.comet.SessionMonitor.getSessionInfo
         } yield {
@@ -493,6 +492,7 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
             JObject(List(
               JField("type",JString("session")),
               JField("lastAccess",JInt(s.lastAccess)),
+              JField("lastAccessDate",JString(new java.util.Date(s.lastAccess).toString())),
               JField("requestCount",JInt(s.requestCnt)),
               JField("actors",JArray({
                 List("MeTLActor","RemotePluginConversationChooserActor","MeTLConversationSearchActor","MeTLJsonConversationChooserActor","MeTLEditConversationActor").flatMap(typeName => {
@@ -508,10 +508,16 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
             ) 
             ::: s.userAgent.map(ua => JField("userAgent",JString(ua))).toList
             ::: s.ipAddress.map(ip => JField("ipAddress",JString(ip))).toList
-
-            )
-          }).toList),200)
-        }
+            ::: Globals.casState.getAuthStateForSession(s.session).map(lasd => {
+              JField("authState",JObject(List(
+                JField("username",JString(lasd.username)),
+                JField("authenticated",JBool(lasd.authenticated)),
+                JField("eligibleGroups",JArray(lasd.eligibleGroups.map(Extraction.decompose _).toList)),
+                JField("personalDetails",JArray(lasd.informationGroups.map(Extraction.decompose _).toList))
+              )))
+            }).toList
+          )
+        }).toList),200)
       }
     }
     case r@Req(List("impersonate", newUsername), _, _) if Globals.isImpersonator =>
