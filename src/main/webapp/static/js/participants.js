@@ -14,9 +14,11 @@ var Participants = (function(){
         following:true
     };
     var reRenderParticipants = function(){
-        WorkQueue.enqueue(function(){
-            updateParticipantsListing();
-        });
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                updateParticipantsListing();
+            });
+        }
     };
     var onHistoryReceived = function(history){
         var newParticipants = {};
@@ -150,37 +152,39 @@ var Participants = (function(){
         conjugate:true
     };
     var updateParticipantsListing = function(){
-        WorkQueue.enqueue(function(){
-            participantsDatagrid.jsGrid("loadData");
-            var sortObj = participantsDatagrid.jsGrid("getSorting");
-            if ("field" in sortObj){
-                participantsDatagrid.jsGrid("sort",sortObj);
-            }
-            Analytics.word.reset();
-            var contexts = {};
-            _.each(boardContent.themes,function(theme){
-                _.each(theme.text.split(" "),function(t){
-                    if(t.length > 0){//It will come back with empty strings
-                        t = t.toLowerCase();
-                        if(contextFilters.conjugate){
-                            t = nlp_compromise.text(t).root();
-                        }
-                        var context = theme.origin;
-                        if(contextFilters[context] == true){
-                            Analytics.word.incorporate(t);
-                            if(!(t in contexts)){
-                                contexts[t] = {};
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                participantsDatagrid.jsGrid("loadData");
+                var sortObj = participantsDatagrid.jsGrid("getSorting");
+                if ("field" in sortObj) {
+                    participantsDatagrid.jsGrid("sort", sortObj);
+                }
+                Analytics.word.reset();
+                var contexts = {};
+                _.each(boardContent.themes, function (theme) {
+                    _.each(theme.text.split(" "), function (t) {
+                        if (t.length > 0) {//It will come back with empty strings
+                            t = t.toLowerCase();
+                            if (contextFilters.conjugate) {
+                                t = nlp_compromise.text(t).root();
                             }
-                            if(!(context in contexts[t])){
-                                contexts[t][context] = 0;
+                            var context = theme.origin;
+                            if (contextFilters[context] == true) {
+                                Analytics.word.incorporate(t);
+                                if (!(t in contexts)) {
+                                    contexts[t] = {};
+                                }
+                                if (!(context in contexts[t])) {
+                                    contexts[t][context] = 0;
+                                }
+                                contexts[t][context]++;
                             }
-                            contexts[t][context]++;
                         }
-                    }
+                    });
                 });
+                updateThemes(Analytics.word.cloudData());
             });
-            updateThemes(Analytics.word.cloudData());
-        });
+        }
     };
     var openParticipantsMenuFunction = function(){
         showBackstage("participants");

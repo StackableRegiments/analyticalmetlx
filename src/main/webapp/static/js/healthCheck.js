@@ -452,9 +452,11 @@ var HealthCheckViewer = (function(){
         return cells[selector] = $(selector);
     };
     var refreshFunc = function(checkData,descriptionData){
-        WorkQueue.enqueue(function(){
-            summarizeHealth(descriptionData);
-        });
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                summarizeHealth(descriptionData);
+            });
+        }
         if(viewing){
             var overallLatencyData = descriptionData["latency"];
             if (overallLatencyData !== undefined){

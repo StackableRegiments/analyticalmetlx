@@ -152,9 +152,11 @@ var Conversations = (function(){
                         data:data,
                         when:Date.now()
                     };
-                    WorkQueue.enqueue(function(){
-                        slideImage.attr("src",data);
-                    });
+                    if( WorkQueue != undefined ) {
+                        WorkQueue.enqueue(function () {
+                            slideImage.attr("src", data);
+                        });
+                    }
                 };
                 $.ajax({
                     url:thumbUrl,
@@ -434,13 +436,17 @@ var Conversations = (function(){
         console.log("actOn",jid);
         if ((Conversations.getIsSyncedToTeacher() || shouldModifyConversationFunction(currentConversation)) || (!UserSettings.getIsInteractive())){
             if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
-                WorkQueue.enqueue(function(){
-                    if ("slides" in currentConversation && currentConversation.slides.filter(function(slide){return slide.id.toString() == jid.toString();}).length > 0){
-                        currentTeacherSlide = jid;
-                        doMoveToSlide(jid,true);
-                    }
-                    return false;
-                });
+                if( WorkQueue != undefined ) {
+                    WorkQueue.enqueue(function () {
+                        if ("slides" in currentConversation && currentConversation.slides.filter(function (slide) {
+                                return slide.id.toString() == jid.toString();
+                            }).length > 0) {
+                            currentTeacherSlide = jid;
+                            doMoveToSlide(jid, true);
+                        }
+                        return false;
+                    });
+                }
             }
         }
     };

@@ -4,13 +4,15 @@ var Submissions = (function(){
     var insertButtonTemplate = {};
     var reRenderDatagrid = function(){
         if(submissionsDatagrid && submissionsDatagrid.length > 0){
-            WorkQueue.enqueue(function(){
-                submissionsDatagrid.jsGrid("loadData");
-                var sortObj = submissionsDatagrid.jsGrid("getSorting");
-                if ("field" in sortObj){
-                    submissionsDatagrid.jsGrid("sort",sortObj);
-                }
-            });
+            if( WorkQueue != undefined ) {
+                WorkQueue.enqueue(function () {
+                    submissionsDatagrid.jsGrid("loadData");
+                    var sortObj = submissionsDatagrid.jsGrid("getSorting");
+                    if ("field" in sortObj) {
+                        submissionsDatagrid.jsGrid("sort", sortObj);
+                    }
+                });
+            }
         }
     };
     $(function(){

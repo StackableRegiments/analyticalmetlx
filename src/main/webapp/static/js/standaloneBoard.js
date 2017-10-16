@@ -1903,13 +1903,15 @@ var board = function(options){
     }
 	}
 	var richTextReceived = function(t){
-    if(t.identity in Modes.text.echoesToDisregard) return;
-    if(isUsable(t)){
-        WorkQueue.enqueue(function(){
-            Modes.text.editorFor(t).doc.load(t.words);
-            blit();
-        });
-    }
+        if(t.identity in Modes.text.echoesToDisregard) return;
+        if(isUsable(t)){
+            if( WorkQueue != undefined ) {
+                WorkQueue.enqueue(function () {
+                    Modes.text.editorFor(t).doc.load(t.words);
+                    blit();
+                });
+            }
+        }
 	}
 	var textReceived = function(t){
     try{
@@ -1917,15 +1919,17 @@ var board = function(options){
             boardContent.texts[t.identity] = t;
             prerenderText(t);
             incorporateBoardBounds(t.bounds);
-            WorkQueue.enqueue(function(){
-                if(isInClearSpace(t.bounds)){
-                    drawText(t);
-                    return false;
-                }
-                else{
-                    return true;
-                }
-            });
+            if( WorkQueue != undefined ) {
+                WorkQueue.enqueue(function () {
+                    if (isInClearSpace(t.bounds)) {
+                        drawText(t);
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+                });
+            }
         }
         else{
             if(t.identity in boardContent.texts){
@@ -2386,44 +2390,48 @@ var board = function(options){
         boardContent.images[image.identity]  = image;
         updateTracking(image.identity);
         prerenderImage(image);
-        WorkQueue.enqueue(function(){
-            if(isInClearSpace(image.bounds)){
-                try {
-                    drawImage(image);
-                } catch(e){
-                    console.log("drawImage exception",e);
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                if (isInClearSpace(image.bounds)) {
+                    try {
+                        drawImage(image);
+                    } catch (e) {
+                        console.log("drawImage exception", e);
+                    }
+                    return false;
                 }
-                return false;
-            }
-            else{
-                console.log("Rerendering image in contested space");
-                return true;
-            }
-        });
+                else {
+                    console.log("Rerendering image in contested space");
+                    return true;
+                }
+            });
+        }
     }
     dataImage.src = calculateImageSource(image);
 	}
 	var inkReceived = function(ink){
-    calculateInkBounds(ink);
-    updateStrokesPending(-1,ink.identity);
-    if(prerenderInk(ink)){
-        incorporateBoardBounds(ink.bounds);
-        if(ink.isHighlighter){
-            boardContent.highlighters[ink.identity] = ink;
-        }
-        else{
-            boardContent.inks[ink.identity] = ink;
-        }
-        WorkQueue.enqueue(function(){
-            if(isInClearSpace(ink.bounds)){
-                drawInk(ink);
-                return false;
+        calculateInkBounds(ink);
+        updateStrokesPending(-1,ink.identity);
+        if(prerenderInk(ink)){
+            incorporateBoardBounds(ink.bounds);
+            if(ink.isHighlighter){
+                boardContent.highlighters[ink.identity] = ink;
             }
             else{
-                return true;
+                boardContent.inks[ink.identity] = ink;
             }
-        });
-    }
+            if( WorkQueue != undefined ) {
+                WorkQueue.enqueue(function () {
+                    if (isInClearSpace(ink.bounds)) {
+                        drawInk(ink);
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+                });
+            }
+        }
 	}
 	var takeControlOfViewbox = function(){
     delete Progress.onBoardContentChanged.autoZooming;

@@ -132,43 +132,47 @@ var Blacklist = (function(){
         }
     };
     var renderBlacklistAuthorsInPlace = function(){
-        WorkQueue.enqueue(function(){
-            blacklistAuthorsContainer.empty();
-            var unbanAllButton = $("#unbanAll");
-            if (blacklistAuthors.length > 0){
-                unbanAllButton.show();
-                unbanAllButton.unbind("click");
-                unbanAllButton.on("click",function(){
-                    changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),[]);
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function(){
+                blacklistAuthorsContainer.empty();
+                var unbanAllButton = $("#unbanAll");
+                if (blacklistAuthors.length > 0){
+                    unbanAllButton.show();
+                    unbanAllButton.unbind("click");
+                    unbanAllButton.on("click",function(){
+                        changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),[]);
+                    });
+                } else {
+                    unbanAllButton.unbind("click");
+                    unbanAllButton.hide();
+                }
+                blacklistAuthors.map(function(author){
+                    var rootElem = blacklistAuthorTemplate.clone();
+                    rootElem.find(".blacklistAuthorName").text(author);
+                    rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
+                        blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
+                        changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);
+                    });
+                    blacklistAuthorsContainer.append(rootElem);
                 });
-            } else {
-                unbanAllButton.unbind("click");
-                unbanAllButton.hide();
-            }
-            blacklistAuthors.map(function(author){
-                var rootElem = blacklistAuthorTemplate.clone();
-                rootElem.find(".blacklistAuthorName").text(author);
-                rootElem.find(".blacklistAuthorUnbanButton").on("click",function(){
-                    blacklistAuthors = _.filter(blacklistAuthors,function(a){return a != author;});
-                    changeBlacklistOfConversation(Conversations.getCurrentConversationJid(),blacklistAuthors);
-                });
-                blacklistAuthorsContainer.append(rootElem);
             });
-        });
+        }
     };
     var refreshToolState = function(conversation){
-        WorkQueue.enqueue(function(){
-            if (Conversations.shouldModifyConversation(conversation)){
-                $("#ban").show();
-                $("#administerContent").show();
-                $("#menuBlacklist").show();
-            } else {
-                $("#ban").hide();
-                $("#administerContent").hide();
-                $("#menuBlacklist").hide();
-                $("#blacklistPopup").hide();
-            }
-        });
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                if (Conversations.shouldModifyConversation(conversation)) {
+                    $("#ban").show();
+                    $("#administerContent").show();
+                    $("#menuBlacklist").show();
+                } else {
+                    $("#ban").hide();
+                    $("#administerContent").hide();
+                    $("#menuBlacklist").hide();
+                    $("#blacklistPopup").hide();
+                }
+            });
+        }
     };
     var clearState = function(conversation){
         refreshToolState(conversation);
@@ -176,13 +180,15 @@ var Blacklist = (function(){
         currentBlacklist = {};
     };
     var renderBlacklistsInPlace = function(){
-        WorkQueue.enqueue(function(){
-            blacklistDatagrid.jsGrid("loadData");
-            var sortObj = blacklistDatagrid.jsGrid("getSorting");
-            if ("field" in sortObj){
-                blacklistDatagrid.jsGrid("sort",sortObj);
-            }
-        });
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                blacklistDatagrid.jsGrid("loadData");
+                var sortObj = blacklistDatagrid.jsGrid("getSorting");
+                if ("field" in sortObj) {
+                    blacklistDatagrid.jsGrid("sort", sortObj);
+                }
+            });
+        }
     };
     var historyReceivedFunction = function(history){
         try {

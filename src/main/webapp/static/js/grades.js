@@ -971,43 +971,45 @@ var Grades = (function(){
                 field:"timestamp",
                 order:"desc"
             });
-            reRenderFunc = function(){
-                WorkQueue.enqueue(function(){
-                    gradesDatagrid.jsGrid("loadData");
-                    var sortObj = gradesDatagrid.jsGrid("getSorting");
-                    if ("field" in sortObj){
-                        gradesDatagrid.jsGrid("sort",sortObj);
-                    }
-                    gradeCreateButton.unbind("click")
-                    if (Conversations.shouldModifyConversation()){
-                        gradeCreateButton.unbind("click").on("click",function(){
-                            console.log("clicked createButton");
-                            if (Conversations.shouldModifyConversation()){
+            reRenderFunc = function() {
+                if (WorkQueue != undefined) {
+                    WorkQueue.enqueue(function () {
+                        gradesDatagrid.jsGrid("loadData");
+                        var sortObj = gradesDatagrid.jsGrid("getSorting");
+                        if ("field" in sortObj) {
+                            gradesDatagrid.jsGrid("sort", sortObj);
+                        }
+                        gradeCreateButton.unbind("click")
+                        if (Conversations.shouldModifyConversation()) {
+                            gradeCreateButton.unbind("click").on("click", function () {
+                                console.log("clicked createButton");
+                                if (Conversations.shouldModifyConversation()) {
 
-                                var loc = Conversations.getCurrentSlideJid();
-                                var user = UserSettings.getUsername();
-                                var newGrade = {
-                                    type:"grade",
-                                    name:"",
-                                    description:"",
-                                    audiences:[],
-                                    author:user,
-                                    location:loc,
-                                    id:sprintf("%s_%s_%s",loc,user,new Date().getTime().toString()),
-                                    gradeType:"numeric",
-                                    numericMinimum:0,
-                                    numericMaximum:100,
-                                    visible:false,
-                                    timestamp:0
-                                };
-                                sendStanza(newGrade);
-                            }
-                        }).show();
-                    } else {
-                        gradeCreateButton.hide();
-                    }
-										gradebookReRenderFunc();
-                });
+                                    var loc = Conversations.getCurrentSlideJid();
+                                    var user = UserSettings.getUsername();
+                                    var newGrade = {
+                                        type: "grade",
+                                        name: "",
+                                        description: "",
+                                        audiences: [],
+                                        author: user,
+                                        location: loc,
+                                        id: sprintf("%s_%s_%s", loc, user, new Date().getTime().toString()),
+                                        gradeType: "numeric",
+                                        numericMinimum: 0,
+                                        numericMaximum: 100,
+                                        visible: false,
+                                        timestamp: 0
+                                    };
+                                    sendStanza(newGrade);
+                                }
+                            }).show();
+                        } else {
+                            gradeCreateButton.hide();
+                        }
+                        gradebookReRenderFunc();
+                    });
+                }
             }
             reRenderFunc();
         }
