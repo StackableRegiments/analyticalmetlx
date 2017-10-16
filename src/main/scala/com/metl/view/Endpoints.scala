@@ -190,6 +190,15 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       val room = MeTLXConfiguration.getRoom("global",ServerConfiguration.default.name,GlobalRoom(ServerConfiguration.default.name))
       Full(PlainTextResponse(room.roomMetaData.getJid, List.empty[Tuple2[String,String]], 200))
     })
+    case Req("testCometCreate" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testCometCreate", {
+      for {
+        s <- S.session
+        //c <- s.findOrCreateComet[TestActor](Full(nextFuncName),scala.xml.NodeSeq.empty,Map.empty)
+      } yield {
+        s.setupComet("TestComet",Full(nextFuncName),true)
+        PlainTextResponse("created cometActor")
+      }
+    })
     case Req("testCountConversations" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testCountConversations", {
       for {
         query <- S.param("query")

@@ -56,7 +56,13 @@ object SecurityListener extends Logger {
       })
       ipAddresses += ((sessionId, newRecord))
       S.session.foreach(_.addSessionCleanup((s) => {
-        SecurityListener.cleanupSession(s)
+        try {
+          SecurityListener.cleanupSession(s)
+        } catch {
+          case e:Exception => {
+            error("exception thrown while cleaning up session: %s".format(s),e)
+          }
+        }
       }))
       info("%s :: %s logged in, ipAddress %s, userAgent: %s".format(newRecord.sid,newRecord.authenticatedUser,newRecord.ipAddress,newRecord.userAgent))
     })
