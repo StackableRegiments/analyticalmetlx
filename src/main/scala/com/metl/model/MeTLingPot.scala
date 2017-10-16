@@ -69,9 +69,9 @@ class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 2
     Right(true)
   }
   protected val delayTs = delay.getOrElse(new TimeSpan(1000L))
-  protected val errorDelayTs = delay.getOrElse(new TimeSpan(delayTs.millis * 10))
+  protected val errorDelayTs = delayOnError.getOrElse(new TimeSpan(delayTs.millis * 10))
   protected var lastSend:Long = new Date().getTime()
-  protected var sendRequested = false
+  protected var shuttingDown = false
   protected def reschedule(after:TimeSpan):Unit = Schedule.schedule(this,RequestSend,after)
   protected def addItems(items:List[MeTLingPotItem],front:Boolean = false) = {
     try {
@@ -104,6 +104,9 @@ class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 2
     })
   }
   override def messageHandler = {
+    case RequestSend if shuttingDown => {
+      //eating the requestSend, and shutting down
+    }
     case RequestSend if ((lastSend + delayTs.millis) < new Date().getTime) && buffer.length > 0 => doUpload
     case RequestSend => reschedule(delayTs)
     case _ => {}
@@ -113,10 +116,12 @@ class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 2
       trace("waiting for buffer to empty, to shutdown: %s".format(buffer.length))
       Thread.sleep(100) // wait for the buffer to clear before shutting down
     }
+    shuttingDown = true
     super.shutdown
   }
   override def init:Unit = {
     super.init
+    shuttingDown = false
     this ! RequestSend
   }
 }
