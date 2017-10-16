@@ -84,20 +84,22 @@ var Conversations = (function(){
             if(!conversationActivity || !conversationActivity.length){
                 conversationActivity = $("#conversationActivity");
             }
-            WorkQueue.enqueue(function(){
-                _.each(currentConversation.slides,updateSlide);
-                if(conversationActivity.find("svg").length == 0){
-                    groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
-                                                                 [groupActivity.anyPublic.line,
-                                                                  groupActivity.anyPrivate.line],50,26,1000,1000,SENSOR_INTERVAL,DISPLAY_INTERVAL);
-                }
-                if (groupTraces && "anyPublic" in groupTraces && "update" in groupTraces.anyPublic){
-                    groupTraces.anyPublic.update([
-                        groupActivity.anyPublic.line,
-                        groupActivity.anyPrivate.line
-                    ]);
-                }
-            });
+            if( WorkQueue != undefined ) {
+                WorkQueue.enqueue(function () {
+                    _.each(currentConversation.slides, updateSlide);
+                    if (conversationActivity.find("svg").length == 0) {
+                        groupTraces.anyPublic.update = SparkLine.svg(conversationActivity,
+                            [groupActivity.anyPublic.line,
+                                groupActivity.anyPrivate.line], 50, 26, 1000, 1000, SENSOR_INTERVAL, DISPLAY_INTERVAL);
+                    }
+                    if (groupTraces && "anyPublic" in groupTraces && "update" in groupTraces.anyPublic) {
+                        groupTraces.anyPublic.update([
+                            groupActivity.anyPublic.line,
+                            groupActivity.anyPrivate.line
+                        ]);
+                    }
+                });
+            }
         };
         var groupTraceIsAccurate = function(group){
             return group.id in groupTraces && groupTraces[group.id].group.members.length == group.members.length;
