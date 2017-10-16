@@ -1,3 +1,6 @@
+1.20.15
+METL-742: Story: New endpoint for monitoring that creates a cometactor.
+
 1.20.14
 METL-734: Bugfix: Stylesheet unable to reference spinner-apng.png.
 METL-735: Bugfix: Ink strokes should not shift on creation.

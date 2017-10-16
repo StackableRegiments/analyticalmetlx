@@ -1,3 +1,10 @@
+1.20.15
+
+New config:
+	<authenticationConfiguration>
+		<exclusions>
+			<requestUriStartsWith value="/testCreateComet"/>
+
 1.12.4
 
 New config:
