@@ -23,7 +23,7 @@ class AWSStaticCredentialsProvider(creds:AWSCredentials) extends AWSCredentialsP
 case class KVP(`type`:String,name:String)
 case class MeTLingPotItem(source:String,timestamp:Long,actor:KVP,action:KVP,context:Option[KVP],target:Option[KVP],value:Option[String])
 
-class APIGatewayClient(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) {
+class APIGatewayClient(val endpoint:String,val region:String,val iamAccessKey:String,iamSecretAccessKey:String,val apiGatewayApiKey:Option[String]) {
   import com.amazonaws.opensdk.config.{ConnectionConfiguration,TimeoutConfiguration}
   def client:MetlingPotInputItem = {
     def attachApiKey(in:MetlingPotInputItemClientBuilder):MetlingPotInputItemClientBuilder = {
@@ -53,25 +53,29 @@ trait MeTLingPotAdaptor extends Logger {
   def shutdown:Unit = {}
 }
 
-class PassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor) extends MeTLingPotAdaptor {
+class PassThroughMeTLingPotAdaptor(val a:MeTLingPotAdaptor) extends MeTLingPotAdaptor {
   override def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = a.postItems(items)
   override def search(after:Long,before:Long,queries:Map[String,List[String]]):Either[Exception,List[MeTLingPotItem]] = a.search(after,before,queries)
   override def init:Unit = a.init
   override def shutdown:Unit = a.shutdown
 }
 
-class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 20,delay:Option[TimeSpan] = None,delayOnError:Option[TimeSpan] = None) extends PassThroughMeTLingPotAdaptor(a) with LiftActor {
+class BurstingPassThroughMeTLingPotAdaptor(override val a:MeTLingPotAdaptor,val burstSize:Int = 20,delay:Option[TimeSpan] = None,val delayOnError:Option[TimeSpan] = None) extends PassThroughMeTLingPotAdaptor(a) with LiftActor {
   case object RequestSend
   protected val buffer = new scala.collection.mutable.ListBuffer[MeTLingPotItem]()
+  def getBufferLength:Int = buffer.length
+  def getIsShuttingDown = shuttingDown
+  def getLastSend:Long = lastSend
+
   override def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
     trace("adding items to the queue: %s".format(items.length))
     addItems(items)
     Right(true)
   }
   protected val delayTs = delay.getOrElse(new TimeSpan(1000L))
-  protected val errorDelayTs = delay.getOrElse(new TimeSpan(delayTs.millis * 10))
+  protected val errorDelayTs = delayOnError.getOrElse(new TimeSpan(delayTs.millis * 10))
   protected var lastSend:Long = new Date().getTime()
-  protected var sendRequested = false
+  protected var shuttingDown = false
   protected def reschedule(after:TimeSpan):Unit = Schedule.schedule(this,RequestSend,after)
   protected def addItems(items:List[MeTLingPotItem],front:Boolean = false) = {
     try {
@@ -104,6 +108,9 @@ class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 2
     })
   }
   override def messageHandler = {
+    case RequestSend if shuttingDown => {
+      //eating the requestSend, and shutting down
+    }
     case RequestSend if ((lastSend + delayTs.millis) < new Date().getTime) && buffer.length > 0 => doUpload
     case RequestSend => reschedule(delayTs)
     case _ => {}
@@ -113,15 +120,17 @@ class BurstingPassThroughMeTLingPotAdaptor(a:MeTLingPotAdaptor,burstSize:Int = 2
       trace("waiting for buffer to empty, to shutdown: %s".format(buffer.length))
       Thread.sleep(100) // wait for the buffer to clear before shutting down
     }
+    shuttingDown = true
     super.shutdown
   }
   override def init:Unit = {
     super.init
+    shuttingDown = false
     this ! RequestSend
   }
 }
 
-class ApiGatewayMeTLingPotInterface(endpoint:String,region:String,iamAccessKey:String,iamSecretAccessKey:String,apiGatewayApiKey:Option[String]) extends MeTLingPotAdaptor {
+class ApiGatewayMeTLingPotInterface(val endpoint:String,val region:String,val iamAccessKey:String,iamSecretAccessKey:String,val apiGatewayApiKey:Option[String]) extends MeTLingPotAdaptor {
   val clientFactory = new APIGatewayClient(endpoint,region,iamAccessKey,iamSecretAccessKey,apiGatewayApiKey)
   def client:MetlingPotInputItem = clientFactory.client
 
@@ -259,6 +268,7 @@ class ApiGatewayMeTLingPotInterface(endpoint:String,region:String,iamAccessKey:S
 
 class MockMeTLingPotAdaptor extends MeTLingPotAdaptor {
   protected val store:scala.collection.mutable.ListBuffer[MeTLingPotItem] = new scala.collection.mutable.ListBuffer[MeTLingPotItem]
+  def getStoreSize:Int = store.length
   def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
     store ++= items
     Right(true)

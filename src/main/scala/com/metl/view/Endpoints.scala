@@ -520,6 +520,8 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer {
         }).toList),200)
       }
     }
+    case Req("listMeTLingPots" :: Nil,_,_) if Globals.isSuperUser =>
+      () => StatelessHtml.listMeTLingPots
     case r@Req(List("impersonate", newUsername), _, _) if Globals.isImpersonator =>
       () => StatelessHtml.impersonate(newUsername, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList)
     case Req(List("deImpersonate"), _, _) if Globals.isImpersonator =>
