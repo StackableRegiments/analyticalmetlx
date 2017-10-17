@@ -127,7 +127,7 @@ object StatelessHtml extends Stemmer with Logger {
             JField("endpoint",JString(a.endpoint)),
             JField("region",JString(a.region)),
             JField("iamAccessKey",JString(a.iamAccessKey))
-          ) ::: a.apiGatewayApiKey.map(apiK => JField("apiGatwayApiKey",JString(apiK))).toList)
+          ) ::: a.apiGatewayApiKey.map(apiK => JField("apiGatewayApiKey",JString(apiK))).toList)
         }
         case m:MockMeTLingPotAdaptor => {
           JObject(List(
