@@ -256,55 +256,96 @@ var Conversations = (function(){
         }
     };
     var refreshSlideDisplay = function(){
-        var slideContainer = $("#slideContainer");
-        var scrollContainer = $("#thumbScrollContainer");
-        var ss = _.filter(currentConversation.slides,"exposed");
-        //Add the new slides
-        _.each(_.filter(ss,function(slide){
-            return $(sprintf("#slideContainer_%s",slide.id)).length == 0;
-        }),function(slide){
-            slideContainer.append(constructSlide(slide)[0]);
-        });
-        //Remove the deleted slides
-        _.each(_.filter(ss,function(slide){
-            var keep = _.map(ss,constructSlideId);
-            $(".slideButtonContainer").filter(function(i,el){
-                var id = $(el).attr("id");
-                return ! _.includes(keep,id);
-            }).remove();
-        }));
-        //Apply the new index positions
-        var positions = _.fromPairs(_.map(currentConversation.slides,function(slide){
-            return [constructSlideId(slide),slide.index];
-        }));
-        $(".slideButtonContainer").sort(function(ja,jb){
-            var ia = $(ja).attr("id");
-            var ib = $(jb).attr("id");
-            return positions[ia] - positions[ib];
-        }).detach().appendTo(slideContainer);
-        _.each(ss,function(slide){
-            doIfVisible(slide,scrollContainer,function(){
-                updateThumbnailFor(slide.id);
+        if ("slides" in currentConversation) {
+            var slideContainer = $("#slideContainer");
+            var scrollContainer = $("#thumbScrollContainer");
+            var ss = _.filter(currentConversation.slides, "exposed");
+            //Add the new slides
+            _.each(_.filter(ss, function (slide) {
+                return $(sprintf("#slideContainer_%s", slide.id)).length == 0;
+            }), function (slide) {
+                slideContainer.append(constructSlide(slide)[0]);
             });
-        });
-        //Build the UI
-        var slideControls = $("#slideControls");
-        slideControls.empty();
-        constructPrevSlideButton(slideControls);
-        constructNextSlideButton(slideControls);
-        constructAddSlideButton(slideControls);
-        constructAddGroupSlideButton(slideControls);
-        constructHelpButton(slideControls);
-        indicateActiveSlide(currentSlide);
-        $(".thumbnail:not(.groupSlide)").map(function(){
-            var t = $(this);
-            if(t.width() <= 0){
-                t.width(DeviceConfiguration.preferredSizes.thumbColumn.width);
-                t.css({width:sprintf("%spx",t.width())});
+            //Remove the deleted slides
+            _.each(_.filter(ss, function (slide) {
+                var keep = _.map(ss, constructSlideId);
+                $(".slideButtonContainer").filter(function (i, el) {
+                    var id = $(el).attr("id");
+                    return !_.includes(keep, id);
+                }).remove();
+            }));
+            //Apply the new index positions
+            var positions = _.fromPairs(_.map(currentConversation.slides, function (slide) {
+                return [constructSlideId(slide), slide.index];
+            }));
+            $(".slideButtonContainer").sort(function (ja, jb) {
+                var ia = $(ja).attr("id");
+                var ib = $(jb).attr("id");
+                return positions[ia] - positions[ib];
+            }).detach().appendTo(slideContainer);
+            _.each(ss, function (slide) {
+                doIfVisible(slide, scrollContainer, function () {
+                    updateThumbnailFor(slide.id);
+                });
+            });
+            //Build the UI
+            var cs = _.find(ss, function (s) {
+                return s.id == currentSlide
+            });
+            var minIndex = _.minBy(ss, function (s) {
+                return s.index;
+            }).index;
+            var maxIndex = _.maxBy(ss, function (s) {
+                return s.index;
+            }).index;
+            var slideControls = $("#slideControls");
+            slideControls.empty();
+            // console.log("slides:", ss, cs, minIndex, maxIndex);
+            constructPrevSlideButton(slideControls);
+            var addGroupSlideButton = slideContainer.find("#addGroupSlideButton");
+            var addSlideButton = slideContainer.find("#addSlideButton");
+            if (shouldModifyConversationFunction(currentConversation)) {
+                addGroupSlideButton.on("click", function () {
+                    GroupBuilder.showAddGroupSlideDialog()
+                });
+                addSlideButton.on("click", addSlideFunction);
+            } else {
+                addGroupSlideButton.unbind("click");
+                addSlideButton.unbind("click");
             }
-            t.height(t.width() * 0.75);
-        });
-        Progress.call("onLayoutUpdated");
+
+            slideContainer.unbind("click").on("click", "#helpButton", helpFunction);
+
+            var prevButton = slideControls.find("#prevSlideButton");
+            if (cs.index === minIndex) {
+                prevButton.addClass('disabledButton');
+                prevButton.unbind("click").attr("disabled", true);
+            } else {
+                prevButton.on("click", goToPrevSlideFunction);
+            }
+            slideControls.append($('<span/>').addClass("pageCounter").text(sprintf("%s/%s",cs.index + 1,maxIndex + 1)));
+            constructNextSlideButton(slideControls);
+            var nextButton = slideControls.find("#nextSlideButton");
+            if (cs.index === maxIndex) {
+                nextButton.addClass('disabledButton');
+                nextButton.unbind("click").attr("disabled", true);
+            } else {
+                nextButton.on("click", goToNextSlideFunction);
+            }
+            constructAddSlideButton(slideControls);
+            constructAddGroupSlideButton(slideControls);
+            constructHelpButton(slideControls);
+            indicateActiveSlide(currentSlide);
+            $(".thumbnail:not(.groupSlide)").map(function () {
+                var t = $(this);
+                if (t.width() <= 0) {
+                    t.width(DeviceConfiguration.preferredSizes.thumbColumn.width);
+                    t.css({width: sprintf("%spx", t.width())});
+                }
+                t.height(t.width() * 0.75);
+            });
+            Progress.call("onLayoutUpdated");
+        }
     };
 
     var setStudentsCanPublishFunction = function(publishingAllowed){
@@ -678,9 +719,7 @@ var Conversations = (function(){
                 class:sprintf("toolbar fa %s btn-icon nmt",icon),
                 name: name,
                 type: "button"
-            }).append($("<div class='icon-txt' />",{
-                text:label
-            })));
+            }).append($("<div class='icon-txt'/>").text(label)));
         }
     };
     var overrideAllocationFunction = function(slide){
@@ -752,7 +791,7 @@ var Conversations = (function(){
         constructSlideButton("addSlideButton","Add Page","fa-plus",shouldModifyConversationFunction,container);
     };
     var constructAddGroupSlideButton = function(container){
-        constructSlideButton("addGroupSlideButton","Add Group Slide","fa-group",shouldModifyConversationFunction,container);
+        constructSlideButton("addGroupSlideButton","Add Group Page","fa-group",shouldModifyConversationFunction,container);
     };
     var constructHelpButton = function(container){
         constructSlideButton("helpButton","Help","fa-question-circle",always,container);
@@ -866,13 +905,6 @@ var Conversations = (function(){
     Progress.currentSlideJidReceived["Conversations"] = actOnCurrentSlideJidReceived;
     Progress.currentConversationJidReceived["Conversations"] = actOnCurrentConversationJidReceived;
     $(function(){
-        $("#slideControls").on("click","#prevSlideButton",goToPrevSlideFunction)
-            .on("click","#nextSlideButton",goToNextSlideFunction)
-            .on("click","#addGroupSlideButton",function(){
-                GroupBuilder.showAddGroupSlideDialog()
-            })
-            .on("click","#addSlideButton",addSlideFunction)
-            .on("click","#helpButton",helpFunction);
         $("#thumbScrollContainer").on("scroll",_.throttle(refreshSlideDisplay,500));
         $("#conversations").click(function(){
             showBackstage("conversations");
@@ -888,6 +920,7 @@ var Conversations = (function(){
         $("#closeSharingButton").on("click", bounceAnd(function() {
             $("#shareContainer").toggle();
         }));
+        refreshSlideDisplay();
     });
     return {
         inConversation:function(){

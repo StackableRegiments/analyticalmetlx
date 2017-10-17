@@ -1,3 +1,6 @@
+@floating-background:lightgray;
+@floating-foreground:black;
+
 #loadingSpinner, .spinner{
     height:100%;
     width:100%;
@@ -184,7 +187,8 @@ html{
         margin-top:-2px;
         padding-left:1em;
         flex-grow:1;
-        color:darkgray;
+        //background-color:darkgray;
+        //color:black;
     }
 }
 .groupBuilderGroup{
@@ -214,6 +218,10 @@ body{
 #backstageContainer{
     width:100%;
 }
+#currentConversationTitleContainer{
+    background-color:@floating-background;
+    color:@floating-foreground;
+}
 #slideControls{
     flex-shrink:0;
     flex-grow:0;
@@ -221,6 +229,10 @@ body{
     float:right;
     margin-top:-3px;
     margin-right:2px;
+}
+.pageCounter {
+    background-color:@floating-background;
+    color:@floating-foreground;
 }
 #slideContainer {
     max-width:10000px;
@@ -445,7 +457,8 @@ td.conversationSharing{
     }
 }
 .slideThumbnailNumber{
-    background-color: @highlight;
+    background-color: @floating-background;
+    color: @floating-foreground;
 }
 #applicationMenuButton{
     background-color:white;
