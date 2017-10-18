@@ -144,6 +144,8 @@ class Boot extends Logger {
      LiftRules.setSiteMapFunc(() => sitemap())
 
     LiftRules.loggedInTest = Full(() => true)
+    val moduleController = new com.metl.modules.ModulesController()
+    moduleController.init
     info("Started version: %s\r\n".format(com.metl.BuildInfo.version)) // initialize the loading of the version number in the app, for the about page, and also dump it into the logs so that we can see it.
 //    info("release-notes:\r\n%s".format(com.metl.snippet.VersionFacts.releaseNotes.mkString("\r\n")))
     trace("Boot ends")
