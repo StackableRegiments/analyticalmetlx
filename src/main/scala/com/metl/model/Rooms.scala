@@ -402,7 +402,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             ))
           })
         }
-        j.actor ! ConversationParticipation(location,getAttendance,getPossibleAttendance)
+        j.actor ! ConversationParticipation(location,getAttendance,getPossibleAttendance) //why are we sending J two messages of the same content?  Won't he always get the other message if he's new?  Why if he's new should he get two of them?
       }
       case _ => {}
     }

@@ -11,6 +11,7 @@ var Participants = (function(){
         images:0,
         quizResponses:0,
         submissions:0,
+        attendances:[],
         following:true
     };
     var reRenderParticipants = function(){
@@ -103,6 +104,10 @@ var Participants = (function(){
                 break;
             case "quizResponse":
                 itemToEdit.quizResponses = itemToEdit.quizResponses + 1;
+                act = true;
+                break;
+            case "attendance":
+                itemToEdit.attendances.push(stanza);
                 act = true;
                 break;
             }
@@ -214,15 +219,26 @@ var Participants = (function(){
     $(function(){
         Progress.attendanceReceived["participationHealth"] = function(attendances){
             var loc = attendances.location;
-            var currentMembers = attendances.currentMembers;
-            var possibleMembers = attendances.possibleMembers;
-            currentParticipants = currentMembers;
-            possibleParticipants = _.uniq(_.concat(possibleMembers,possibleParticipants));
-            $("#attendanceStatus").prop({
-                value:currentMembers.length,
-                max:possibleMembers.length,
-                min:0
-            });
+            if ("Conversations" in window){
+              var conv = Conversations.getCurrentConversation();
+              if (conv !== undefined && "slides" in conv && conv.slides){
+                var relevantIds = _.map(conv.slides,"id");
+                relevantIds.push(conv.jid);
+                if (_.some(relevantIds,function(i){
+                  return loc.toString() == i.toString();
+                })){
+                  var currentMembers = attendances.currentMembers;
+                  var possibleMembers = attendances.possibleMembers;
+                  currentParticipants = currentMembers;
+                  possibleParticipants = _.uniq(_.concat(possibleMembers,possibleParticipants));
+                  $("#attendanceStatus").prop({
+                      value:currentMembers.length,
+                      max:possibleMembers.length,
+                      min:0
+                  });
+                }
+              }
+            }
         };
         updateButtons();
         participantsDatagrid = $("#participantsDatagrid");
