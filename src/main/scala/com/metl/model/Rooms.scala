@@ -365,21 +365,23 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     sendStanzaToServer(MeTLTheme(config,theme.author,new java.util.Date().getTime,location,theme,Nil))
   }
   protected def sendStanzaToServer(s:MeTLStanza,updateTimestamp:Boolean = true):Unit = Stopwatch.time("MeTLRoom.sendStanzaToServer",{
-    trace("%s l->s %s".format(location,s))
+    warn("%s l->s %s".format(location,s))
     showInterest
     if (shouldBacklog) {
-      trace("MeTLRoom(%s):sendToServer.backlogging".format(location))
+      warn("MeTLRoom(%s):sendToServer.backlogging".format(location))
       backlog.enqueue((s,updateTimestamp))
     } else {
-      trace("sendingStanzaToServer: %s".format(s))
+      warn("sendingStanzaToServer: %s".format(s))
       messageBus.sendStanzaToRoom(s,updateTimestamp)
     }
   })
   protected def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
   protected def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),{
     val oldMembers = getChildren.map(_._1)
-    joinedUsers = ((j.username,j.cometId,j.actor) :: joinedUsers).distinct
+    val username = j.username
+    joinedUsers = ((username,j.cometId,j.actor) :: joinedUsers).distinct
     j.actor ! RoomJoinAcknowledged(configName,location)
+    trace("%s joining room %s".format(username,roomMetaData))
     roomMetaData match {
       case cr:ConversationRoom => {
         conversationCache.foreach(conv => {
@@ -392,17 +394,37 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             }
           }
         })
-        if (!oldMembers.contains(j.username)){
+        if (!oldMembers.contains(username)){
           updatePossibleAttendance
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
           joinedUsers.foreach(_._3 ! u)
           Globals.metlingPots.foreach(mp => {
             mp.postItems(List(
-              MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",j.username),KVP("informalAcademic","joined"),Some(KVP("room",location)),None,None)
+              MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",username),KVP("informalAcademic","joined"),Some(KVP("room",location)),None,None)
             ))
           })
+
+          try {
+            trace("trying to send truePresence for conversation room: %s".format(location))
+            val room = MeTLXConfiguration.getRoom("global", configName, GlobalRoom(configName))
+            room ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, true, Nil))
+          } catch {
+            case e:Exception => {}
+          }
         }
         j.actor ! ConversationParticipation(location,getAttendance,getPossibleAttendance) //why are we sending J two messages of the same content?  Won't he always get the other message if he's new?  Why if he's new should he get two of them?
+      }
+      case sr:SlideRoom => {
+        if (!oldMembers.contains(username)) {
+          try {
+            trace("trying to send truePresence for slide room: %s".format(location))
+            val conversationJid = sr.cd.jid.toString
+            val conversationRoom = MeTLXConfiguration.getRoom(conversationJid, configName, ConversationRoom(configName, conversationJid))
+            conversationRoom ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, true, Nil))
+          } catch {
+            case e:Exception => {}
+          }
+        }
       }
       case _ => {}
     }
@@ -410,9 +432,11 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   })
   protected def removeConnection(l:LeaveRoom):Unit = Stopwatch.time("MeTLRoom.removeConnection(%s)".format(l),{
     val oldMembers = getChildren.map(_._1)
-    joinedUsers = joinedUsers.filterNot(i => i._1 == l.username && i._2 == l.cometId)
+    val username = l.username
+    joinedUsers = joinedUsers.filterNot(i => i._1 == username && i._2 == l.cometId)
     val newMembers = getChildren.map(_._1)
     l.actor ! RoomLeaveAcknowledged(configName,location)
+    trace("%s leaving room %s".format(username,roomMetaData))
     roomMetaData match {
       case cr:ConversationRoom => {
         conversationCache.foreach(conv => {
@@ -425,14 +449,34 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
             }
           }
         })
-        if (oldMembers.contains(l.username) && !newMembers.contains(l.username)){
+        if (oldMembers.contains(username) && !newMembers.contains(username)) {
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
           joinedUsers.foreach(_._3 ! u)
           Globals.metlingPots.foreach(mp => {
             mp.postItems(List(
-              MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",l.username),KVP("informalAcademic","left"),Some(KVP("room",location)),None,None)
+              MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",username),KVP("informalAcademic","left"),Some(KVP("room",location)),None,None)
             ))
           })
+
+          try {
+            trace("trying to send falsePresence for conversation room: %s".format(location))
+            val room = MeTLXConfiguration.getRoom("global", configName, GlobalRoom(configName))
+            room ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, false, Nil))
+          } catch {
+            case e:Exception => {}
+          }
+        }
+      }
+      case sr:SlideRoom => {
+        if (oldMembers.contains(username)) {
+          try {
+            trace("trying to send falsePresence for slide room: %s".format(location))
+            val conversationJid = sr.cd.jid.toString
+            val conversationRoom = MeTLXConfiguration.getRoom(conversationJid, configName, ConversationRoom(configName, conversationJid))
+            conversationRoom ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, false, Nil))
+          } catch {
+            case e:Exception => {}
+          }
         }
       }
       case _ => {}

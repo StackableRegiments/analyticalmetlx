@@ -1531,39 +1531,9 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
       case RoomJoinAcknowledged(s,r) => {
         trace("joining room: %s".format(r))
         rooms = rooms.updated((s,r),() => MeTLXConfiguration.getRoom(r,s))
-        try {
-          val slideNum = r.toInt
-          val conv = serverConfig.getConversationForSlide(r)
-          trace("trying to send truePresence to room: %s %s".format(conv,slideNum))
-          if (conv != r){
-            val room = MeTLXConfiguration.getRoom(conv.toString,server,ConversationRoom(server,conv.toString))
-            room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,true,Nil))
-          } else {
-            val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server))
-            room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conv.toString,true,Nil))
-          }
-        } catch {
-          case e:Exception => {
-          }
-        }
       }
       case RoomLeaveAcknowledged(s,r) => {
         trace("leaving room: %s".format(r))
-        try {
-          val slideNum = r.toInt
-          val conv = serverConfig.getConversationForSlide(r)
-          trace("trying to send falsePresence to room: %s %s".format(conv,slideNum))
-          if (conv != r){
-            val room = MeTLXConfiguration.getRoom(conv.toString,s,ConversationRoom(server,conv.toString))
-            room !  LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,slideNum.toString,false,Nil))
-          } else {
-            val room = MeTLXConfiguration.getRoom("global",s,GlobalRoom(server))
-            room ! LocalToServerMeTLStanza(Attendance(serverConfig,username,-1L,conv.toString,false,Nil))
-          }
-        } catch {
-          case e:Exception => {
-          }
-        }
         rooms = rooms.filterNot(rm => rm._1 == (s,r))
       }
       case _ => {}
