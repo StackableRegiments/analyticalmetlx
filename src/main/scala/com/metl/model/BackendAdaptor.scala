@@ -126,13 +126,13 @@ object MeTLXConfiguration extends PropertyReader with Logger {
   var configurationProvider:Option[ConfigurationProvider] = None
   val updateGlobalFunc = (c:Conversation) => {
     debug("serverSide updateGlobalFunc: %s".format(c))
-    getRoom("global",c.server.name,GlobalRoom(c.server.name)) ! LocalToServerMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
+    getRoom("global",c.server.name,GlobalRoom(c.server)) ! LocalToServerMeTLStanza(MeTLCommand(c.server,c.author,new java.util.Date().getTime,"/UPDATE_CONVERSATION_DETAILS",List(c.jid.toString)))
   }
-  def getRoomProvider(name:String,filePath:String) = {
+  def getRoomProvider(config:ServerConfiguration,filePath:String) = {
     val idleTimeout:Option[Long] = (XML.load(filePath) \\ "caches" \\ "roomLifetime" \\ "@miliseconds").headOption.map(_.text.toLong)// Some(30L * 60L * 1000L)
     val safetiedIdleTimeout = Some(idleTimeout.getOrElse(30 * 60 * 1000L))
     trace("creating history caching room provider with timeout: %s".format(safetiedIdleTimeout))
-    new HistoryCachingRoomProvider(name,safetiedIdleTimeout)
+    new HistoryCachingRoomProvider(config,safetiedIdleTimeout)
   }
   protected def ifConfigured(in:NodeSeq,elementName:String,action:NodeSeq=>Unit, permitMultipleValues:Boolean = false):Unit = {
     (in \\ elementName).theSeq match {
@@ -363,7 +363,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     )
     val servers = ServerConfiguration.getServerConfigurations
     servers.foreach(_.isReady)
-    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c.name,filePath)))):_*)
+    configs = Map(servers.map(c => (c.name,(c,getRoomProvider(c,filePath)))):_*)
   }
   var xmppServer:Option[EmbeddedXmppServer] = None
   def initializeSystem = {
@@ -388,7 +388,7 @@ object MeTLXConfiguration extends PropertyReader with Logger {
     configs.values.foreach(c => LiftRules.unloadHooks.append(c._1.shutdown _))
 
     configs.values.foreach(c => {
-      getRoom("global",c._1.name,GlobalRoom(c._1.name),true)
+      getRoom("global",c._1.name,GlobalRoom(c._1),true)
       debug("%s is now ready for use (%s)".format(c._1.name,c._1.isReady))
     })
     //setupStackAdaptorFromFile(Globals.configurationFileLocation)

@@ -18,9 +18,9 @@ import com.metl.renderer.RenderDescription
 import collection.JavaConverters._
 import scala.collection.mutable.Queue
 
-abstract class RoomProvider(configName:String) {
-  def get(room:String):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,configName),false)
-  def get(room:String,eternal:Boolean):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,configName),false)
+abstract class RoomProvider(config:ServerConfiguration) {
+  def get(room:String):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,config),false)
+  def get(room:String,eternal:Boolean):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,config),false)
   def get(room:String,roomDefinition:RoomMetaData):MeTLRoom = get(room,roomDefinition,false)
   def get(jid:String,roomMetaData:RoomMetaData,eternal:Boolean):MeTLRoom
   def removeMeTLRoom(room:String):Unit
@@ -28,7 +28,7 @@ abstract class RoomProvider(configName:String) {
   def list:List[MeTLRoom]
 }
 
-object EmptyRoomProvider extends RoomProvider("empty") {
+object EmptyRoomProvider extends RoomProvider(ServerConfiguration.empty) {
   override def get(jid:String,roomDefinition:RoomMetaData,eternal:Boolean) = EmptyRoom
   override def removeMeTLRoom(room:String) = {}
   override def exists(room:String) = false
@@ -40,31 +40,31 @@ object MeTLRoomType extends Enumeration {
   val Conversation,Slide,PrivateSlide,PersonalChatroom,Global,Unknown = Value
 }
 
-abstract class RoomMetaData(val server:String, val roomType:MeTLRoomType.Value) {
+abstract class RoomMetaData(val config:ServerConfiguration, val roomType:MeTLRoomType.Value) {
   def getJid:String
 }
 
-case class ConversationRoom(override val server:String,jid:String) extends RoomMetaData(server,MeTLRoomType.Conversation){
-  def cd:Conversation = ServerConfiguration.configForName(server).detailsOfConversation(jid.toString)
+case class ConversationRoom(override val config:ServerConfiguration,jid:String) extends RoomMetaData(config,MeTLRoomType.Conversation){
+  def cd:Conversation = config.detailsOfConversation(jid.toString)
   override def getJid = jid
 }
-case class SlideRoom(override val server:String,jid:String,slideId:Int) extends RoomMetaData(server,MeTLRoomType.Slide){
-  def cd:Conversation = ServerConfiguration.configForName(server).detailsOfConversation(jid.toString)
+case class SlideRoom(override val config:ServerConfiguration, jid:String, slideId:Int) extends RoomMetaData(config,MeTLRoomType.Slide){
+  def cd:Conversation = config.detailsOfConversation(jid.toString)
   def s:Slide = cd.slides.find(_.id == slideId).getOrElse(Slide.empty)
   override def getJid = slideId.toString
 }
-case class PrivateSlideRoom(override val server:String,jid:String,slideId:Int,owner:String) extends RoomMetaData(server,MeTLRoomType.PrivateSlide){
-  def cd:Conversation = ServerConfiguration.configForName(server).detailsOfConversation(jid.toString)
+case class PrivateSlideRoom(override val config:ServerConfiguration, jid:String, slideId:Int, owner:String) extends RoomMetaData(config,MeTLRoomType.PrivateSlide){
+  def cd:Conversation = config.detailsOfConversation(jid.toString)
   def s:Slide = cd.slides.find(_.id == slideId).getOrElse(Slide.empty)
   override def getJid = slideId.toString + owner
 }
-case class PersonalChatRoom(override val server:String,owner:String) extends RoomMetaData(server,MeTLRoomType.PersonalChatroom){
+case class PersonalChatRoom(override val config:ServerConfiguration,owner:String) extends RoomMetaData(config,MeTLRoomType.PersonalChatroom){
   override def getJid = owner
 }
-case class GlobalRoom(override val server:String) extends RoomMetaData(server,MeTLRoomType.Global){
+case class GlobalRoom(override val config:ServerConfiguration) extends RoomMetaData(config,MeTLRoomType.Global){
   override def getJid = "global"
 }
-case object UnknownRoom extends RoomMetaData(EmptyBackendAdaptor.name,MeTLRoomType.Unknown){
+case object UnknownRoom extends RoomMetaData(EmptyBackendAdaptor,MeTLRoomType.Unknown){
   override def getJid = ""
 }
 object RoomMetaDataUtils {
@@ -79,20 +79,20 @@ object RoomMetaDataUtils {
     }
     (jid,second)
   }
-  def fromJid(jid:String,server:String = ServerConfiguration.default.name):RoomMetaData = {
+  def fromJid(jid:String,config:ServerConfiguration = ServerConfiguration.default):RoomMetaData = {
     splitJid(jid) match {
       case (0,"") => UnknownRoom
-      case (0,"global") => GlobalRoom(server)
-      case (conversationJid,"") if (conversationJid % 1000 == 0) => ConversationRoom(server,conversationJid.toString)
-      case (slideJid,"") => SlideRoom(server,(slideJid - (slideJid % 1000)).toString,slideJid)
-      case (0,user) => PersonalChatRoom(server,user)
-      case (slideJid,user) => PrivateSlideRoom(server,(slideJid - (slideJid % 1000)).toString,slideJid,user)
+      case (0,"global") => GlobalRoom(config)
+      case (conversationJid,"") if (conversationJid % 1000 == 0) => ConversationRoom(config,conversationJid.toString)
+      case (slideJid,"") => SlideRoom(config,(slideJid - (slideJid % 1000)).toString,slideJid)
+      case (0,user) => PersonalChatRoom(config,user)
+      case (slideJid,user) => PrivateSlideRoom(config,(slideJid - (slideJid % 1000)).toString,slideJid,user)
       case _ => UnknownRoom
     }
   }
 }
 
-class HistoryCachingRoomProvider(configName:String,idleTimeout:Option[Long]) extends RoomProvider(configName) with Logger {
+class HistoryCachingRoomProvider(config:ServerConfiguration,idleTimeout:Option[Long]) extends RoomProvider(config) with Logger {
   protected lazy val metlRooms = new java.util.concurrent.ConcurrentHashMap[String,MeTLRoom]
   override def list = metlRooms.values.asScala.toList
   override def exists(room:String):Boolean = Stopwatch.time("Rooms.exists", list.contains(room))
@@ -103,7 +103,7 @@ class HistoryCachingRoomProvider(configName:String,idleTimeout:Option[Long]) ext
     //val r = new HistoryCachingRoom(configName,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
     val start = new java.util.Date().getTime
     val a = new java.util.Date().getTime - start
-    val r = new XmppBridgingHistoryCachingRoom(configName,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
+    val r = new XmppBridgingHistoryCachingRoom(config,room,this,roomDefinition,idleTimeout.filterNot(it => eternal))
     val b = new java.util.Date().getTime - start
     r.localSetup
     val c = new java.util.Date().getTime - start
@@ -136,9 +136,9 @@ case object HealthyWelcomeFromRoom
 case object Ping
 case object CheckChunks
 
-abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long],chunker:Chunker = new ChunkAnalyzer) extends LiftActor with ListenerManager with Logger {
+abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator:RoomProvider,val roomMetaData:RoomMetaData,val idleTimeout:Option[Long],chunker:Chunker = new ChunkAnalyzer) extends LiftActor with ListenerManager with Logger {
   lazy val slideRenderer = new SlideRenderer
-  lazy val config = ServerConfiguration.configForName(configName)
+  lazy val config = configIn
   protected var shouldBacklog = false
   protected var backlog = Queue.empty[Tuple2[MeTLStanza,Boolean]]
   protected def onConnectionLost:Unit = {
@@ -338,7 +338,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         com.metl.comet.MeTLSlideDisplayActorManager ! m
         com.metl.comet.MeTLEditConversationActorManager ! m
         m.commandParameters.headOption.foreach(convJid => {
-          MeTLXConfiguration.getRoom(convJid,config.name,ConversationRoom(config.name,convJid)) ! UpdateConversationDetails(convJid)
+          MeTLXConfiguration.getRoom(convJid,config.name,ConversationRoom(config,convJid)) ! UpdateConversationDetails(convJid)
         })
       }
       case (m:MeTLCommand,cr:ConversationRoom) if List("/SYNC_MOVE","/TEACHER_IN_CONVERSATION").contains(m.command) => {
@@ -375,13 +375,17 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
       messageBus.sendStanzaToRoom(s,updateTimestamp)
     }
   })
+  protected def emitAttendance(username: String, targetRoom: RoomMetaData, present: Boolean) = {
+    val room = MeTLXConfiguration.getRoom(targetRoom.getJid, config.name, targetRoom)
+    room ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, present, Nil))
+  }
   protected def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
   protected def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),{
     val oldMembers = getChildren.map(_._1)
     val username = j.username
     joinedUsers = ((username,j.cometId,j.actor) :: joinedUsers).distinct
-    j.actor ! RoomJoinAcknowledged(configName,location)
-    trace("%s joining room %s".format(username,roomMetaData))
+    j.actor ! RoomJoinAcknowledged(config.name,location)
+    warn("%s joining room %s".format(username,roomMetaData))
     roomMetaData match {
       case cr:ConversationRoom => {
         conversationCache.foreach(conv => {
@@ -406,8 +410,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
 
           try {
             trace("trying to send truePresence for conversation room: %s".format(location))
-            val room = MeTLXConfiguration.getRoom("global", configName, GlobalRoom(configName))
-            room ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, true, Nil))
+            emitAttendance(username, GlobalRoom(config), present = true)
           } catch {
             case e:Exception => {}
           }
@@ -418,9 +421,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         if (!oldMembers.contains(username)) {
           try {
             trace("trying to send truePresence for slide room: %s".format(location))
-            val conversationJid = sr.cd.jid.toString
-            val conversationRoom = MeTLXConfiguration.getRoom(conversationJid, configName, ConversationRoom(configName, conversationJid))
-            conversationRoom ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, true, Nil))
+            emitAttendance(username, ConversationRoom(config, sr.cd.jid.toString), present = true)
           } catch {
             case e:Exception => {}
           }
@@ -435,7 +436,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
     val username = l.username
     joinedUsers = joinedUsers.filterNot(i => i._1 == username && i._2 == l.cometId)
     val newMembers = getChildren.map(_._1)
-    l.actor ! RoomLeaveAcknowledged(configName,location)
+    l.actor ! RoomLeaveAcknowledged(config.name,location)
     trace("%s leaving room %s".format(username,roomMetaData))
     roomMetaData match {
       case cr:ConversationRoom => {
@@ -460,8 +461,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
 
           try {
             trace("trying to send falsePresence for conversation room: %s".format(location))
-            val room = MeTLXConfiguration.getRoom("global", configName, GlobalRoom(configName))
-            room ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, false, Nil))
+            emitAttendance(username, GlobalRoom(config), present = false)
           } catch {
             case e:Exception => {}
           }
@@ -471,9 +471,7 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
         if (oldMembers.contains(username)) {
           try {
             trace("trying to send falsePresence for slide room: %s".format(location))
-            val conversationJid = sr.cd.jid.toString
-            val conversationRoom = MeTLXConfiguration.getRoom(conversationJid, configName, ConversationRoom(configName, conversationJid))
-            conversationRoom ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, false, Nil))
+            emitAttendance(username, ConversationRoom(config, sr.cd.jid.toString), present = false)
           } catch {
             case e:Exception => {}
           }
@@ -497,10 +495,10 @@ abstract class MeTLRoom(configName:String,val location:String,creator:RoomProvid
   protected def recentInterest:Boolean = Stopwatch.time("MeTLRoom.recentInterest",{
     idleTimeout.map(it => (new Date().getTime - lastInterest) < it).getOrElse(true) // if no interest timeout is specified, then don't expire the room
   })
-  override def toString = "MeTLRoom(%s,%s,%s)".format(configName,location,creator)
+  override def toString = "MeTLRoom(%s,%s,%s)".format(config.name,location,creator)
 }
 
-object EmptyRoom extends MeTLRoom("empty","empty",EmptyRoomProvider,UnknownRoom,None) {
+object EmptyRoom extends MeTLRoom(ServerConfiguration.empty,"empty",EmptyRoomProvider,UnknownRoom,None) {
   override def getHistory = History.empty
   override def getThumbnail = Array.empty[Byte]
   override def getSnapshot(size:RenderDescription) = Array.empty[Byte]
@@ -513,7 +511,7 @@ object ThumbnailSpecification {
   val width = 320
 }
 
-class NoCacheRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends MeTLRoom(configName,location,creator,roomMetaData,idleTimeout) {
+class NoCacheRoom(config:ServerConfiguration,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends MeTLRoom(config,location,creator,roomMetaData,idleTimeout) {
   override def getHistory = config.getHistory(location)
   override def getThumbnail = {
     roomMetaData match {
@@ -549,7 +547,7 @@ class StartupInformation {
   }
 }
 
-class HistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends MeTLRoom(configName,location,creator,roomMetaData,idleTimeout) {
+class HistoryCachingRoom(config:ServerConfiguration,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends MeTLRoom(config,location,creator,roomMetaData,idleTimeout) {
   protected var history:History = History.empty
   protected val isPublic = tryo(location.toInt).map(l => true).openOr(false)
   protected var snapshots:Map[RenderDescription,Array[Byte]] = Map.empty[RenderDescription,Array[Byte]]
@@ -583,13 +581,13 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       roomMetaData match {
         case s:SlideRoom => {
           trace("Snapshot update")
-          MeTLXConfiguration.getRoom(s.cd.jid.toString,configName) ! UpdateThumb(history.jid)
+          MeTLXConfiguration.getRoom(s.cd.jid.toString,config.name) ! UpdateThumb(history.jid)
         }
         case _ => {}
       }
     }
   })
-  protected def makeSnapshots = Stopwatch.time("HistoryCachingRoom_%s@%s makingSnapshots".format(location,configName),{
+  protected def makeSnapshots = Stopwatch.time("HistoryCachingRoom_%s@%s makingSnapshots".format(location,config.name),{
     roomMetaData match {
       case s:SlideRoom => {
         val thisHistory = isPublic match {
@@ -631,10 +629,10 @@ class HistoryCachingRoom(configName:String,override val location:String,creator:
       case _ => {}
     }
   })
-  override def toString = "HistoryCachingRoom(%s,%s,%s)".format(configName,location,creator)
+  override def toString = "HistoryCachingRoom(%s,%s,%s)".format(config.name,location,creator)
 }
 
-class XmppBridgingHistoryCachingRoom(configName:String,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends HistoryCachingRoom(configName,location,creator,roomMetaData,idleTimeout) {
+class XmppBridgingHistoryCachingRoom(config:ServerConfiguration,override val location:String,creator:RoomProvider,override val roomMetaData:RoomMetaData,override val idleTimeout:Option[Long]) extends HistoryCachingRoom(config,location,creator,roomMetaData,idleTimeout) {
   protected var stanzasToIgnore = List.empty[MeTLStanza]
   def sendMessageFromBridge(s:MeTLStanza):Unit = Stopwatch.time("XmppBridgedHistoryCachingRoom.sendMessageFromBridge",{
     trace("XMPPBRIDGE (%s) sendToServer: %s".format(location,s))
