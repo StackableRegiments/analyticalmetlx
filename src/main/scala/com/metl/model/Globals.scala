@@ -1,13 +1,13 @@
 package com.metl.model
 
 import com.metl.TimeSpanParser
-import com.metl.external.{Detail, ExternalGradebook, GroupsProvider => ExternalGroupsProvider, LiftAuthStateData, LiftAuthStateDataForbidden, LtiIntegration, MeTLingPotAdaptor, Member, OrgUnit}
+import com.metl.external.{Detail, ExternalGradebook, LiftAuthStateData, LiftAuthStateDataForbidden, LtiIntegration, MeTLingPotAdaptor, Member, OrgUnit, GroupsProvider => ExternalGroupsProvider}
 import com.metl.utils._
-import net.liftweb.http.SessionVar
-import net.liftweb.http.LiftRules
+import net.liftweb.http.{LiftRules, LiftSession, SessionVar, SessionVarHelper}
 import net.liftweb.common._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.Props
+
 import scala.xml._
 import scala.util._
 import com.metl.renderer.RenderDescription

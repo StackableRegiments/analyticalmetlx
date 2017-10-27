@@ -254,7 +254,6 @@ class MeTLJsonConversationChooserActor extends StronglyTypedJsonActor with Comet
   }
 }
 
-
 abstract class MeTLConversationChooserActor extends StronglyTypedJsonActor with CometListener with Logger with JArgUtils with ConversationFilter {
   protected def perConversationAction(conv:Conversation):CssSel
   protected def perImportAction(conv:Conversation):CssSel

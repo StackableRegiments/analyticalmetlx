@@ -3,14 +3,14 @@ package com.metl.model
 import net.liftweb.util._
 import net.liftweb.common._
 import net.liftweb.util.Helpers.TimeSpan
-
 import org.scalatest._
 import org.scalatest.time.SpanSugar._
 import matchers.MustMatchers
 import concurrent.AsyncAssertions
-
-import com.metl.utils._ 
+import com.metl.utils._
 import java.util.Date
+
+import com.metl.external.{KVP, MeTLingPotAdaptor, MeTLingPotItem}
 
 class TimedMeTLingPotAdaptor(perRequest:Long,perItem:Long,shouldError:() => Boolean) extends MeTLingPotAdaptor {
   override def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {

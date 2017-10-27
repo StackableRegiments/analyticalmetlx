@@ -20,7 +20,7 @@ import bootstrap.liftweb.Boot
 import net.liftweb.json._
 import java.util.zip._
 
-import com.metl.external.{Detail, LiftAuthStateData}
+import com.metl.external.{Detail, LiftAuthStateData, MeTLingPotAdaptor}
 import com.metl.model._
 
 /**
@@ -105,42 +105,9 @@ object StatelessHtml extends Stemmer with Logger {
     Full(PlainTextResponse(sessions))
   })
   def listMeTLingPots:Box[LiftResponse] = Stopwatch.time("StatelessHtml.listMeTLingPots", {
-    def describeAdaptor(in:MeTLingPotAdaptor):JValue = {
-      in match {
-        case b:BurstingPassThroughMeTLingPotAdaptor => {
-          JObject(List(
-            JField("type",JString("passThroughMeTLingPotAdaptor")),
-            JField("bufferLength",JInt(b.getBufferLength)),
-            JField("isShuttingDown",JBool(b.getIsShuttingDown)),
-            JField("lastSend",JInt(b.getLastSend)),
-            JField("adaptor",describeAdaptor(b.a))
-          ))
-        }
-        case p:PassThroughMeTLingPotAdaptor => {
-          JObject(List(
-            JField("type",JString("passThroughMeTLingPotAdaptor")),
-            JField("adaptor",describeAdaptor(p.a))
-          ))
-        }
-        case a:ApiGatewayMeTLingPotInterface => {
-          JObject(List(
-            JField("type",JString("apiGatewayMeTLingPotInterface")),
-            JField("endpoint",JString(a.endpoint)),
-            JField("region",JString(a.region)),
-            JField("iamAccessKey",JString(a.iamAccessKey))
-          ) ::: a.apiGatewayApiKey.map(apiK => JField("apiGatewayApiKey",JString(apiK))).toList)
-        }
-        case m:MockMeTLingPotAdaptor => {
-          JObject(List(
-            JField("type",JString("MockMeTLingPotAdaptor")),
-            JField("storeSize",JInt(m.getStoreSize))
-          ))
-        }
-      }
-    }
-    Full(JsonResponse(JArray(Globals.metlingPots.map(describeAdaptor)),200))
+    Full(JsonResponse(JArray(Globals.metlingPots.map(mp => JObject(mp.description))),200))
   })
-  def describeUser(user:com.metl.liftAuthenticator.LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
+  def describeUser(user:LiftAuthStateData = Globals.casState.is):Box[LiftResponse] = Stopwatch.time("StatelessHtml.describeUser",{
     Full(JsonResponse(Extraction.decompose(user),200))
   })
   def impersonate(newUsername:String,params:List[Tuple2[String,String]] = Nil):Box[LiftResponse] = Stopwatch.time("StatelessHtml.impersonate", {
