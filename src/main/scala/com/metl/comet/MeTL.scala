@@ -1234,11 +1234,15 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
     case HealthyWelcomeFromRoom => {}
     case cp@ConversationParticipation(jid,currentMembers,possibleMembers) if shouldModifyConversation() => {
       trace("CONVERSATION PARTICIPATION: %s".format(cp))
-      partialUpdate(Call(RECEIVE_ATTENDANCE,JObject(List(
-        JField("location",JString(jid)),
-        JField("currentMembers",JArray(currentMembers.map(cm => JString(cm)))),
-        JField("possibleMembers",JArray(possibleMembers.map(pm => JString(pm))))
-      ))))
+      currentConversation.foreach(cc => {
+        if( cc.jid.toString.equals(jid)) {
+          partialUpdate(Call(RECEIVE_ATTENDANCE,JObject(List(
+            JField("location",JString(jid)),
+            JField("currentMembers",JArray(currentMembers.map(cm => JString(cm)))),
+            JField("possibleMembers",JArray(possibleMembers.map(pm => JString(pm))))
+          ))))
+        }
+      })
     }
     case ConversationParticipation(jid,currentMembers,possibleMembers) => {}
     case other => warn("MeTLActor %s received unknown message: %s".format(name,other))
@@ -1833,6 +1837,12 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
             }
           }
         })
+      }
+      case a:Attendance if currentConversation.map(cc => {
+        val relevantIds = cc.jid :: cc.slides.map(_.id.toString)
+        !relevantIds.contains(a.location)
+      }).getOrElse(true) => {
+        //swallow this message - it's not for this actor.  We're not interested in it.
       }
       case _ => {
         trace("receiving: %s".format(metlStanza))
