@@ -1,6 +1,7 @@
 1.21.5
 METL-737: Improvement: Make header and footer opaque.
 METL-746: Improvement: Record attendances by user, not MeTLActor.
+METL-747: Improvement: Allow MeTLingPot to configure poll and send delay independently.
 METL-738: Bugfix: Conversation search doesn't find by author when username has uppercase char.
 METL-743: Bugfix: Workqueue is assumed to exist in conversations.js.
 METL-745: Bugfix: Global attendances leak into unrelated conversations.
