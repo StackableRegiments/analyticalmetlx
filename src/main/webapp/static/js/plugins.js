@@ -4,6 +4,10 @@ var Plugins = (function(){
         var isCollapsed = false;
         var desiresAttention = false;
         var onVisualStateChanged = function(isEnabled,isCollapsed,desiresAttention){};
+        var onVisualStateChangedInnerFunc = function(isEnabled,isCollapsed,desiresAttention){
+            onVisualStateChanged(isEnabled,isCollapsed,desiresAttention);
+            Progress.call("onLayoutUpdated");
+        };
         return {
             style:style,
             load:function(bus,params,onVisualStateFunc) {
@@ -12,7 +16,7 @@ var Plugins = (function(){
             },
             initialize:function() {
                 var initRes = initFunc();
-                onVisualStateChanged(isEnabled,isCollapsed,desiresAttention);
+                onVisualStateChangedInnerFunc(isEnabled,isCollapsed,desiresAttention);
                 reRenderAfterVisualStateChangedFunc(isEnabled,isCollapsed,desiresAttention);
                 return initRes;
             },
@@ -31,7 +35,7 @@ var Plugins = (function(){
                 if (newDesiresAttention !== undefined) {
                     desiresAttention = newDesiresAttention;
                 }
-                onVisualStateChanged(isEnabled,isCollapsed,desiresAttention);
+                onVisualStateChangedInnerFunc(isEnabled,isCollapsed,desiresAttention);
                 reRenderAfterVisualStateChangedFunc(isEnabled,isCollapsed,desiresAttention);
             },
             getIsEnabled:function(){return isEnabled;},
