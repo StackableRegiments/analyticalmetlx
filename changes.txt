@@ -1,3 +1,7 @@
+1.21.5
+
+Update slu-adaptor to v0.0.4.
+
 1.21.1
 
 Install Jetty 9.4.6.v20170531 and configure (see WoS for details).
