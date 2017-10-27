@@ -275,12 +275,14 @@ function commandReceived(c){
 function richTextReceived(t){
     if(t.identity in Modes.text.echoesToDisregard) return;
     if(isUsable(t)){
-        WorkQueue.enqueue(function(){
-            var e = Modes.text.editorFor(t);
-            e.doc.load(t.words);
-            e.doc.updateCanvas();
-            return true;
-        });
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                var e = Modes.text.editorFor(t);
+                e.doc.load(t.words);
+                e.doc.updateCanvas();
+                return true;
+            });
+        }
     }
 }
 function textReceived(t){
@@ -289,15 +291,17 @@ function textReceived(t){
             boardContent.texts[t.identity] = t;
             prerenderText(t);
             incorporateBoardBounds(t.bounds);
-            WorkQueue.enqueue(function(){
-                if(isInClearSpace(t.bounds)){
-                    drawText(t);
-                    return false;
-                }
-                else{
-                    return true;
-                }
-            });
+            if( WorkQueue != undefined ) {
+                WorkQueue.enqueue(function () {
+                    if (isInClearSpace(t.bounds)) {
+                        drawText(t);
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+                });
+            }
         }
         else{
             if(t.identity in boardContent.texts){
@@ -923,21 +927,23 @@ function videoReceived(video){
         incorporateBoardBounds(video.bounds);
         boardContent.videos[video.identity] = video;
         prerenderVideo(video);
-        WorkQueue.enqueue(function(){
-            if(isInClearSpace(video.bounds)){
-                try {
-                    drawVideo(video);
-                    Modes.pushCanvasInteractable("videos",videoControlInteractable(video));
-                } catch(e){
-                    console.log("drawVideo exception",e);
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                if (isInClearSpace(video.bounds)) {
+                    try {
+                        drawVideo(video);
+                        Modes.pushCanvasInteractable("videos", videoControlInteractable(video));
+                    } catch (e) {
+                        console.log("drawVideo exception", e);
+                    }
+                    return false;
                 }
-                return false;
-            }
-            else{
-                console.log("Rerendering video in contested space");
-                return true;
-            }
-        });
+                else {
+                    console.log("Rerendering video in contested space");
+                    return true;
+                }
+            });
+        }
     }
 }
 function imageReceived(image){
@@ -956,20 +962,22 @@ function imageReceived(image){
             boardContent.images[image.identity]  = image;
             updateTracking(image.identity);
             prerenderImage(image);
-            WorkQueue.enqueue(function(){
-                if(isInClearSpace(image.bounds)){
-                    try {
-                        drawImage(image);
-                    } catch(e){
-                        console.log("drawImage exception",e);
+            if( WorkQueue != undefined ) {
+                WorkQueue.enqueue(function () {
+                    if (isInClearSpace(image.bounds)) {
+                        try {
+                            drawImage(image);
+                        } catch (e) {
+                            console.log("drawImage exception", e);
+                        }
+                        return false;
                     }
-                    return false;
-                }
-                else{
-                    console.log("Rerendering image in contested space");
-                    return true;
-                }
-            });
+                    else {
+                        console.log("Rerendering image in contested space");
+                        return true;
+                    }
+                });
+            }
         };
         dataImage.src = calculateImageSource(image);
     }
@@ -986,15 +994,17 @@ function inkReceived(ink){
             else{
                 boardContent.inks[ink.identity] = ink;
             }
-            WorkQueue.enqueue(function(){
-                if(isInClearSpace(ink.bounds)){
-                    drawInk(ink);
-                    return false;
-                }
-                else{
-                    return true;
-                }
-            });
+            if( WorkQueue != undefined ) {
+                WorkQueue.enqueue(function () {
+                    if (isInClearSpace(ink.bounds)) {
+                        drawInk(ink);
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+                });
+            }
         }
     }
 }

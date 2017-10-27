@@ -4,13 +4,15 @@ var RecycleBin = (function(){
     var recycleBinDatagrid = {};
     var actionButtonsTemplate = {};
     var reRenderDatagrid = function(){
-			WorkQueue.enqueue(function(){
-        recycleBinDatagrid.jsGrid("loadData");
-        var sortObj = recycleBinDatagrid.jsGrid("getSorting");
-        if ("field" in sortObj){
-            recycleBinDatagrid.jsGrid("sort",sortObj);
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                recycleBinDatagrid.jsGrid("loadData");
+                var sortObj = recycleBinDatagrid.jsGrid("getSorting");
+                if ("field" in sortObj) {
+                    recycleBinDatagrid.jsGrid("sort", sortObj);
+                }
+            });
         }
-			});
     };
     $(function(){
         recycleBinDatagrid = $("#recycleBinDatagrid");

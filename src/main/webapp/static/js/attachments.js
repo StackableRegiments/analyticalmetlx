@@ -165,13 +165,15 @@ var Attachments = (function(){
         reRenderAttachments();
     };
     var reRenderAttachments = function(){
-        WorkQueue.enqueue(function(){
-            attachmentsDatagrid.jsGrid("loadData");
-            var sortObj = attachmentsDatagrid.jsGrid("getSorting");
-            if ("field" in sortObj){
-                attachmentsDatagrid.jsGrid("sort",sortObj);
-            }
-        });
+        if( WorkQueue != undefined ) {
+            WorkQueue.enqueue(function () {
+                attachmentsDatagrid.jsGrid("loadData");
+                var sortObj = attachmentsDatagrid.jsGrid("getSorting");
+                if ("field" in sortObj) {
+                    attachmentsDatagrid.jsGrid("sort", sortObj);
+                }
+            });
+        }
     };
     var actOnAttachment = function(newAttachment){
         var partitioned = _.partition(attachments,function(attachment){
