@@ -141,4 +141,53 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
 
     assert(attendances2.length == 0)
   }
+
+  test("should not send multiple Attendance(present=true) to ConversationRoom when slide room joined by different actors for the same user") {
+    var attendances = scala.collection.mutable.ListBuffer.empty[Tuple3[String,RoomMetaData,Boolean]]
+    val roomJoinedWaiter = new Waiter
+    val roomJoinedMetaData = ConversationRoom(config,conversationRoomId)
+    val roomJoined = new HistoryCachingRoom(config,slideRoomId,EmptyRoomProvider,roomJoinedMetaData,Some(1000L)) {
+      override protected def emitAttendance(username:String,targetRoom: RoomMetaData,present: Boolean):Unit = {
+        warn("Received present = %s for room %s from user %s".format(present,targetRoom,username))
+        attendances += ((username,targetRoom,present))
+        roomJoinedWaiter.dismiss
+      }
+    }
+    roomJoined.localSetup
+
+    val joinerWaiter1 = new Waiter
+    object joiner1 extends LiftActor with Logger {
+      override def messageHandler: PartialFunction[Any, Unit] = {
+        case r@RoomJoinAcknowledged(configName,room) => {
+          warn("Received roomJoinAcknowledged %s".format(r))
+          joinerWaiter1.dismiss
+        }
+      }
+    }
+
+    val joinerWaiter2 = new Waiter
+    object joiner2 extends LiftActor with Logger {
+      override def messageHandler: PartialFunction[Any, Unit] = {
+        case r@RoomJoinAcknowledged(configName,room) => {
+          warn("Received roomJoinAcknowledged %s".format(r))
+          joinerWaiter2.dismiss
+        }
+      }
+    }
+
+    val user = "bob"
+    roomJoined ! JoinRoom(user,"1",joiner1)
+    roomJoined ! JoinRoom(user,"1",joiner2)
+
+    joinerWaiter1.await(timeout(5000 millis),dismissals(1))
+    joinerWaiter2.await(timeout(5000 millis),dismissals(1))
+    roomJoinedWaiter.await(timeout(10000 millis),dismissals(1))
+
+    roomJoined.localShutdown
+
+    assert(attendances.length == 1)
+    assert(attendances.head._1 == user)
+    assert(attendances.head._2 == GlobalRoom(ServerConfiguration.empty))
+    assert(attendances.head._3 == true)
+  }
 }
