@@ -2,6 +2,11 @@
 
 Update slu-adaptor to v0.0.4.
 
+Add the following attributes to the BurstingMeTLingPotAdaptor (in millis).
+  delayBetweenPolls = 10000
+  delayBetweenSends = 0
+  delayAfterError   = 30000
+  
 1.21.1
 
 Install Jetty 9.4.6.v20170531 and configure (see WoS for details).
