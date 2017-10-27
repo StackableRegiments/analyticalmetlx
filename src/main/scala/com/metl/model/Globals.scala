@@ -205,7 +205,12 @@ object Globals extends PropertyReader with Logger {
 
   object casState {
     import net.liftweb.http.S
-    private object validState extends SessionVar[Option[LiftAuthStateData]](None)
+    private object validState extends SessionVar[Option[LiftAuthStateData]](None){
+      def getForSession(s:LiftSession):Option[LiftAuthStateData] = {
+        SessionVarHelper.getFromSession(s,name).openOr(None)
+      }
+    }
+    def getAuthStateForSession(s:LiftSession):Option[LiftAuthStateData] = validState.getForSession(s)
     def is:LiftAuthStateData = {
       validState.is.getOrElse({
         assumeContainerSession

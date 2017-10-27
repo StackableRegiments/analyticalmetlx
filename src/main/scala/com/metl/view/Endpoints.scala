@@ -251,6 +251,22 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer with E
   val serializer = new GenericXmlSerializer(ServerConfiguration.default)
   val jsonSerializer = new JsonSerializer(ServerConfiguration.default)
   serve {
+    /*
+    case Req("testCometCreate" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testCometCreate", {
+      warn("testCometCreate: %s".format(S.session))
+      for {
+        s <- S.session
+        //c <- s.findOrCreateComet[TestActor](Full(nextFuncName),scala.xml.NodeSeq.empty,Map.empty)
+      } yield {
+        val cometName = nextFuncName
+        val nodes = com.metl.snippet.Metl.specificTestComet(cometName)(scala.xml.NodeSeq.Empty)//<span class={"lift:comet?type=TestActor;name=%s".format(cometName)}/>
+        val x = s.runTemplate("testPage",nodes)
+        s.setupComet("TestComet",Full(cometName),true)
+        val c = s.findComet("TestComet",Full(cometName))
+        PlainTextResponse("created cometActor: %s => %s".format(c,x))
+      }
+    })
+    */
     case Req("logout" :: Nil, _, _) => () =>
       Stopwatch.time("MeTLRestHelper.logout", {
         S.session.foreach(_.destroySession())
@@ -484,6 +500,44 @@ object MeTLStatefulRestHelper extends RestHelper with Logger with Stemmer with E
     case Req(List("listSessions"), _, _) if Globals.isSuperUser =>
       () => StatelessHtml.listSessions
 
+    case Req("describeSessions" :: Nil, _, _) if Globals.isSuperUser => () => {
+        for {
+          swi <- com.metl.comet.SessionMonitor.getSessionInfo
+        } yield {
+          JsonResponse(JArray(swi.sessions.values.map(s => {
+            JObject(List(
+              JField("type",JString("session")),
+              JField("lastAccess",JInt(s.lastAccess)),
+              JField("lastAccessDate",JString(new java.util.Date(s.lastAccess).toString())),
+              JField("requestCount",JInt(s.requestCnt)),
+              JField("actors",JArray({
+                List("MeTLActor","RemotePluginConversationChooserActor","MeTLConversationSearchActor","MeTLJsonConversationChooserActor","MeTLEditConversationActor").flatMap(typeName => {
+                  s.session.findComet(typeName).map(ca => {
+                    JObject(List(
+                      JField("type",JString(typeName)),
+                      JField("name",JString(ca.name.toString)),
+                      JField("uniqueId",JString(ca.uniqueId))
+                    ))
+                  })
+                })
+              }))
+            ) 
+            ::: s.userAgent.map(ua => JField("userAgent",JString(ua))).toList
+            ::: s.ipAddress.map(ip => JField("ipAddress",JString(ip))).toList
+            ::: Globals.casState.getAuthStateForSession(s.session).map(lasd => {
+              JField("authState",JObject(List(
+                JField("username",JString(lasd.username)),
+                JField("authenticated",JBool(lasd.authenticated)),
+                JField("eligibleGroups",JArray(lasd.eligibleGroups.map(Extraction.decompose _).toList)),
+                JField("personalDetails",JArray(lasd.informationGroups.map(Extraction.decompose _).toList))
+              )))
+            }).toList
+          )
+        }).toList),200)
+      }
+    }
+    case Req("listMeTLingPots" :: Nil,_,_) if Globals.isSuperUser =>
+      () => StatelessHtml.listMeTLingPots
     case r@Req(List("impersonate", newUsername), _, _) if Globals.isImpersonator =>
       () => StatelessHtml.impersonate(newUsername, r.params.flatMap(p => p._2.map(i => (p._1, i))).toList)
     case Req(List("deImpersonate"), _, _) if Globals.isImpersonator =>

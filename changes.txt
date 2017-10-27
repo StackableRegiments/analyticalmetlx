@@ -16,6 +16,13 @@ aws-java-sdk-opensdk-1.11.72.jar
 Do this by copying to jetty/slu dir, and adding the following to context.xml:
   <Set name="extraClasspath">slu/slu-adaptor_2.11-0.0.3.jar,slu/aws-java-sdk-core-1.11.72.jar,slu/aws-java-sdk-opensdk-1.11.72.jar</Set>
 
+1.20.15
+
+New config:
+	<authenticationConfiguration>
+		<exclusions>
+			<requestUriStartsWith value="/testCreateComet"/>
+
 1.12.4
 
 New config:

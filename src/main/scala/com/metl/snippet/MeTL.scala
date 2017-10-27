@@ -29,7 +29,13 @@ class Metl extends Logger with ReadOnlyMetlInterface {
   def shouldPublishInConversation(username:String,c:Conversation):Boolean = {
     (Globals.isSuperUser || (shouldModifyConversation(username,c) || (c.permissions.studentsCanPublish && !c.blackList.contains(username)))) && c != Conversation.empty
   }
-  override def boardFor():String = {
+  def specificTestComet(cometName:String = nextFuncName):NodeSeq => NodeSeq = {
+    (n:NodeSeq) => <span class={"lift:comet?type=TestActor;name=%s".format(cometName)}/>
+  }
+  def specificTestComet(n:NodeSeq):NodeSeq = {
+    specificTestComet()(n)
+  }
+  def boardFor():String = {
     "/board"
   }
   override def boardFor(conversationJid:Int):String = {
