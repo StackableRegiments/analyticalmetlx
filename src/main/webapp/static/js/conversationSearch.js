@@ -270,10 +270,11 @@ var Conversations = (function(){
     var shouldDisplayConversation = function(details){
         var subject = details.subject.toLowerCase().trim();
         var title = details.title.toLowerCase().trim();
-        var author = details.author;
-        var q = getQueryFunc();
+        var author = details.author.toLowerCase().trim();
+        var lowerUsername = username.toLowerCase().trim();
+        var q = getQueryFunc().toLowerCase().trim();
 				var cfr = details.foreignRelationship;
-        return ((q == author || title.indexOf(q) > -1) && (subject != "deleted" || (includeDeleted && author == username)) && (author == username || _.some(userGroups,function(g){
+        return ((q == author || title.indexOf(q) > -1) && (subject != "deleted" || (includeDeleted && author == lowerUsername)) && (author == lowerUsername || _.some(userGroups,function(g){
 						var fr = g.foreignRelationship;
             var key = g.key ? g.key : g.ouType;
             var name = g.name ? g.name : g.value;
