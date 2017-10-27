@@ -188,7 +188,7 @@ object MeTLRestHelper extends RestHelper with Stemmer with Logger{
       }
     })
     case Req("testFetchGlobalRoom" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testFetchGlobalRoom", {
-      val room = MeTLXConfiguration.getRoom("global",ServerConfiguration.default.name,GlobalRoom(ServerConfiguration.default.name))
+      val room = MeTLXConfiguration.getRoom("global",ServerConfiguration.default.name,GlobalRoom(ServerConfiguration.default))
       Full(PlainTextResponse(room.roomMetaData.getJid, List.empty[Tuple2[String,String]], 200))
     })
     case Req("testCountConversations" :: Nil,_,_) => Stopwatch.time("MeTLRestHelper.testCountConversations", {

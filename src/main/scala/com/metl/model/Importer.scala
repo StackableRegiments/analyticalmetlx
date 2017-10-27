@@ -381,11 +381,12 @@ object Importer extends Logger {
     histories.foreach(h => {
       val oldJid = h._1
       val offset = remoteConv.jid - oldConv.jid
-      val serverName = remoteConv.server.name
+      val server = remoteConv.server
+      val serverName = server.name
       val newRoom = RoomMetaDataUtils.fromJid(oldJid) match {
-        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset,newAuthor))
-        case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(serverName,remoteConv.jid.toString,oldSlideJid + offset))
-        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(serverName,remoteConv.jid.toString))
+        case PrivateSlideRoom(_sn,_oldConvJid,oldSlideJid,oldAuthor) => Some(PrivateSlideRoom(server,remoteConv.jid.toString,oldSlideJid + offset,newAuthor))
+        case SlideRoom(_sn,_oldConvJid,oldSlideJid) => Some(SlideRoom(server,remoteConv.jid.toString,oldSlideJid + offset))
+        case ConversationRoom(_sn,_oldConvJid) => Some(ConversationRoom(server,remoteConv.jid.toString))
         case _ => None
       }
       newRoom.foreach(nr => {
@@ -397,7 +398,7 @@ object Importer extends Logger {
         }).getOrElse(h._2)
         */
         ServerSideBackgroundWorker ! CopyContent(
-          remoteConv.server,
+          server,
           newHistory,
           nr
         )

@@ -53,7 +53,7 @@ object StudentActivityReportHelper extends Logger {
     var rawRows: List[RawRow] = List()
     conversations.foreach(conversation => {
       // Load all detail of the room
-      val room = MeTLXConfiguration.getRoom(conversation.jid.toString, server.name, ConversationRoom(server.name, conversation.jid.toString))
+      val room = MeTLXConfiguration.getRoom(conversation.jid.toString, server.name, ConversationRoom(server, conversation.jid.toString))
 
       // Sort attendances just in case.
       val slideAttendances = room.getHistory.getAttendances

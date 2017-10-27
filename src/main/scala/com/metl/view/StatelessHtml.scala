@@ -197,7 +197,7 @@ object StatelessHtml extends Stemmer with Logger {
     })
   })
   def quizProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizProxy(%s, %s)".format(conversationJid,identity), {
-    Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getQuizByIdentity(identity).map(quiz => {
+    Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config,conversationJid)).getHistory.getQuizByIdentity(identity).map(quiz => {
       quiz.imageBytes.map(bytes => {
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
         InMemoryResponse(bytes,headers,Nil,200)
@@ -205,7 +205,7 @@ object StatelessHtml extends Stemmer with Logger {
     }).getOrElse(NotFoundResponse("quiz not available")))
   })
   def quizResultsGraphProxy(conversationJid:String,identity:String,width:Int,height:Int)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.quizResultsGraphProxy(%s, %s)".format(conversationJid,identity), {
-    val history = MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory
+    val history = MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config,conversationJid)).getHistory
     val responses = history.getQuizResponses.filter(qr => qr.id == identity)
     Full(history.getQuizByIdentity(identity).map(quiz => {
       val bytes = com.metl.renderer.QuizRenderer.renderQuiz(quiz,responses,new com.metl.renderer.RenderDescription(width,height))
@@ -218,7 +218,7 @@ object StatelessHtml extends Stemmer with Logger {
     Full(InMemoryResponse(config.getResource(identity),headers,Nil,200))
   })
   def attachmentProxy(conversationJid:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.attachmentProxy(%s)".format(identity), {
-    MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getFiles.find(_.id == identity).map(file => {
+    MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config,conversationJid)).getHistory.getFiles.find(_.id == identity).map(file => {
       val headers = List(
         ("mime-type","application/octet-stream"),
         ("Content-Disposition","""attachment; filename="%s"""".format(file.name))
@@ -227,7 +227,7 @@ object StatelessHtml extends Stemmer with Logger {
     })
   })
   def submissionProxy(conversationJid:String,author:String,identity:String)():Box[LiftResponse] = Stopwatch.time("StatelessHtml.submissionProxy(%s, %s)".format(conversationJid,identity), {
-    Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config.name,conversationJid)).getHistory.getSubmissionByAuthorAndIdentity(author,identity).map(sub => {
+    Full(MeTLXConfiguration.getRoom(conversationJid,config.name,ConversationRoom(config,conversationJid)).getHistory.getSubmissionByAuthorAndIdentity(author,identity).map(sub => {
       sub.imageBytes.map(bytes => {
         val headers = ("mime-type","application/octet-stream") :: Boot.cacheStrongly
         InMemoryResponse(bytes,headers,Nil,200)
@@ -645,14 +645,14 @@ object StatelessHtml extends Stemmer with Logger {
           val newId = newSlide.id
           ServerSideBackgroundWorker ! CopyLocation(
             config,
-            SlideRoom(conv.server.name,conversation,oldId),
-            SlideRoom(conv.server.name,conversation,newId),
+            SlideRoom(conv.server,conversation,oldId),
+            SlideRoom(conv.server,conversation,newId),
             (s:MeTLStanza) => s.author == conv.author
           )
           ServerSideBackgroundWorker ! CopyLocation(
             config,
-            PrivateSlideRoom(conv.server.name,conversation,oldId,conv.author),
-            PrivateSlideRoom(conv.server.name,conversation,newId,conv.author),
+            PrivateSlideRoom(conv.server,conversation,oldId,conv.author),
+            PrivateSlideRoom(conv.server,conversation,newId,conv.author),
             (s:MeTLStanza) => s.author == conv.author
           )
         })
@@ -692,21 +692,21 @@ object StatelessHtml extends Stemmer with Logger {
         val conv = remoteConv
         ServerSideBackgroundWorker ! CopyLocation(
           config,
-          SlideRoom(conv.server.name,conversation,slide),
-          SlideRoom(conv.server.name,remoteConv.jid.toString,newSlide),
+          SlideRoom(conv.server,conversation,slide),
+          SlideRoom(conv.server,remoteConv.jid.toString,newSlide),
           (s:MeTLStanza) => s.author == conv.author
         )
         ServerSideBackgroundWorker ! CopyLocation(
           config,
-          PrivateSlideRoom(conv.server.name,conversation,slide,conv.author),
-          PrivateSlideRoom(conv.server.name,remoteConv.jid.toString,newSlide,conv.author),
+          PrivateSlideRoom(conv.server,conversation,slide,conv.author),
+          PrivateSlideRoom(conv.server,remoteConv.jid.toString,newSlide,conv.author),
           (s:MeTLStanza) => s.author == conv.author
         )
       })
       ServerSideBackgroundWorker ! CopyLocation(
         config,
-        ConversationRoom(remoteConv.server.name,remoteConv.jid.toString),
-        ConversationRoom(newConv.server.name,newConv.jid.toString),
+        ConversationRoom(remoteConv.server,remoteConv.jid.toString),
+        ConversationRoom(newConv.server,newConv.jid.toString),
         (s:MeTLStanza) => s.author == remoteConv.author && s.isInstanceOf[MeTLQuiz] // || s.isInstanceOf[Attachment]
       )
       val remoteConv2 = config.updateConversation(remoteConv.jid.toString,remoteConv)
