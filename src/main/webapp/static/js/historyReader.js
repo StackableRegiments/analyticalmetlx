@@ -952,12 +952,13 @@ function unpix(str){
     return str.slice(0,str.length-2);
 }
 function updateConversationHeader(){
-    $("#heading").text(Conversations.getCurrentConversation().title);
-    var groupV = $("#currentGroupTitle").empty();
+    var groupV = $(".currentGroupTitle").empty();
     var group = Conversations.getCurrentGroup();
     if(group.length){
         groupV.text(sprintf("Group %s of",_.join(_.map(group,"title"),",")));
     }
+    $(".currentConversationTitle").text(Conversations.getCurrentConversation().title);
+    console.log("Updated conversation header");
 }
 function renderTint(canvasContext,rect){
     if ('HealthCheckViewer' in window && !HealthCheckViewer.healthy()) {

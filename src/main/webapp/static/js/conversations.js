@@ -305,37 +305,13 @@ var Conversations = (function(){
             var slideControls = $("#slideControls");
             slideControls.empty();
             // console.log("slides:", ss, cs, minIndex, maxIndex);
-            constructPrevSlideButton(slideControls);
-            var addGroupSlideButton = slideContainer.find("#addGroupSlideButton");
-            var addSlideButton = slideContainer.find("#addSlideButton");
-            if (shouldModifyConversationFunction(currentConversation)) {
-                addGroupSlideButton.on("click", function () {
-                    GroupBuilder.showAddGroupSlideDialog()
-                });
-                addSlideButton.on("click", addSlideFunction);
-            } else {
-                addGroupSlideButton.unbind("click");
-                addSlideButton.unbind("click");
-            }
-
-            slideContainer.unbind("click").on("click", "#helpButton", helpFunction);
-
-            var prevButton = slideControls.find("#prevSlideButton");
-            if (cs.index === minIndex) {
-                prevButton.addClass('disabledButton');
-                prevButton.unbind("click").attr("disabled", true);
-            } else {
-                prevButton.on("click", goToPrevSlideFunction);
-            }
-            slideControls.append($('<span/>').addClass("pageCounter").text(sprintf("%s/%s",cs.index + 1,maxIndex + 1)));
-            constructNextSlideButton(slideControls);
-            var nextButton = slideControls.find("#nextSlideButton");
-            if (cs.index === maxIndex) {
-                nextButton.addClass('disabledButton');
-                nextButton.unbind("click").attr("disabled", true);
-            } else {
-                nextButton.on("click", goToNextSlideFunction);
-            }
+            constructPrevSlideButton(slideControls,cs.index,minIndex);
+//            slideControls.append($('<span/>').addClass("pageCounter").text(sprintf("%s/%s",cs.index + 1,maxIndex + 1)));
+            var column = $('<span/>').attr('id',"pageCountContainer").appendTo(slideControls);
+            column.append($('<div/>').addClass("pageCounter").text(cs.index + 1));
+            column.append($('<div/>').addClass("pageCounter").text("/"));
+            column.append($('<div/>').addClass("pageCounter").text(maxIndex + 1));
+            constructNextSlideButton(slideControls,cs.index,maxIndex);
             constructAddSlideButton(slideControls);
             constructAddGroupSlideButton(slideControls);
             constructHelpButton(slideControls);
@@ -720,14 +696,19 @@ var Conversations = (function(){
             return false;
         }
     };
-    var constructSlideButton = function(name,label,icon,teacherOnlyFunction,container){
+    var constructSlideButton = function(name,label,icon,teacherOnlyFunction,container,clickHandler,shouldAttachClickHandler){
         if (teacherOnlyFunction(currentConversation)){
-            container.append($("<button/>",{
-                id: name,
-                class:sprintf("toolbar fa %s btn-icon nmt",icon),
-                name: name,
-                type: "button"
-            }).append($("<div class='icon-txt'/>").text(label)));
+            var button = $("<button/>",{
+                 id: name,
+                 class:sprintf("toolbar fa %s btn-icon nmt",icon),
+                 name: name,
+                 type: "button"
+             }).append($("<div class='icon-txt'/>").text(label));
+             container.append(button);
+             if( clickHandler !== undefined && (shouldAttachClickHandler == undefined || _.isFunction(shouldAttachClickHandler) && shouldAttachClickHandler())) {
+                 button.on("click", clickHandler)
+             }
+             return button;
         }
     };
     var overrideAllocationFunction = function(slide){
@@ -771,6 +752,7 @@ var Conversations = (function(){
         }
     };
     var helpFunction = function(){
+        updateConversationHeader();
         showBackstage("help");
     };
     var addSlideFunction = function(){
@@ -792,20 +774,36 @@ var Conversations = (function(){
         }
     };
     var always = function(){return true;};
-    var constructPrevSlideButton = function(container){
-        constructSlideButton("prevSlideButton","Prev Page","fa-angle-left",always,container);
+    var constructPrevSlideButton = function(container,csIndex,minIndex){
+        var prevButton = constructSlideButton("prevSlideButton","Prev Page","fa-angle-left",always,container,goToPrevSlideFunction,function(){
+          return csIndex !== minIndex;
+        });
+        if (csIndex === minIndex) {
+            prevButton.addClass('disabledButton');
+            prevButton.attr("disabled", true);
+        }
     };
     var constructAddSlideButton = function(container){
-        constructSlideButton("addSlideButton","Add Page","fa-plus",shouldModifyConversationFunction,container);
+        constructSlideButton("addSlideButton","Add Page","fa-plus",shouldModifyConversationFunction,container,addSlideFunction,function(){
+          return shouldModifyConversationFunction(currentConversation);
+        });
     };
     var constructAddGroupSlideButton = function(container){
-        constructSlideButton("addGroupSlideButton","Add Group Page","fa-group",shouldModifyConversationFunction,container);
+        constructSlideButton("addGroupSlideButton","Groups","fa-group",shouldModifyConversationFunction,container,GroupBuilder.showAddGroupSlideDialog,function(){
+          return shouldModifyConversationFunction(currentConversation);
+        });
     };
     var constructHelpButton = function(container){
-        constructSlideButton("helpButton","Help","fa-question-circle",always,container);
+        constructSlideButton("helpButton","Help","fa-question-circle",always,container,helpFunction);
     };
-    var constructNextSlideButton = function(container){
-        constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container);
+    var constructNextSlideButton = function(container,csIndex,maxIndex){
+        var nextButton = constructSlideButton("nextSlideButton","Next Page","fa-angle-right",always,container,goToNextSlideFunction,function(){
+          return csIndex !== maxIndex;
+        });
+        if (csIndex === maxIndex) {
+            nextButton.addClass('disabledButton');
+            nextButton.attr("disabled", true);
+        }
     };
     var getCurrentSlideFunc = function(){return _.find(currentConversation.slides,function(i){return i.id.toString() == currentSlide.toString();})};
     var updateQueryParams = function(){
