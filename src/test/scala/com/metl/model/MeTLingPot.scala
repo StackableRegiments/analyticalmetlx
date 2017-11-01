@@ -31,6 +31,7 @@ class TimedMeTLingPotAdaptor(perRequest:Long,perItem:Long,shouldError:() => Bool
 }
 
 class BurstingPassThroughMeTLingPotSuite extends FunSuite with AsyncAssertions with MustMatchers {
+  val awaitTimeout = timeout(5 * 60 * 1000 millis) // 5 minutes
   test("should send chunks of 2, five times") {
     var counter = 0
     val w = new Waiter
@@ -48,7 +49,7 @@ class BurstingPassThroughMeTLingPotSuite extends FunSuite with AsyncAssertions w
     a.init
     val fakeKVP = KVP("testType","testValue")
     a.postItems(Range(0,10).map(i => MeTLingPotItem("test",0L,fakeKVP,fakeKVP,None,None,None)).toList)
-    w.await(timeout(6 * 1000 millis), dismissals(5))
+    w.await(awaitTimeout, dismissals(5))
     a.shutdown
     assert(counter == 5)
   }
@@ -70,12 +71,11 @@ class BurstingPassThroughMeTLingPotSuite extends FunSuite with AsyncAssertions w
     }
     val now = new Date().getTime
     a.init
-    w.await(timeout(10 * 1000 millis), dismissals(1))
+    w.await(awaitTimeout, dismissals(1))
     val after = new Date().getTime
     a.shutdown
     assert(counter > 0)
     assert((after - now) > (2 * 1000L))
-
   }
   test("should wait successDelay times on success"){
     var counter = 0
@@ -97,7 +97,7 @@ class BurstingPassThroughMeTLingPotSuite extends FunSuite with AsyncAssertions w
     val now = new Date().getTime
     a.init
     a.postItems(Range(0,10).map(i => MeTLingPotItem("test",0L,fakeKVP,fakeKVP,None,None,None)).toList)
-    w.await(timeout(10 * 1000 millis), dismissals(2))
+    w.await(awaitTimeout, dismissals(2))
     val after = new Date().getTime
     a.shutdown
     assert(counter > 0)
@@ -108,7 +108,7 @@ class BurstingPassThroughMeTLingPotSuite extends FunSuite with AsyncAssertions w
     val w = new Waiter
     val poll = Some(new TimeSpan(0L))
     val success = Some(new TimeSpan(0L))
-    val error = Some(new TimeSpan(20 * 1000L))
+    val error = Some(new TimeSpan(5 * 60 * 1000L))
     val a = new BurstingPassThroughMeTLingPotAdaptor(new TimedMeTLingPotAdaptor(0L,0L,()=>false),2,poll,success,error){
       override protected def onSuccess(res:Boolean) = {
         val result = super.onSuccess(res)
@@ -121,12 +121,12 @@ class BurstingPassThroughMeTLingPotSuite extends FunSuite with AsyncAssertions w
     a.init
     val now = new Date().getTime
     a.postItems(Range(0,10).map(i => MeTLingPotItem("test",0L,fakeKVP,fakeKVP,None,None,None)).toList)
-    w.await(timeout(1000 millis), dismissals(5))
+    w.await(awaitTimeout, dismissals(5))
     val after = new Date().getTime
     a.shutdown
     assert(counter == 5)
     val timeTaken = (after - now)
-    assert(timeTaken < 1000L)
+    assert(timeTaken < (5 * 60 * 1000L))
   }
   test("should wait error times on errors"){
     var counter = 0
@@ -161,7 +161,7 @@ class BurstingPassThroughMeTLingPotSuite extends FunSuite with AsyncAssertions w
     a.init
     val now = new Date().getTime
     a.postItems(Range(0,10).map(i => MeTLingPotItem("test",0L,fakeKVP,fakeKVP,None,None,None)).toList)
-    w.await(timeout(10 * 1000 millis), dismissals(2))
+    w.await(awaitTimeout, dismissals(2))
     val after = new Date().getTime
     a.shutdown
     assert(counter > 0)

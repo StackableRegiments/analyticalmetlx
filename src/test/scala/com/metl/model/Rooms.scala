@@ -9,6 +9,7 @@ import concurrent.AsyncAssertions
 import com.metl.data._
 
 class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Logger {
+  val awaitTimeout = timeout(5 * 60 * 1000 millis) // 5 minutes
   private val config = ServerConfiguration.empty
   private val conversationRoomId = "1000"
   private val slideRoomId = "1001"
@@ -39,8 +40,8 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     val user = "bob"
     roomJoined ! JoinRoom(user,"1",joiner)
 
-    joinerWaiter.await(timeout(5000 millis),dismissals(1))
-    roomJoinedWaiter.await(timeout(10000 millis),dismissals(1))
+    joinerWaiter.await(awaitTimeout,dismissals(1))
+    roomJoinedWaiter.await(awaitTimeout,dismissals(1))
 
     roomJoined.localShutdown
 
@@ -77,8 +78,8 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
 
     roomLeft ! LeaveRoom(user,userCometId,leaver)
 
-    leaverWaiter.await(timeout(5000 millis),dismissals(1))
-    roomLeftWaiter.await(timeout(10000 millis),dismissals(1))
+    leaverWaiter.await(awaitTimeout,dismissals(1))
+    roomLeftWaiter.await(awaitTimeout,dismissals(1))
 
     roomLeft.localShutdown
 
@@ -128,8 +129,8 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     val user = "bob"
     roomJoined ! JoinRoom(user,"1",joiner)
 
-    joinerWaiter.await(timeout(5000 millis),dismissals(1))
-    roomJoinedWaiter.await(timeout(10000 millis),dismissals(1))
+    joinerWaiter.await(awaitTimeout,dismissals(1))
+    roomJoinedWaiter.await(awaitTimeout,dismissals(1))
 
     roomNotJoined.localShutdown
     roomJoined.localShutdown
@@ -179,9 +180,9 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     roomJoined ! JoinRoom(user,"1",joiner1)
     roomJoined ! JoinRoom(user,"1",joiner2)
 
-    joinerWaiter1.await(timeout(5000 millis),dismissals(1))
-    joinerWaiter2.await(timeout(5000 millis),dismissals(1))
-    roomJoinedWaiter.await(timeout(10000 millis),dismissals(1))
+    joinerWaiter1.await(awaitTimeout,dismissals(1))
+    joinerWaiter2.await(awaitTimeout,dismissals(1))
+    roomJoinedWaiter.await(awaitTimeout,dismissals(1))
 
     roomJoined.localShutdown
 
