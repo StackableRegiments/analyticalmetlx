@@ -309,7 +309,7 @@ var Conversations = (function(){
 //            slideControls.append($('<span/>').addClass("pageCounter").text(sprintf("%s/%s",cs.index + 1,maxIndex + 1)));
             var column = $('<span/>').attr('id',"pageCountContainer").appendTo(slideControls);
             column.append($('<div/>').addClass("pageCounter").text(cs.index + 1));
-            column.append($('<div/>').addClass("pageCounter").text("/"));
+            column.append($('<div/>').addClass("pageCounter").text("of"));
             column.append($('<div/>').addClass("pageCounter").text(maxIndex + 1));
             constructNextSlideButton(slideControls,cs.index,maxIndex);
             constructAddSlideButton(slideControls);
@@ -880,7 +880,7 @@ var Conversations = (function(){
         return sprintf("slideContainer_%s",slide.id);
     };
     var slideLabel = function(slide){
-        return sprintf("%s/%s",slide.index+1,currentConversation.slides.length);
+        return slide.index+1;
     };
     var constructSlide = function(slide){
         var slideIndex = slide.index + 1;
