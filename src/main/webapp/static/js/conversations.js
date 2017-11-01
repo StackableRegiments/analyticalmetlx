@@ -635,6 +635,7 @@ var Conversations = (function(){
             if (shouldRefreshSlideDisplay(details)){
                 refreshSlideDisplay();
             }
+            Progress.call("onLayoutUpdated");
         }
     };
     var shouldModifyConversationFunction = function(conversation){
