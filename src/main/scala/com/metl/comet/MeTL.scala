@@ -1238,8 +1238,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         if( cc.jid.toString.equals(jid)) {
           partialUpdate(Call(RECEIVE_ATTENDANCE,JObject(List(
             JField("location",JString(jid)),
-            JField("currentMembers",JArray(currentMembers.map(cm => JString(cm)))),
-            JField("possibleMembers",JArray(possibleMembers.map(pm => JString(pm))))
+            JField("currentMembers",JArray(currentMembers.filter(pm => !ImporterActor.backgroundWorkerName.equals(pm)).map(cm => JString(cm)))),
+            JField("possibleMembers",JArray(possibleMembers.filter(pm => !ImporterActor.backgroundWorkerName.equals(pm)).map(pm => JString(pm))))
           ))))
         }
       })

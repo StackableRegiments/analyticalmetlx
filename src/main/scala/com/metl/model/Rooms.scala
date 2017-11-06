@@ -93,6 +93,9 @@ object RoomMetaDataUtils {
     }
   }
 }
+object ImporterActor {
+  val backgroundWorkerName = "serverSideBackgroundWorker"
+}
 
 class HistoryCachingRoomProvider(config:ServerConfiguration,idleTimeout:Option[Long]) extends RoomProvider(config) with Logger {
   protected lazy val metlRooms = new java.util.concurrent.ConcurrentHashMap[String,MeTLRoom]
@@ -389,7 +392,7 @@ abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator
     j.actor ! RoomJoinAcknowledged(config.name,location)
     warn("%s joining room %s".format(username,roomMetaData))
     roomMetaData match {
-      case cr:ConversationRoom => {
+      case cr:ConversationRoom if !ImporterActor.backgroundWorkerName.equals(username) => {
         conversationCache.foreach(conv => {
           if (joinedUsers.exists(_._1 == conv.author)){
             // the author's in the room, so don't perform any automatic action. 
@@ -419,7 +422,7 @@ abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator
         }
         j.actor ! ConversationParticipation(location,getAttendance,getPossibleAttendance) //why are we sending J two messages of the same content?  Won't he always get the other message if he's new?  Why if he's new should he get two of them?
       }
-      case sr:SlideRoom => {
+      case sr:SlideRoom if !ImporterActor.backgroundWorkerName.equals(username) => {
         if (!oldMembers.contains(username)) {
           try {
             trace("trying to send truePresence for slide room: %s".format(location))
@@ -441,7 +444,7 @@ abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator
     l.actor ! RoomLeaveAcknowledged(config.name,location)
     trace("%s leaving room %s".format(username,roomMetaData))
     roomMetaData match {
-      case cr:ConversationRoom => {
+      case cr:ConversationRoom if !ImporterActor.backgroundWorkerName.equals(username) => {
         conversationCache.foreach(conv => {
           if (joinedUsers.exists(_._1 == conv.author)){
             // the author's still in the room 
@@ -469,7 +472,7 @@ abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator
           }
         }
       }
-      case sr:SlideRoom => {
+      case sr:SlideRoom if !ImporterActor.backgroundWorkerName.equals(username) => {
         if (oldMembers.contains(username)) {
           try {
             trace("trying to send falsePresence for slide room: %s".format(location))
