@@ -10,7 +10,7 @@ Add the following attributes to the BurstingMeTLingPotAdaptor (in millis).
 1.21.1
 
 Install Jetty 9.4.6.v20170531 and configure (see WoS for details).
-Update start.jar to Jetty 9.4.6.v20170531.
+(dev only) Update start.jar to Jetty 9.4.6.v20170531.
 
 Wrap <d2lGradebook/> in <externalLibGradebookConfigurator className="com.metl.d2l.D2LGradebookConfigurator">.
 Wrap <d2lGroupsProvider/> in <externalLibGroupProvider className="com.metl.d2l.D2LGroupsConfigurator">.
@@ -18,12 +18,12 @@ Wrap <d2lGroupStore/> in <externalLibGroupStoreProvider className="com.metl.d2l.
 Wrap <lti><remotePlugin/></lti> and <brightSpaceValence/> in <externalLibLtiProvider className="com.metl.d2l.BrightSparkLtiConfigurator">.
 Wrap <ApiGatewayMetlingPotAdaptor/> in <externalMetlingPotProvider className="com.metl.pot.AWSMeTLingPotAdaptorConfigurator">.
 
-Provide slu-adaptor_2.11-0.0.3.jar on classpath, and (for AWS MeTLingPot only):
+Provide slu-adaptor_2.11-0.0.4.jar on classpath, and (for AWS MeTLingPot only):
 aws-java-sdk-core-1.11.72.jar
 aws-java-sdk-opensdk-1.11.72.jar
 
-Do this by copying to jetty/slu dir, and adding the following to context.xml:
-  <Set name="extraClasspath">slu/slu-adaptor_2.11-0.0.3.jar,slu/aws-java-sdk-core-1.11.72.jar,slu/aws-java-sdk-opensdk-1.11.72.jar</Set>
+Do this by copying to jetty/slu dir, and adding the following to webapps/context.xml:
+  <Set name="extraClasspath">slu/slu-adaptor_2.11-0.0.4.jar,slu/aws-java-sdk-core-1.11.72.jar,slu/aws-java-sdk-opensdk-1.11.72.jar</Set>
 
 1.20.15
 
