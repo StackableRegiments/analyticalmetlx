@@ -39,11 +39,11 @@ class BurstingPassThroughMeTLingPotSuite extends FunSuite with AsyncAssertions w
     val success = Some(new TimeSpan(0L))
     val error = Some(new TimeSpan(0L))
     val a = new BurstingPassThroughMeTLingPotAdaptor(new TimedMeTLingPotAdaptor(0L,0L,()=>false),2,poll,success,error){
-      override protected def doUpload = {
-        val res = super.doUpload
+      override protected def onSuccess(res:Boolean) = {
+        val result = super.onSuccess(res)
         counter += 1
         w.dismiss
-        res
+        result
       }
     }
     a.init

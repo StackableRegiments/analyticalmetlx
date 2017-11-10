@@ -1,0 +1,16 @@
+<configuration debug="false" scan="false" >
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <Pattern>TEST %d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
+    </encoder>
+	</appender>
+	<appender name="TEST_FILE" class="ch.qos.logback.core.FileAppender">
+    <file>test.log</file>
+    <encoder>
+      <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
+    </encoder>
+  </appender>  
+  <root level="WARN">
+    <appender-ref ref="TEST_FILE"/>
+  </root>
+</configuration>
