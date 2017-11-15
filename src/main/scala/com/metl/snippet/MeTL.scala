@@ -62,11 +62,11 @@ class Metl extends Logger with ReadOnlyMetlInterface {
   def printSlideWithPrivateFor(conversationJid:Int,slideId:Int):String = {
     "/printableImageWithPrivateFor/%s".format(slideId.toString)
   }
-  override def remotePluginConversationChooser(ltiToken:String):String = {
-    "/remotePluginConversationChooser?ltiToken=%s".format(ltiToken)
+  override def remotePluginConversationChooser(ltiId:String,ltiToken:String):String = {
+    "/remotePluginConversationChooser?ltiId=%s&ltiToken=%s".format(ltiId,ltiToken)
   }
-  def remotePluginChoseConversation(ltiToken:String,conversationJid:Int):String = {
-    "/remotePlugin/remotePluginConversationChosen?ltiToken=%s&conversationJid=%s".format(ltiToken,conversationJid.toString)
+  def remotePluginChoseConversation(prefix:String,ltiToken:String,conversationJid:Int):String = {
+    "/%s/remotePluginConversationChosen?ltiToken=%s&conversationJid=%s".format(prefix,ltiToken,conversationJid.toString)
   }
   override def noBoard:String = {
     conversationSearch()
@@ -137,6 +137,9 @@ class Metl extends Logger with ReadOnlyMetlInterface {
         }
       }
     })
+    S.param("ltiId").foreach(ltiId => {
+      name += "_LTIID:%s".format(ltiId)
+    })
     S.param("ltiToken").foreach(ltiToken => {
       name += "_LTITOKEN:%s".format(ltiToken)
     })
@@ -144,6 +147,9 @@ class Metl extends Logger with ReadOnlyMetlInterface {
       name += "_QUERY:%s".format(query)
     })
     name
+  }
+  def getLtiIdFromName(in:String):Option[String] = {
+    in.split("_").map(_.split(":")).find(_(0) == "LTIID").map(_.drop(1).mkString(":"))
   }
   def getLtiTokenFromName(in:String):Option[String] = {
     in.split("_").map(_.split(":")).find(_(0) == "LTITOKEN").map(_.drop(1).mkString(":"))
