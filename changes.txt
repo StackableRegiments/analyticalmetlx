@@ -1,3 +1,7 @@
+1.21.9
+
+Update slu-adaptor to v0.0.6.
+
 1.21.5
 
 Update slu-adaptor to v0.0.4.
