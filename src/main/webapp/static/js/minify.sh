@@ -1,4 +1,4 @@
-echo "execute this from the src/main/webapp/static/js directory"
+# echo "execute this from the src/main/webapp/static/js directory"
 for file in $(ls)
 do
     case $file in
