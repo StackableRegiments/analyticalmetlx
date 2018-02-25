@@ -83,7 +83,7 @@ class BurstingPassThroughMeTLingPotAdaptor(override val a:MeTLingPotAdaptor,val 
       try {
         Range.inclusive(1,burstSize).foreach(_i => { // dequeueing only takes one element at a time.
           buffer.headOption.map(ho => {
-            items ::: List(buffer.dequeue)
+            items = items ::: List(buffer.dequeue)
           })
         })
       } catch {
