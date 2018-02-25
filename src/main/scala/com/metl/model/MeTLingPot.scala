@@ -73,8 +73,12 @@ class BurstingPassThroughMeTLingPotAdaptor(override val a:MeTLingPotAdaptor,val 
     if (buffer.length > 0){
       val items:List[MeTLingPotItem] = buffer.take(burstSize).toList
       buffer --= items
+      if (items.length > 0){
       trace("processing items: %s".format(items.length))
-      a.postItems(items).left.map(e => onError(items,e)).right.map(onSuccess)
+        a.postItems(items).left.map(e => onError(items,e)).right.map(onSuccess)
+      } else {
+        reschedule(pollDelayTs)
+      }
     } else {
       reschedule(pollDelayTs)
     }
