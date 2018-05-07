@@ -1,0 +1,29 @@
+var ring = (function(){
+    var circle = Math.PI*2;
+    var controls = {
+        ink:{},
+        image:{},
+        cam:{},
+	settings:{},
+	profile:{}
+    };
+    return {
+        model:function(radius,dir){
+            var host = new THREE.Object3D();
+            var dist = circle/_.keys(controls).length;
+            _.each(_.keys(controls),function(k,i){
+                var v = controls[k];
+                var controlM = new THREE.Mesh(new THREE.PlaneGeometry(radius/1.5,radius/1.5),new THREE.MeshBasicMaterial({side:THREE.DoubleSide}));
+		controlM.position.set(Math.cos(i * dist) * radius,0,Math.sin(i * dist) * radius);
+		console.log(controlM.position);
+                host.add(controlM);
+		dir.billboards.push(controlM);
+            });
+	    host.position.z = radius * -2;
+	    dir.renderTicks["spin"] = function(){
+		host.rotation.y += 0.05;
+	    };
+            return host;
+        }
+    };
+})();
