@@ -1,4 +1,9 @@
 <div class="lift:surround?with=unstyled;at=content">
+  <link href="/static/fontawesome/fontawesome.css" rel="stylesheet">
+  <link href="/static/fontawesome/fa-brands.css" rel="stylesheet">
+  <link href="/static/fontawesome/fa-light.css" rel="stylesheet">
+  <link href="/static/fontawesome/fa-regular.css" rel="stylesheet">
+  <link href="/static/fontawesome/fa-solid.css" rel="stylesheet">
   <script data-lift="with-resource-id" src="static/js/lodash.js"></script>
   <script data-lift="with-resource-id" src="static/js/InteractableCanvas.js"></script>
   <script data-lift="with-resource-id" src="static/js/stable/Tween.js"></script>
@@ -7,6 +12,7 @@
   <script data-lift="with-resource-id" src="static/js/sprintf.js"></script>
   <script src="static/js/composer.js"></script>
   <script src="static/js/majorModes.js"></script>
+  <script src="static/js/thumbNav.js"></script>
   <style>
     .scene {
     position:absolute;
@@ -25,13 +31,21 @@
     bottom:0;
     left:0;
     }
+    #fontTrigger{
+    font-family:Font Awesome\ 5 Pro;
+    }
   </style>
   <div class="scene"></div>
   <script>
     $(function(){
+    new FontFace("Font Awesome 5 Pro","url(/static/webfonts/fa-regular-400.woff2)")
+    .load()
+    .then(function(){
     var c = composer();
     majorModes(c);
+    thumbNav(c);
     c.action();
+    });
     });
   </script>
 </div>
