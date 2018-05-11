@@ -31,15 +31,24 @@ var majorModes = function(c){
         }
     };
     var controlPairs = [];
+    var surfaces = {};
     var controlHost = new THREE.Object3D();
 
     var dist = circle/_.keys(controls).length;
     var radius = 130;
     var _w;
     var _h;
+    var drawGlyph = function(context){
+        context.font = "400 80px 'Font Awesome 5 Pro'";
+        context.strokeStyle = "rgba(0,0,255,1.0)";
+        context.lineWidth = 3;
+        context.fillStyle = context.model.color;
+        context.textAlign = "center";
+        context.fillText(context.model.glyph,context.canvas.width/2,context.canvas.height/1.3);
+    };
     var resize = function(w,h){
-	_w = w;
-	_h = h;
+        _w = w;
+        _h = h;
         radius = Math.min(w,h)/5;
         camera.setViewOffset(
             w,h,
@@ -47,36 +56,39 @@ var majorModes = function(c){
             h * -3,
             w*4,h*4);
         _.each(controlPairs,function(pair,i){
-            pair[1].position.set(Math.cos(i * dist) * radius,0,Math.sin(i * dist) * radius);
+            var controlM = pair[1];
+            controlM.position.set(Math.cos(i * dist) * radius,0,Math.sin(i * dist) * radius);
+            drawGlyph(surfaces[controlM.uuid]);
         });
     };
     _.each(_.keys(controls),function(k,i){
         var control = controls[k];
         var canvas = document.createElement("canvas");
-        canvas.width = radius * 1.2;
-        canvas.height = radius * 1.2;
+        canvas.width = 128;
+        canvas.height = 128;
         var context = canvas.getContext('2d');
-        context.font = "400 80px 'Font Awesome 5 Pro'";
-        context.strokeStyle = "rgba(0,0,255,1.0)";
-        context.lineWidth = 3;
-        context.fillStyle = "rgba(255,0,0,0.7)";
-        context.textAlign = "center";
-        context.fillText(control.glyph,radius/2,radius/1.3);
+        var v = controls[k];
+        context.model = v;
         var texture = new THREE.Texture(canvas);
-        texture.needsUpdate = true;
         var material = new THREE.MeshBasicMaterial({map:texture, side:THREE.DoubleSide});
         material.transparent = true;
 
-        var v = controls[k];
         var controlM = new THREE.Mesh(new THREE.CubeGeometry(radius/2,radius/2,radius/2));
         var visibleM = new THREE.Mesh(new THREE.PlaneGeometry(radius / 2,radius / 2,), material);
-	controlM.material.visible = false;
+        controlM.material.visible = false;
 
         controlPairs.push([visibleM,controlM]);
         controlHost.add(controlM);
 
         scene.add(visibleM);
         billboards.push(controlM);
+        var surface = surfaces[controlM.uuid] = context;
+        surface.setColor = function(color){
+            v.color = color;
+            drawGlyph(surface);
+            texture.needsUpdate = true;
+        }
+        surface.setColor("red");
     });
     scene.add(controlHost);
     controlHost.position.z = radius * -1.5;
@@ -92,17 +104,28 @@ var majorModes = function(c){
     listen(sensor, 'click')
         .start(p => {
             if(!drag){
-		var ray = new THREE.Raycaster();
-		var _p = {x:p.offsetX/_w,y:p.offsetY/_h};
-		_p.x = _p.x * 2 - 1;
-		_p.y = -(_p.y * 2) + 1;
-		ray.setFromCamera(_p,camera);
-		var hits = ray.intersectObjects(scene.children,true);
-                console.log("click",_p,hits);
-		_.each(hits,function(hit){
-		    hit.object.position.y = hit.object.position.y + 20;
-		    console.log(hit.object.position);
-		});
+                var ray = new THREE.Raycaster();
+                var _p = {x:p.offsetX/_w,y:p.offsetY/_h};
+                _p.x = _p.x * 2 - 1;
+                _p.y = -(_p.y * 2) + 1;
+                ray.setFromCamera(_p,camera);
+                var hits = ray.intersectObjects(scene.children,true);
+                hits = _.filter(hits,function(hit){
+                    return hit.object.uuid in surfaces;
+                });
+                hits = _.sortBy(hits,function(hit){
+                    return hit.object.position.distanceTo(camera.position);
+                });
+		hits = _.take(hits,1);
+                _.each(_.values(surfaces),function(surface){
+                    surface.setColor("red");
+                });
+                console.log(hits.length);
+                _.each(hits,function(hit){
+                    var obj = hit.object;
+                    obj.position.y = hit.object.position.y + 20;
+                    surfaces[obj.uuid].setColor("green");
+                });
             }
         });
 
@@ -124,7 +147,7 @@ var majorModes = function(c){
             start.x = start.x || end.x;
             start.y = start.y || end.y;
             var dist = Math.sqrt(Math.pow(end.x-start.x,2)+Math.pow(end.y-start.y,2));
-	    console.log("dist",dist);
+            console.log("dist",dist);
             if(dist <= clickThreshold){
                 updater.stop();
                 drag = false;
