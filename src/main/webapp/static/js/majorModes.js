@@ -1,5 +1,9 @@
 var majorModes = function(c){
     var { decay, listen, pointer, value } = window.popmotion;
+    var state = {
+        UNSELECTED:"red",
+        SELECTED:"green"
+    };
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera( 75, 4/3 , 0.1, 1000 );
@@ -31,21 +35,66 @@ var majorModes = function(c){
         }
     };
     var controlPairs = [];
-    var surfaces = {};
     var controlHost = new THREE.Object3D();
 
     var dist = circle/_.keys(controls).length;
     var radius = 130;
     var _w;
     var _h;
-    var drawGlyph = function(context){
+    var billboard = function(space,model,draw){
+        var canvas = document.createElement("canvas");
+        canvas.width = space.width || 128;
+        canvas.height = space.height || 128;
+        var context = canvas.getContext('2d');
+        var texture = new THREE.Texture(canvas);
+        var material = new THREE.MeshBasicMaterial({map:texture, side:THREE.DoubleSide});
+        material.transparent = true;
+        var mesh = new THREE.Mesh(new THREE.PlaneGeometry(space.pWidth || radius / 2, space.pHeight || radius / 2), material);
+        mesh.position.copy(space.position || new THREE.Vector3());
+        var update = function(){
+	    context.clearRect(0,0,canvas.width,canvas.height);
+            draw(component);
+            texture.needsUpdate = true;
+        };
+        var component = {
+            mesh:mesh,
+            context:context,
+            texture:texture,
+            update:update,
+            model:model
+        };
+        mesh.component = component;
+        scene.add(mesh);
+
+        update();
+        return component;
+    }
+    var drawGlyph = function(component){
+        var context = component.context;
+        var model = component.model;
         context.font = "400 80px 'Font Awesome 5 Pro'";
         context.strokeStyle = "rgba(0,0,255,1.0)";
         context.lineWidth = 3;
-        context.fillStyle = context.model.color;
+        context.fillStyle = model.color;
         context.textAlign = "center";
-        context.fillText(context.model.glyph,context.canvas.width/2,context.canvas.height/1.3);
+        context.fillText(model.glyph,context.canvas.width/2,context.canvas.height/1.3);
     };
+    _.each(_.keys(controls),function(k,i){
+        var model = _.extend(controls[k],{name:k,color:state.UNSELECTED});
+        var component = billboard({},model,function(component){
+            drawGlyph(component);
+        });
+        component.setColor = function(color){
+            component.model.color = color;
+            component.update();
+        }
+
+        var controlM = new THREE.Mesh(new THREE.CubeGeometry(radius/2,radius/2,radius/2));
+        controlM.material.visible = false;
+        controlPairs.push([component,controlM]);
+        controlHost.add(controlM);
+        billboards.push(controlM);
+    });
     var resize = function(w,h){
         _w = w;
         _h = h;
@@ -57,41 +106,36 @@ var majorModes = function(c){
             w*4,h*4);
         _.each(controlPairs,function(pair,i){
             var controlM = pair[1];
-            controlM.position.set(Math.cos(i * dist) * radius,0,Math.sin(i * dist) * radius);
-            drawGlyph(surfaces[controlM.uuid]);
+            controlM.position.set(
+                Math.cos(i * dist) * radius * 0.9,
+                0,
+                Math.sin(i * dist) * radius * 0.9);
         });
     };
-    _.each(_.keys(controls),function(k,i){
-        var control = controls[k];
-        var canvas = document.createElement("canvas");
-        canvas.width = 128;
-        canvas.height = 128;
-        var context = canvas.getContext('2d');
-        var v = controls[k];
-        context.model = v;
-        var texture = new THREE.Texture(canvas);
-        var material = new THREE.MeshBasicMaterial({map:texture, side:THREE.DoubleSide});
-        material.transparent = true;
 
-        var controlM = new THREE.Mesh(new THREE.CubeGeometry(radius/2,radius/2,radius/2));
-        var visibleM = new THREE.Mesh(new THREE.PlaneGeometry(radius / 2,radius / 2,), material);
-        controlM.material.visible = false;
-
-        controlPairs.push([visibleM,controlM]);
-        controlHost.add(controlM);
-
-        scene.add(visibleM);
-        billboards.push(controlM);
-        var surface = surfaces[controlM.uuid] = context;
-        surface.setColor = function(color){
-            v.color = color;
-            drawGlyph(surface);
-            texture.needsUpdate = true;
-        }
-        surface.setColor("red");
+    var modeDisplay = billboard({
+        position:new THREE.Vector3(0,radius*-0.6,radius * -2),
+        width:1024,
+        height:128,
+	pWidth:256,
+	pHeight:48
+    },{text:"Spin Me!"},function(component){
+        console.log("Drawing",component);
+        component.context.lineWidth = 3;
+        component.context.textAlign = "center";
+        component.context.fillStyle = "red";
+	component.context.font = "900 128px Arial";
+        component.context.fillText(component.model.text,component.context.canvas.width/2,component.context.canvas.height/1.3);
+        console.log("Spin me");
     });
+    modeDisplay.setText = function(t){
+	modeDisplay.model.text = t;
+	modeDisplay.update();
+    };
     scene.add(controlHost);
-    controlHost.position.z = radius * -1.5;
+    controlHost.position.set(0,
+                             0,
+                             radius * -2.0);
 
     var sensor = document.querySelector('.scene');
     var updater = value({x:0,y:0}, function(pt){
@@ -110,21 +154,19 @@ var majorModes = function(c){
                 _p.y = -(_p.y * 2) + 1;
                 ray.setFromCamera(_p,camera);
                 var hits = ray.intersectObjects(scene.children,true);
-                hits = _.filter(hits,function(hit){
-                    return hit.object.uuid in surfaces;
-                });
-                hits = _.sortBy(hits,function(hit){
+                hits = _.sortBy(_.filter(hits,function(hit){
+                    return hit.object.component;
+                }),function(hit){
                     return hit.object.position.distanceTo(camera.position);
                 });
-		hits = _.take(hits,1);
-                _.each(_.values(surfaces),function(surface){
-                    surface.setColor("red");
+                hits = _.take(hits,1);
+                _.each(controlPairs,function(pair){
+                    pair[0].setColor("red");
                 });
-                console.log(hits.length);
                 _.each(hits,function(hit){
-                    var obj = hit.object;
-                    obj.position.y = hit.object.position.y + 20;
-                    surfaces[obj.uuid].setColor("green");
+                    console.log("hit",hit);
+                    hit.object.component.setColor("green");
+		    modeDisplay.setText(hit.object.component.model.name);
                 });
             }
         });
@@ -147,7 +189,6 @@ var majorModes = function(c){
             start.x = start.x || end.x;
             start.y = start.y || end.y;
             var dist = Math.sqrt(Math.pow(end.x-start.x,2)+Math.pow(end.y-start.y,2));
-            console.log("dist",dist);
             if(dist <= clickThreshold){
                 updater.stop();
                 drag = false;
@@ -164,7 +205,7 @@ var majorModes = function(c){
 
     c.renderTicks["majorModes"] = function(){
         _.each(controlPairs,function(pair){
-            pair[0].position.setFromMatrixPosition(pair[1].matrixWorld);
+            pair[0].mesh.position.setFromMatrixPosition(pair[1].matrixWorld);
         });
         _.each(billboards,function(obj){
             obj.lookAt(camera.position);
