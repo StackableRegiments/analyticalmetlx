@@ -1,0 +1,27 @@
+version: 2.0
+jobs:
+  build:
+    machine: latest
+      java:
+        version: oraclejdk8
+  test:
+    override:
+      # Run unit tests
+      - sbt test
+  #        parallel: true
+  #        files:
+  #          - src/test/scala/com/metl/data/**/*
+  #          - src/test/scala/com/metl/model/**/*
+  #          - src/test/scala/com/metl/utils/**/*
+  #          - src/test/scala/com/metl/*
+    post:
+      # Make test reports available to Circle
+      - mkdir -p $CIRCLE_TEST_REPORTS/reports/
+      - cp -R target/test-reports/* $CIRCLE_TEST_REPORTS/reports/
+
+workflows:
+  version: 2
+    build-and-deploy:
+      jobs:
+        - build
+        - test  
