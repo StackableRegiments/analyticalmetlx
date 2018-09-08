@@ -15,4 +15,4 @@ jobs:
           key: circleci-analyticalmetlx-{{checksum "pom.xml"}}  
       - run: sbt test
       - store_test_results:
-        path: target/surefire-reports
+          path: target/surefire-reports
