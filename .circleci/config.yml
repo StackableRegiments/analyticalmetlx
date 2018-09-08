@@ -1,23 +1,19 @@
 version: 2.0
 jobs:
   build:
-    machine: latest
-      java:
-        version: oraclejdk8
-  test:
-    override:
-      # Run unit tests
-      - sbt test
-  #        parallel: true
-  #        files:
-  #          - src/test/scala/com/metl/data/**/*
-  #          - src/test/scala/com/metl/model/**/*
-  #          - src/test/scala/com/metl/utils/**/*
-  #          - src/test/scala/com/metl/*
-    post:
-      # Make test reports available to Circle
-      - mkdir -p $CIRCLE_TEST_REPORTS/reports/
-      - cp -R target/test-reports/* $CIRCLE_TEST_REPORTS/reports/
+    docker:
+      - image: circleci/openjdk:8-jdk-browsers
+    steps:
+      - checkout
+      - restore_cache:
+          key: circleci-analyticalmetlx-{{checksum "pom.xml"}}  
+      - run: mvn dependency:go-offline
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: circleci-analyticalmetlx-{{checksum "pom.xml"}}  
+      - run: sbt test
+      - store_test_results:
 
 workflows:
   version: 2
