@@ -31,7 +31,7 @@ case class ImportDescription(id:String, name:String, author:String, overallProgr
 }
 case class ImportProgress(name:String,numerator:Int,denominator:Int)
 
-case class CloudConvertProcessResponse(url:String,id:String,host:String,expires:String,maxtime:Int,minutes:Int)
+case class CloudConvertProcessResponse(url:String,id:String,host:Option[String],expires:Option[String],maxtime:Option[Int],minutes:Option[Int])
 case class CloudConvertUploadElement(url:String)
 case class CloudConvertProcessDefinitionResponse(url:Option[String],id:String,message:String,step:String,upload:Option[CloudConvertUploadElement],output:Option[CloudConvertUploadElement])
 case class CloudConvertUploadResponse(file:String,size:Int,message:String)
