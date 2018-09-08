@@ -9,7 +9,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: circleci-analyticalmetlx-{{checksum "build.sbt"}}  
+          key: circleci-analytical_metlx-{{checksum "build.sbt"}}  
       - run: sh ./sbt.sh compile
       - save_cache:
           paths:
@@ -21,7 +21,7 @@ jobs:
             - ~/.sbt-boot
             - .m2  
             - .sbt-boot  
-          key: circleci-analyticalmetlx-{{checksum "build.sbt"}}  
+          key: circleci-analytical_metlx-{{checksum "build.sbt"}}  
       - run: sh ./sbt.sh test
       - store_test_results:
           path: target/test-reports
