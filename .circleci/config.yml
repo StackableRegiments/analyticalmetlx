@@ -1,6 +1,7 @@
-version: 2.0
+version: 2
 jobs:
   build:
+    working_directory: ~/circleci-analyticalmetlx
     docker:
       - image: circleci/openjdk:8-jdk-browsers
     steps:
@@ -14,10 +15,4 @@ jobs:
           key: circleci-analyticalmetlx-{{checksum "pom.xml"}}  
       - run: sbt test
       - store_test_results:
-
-workflows:
-  version: 2
-    build-and-deploy:
-      jobs:
-        - build
-        - test  
+        path: target/surefire-reports
