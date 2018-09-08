@@ -12,6 +12,9 @@ jobs:
       - save_cache:
           paths:
             - ~/.m2
+            - .sbt
+            - .ivy2
+            - .sbt-boot  
           key: circleci-analyticalmetlx-{{checksum "build.sbt"}}  
       - run: sbt test
       - store_test_results:
