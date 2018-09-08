@@ -2,24 +2,24 @@
 
 ## Description
 
-This project provides the primary MeTL server, the high interaction comet-enabled javascript product (available at `/board`).  This is developed in Scala, and deploys as a WAR directly into a Java web container.  We've been using Jetty. 
+This project provides the primary MeTL server, the high interaction comet-enabled javascript product (available at `/board`).  This is developed in Scala, and deploys as a WAR directly into a Java web container.  We've been using Jetty (which is embedded for development, but the WAR can be dropped into any Java servlet container).
 
-## Run
+## Installation
 
-We use SBT to compile and publish this app.  
-
-To run a local server for this app, use:
-
-    sbt
-    > container:restart
+- Install the following required tools:
+  - [Java](www.oracle.com/technetwork/java/javase/downloads) JDK version 8.x
+  - [NPM](https://www.npmjs.com/get-npm) (Node Package Manager)
+- Clone MeTL `git clone https://github.com/StackableRegiments/analyticalmetlx.git`
 
 ## Configure
 
-When running the application, there're a few configuration settings you'll need to set.  These are set by the files outside the WAR, and examples of the files are available in the config directory (eg `configuration.sample.xml`).  
+Before running the application, there are a few configuration settings you'll need to set.  These are set by the files outside the WAR, and examples of the files are available in the config directory (eg `configuration.sample.xml`).
 
 The following Java system properties can be provided at the command line (see `sbt.bat` and `sbt.sh`):
 
 ### SBT
+
+We use SBT to compile and publish this app. It is included in the repo as `sbt-launcher.jar`.
 
 Set the location of SBT files and directories.
 
@@ -35,7 +35,7 @@ Set the location of SBT files and directories.
 
 See [README-config.md](README-config.md) for more detail.
 
-### Logback 
+### Logback
 
 MeTL uses Logback, which can be overridden to use a config file from outside the WAR.
 
@@ -46,14 +46,49 @@ See [Logback](https://logback.qos.ch/manual/index.html) for more detail.
 ### Developer Options
 
 - `run.mode="development"` instructs Lift to disable most caching (see [Simply Lift](https://simply.liftweb.net/index-3.1.html#toc-Subsection-3.1.2)).
-- `metl.stopwatch.enabled="true"` enables duration logging of various actions. 
+- `metl.stopwatch.enabled="true"` enables duration logging of various actions.
 - `metl.stopwatch.minimumLog="1000"` requires that an action take longer than 1s before it is logged.
-- `stackable.spending=enabled` enables use of third-party services defined in [README-config.md](README-config.md).  
+- `stackable.spending=enabled` enables use of third-party services defined in [README-config.md](README-config.md). This will also require configuring access credentials for each service.
+
+## Run
+
+To run a local (development) server for this app, use:
+
+    $ sbt container:start
+
+Other useful commands include: `sbt container:stop` and `sbt container:restart`.
 
 ## Deployment
 
-This project publishes to a WAR file.  Use sbt's deploy goal to create the warfile:
+This project publishes to a WAR file.
 
-    sbt deploy
+Use sbt's `deploy` goal to create the warfile:
+
+    $ sbt deploy
 
 and then copy it from `/target/scala-2.10/` to the container of your choice.
+
+### CSS (optional)
+
+If any styles have changed (.less) then first compile to CSS using Grunt  (on Mac/Linux):
+
+    $ ./grunt.sh
+
+or (on Windows):
+
+    > grunt-run.bat
+
+If this is a fresh checkout then (on Mac/Linux) you'll first need to make the shell script executable: `chmod u+x grunt.sh`
+
+### Javascript (optional)
+
+If any Javascript has changed (.js) then first re-minify (on Mac/Linux):
+
+    $ ./minify.sh
+
+or (on Windows):
+
+    > minify.bat
+
+If this is a fresh checkout then (on Mac/Linux) you'll first need to make the shell script executable first: `chmod u+x minify.sh`
+

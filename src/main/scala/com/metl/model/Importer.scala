@@ -537,7 +537,7 @@ class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with L
         case p:PrivateSlideRoom => p.slideId.toString
         case _ => newLoc.getJid
       }
-      room ! JoinRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
+      room ! JoinRoom(ImporterActor.backgroundWorkerName,thisDuplicatorId,this)
       oldContent.getAll.sortWith((a,b) => a.timestamp < b.timestamp).foreach(stanza => {
         room ! ArchiveToServerMeTLStanza(stanza match {
           case m:MeTLInk => m.copy(slide = slideId)
@@ -556,7 +556,7 @@ class ServerSideBackgroundWorkerChild extends net.liftweb.actor.LiftActor with L
           case s:MeTLStanza => s
         })
       })
-      room ! LeaveRoom("serverSideBackgroundWorker",thisDuplicatorId,this)
+      room ! LeaveRoom(ImporterActor.backgroundWorkerName,thisDuplicatorId,this)
     }
     case CopyLocation(config,oldLoc,newLoc,contentFilter) => {
       val oldContent = config.getHistory(oldLoc.getJid).filter(contentFilter)

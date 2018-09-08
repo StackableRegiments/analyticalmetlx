@@ -86,6 +86,12 @@
     //height:140px;
     bottom:0;
 }
+.plugin .collapseButton {
+  margin:2px;
+}
+.plugin .pluginCollapsable {
+  background:white;
+}
 .plugin{
     padding:0 2px;
     display:table-cell;
@@ -106,12 +112,10 @@
 #masterHeader{
     width:100%;
     margin-top:2px;
-    margin-left:2px;
+    margin-bottom:1px;
 }
 #masterFooter{
-}
-#masterHeaderFlexContainer .heading{
-    mix-blend-mode:difference;
+    margin-top:1px;
 }
 #optionBlocks{
     flex-wrap:wrap;
@@ -156,10 +160,14 @@ html{
 }
 .translucent{
     color:@text-std;
-    background-color:rgba(0,0,0,0);
+    // no longer translucent
+    background-color:transparent;
+    //background-color:rgba(255,255,255,0.5);
 }
 #masterHeaderFlexContainer{
     display:flex;
+    align-items:center;
+    justify-content:center;
     meter,svg{
         height:10px;
         width:50px;
@@ -185,7 +193,8 @@ html{
         text-align:center;
         vertical-align:top;
         margin-top:-2px;
-        padding-left:1em;
+        // padding-left:1em;
+        margin-left:11px;
         flex-grow:1;
         //background-color:darkgray;
         //color:black;
@@ -219,20 +228,31 @@ body{
     width:100%;
 }
 #currentConversationTitleContainer{
-    background-color:@floating-background;
-    color:@floating-foreground;
+    // background-color:@floating-background;
+    color:@theme-light;//floating-foreground;
 }
 #slideControls{
     flex-shrink:0;
     flex-grow:0;
     flex-wrap:nowrap;
     float:right;
-    margin-top:-3px;
+    margin-top:-2px;
     margin-right:2px;
 }
+#pageCountContainer {
+    background-color: transparent;
+    display:inline-block;
+    padding-top:2px;
+    padding-left:2px;
+    padding-right:2px;
+    vertical-align:bottom;
+    height:50px;
+    margin:1px;
+}
 .pageCounter {
-    background-color:@floating-background;
-    color:@floating-foreground;
+    color:@theme-light;
+    font-size:1.3rem;
+    text-align:center;
 }
 #slideContainer {
     max-width:10000px;
@@ -249,7 +269,8 @@ body{
 .slide-count {
     text-align:right;
     font-weight:400;
-    margin-top:-15px;
+    margin-top:-17px;
+    margin-bottom:3px;
 }
 .activeSlide .thumbnail {
     border-left:5px solid @slide-active;
@@ -457,8 +478,11 @@ td.conversationSharing{
     }
 }
 .slideThumbnailNumber{
-    background-color: @floating-background;
-    color: @floating-foreground;
+    background-color: white;
+    color: black;
+    padding-left:2px;
+    padding-right:2px;
+    border: 1px solid black;
 }
 #applicationMenuButton{
     background-color:white;

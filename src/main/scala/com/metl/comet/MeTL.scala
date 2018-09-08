@@ -83,7 +83,8 @@ trait ConversationFilter {
 }
 
 class RemotePluginConversationChooserActor extends MeTLConversationChooserActor {
-  protected val ltiIntegration:Option[LtiIntegration] = Globals.ltiIntegrationPlugins.headOption
+  protected var ltiIntegration:Option[LtiIntegration] = None
+  protected var prefix:String = "remotePlugin"
   protected var ltiToken:Option[String] = None
   protected var ltiSession:Option[RemotePluginSession] = None
   override def lifespan = Globals.remotePluginConversationChooserActorLifespan
@@ -91,12 +92,14 @@ class RemotePluginConversationChooserActor extends MeTLConversationChooserActor 
     super.localSetup
     name.foreach(nameString => {
       warn("localSetup for [%s]".format(name))
+      getLtiIdFromName(nameString).map(ltiId => ltiIntegration = Globals.ltiIntegrationPlugins.find(_.id == ltiId))
+      ltiIntegration.map(lti => prefix = lti.getEndpointPrefix)
       ltiToken = com.metl.snippet.Metl.getLtiTokenFromName(nameString)
       ltiSession = ltiToken.flatMap(token => ltiIntegration.flatMap(_.sessionStore.is.get(token)))
     })
   }
   override def perConversationAction(conv:Conversation) = {
-    ".conversationAnchor [href]" #> ltiToken.map(lti => remotePluginChoseConversation(lti,conv.jid)) &
+    ".conversationAnchor [href]" #> ltiToken.map(lti => remotePluginChoseConversation(prefix,lti,conv.jid)) &
     ".conversationTitle *" #> conv.title &
     ".conversationAuthor *" #> conv.author &
     ".conversationJid *" #> conv.jid &
@@ -105,23 +108,10 @@ class RemotePluginConversationChooserActor extends MeTLConversationChooserActor 
         case true => ".editConversationLink [href]" #> editConversation(conv.jid)
         case false => ".conversationEditingContainer" #> NodeSeq.Empty
       }
-    } /*&
-       ".conversationChoosingContainer" #> {
-       ".quickLinkButton [onclick]" #> {
-       ajaxCall(JsRaw("this"),(s:String) => {
-       Alert("clicked quickLink: (%s) => %s \r\n%s".format(s,conv,ltiSession))
-       })
-       } &
-       ".iFrameButton [onclick]" #> {
-       ajaxCall(JsRaw("this"),(s:String) => {
-       Alert("clicked iFrame: (%s) => %s \r\n%s".format(s,conv,ltiSession))
-       })
-       }
-       }
-       */
+    } 
   }
   override def perImportAction(conv:Conversation) = {
-    ".importSuccess [href]" #> ltiToken.map(lti => remotePluginChoseConversation(lti,conv.jid))
+    ".importSuccess [href]" #> ltiToken.map(lti => remotePluginChoseConversation(prefix,lti,conv.jid))
   }
 }
 class MeTLConversationSearchActor extends MeTLConversationChooserActor {
@@ -1238,8 +1228,8 @@ class MeTLActor extends StronglyTypedJsonActor with Logger with JArgUtils with C
         if( cc.jid.toString.equals(jid)) {
           partialUpdate(Call(RECEIVE_ATTENDANCE,JObject(List(
             JField("location",JString(jid)),
-            JField("currentMembers",JArray(currentMembers.map(cm => JString(cm)))),
-            JField("possibleMembers",JArray(possibleMembers.map(pm => JString(pm))))
+            JField("currentMembers",JArray(currentMembers.filter(pm => !ImporterActor.backgroundWorkerName.equals(pm)).map(cm => JString(cm)))),
+            JField("possibleMembers",JArray(possibleMembers.filter(pm => !ImporterActor.backgroundWorkerName.equals(pm)).map(pm => JString(pm))))
           ))))
         }
       })

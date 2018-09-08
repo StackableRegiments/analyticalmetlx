@@ -4,7 +4,7 @@ import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
-version := "1.21.5"
+version := "1.21.9"
 
 val scalaVersionString = "2.11.5"
 
@@ -116,7 +116,7 @@ libraryDependencies ++= {
     //    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     //for batik (svg)
     "org.apache.xmlgraphics" % "batik-transcoder" % "1.6.1",
-    "io.github.stackableregiments" %% "external-data-types" % "0.0.7+"
+    "io.github.stackableregiments" %% "external-data-types" % "0.1.0+"
   )
 }.map(_.excludeAll(ExclusionRule(organization = "org.slf4j")).exclude("com.sun.jdmk","jmxtools").exclude("javax.jms","jms").exclude("com.sun.jmx","jmxri"))
 

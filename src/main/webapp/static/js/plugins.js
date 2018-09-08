@@ -254,8 +254,9 @@ var Plugins = (function(){
             return createPlugin(
                 "Face to face",
                 " #videoConfSessionsContainer {display:none;}"+
-                " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer" +
-                " .publishedStream {background:green;}, .subscribedStream {background:red;}"+
+                " .videoConfSessionContainer, .videoConfStartButtonContainer, .videoConfContainer {}" +
+                " .publishedStream {background:#fbcd4b;}" +
+                " .subscribedStream {background:#fbcd4b;}"+
                 " .videoConfStartButtonContainer, .videoConfPermitStudentBroadcastContainer{flex-direction:row;}"+
                 " .videoConfStartButton, .videoConfSubscribeButton{padding-top:0;margin-top:0;}"+
                 " .videoConfPermitStudentBroadcastButton {background:white;margin:1px 0;}"+
@@ -294,7 +295,7 @@ var Plugins = (function(){
                         '<button class="videoConfSubscribeButton">'+
                         '<span>Toggle</span>'+
                         '</button>'+
-                        '<span class="publisherName"></span>'+
+                        '&nbsp;<span class="publisherName"></span>'+
                         '</span>'+
                         '</div>'+
                         '</div>'+

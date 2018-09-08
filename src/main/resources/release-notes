@@ -1,3 +1,11 @@
+1.21.9
+METL-757: Update remotePluginConversationChooser to support the separated libraries.
+
+1.21.8
+METL-750: Bugfix: IE adds horizontal scrollbar that prevents chat textbox access.
+METL-754: Bugfix: Conversation title is red in Safari.
+METL-756: Bugfix: Groups and Participants show serverSideBackgroundWorker user.
+
 1.21.5
 METL-737: Improvement: Make header and footer opaque.
 METL-746: Improvement: Record attendances by user, not MeTLActor.
