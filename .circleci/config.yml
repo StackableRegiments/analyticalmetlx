@@ -16,6 +16,10 @@ jobs:
             - ~/.m2
             - .sbt
             - .ivy2
+            - ~/.ivy2
+            - ~/.sbt
+            - ~/.sbt-boot
+            - .m2  
             - .sbt-boot  
           key: circleci-analyticalmetlx-{{checksum "build.sbt"}}  
       - run: sh ./sbt.sh test
