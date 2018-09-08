@@ -18,4 +18,4 @@ jobs:
           key: circleci-analyticalmetlx-{{checksum "build.sbt"}}  
       - run: sbt test
       - store_test_results:
-          path: target/surefire-reports
+          path: target/test-reports
