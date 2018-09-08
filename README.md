@@ -92,3 +92,8 @@ or (on Windows):
 
 If this is a fresh checkout then (on Mac/Linux) you'll first need to make the shell script executable first: `chmod u+x minify.sh`
 
+### Testing
+
+MeTL has a CI pipeline on CircleCI, at:
+
+[https://circleci.com/gh/StackableRegiments/analyticalmetlx]
