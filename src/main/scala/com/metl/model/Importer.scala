@@ -144,16 +144,25 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
     in
   }
   protected def callComplexCloudConvert(filename:String,bytes:Array[Byte],inFormat:String,outFormat:String):Either[Exception,List[Tuple2[Int,Array[Byte]]]] = {
+    var dialogue = List.empty[Any]
+    val start = new java.util.Date().getTime()
+    def mark(direction:String,item:Any) = {
+      dialogue = dialogue ::: List((direction,new java.util.Date().getTime() - start,item))
+    }
     try {
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("ready to initiate cloudConverter process",2,108)),None))
       val safeRemoteName = nextFuncName
       val encoding = "UTF-8"
       val client = com.metl.utils.Http.getClient(List(("Authorization","Bearer %s".format(apiKey))))
       trace("apiKey: %s".format(apiKey))
-      val procResponse = describeResponse(client.postFormExpectingHTTPResponse("https://api.cloudconvert.com/process",List(
+      val procReq = (
+        "https://api.cloudconvert.com/process",List(
         ("inputformat" -> inFormat),
         ("outputformat" -> outFormat)
-      )))
+      ))
+      mark("OUT",procReq)
+      val procResponse = describeResponse(client.postFormExpectingHTTPResponse(procReq._1,procReq._2))
+      mark("IN",(procResponse,procResponse.responseAsString))
       val procResponseObj = parse(procResponse.responseAsString).extract[CloudConvertProcessResponse]
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter process created",3,108)),None))
 
@@ -172,7 +181,10 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         ("converteroptions" -> converterOptions)
       )
       val jsonSettings = render(importSettings)
-      val defineProcResponse = describeResponse(client.postBytesExpectingHTTPResponse(schemify(procResponseObj.url),Printer.compact(jsonSettings).getBytes(encoding),List(("Content-Type","application/json"))))
+      val defineProcReq = (schemify(procResponseObj.url),jsonSettings,List(("Content-Type","application/json")))
+      mark("PROCESS CREATE OUT",defineProcReq)
+      val defineProcResponse = describeResponse(client.postBytesExpectingHTTPResponse(defineProcReq._1,Printer.compact(defineProcReq._2).getBytes(encoding),defineProcReq._3))
+      mark("PROCESS CREATE IN",(defineProcResponse,defineProcResponse.responseAsString))
 /*
       val defineProcResponse = describeResponse(client.postFormExpectingHTTPResponse(schemify(procResponseObj.url),List(
         ("input" -> "upload"),
@@ -186,7 +198,10 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("error: "+defineProcResponseObj.message,4,108)),Some(Left(ex))))
         throw ex
       })
-      val uploadResponse = describeResponse(client.putBytesExpectingHTTPResponse("%s/%s.%s".format(uploadUrl,safeRemoteName,inFormat),bytes))
+      val uploadReq = "%s/%s.%s".format(uploadUrl,safeRemoteName,inFormat)
+      mark("UPLOAD OUT",uploadReq)
+      val uploadResponse = describeResponse(client.putBytesExpectingHTTPResponse(uploadReq,bytes))
+      mark("UPLOAD IN",(uploadResponse,uploadResponse.responseAsString))
       val uploadResponseObj = parse(uploadResponse.responseAsString).extract[CloudConvertUploadResponse]
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress(uploadResponseObj.message,5,108)),None))
       var completed = false
@@ -194,7 +209,9 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
       var downloadExt = ""
       while (!completed){
         Thread.sleep(1000)
+        mark("STATUS OUT",procResponseObj.url)
         val statusResponse = describeResponse(client.getExpectingHTTPResponse(procResponseObj.url))
+        mark("STATUS IN",(statusResponse,statusResponse.responseAsString))
         val statusObj = parse(statusResponse.responseAsString).extract[CloudConvertStatusMessageResponse]
         val percentage = try {
           (for (
@@ -226,7 +243,9 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
         onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("cloudConverter download url malformed",106,108)),Some(Left(ex))))
         throw ex
       }
+      mark("DOWNLOAD OUT",downloadUrl)
       val downloadResponse = describeResponse(client.getExpectingHTTPResponse(downloadUrl))
+      mark("DOWNLOAD IN",downloadResponse)
       val convertResponseBytes = downloadResponse.bytes
       onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("downloaded from cloudConverter",107,108)),None))
       trace("downloaded bytes: %s".format(convertResponseBytes.length))
@@ -252,6 +271,7 @@ class CloudConvertPoweredParser(importId:String, val apiKey:String,onUpdate:Impo
       parsedResponse
     } catch {
       case e:Exception => {
+        error("error during cloud convert:\r\nprogress: %s".format(dialogue),e)
         onUpdate(ImportDescription(importId,filename,Globals.currentUser.is,Some(ImportProgress("parsing with cloudConverter",2,4)),Some(ImportProgress("error returned from cloudConverter",1,1)),Some(Left(e))))
         Left(e)
       }
