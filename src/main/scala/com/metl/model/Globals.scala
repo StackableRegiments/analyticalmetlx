@@ -276,7 +276,14 @@ object Globals extends PropertyReader with Logger {
   def isAnalyst:Boolean = casState.isAnalyst
   def assumeContainerSession:LiftAuthStateData = casState.assumeContainerSession
   def impersonate(newUsername:String,personalAttributes:List[Tuple2[String,String]] = Nil):LiftAuthStateData = casState.impersonate(newUsername,personalAttributes)
+}
 
+object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
+
+object CurrentStreamEncryptor extends SessionVar[Box[Crypto]](Empty)
+object CurrentHandshakeEncryptor extends SessionVar[Box[Crypto]](Empty)
+
+object ThumbnailSizes {
   val printDpi = 100
   val ThumbnailSize = new RenderDescription(320,240)
   val SmallSize = new RenderDescription(640,480)
@@ -284,11 +291,16 @@ object Globals extends PropertyReader with Logger {
   val LargeSize = new RenderDescription(1920,1080)
   val PrintSize = new RenderDescription(21 * printDpi, 29 * printDpi)
   val snapshotSizes = List(ThumbnailSize/*,SmallSize,MediumSize,LargeSize*//*,PrintSize*/)
+  def parse(size:String):RenderDescription = {
+    size.trim.toLowerCase match {
+      case "thumbnail" => ThumbnailSize
+      case "small" => SmallSize
+      case "medium" => MediumSize
+      case "large" => LargeSize
+      case "print" => PrintSize
+      case _ => ThumbnailSize
+    }
+  }
 }
-
-object IsInteractiveUser extends SessionVar[Box[Boolean]](Full(true))
-
-object CurrentStreamEncryptor extends SessionVar[Box[Crypto]](Empty)
-object CurrentHandshakeEncryptor extends SessionVar[Box[Crypto]](Empty)
 
 //object UserAgent extends SessionVar[Box[String]](S.userAgent)

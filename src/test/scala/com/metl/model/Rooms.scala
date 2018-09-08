@@ -7,8 +7,10 @@ import org.scalatest.time.SpanSugar._
 import matchers.MustMatchers
 import concurrent.AsyncAssertions
 import com.metl.data._
+import com.metl.external.{MeTLingPotAdaptor,GroupsProvider => ExternalGroupsProvider}
 
 class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Logger {
+  val awaitTimeout = timeout(5 * 60 * 1000 millis) // 5 minutes
   private val config = ServerConfiguration.empty
   private val conversationRoomId = "1000"
   private val slideRoomId = "1001"
@@ -18,8 +20,10 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     val roomJoinedWaiter = new Waiter
     val roomJoinedMetaData = ConversationRoom(config,conversationRoomId)
     val roomJoined = new HistoryCachingRoom(config,slideRoomId,EmptyRoomProvider,roomJoinedMetaData,Some(1000L)) {
+      override def getMetlingPots:List[MeTLingPotAdaptor] = Nil
+      override def getGroupsProvider(system:String):Option[ExternalGroupsProvider] = None
       override protected def emitAttendance(username:String,targetRoom: RoomMetaData,present: Boolean):Unit = {
-        warn("Received present = %s for room %s from user %s".format(present,targetRoom,username))
+        debug("Received present = %s for room %s from user %s".format(present,targetRoom,username))
         attendances  += ((username,targetRoom,present))
         roomJoinedWaiter.dismiss
       }
@@ -30,7 +34,7 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     object joiner extends LiftActor with Logger {
       override def messageHandler: PartialFunction[Any, Unit] = {
         case r@RoomJoinAcknowledged(configName,room) => {
-          warn("Received roomJoinAcknowledged %s".format(r))
+          debug("Received roomJoinAcknowledged %s".format(r))
           joinerWaiter.dismiss
         }
       }
@@ -39,8 +43,8 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     val user = "bob"
     roomJoined ! JoinRoom(user,"1",joiner)
 
-    joinerWaiter.await(timeout(5000 millis),dismissals(1))
-    roomJoinedWaiter.await(timeout(10000 millis),dismissals(1))
+    joinerWaiter.await(awaitTimeout,dismissals(1))
+    roomJoinedWaiter.await(awaitTimeout,dismissals(1))
 
     roomJoined.localShutdown
 
@@ -58,7 +62,7 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     object leaver extends LiftActor with Logger {
       override def messageHandler: PartialFunction[Any, Unit] = {
         case r@RoomLeaveAcknowledged(configName, room) => {
-          warn("Received roomLeaveAcknowledged %s".format(r))
+          debug("Received roomLeaveAcknowledged %s".format(r))
           leaverWaiter.dismiss
         }
       }
@@ -67,8 +71,10 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     val user = "bob"
     val roomLeft = new HistoryCachingRoom(config,slideRoomId,EmptyRoomProvider,roomLeftMetaData,Some(1000L)) {
       joinedUsers = (user,userCometId,leaver) :: joinedUsers
+      override def getMetlingPots:List[MeTLingPotAdaptor] = Nil
+      override def getGroupsProvider(system:String):Option[ExternalGroupsProvider] = None
       override protected def emitAttendance(username:String,targetRoom: RoomMetaData,present: Boolean):Unit = {
-        warn("Received present = %s for room %s from user %s".format(present,targetRoom,username))
+        debug("Received present = %s for room %s from user %s".format(present,targetRoom,username))
         attendances  += ((username,targetRoom,present))
         roomLeftWaiter.dismiss
       }
@@ -77,12 +83,12 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
 
     roomLeft ! LeaveRoom(user,userCometId,leaver)
 
-    leaverWaiter.await(timeout(5000 millis),dismissals(1))
-    roomLeftWaiter.await(timeout(10000 millis),dismissals(1))
+    leaverWaiter.await(awaitTimeout,dismissals(1))
+    roomLeftWaiter.await(awaitTimeout,dismissals(1))
 
     roomLeft.localShutdown
 
-    warn("Attendances: %s".format(attendances))
+    debug("Attendances: %s".format(attendances))
 
     assert(attendances.length == 1)
     val attendanceLeftRoom = attendances.head
@@ -96,8 +102,10 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     val roomJoinedWaiter = new Waiter
     val roomJoinedMetaData = ConversationRoom(config,conversationRoomId)
     val roomJoined = new HistoryCachingRoom(config,slideRoomId,EmptyRoomProvider,roomJoinedMetaData,Some(1000L)) {
+      override def getMetlingPots:List[MeTLingPotAdaptor] = Nil
+      override def getGroupsProvider(system:String):Option[ExternalGroupsProvider] = None
       override protected def emitAttendance(username:String,targetRoom: RoomMetaData,present: Boolean):Unit = {
-        warn("Received present = %s for room %s from user %s".format(present,targetRoom,username))
+        debug("Received present = %s for room %s from user %s".format(present,targetRoom,username))
         attendances1 += ((username,targetRoom,present))
         roomJoinedWaiter.dismiss
       }
@@ -107,8 +115,10 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     var attendances2 = scala.collection.mutable.ListBuffer.empty[Tuple3[String,RoomMetaData,Boolean]]
     val roomNotJoinedMetaData = ConversationRoom(config,"2000")
     val roomNotJoined = new HistoryCachingRoom(config,"2001",EmptyRoomProvider,roomNotJoinedMetaData,Some(1000L)) {
+      override def getMetlingPots:List[MeTLingPotAdaptor] = Nil
+      override def getGroupsProvider(system:String):Option[ExternalGroupsProvider] = None
       override protected def emitAttendance(username:String,targetRoom: RoomMetaData,present: Boolean):Unit = {
-        warn("Received present = %s for room %s from user %s".format(present,targetRoom,username))
+        debug("Received present = %s for room %s from user %s".format(present,targetRoom,username))
         attendances2 += ((username,targetRoom,present))
         roomJoinedWaiter.dismiss
       }
@@ -119,7 +129,7 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     object joiner extends LiftActor with Logger {
       override def messageHandler: PartialFunction[Any, Unit] = {
         case r@RoomJoinAcknowledged(configName,room) => {
-          warn("Received roomJoinAcknowledged %s".format(r))
+          debug("Received roomJoinAcknowledged %s".format(r))
           joinerWaiter.dismiss
         }
       }
@@ -128,8 +138,8 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     val user = "bob"
     roomJoined ! JoinRoom(user,"1",joiner)
 
-    joinerWaiter.await(timeout(5000 millis),dismissals(1))
-    roomJoinedWaiter.await(timeout(10000 millis),dismissals(1))
+    joinerWaiter.await(awaitTimeout,dismissals(1))
+    roomJoinedWaiter.await(awaitTimeout,dismissals(1))
 
     roomNotJoined.localShutdown
     roomJoined.localShutdown
@@ -147,8 +157,10 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     val roomJoinedWaiter = new Waiter
     val roomJoinedMetaData = ConversationRoom(config,conversationRoomId)
     val roomJoined = new HistoryCachingRoom(config,slideRoomId,EmptyRoomProvider,roomJoinedMetaData,Some(1000L)) {
+      override def getMetlingPots:List[MeTLingPotAdaptor] = Nil
+      override def getGroupsProvider(system:String):Option[ExternalGroupsProvider] = None
       override protected def emitAttendance(username:String,targetRoom: RoomMetaData,present: Boolean):Unit = {
-        warn("Received present = %s for room %s from user %s".format(present,targetRoom,username))
+        debug("Received present = %s for room %s from user %s".format(present,targetRoom,username))
         attendances += ((username,targetRoom,present))
         roomJoinedWaiter.dismiss
       }
@@ -159,7 +171,7 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     object joiner1 extends LiftActor with Logger {
       override def messageHandler: PartialFunction[Any, Unit] = {
         case r@RoomJoinAcknowledged(configName,room) => {
-          warn("Received roomJoinAcknowledged %s".format(r))
+          debug("Received roomJoinAcknowledged %s".format(r))
           joinerWaiter1.dismiss
         }
       }
@@ -169,7 +181,7 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     object joiner2 extends LiftActor with Logger {
       override def messageHandler: PartialFunction[Any, Unit] = {
         case r@RoomJoinAcknowledged(configName,room) => {
-          warn("Received roomJoinAcknowledged %s".format(r))
+          debug("Received roomJoinAcknowledged %s".format(r))
           joinerWaiter2.dismiss
         }
       }
@@ -179,9 +191,9 @@ class RoomsSuite extends FunSuite with AsyncAssertions with MustMatchers with Lo
     roomJoined ! JoinRoom(user,"1",joiner1)
     roomJoined ! JoinRoom(user,"1",joiner2)
 
-    joinerWaiter1.await(timeout(5000 millis),dismissals(1))
-    joinerWaiter2.await(timeout(5000 millis),dismissals(1))
-    roomJoinedWaiter.await(timeout(10000 millis),dismissals(1))
+    joinerWaiter1.await(awaitTimeout,dismissals(1))
+    joinerWaiter2.await(awaitTimeout,dismissals(1))
+    roomJoinedWaiter.await(awaitTimeout,dismissals(1))
 
     roomJoined.localShutdown
 
