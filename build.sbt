@@ -165,6 +165,10 @@ logBuffered in Test := false
 // add a JVM option to use when forking a JVM for 'run'
 javaOptions += "-Xmx2G"
 
+fork in Test := true
+
+javaOptions in Test += "-Dlogback.configurationFile=src/test/resources/logback-test.xml"
+
 // don't aggregate clean (See FullConfiguration for aggregation details)
 aggregate in clean := false
 

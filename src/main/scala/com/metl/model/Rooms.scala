@@ -20,6 +20,8 @@ import com.metl.renderer.RenderDescription
 import collection.JavaConverters._
 import scala.collection.mutable.Queue
 
+import com.metl.external.{MeTLingPotAdaptor,GroupsProvider => ExternalGroupsProvider}
+
 abstract class RoomProvider(config:ServerConfiguration) {
   def get(room:String):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,config),false)
   def get(room:String,eternal:Boolean):MeTLRoom = get(room,RoomMetaDataUtils.fromJid(room,config),false)
@@ -182,6 +184,7 @@ abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator
     }
     case _ => None
   }
+  protected def getGroupsProvider(system:String):Option[ExternalGroupsProvider] = Globals.getGroupsProvider(system)
   protected var attendanceCache:List[String] = Nil
   protected def updatePossibleAttendance = {
     var startingAttendanceCache = attendanceCache
@@ -190,7 +193,7 @@ abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator
         conversationCache.flatMap(conv => {
           conv.foreignRelationship.map(fr => {
             (for {
-              gp <- Globals.getGroupsProvider(fr.system).filter(_.canQuery).toList
+              gp <- getGroupsProvider(fr.system).filter(_.canQuery).toList
               ou <- gp.getOrgUnit(fr.key).toList
             } yield {
               gp.getMembersFor(ou).map(_.name)
@@ -385,6 +388,7 @@ abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator
     room ! LocalToServerMeTLStanza(Attendance(config, username, -1L, location, present, Nil))
   }
   protected def formatConnection(username:String,uniqueId:String):String = "%s_%s".format(username,uniqueId)
+  protected def getMetlingPots:List[MeTLingPotAdaptor] = Globals.metlingPots
   protected def addConnection(j:JoinRoom):Unit = Stopwatch.time("MeTLRoom.addConnection(%s)".format(j),{
     val oldMembers = getChildren.map(_._1)
     val username = j.username
@@ -407,7 +411,7 @@ abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator
           updatePossibleAttendance
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
           joinedUsers.foreach(_._3 ! u)
-          Globals.metlingPots.foreach(mp => {
+          getMetlingPots.foreach(mp => {
             mp.postItems(List(
               MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",username),KVP("informalAcademic","joined"),Some(KVP("room",location)),None,None)
             ))
@@ -458,7 +462,7 @@ abstract class MeTLRoom(configIn:ServerConfiguration,val location:String,creator
         if (oldMembers.contains(username) && !newMembers.contains(username)) {
           val u = ConversationParticipation(location,getAttendance,getPossibleAttendance)
           joinedUsers.foreach(_._3 ! u)
-          Globals.metlingPots.foreach(mp => {
+          getMetlingPots.foreach(mp => {
             mp.postItems(List(
               MeTLingPotItem("metlRoom",new java.util.Date().getTime(),KVP("metlUser",username),KVP("informalAcademic","left"),Some(KVP("room",location)),None,None)
             ))
@@ -521,7 +525,7 @@ class NoCacheRoom(config:ServerConfiguration,override val location:String,creato
   override def getThumbnail = {
     roomMetaData match {
       case s:SlideRoom => {
-        slideRenderer.render(getHistory,Globals.ThumbnailSize,"presentationSpace")
+        slideRenderer.render(getHistory,ThumbnailSizes.ThumbnailSize,"presentationSpace")
       }
       case _ => {
         Array.empty[Byte]
@@ -599,8 +603,8 @@ class HistoryCachingRoom(config:ServerConfiguration,override val location:String
           case true => history.filterCanvasContents(cc => cc.privacy == Privacy.PUBLIC)
           case false => history
         }
-        trace("rendering snapshots for: %s %s".format(history.jid,Globals.snapshotSizes))
-        val result = slideRenderer.renderMultiple(thisHistory,Globals.snapshotSizes)
+        trace("rendering snapshots for: %s %s".format(history.jid,ThumbnailSizes.snapshotSizes))
+        val result = slideRenderer.renderMultiple(thisHistory,ThumbnailSizes.snapshotSizes)
         trace("rendered snapshots for: %s %s".format(history.jid,result.map(tup => (tup._1,tup._2.length))))
         result
       }
@@ -623,7 +627,7 @@ class HistoryCachingRoom(config:ServerConfiguration,override val location:String
     })
   }
   override def getThumbnail = {
-    getSnapshot(Globals.ThumbnailSize)
+    getSnapshot(ThumbnailSizes.ThumbnailSize)
   }
   override protected def sendToChildren(s:MeTLStanza):Unit = Stopwatch.time("HistoryCachingMeTLRoom.sendToChildren",{
     history.addStanza(s)
