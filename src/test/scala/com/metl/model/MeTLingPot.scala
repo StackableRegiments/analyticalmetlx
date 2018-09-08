@@ -31,7 +31,7 @@ class TimedMeTLingPotAdaptor(perRequest:Long,perItem:Long,shouldError:() => Bool
 }
 
 class BurstingPassThroughMeTLingPotSuite extends FunSuite with AsyncAssertions with MustMatchers {
-  val awaitTimeout = timeout(5 * 60 * 1000 millis) // 5 minutes
+  val awaitTimeout = timeout(5 * 60 * 1000 millis) // 5 minutes - these should never take this long, and I'm going to look to tune these downwards.
   test("should send chunks of 2, five times") {
     var counter = 0
     val w = new Waiter
