@@ -48,6 +48,11 @@ class CachingHttpServletRequestWrapper(request:HttpServletRequest) extends HttpS
     override def close = bis.close
     override def mark(readlimit:Int) = bis.mark(readlimit)
     override def markSupported:Boolean = bis.markSupported
+    override def isFinished():Boolean = false
+    override def isReady():Boolean = true
+    override def setReadListener(readListener:javax.servlet.ReadListener):Unit = {
+    }
+
   }
   override def getInputStream:ServletInputStream = {
     new CachedServletInputStream

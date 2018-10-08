@@ -182,7 +182,13 @@ class SqlInterface(config:ServerConfiguration,vendor:StandardDBVendor,onConversa
     DatabaseVersion.find(By(DatabaseVersion.key,"version"),By(DatabaseVersion.scope,"db")).filter(_.intValue.get < 7).map(versionNumber => {
       info("upgrading db to set all slides to exposed, because they were previously defaulting to false and we didn't mean that.")
       H2Conversation.findAll.foreach(conv => {
-        conv.slides(serializer.slidesToString(serializer.slidesFromString(conv.slides.get).map(_.copy(exposed = true)))).save
+        try {
+          conv.slides(serializer.slidesToString(serializer.slidesFromString(conv.slides.get).map(_.copy(exposed = true)))).save
+        } catch {
+          case e:Exception => {
+            warn("failed to expose the slide, because of an issue: %s".format(e))
+          }
+        }
       })
       versionNumber.intValue(7).save
       info("upgraded db to set all slides to exposed, because they were previously defaulting to false and we didn't mean that.")

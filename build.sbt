@@ -24,27 +24,32 @@ resolvers ++= Seq(
   "releases"        at "https://oss.sonatype.org/content/repositories/releases"
 )
 
+val jettyVersion = "9.4.6.v20170531"
+
 /*
-seq(webSettings :_*)
+enablePlugins(ContainerPlugin)
 
-startScriptJettyVersion in Compile := "9.4.6.v20170531"
+containerLibs in Container := Seq(
+  "org.eclipse.jetty" %  "jetty-webapp" % jettyVersion,
+  "org.eclipse.jetty" %  "jetty-plus"   % jettyVersion,
+  "test"              %% "runner"       % "0.1.0-SNAPSHOT"
+)
 
-startScriptJettyChecksum := "45b03a329990cff2719d1d7a1d228f3b7f6065e8"
-
-startScriptJettyURL in Compile <<= (startScriptJettyVersion in Compile) { (version) => "http://refer.adm.monash.edu/jetty-distribution-" + version + ".zip" }
-
-startScriptJettyContextPath := "/"
-
-startScriptJettyHome in Compile <<= (streams, target, startScriptJettyURL in Compile, startScriptJettyChecksum in Compile) map startScriptJettyHomeTask
-
-startScriptForWar in Compile <<= (streams, startScriptBaseDirectory, startScriptFile in Compile, com.earldouglas.xsbtwebplugin.PluginKeys.packageWar in Compile, startScriptJettyHome in Compile, startScriptJettyContextPath in Compile) map startScriptForWarTask
-
-startScript in Compile <<= startScriptForWar in Compile
-
-seq(genericStartScriptSettings:_*)
+containerLaunchCmd in Container :=
+  { (port, path) => Seq("runner.Run", port.toString, path) }
 */
 
-//unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
+//containerLibs in Jetty := Seq("org.mortbay.jetty" % "jetty-runner" % jettyVersion intransitive())
+containerLibs in Jetty := Seq("org.eclipse.jetty" % "jetty-runner" % jettyVersion intransitive())
+
+javaOptions in Jetty ++= Seq(
+  """-Dmetlx.configurationFile="config/configuration.local.xml"""",
+  """-Dlogback.configurationFile="config/logback.xml""""
+  )
+
+unmanagedResourceDirectories in Test += (baseDirectory).value / "src/main/webapp" 
+
+unmanagedResourceDirectories in Compile += (baseDirectory).value / "src/main/webapp" 
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 scalacOptions ++= Seq("-Xmax-classfile-name", "100")
@@ -53,15 +58,11 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.+"
 
 libraryDependencies ++= {
   val liftVersion = "2.6.2"
-  val jettyVersion = "9.4.6.v20170531"
   Seq(
-    //"org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
-    //"org.eclipse.jetty"           %  "jetty-plus"               % "8.1.7.v20120910"     % "container,test", // _for _jetty _config
-    //"org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
-    "org.eclipse.jetty" % "jetty-webapp"  % jettyVersion % "container,test",
-    "org.eclipse.jetty" %  "jetty-server"   % jettyVersion % "container,test", // _for _jetty _config
-    "org.eclipse.jetty" %  "jetty-util"   % jettyVersion % "container,test", // _for _jetty _config
-    "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % "container,test", // artifacts Artifact("javax.servlet", "jar", "jar"),
+    "org.eclipse.jetty" % "jetty-webapp"  % jettyVersion % "container,compile,test",
+    "org.eclipse.jetty" %  "jetty-server"   % jettyVersion % "container,compile,test", // _for _jetty _config
+    "org.eclipse.jetty" %  "jetty-util"   % jettyVersion % "container,compile,test", // _for _jetty _config
+    "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % "container,compile,test", // artifacts Artifact("javax.servlet", "jar", "jar"),
     "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
     "org.scala-lang" % "scala-library" % scalaVersionString,
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
