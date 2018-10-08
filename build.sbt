@@ -1,6 +1,6 @@
-import com.typesafe.sbt.SbtStartScript
-import SbtStartScript.StartScriptKeys._
-import com.earldouglas.xsbtwebplugin.WebPlugin
+//import com.typesafe.sbt.SbtStartScript
+//import SbtStartScript.StartScriptKeys._
+//import com.earldouglas.xsbtwebplugin.WebPlugin
 
 name := "analyticalmetlx"
 organization := "com.stackableregiments"
@@ -12,6 +12,7 @@ scalaVersion := scalaVersionString
 
 lazy val root = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
+  enablePlugins(JettyPlugin).
   settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage := "com.metl",
@@ -23,6 +24,7 @@ resolvers ++= Seq(
   "releases"        at "https://oss.sonatype.org/content/repositories/releases"
 )
 
+/*
 seq(webSettings :_*)
 
 startScriptJettyVersion in Compile := "9.4.6.v20170531"
@@ -40,8 +42,9 @@ startScriptForWar in Compile <<= (streams, startScriptBaseDirectory, startScript
 startScript in Compile <<= startScriptForWar in Compile
 
 seq(genericStartScriptSettings:_*)
+*/
 
-unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
+//unmanagedResourceDirectories in Test <+= (baseDirectory) { _ / "src/main/webapp" }
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 scalacOptions ++= Seq("-Xmax-classfile-name", "100")
@@ -131,7 +134,7 @@ publishTo := Some("sonatype" at "https://oss.sonatype.org/service/local/staging/
 // set Ivy logging to be at the highest level
 ivyLoggingLevel := UpdateLogging.Full
 
-ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+//ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
 
 // disable updating dynamic revisions (including -SNAPSHOT versions)
 offline := false
@@ -190,6 +193,7 @@ traceLevel := 10
 // only show stack traces up to the first sbt stack frame
 traceLevel := 0
 
+/*
 val functionalSingleTests = taskKey[Unit]("functional single-player tests")
 val functionalMultiTests = taskKey[Unit]("functional multi-player tests")
 
@@ -202,3 +206,4 @@ lazy val library = (project in file("library")).
       Process(List("./node_modules/wdio/node_modules/.bin/wdio wdio.multi.conf.js", ".")) #>> file("functionalMultiTests.log") !
     }
   )
+  */
