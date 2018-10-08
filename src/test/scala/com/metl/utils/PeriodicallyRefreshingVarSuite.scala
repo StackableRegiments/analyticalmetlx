@@ -13,6 +13,7 @@ import com.metl.utils._
 
 class PeriodicallyRefreshingVarSuite extends FunSuite with AsyncAssertions with MustMatchers {
 
+  val awaitTimeout = timeout(5 * 60 * 1000 millis) // 5 minutes
     val OneHour = new TimeSpan(60 * 60 * 1000)
     test("refresh after time delay on creation") {
 
@@ -34,7 +35,7 @@ class PeriodicallyRefreshingVarSuite extends FunSuite with AsyncAssertions with 
         })
 
         refresher ! Refresh // should increment counter to 2 and dismissals to 2
-        w.await(timeout(300 millis), dismissals(2))
+        w.await(awaitTimeout, dismissals(2))
         refresher ! Stop
         assert(counter >= 2)
     }
@@ -61,7 +62,7 @@ class PeriodicallyRefreshingVarSuite extends FunSuite with AsyncAssertions with 
           w.dismiss
           counter
         })
-        w.await(timeout(10 seconds), dismissals(11)) // when run on a system with only 1 thread is going to have difficulty scheduling the awaiter and the dismisser such that the set of the value will definitely happen before the refresher.get occurs, so it's necessary to ask for one more dismissal than expected.
+        w.await(awaitTimeout, dismissals(11)) // when run on a system with only 1 thread is going to have difficulty scheduling the awaiter and the dismisser such that the set of the value will definitely happen before the refresher.get occurs, so it's necessary to ask for one more dismissal than expected.
         refresher ! Stop
         assert(refresher.get >= 10) // not checking that it's exactly 10, because if the system is slow enough, it might re-fire.
     }

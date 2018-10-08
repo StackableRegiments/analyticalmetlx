@@ -18,14 +18,7 @@ object HttpResponder extends HttpCacher with Logger {
   debug("HttpResponder for server: %s".format(server))
   def getSnapshot(jid:String,size:String) = {
     val room = MeTLXConfiguration.getRoom(jid,server.name,RoomMetaDataUtils.fromJid(jid))
-    val snap = room.getSnapshot(size.trim.toLowerCase match {
-      case "thumbnail" => Globals.ThumbnailSize
-      case "small" => Globals.SmallSize
-      case "medium" => Globals.MediumSize
-      case "large" => Globals.LargeSize
-      case "print" => Globals.PrintSize
-      case _ => Globals.ThumbnailSize
-    })
+    val snap = room.getSnapshot(ThumbnailSizes.parse(size))
     debug("getSnapshot: (%s => %s, %s) => %s".format(jid, room, size,snap))
     snap
   }
@@ -34,17 +27,7 @@ object HttpResponder extends HttpCacher with Logger {
     val privateRoom = MeTLXConfiguration.getRoom(jid+Globals.currentUser.is,server.name,RoomMetaDataUtils.fromJid(jid+Globals.currentUser.is))
     val merged = publicRoom.getHistory.merge(privateRoom.getHistory)
     
-    val snap = privateRoom.slideRenderer.render(
-      merged,
-      size.trim.toLowerCase match {
-        case "thumbnail" => Globals.ThumbnailSize
-        case "small" => Globals.SmallSize
-        case "medium" => Globals.MediumSize
-        case "large" => Globals.LargeSize
-        case "print" => Globals.PrintSize
-        case _ => Globals.ThumbnailSize
-      },
-      "presentationSpace")
+    val snap = privateRoom.slideRenderer.render(merged,ThumbnailSizes.parse(size),"presentationSpace")
     debug("getSnapshotWithPrivate: (%s => (%s,%s), %s) => %s".format(jid, publicRoom, privateRoom, size, snap))
     snap
   }

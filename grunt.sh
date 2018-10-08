@@ -1,3 +1,5 @@
-cd src/main/assets/build
-grunt --theme=neutral
-grunt --theme=slu
+BUILD_DIR=src/main/assets/build
+npm install $BUILD_DIR
+GRUNT=node_modules/grunt/bin/grunt
+$GRUNT --gruntfile=$BUILD_DIR/Gruntfile.js --theme=neutral
+$GRUNT --gruntfile=$BUILD_DIR/Gruntfile.js --theme=slu
