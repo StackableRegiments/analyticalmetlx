@@ -25,26 +25,31 @@ class PassThroughMeTLingPotAdaptor(val a:MeTLingPotAdaptor) extends MeTLingPotAd
 
 class BurstingPassThroughMeTLingPotAdaptor(override val a:MeTLingPotAdaptor,val burstSize:Int = 20,val delayBetweenPolls:Option[TimeSpan] = None,val delayBetweenSends:Option[TimeSpan] = None,val delayOnError:Option[TimeSpan] = None) extends PassThroughMeTLingPotAdaptor(a) with LiftActor with Logger {
   case object RequestSend
-  protected val buffer = new scala.collection.mutable.ListBuffer[MeTLingPotItem]()
+  protected val buffer = new scala.collection.mutable.Queue[MeTLingPotItem]()
   def getBufferLength:Int = buffer.length
   def getIsShuttingDown = shuttingDown
   def getLastSend:Long = lastSend
+  def getLastCheck:Long = lastCheck
 
   override def postItems(items:List[MeTLingPotItem]):Either[Exception,Boolean] = {
     trace("adding items to the queue: %s".format(items.length))
-    addItems(items)
+    this ! items 
     Right(true)
   }
   protected val pollDelayTs = delayBetweenPolls.getOrElse(new TimeSpan(1000L))
   protected val sendDelayTs = delayBetweenSends.getOrElse(new TimeSpan(10L))
   protected val errorDelayTs = delayOnError.getOrElse(new TimeSpan(sendDelayTs.millis * 10))
-  protected var lastSend:Long = new Date().getTime()
+  protected var lastSend:Long = 0L//new Date().getTime()
+  protected var lastCheck:Long = 0L//new Date().getTime()
   protected var shuttingDown = false
   protected def reschedule(after:TimeSpan):Unit = Schedule.schedule(this,RequestSend,after)
+  protected def isNotEmpty:Boolean = buffer.headOption.isDefined
   protected def addItems(items:List[MeTLingPotItem],front:Boolean = false) = {
     try {
       if (front){
-        items ++=: buffer
+        items.foreach(item => {
+          item +=: buffer //prepending only takes one element at a time.
+        })
       } else {
         buffer ++= items
       }
@@ -55,14 +60,16 @@ class BurstingPassThroughMeTLingPotAdaptor(override val a:MeTLingPotAdaptor,val 
     }
   }
   protected def onSuccess(res:Boolean) = {
-    if (buffer.length > 0){
-      trace("continuingToProcess items from %s".format(buffer.length))
+    lastSend = new Date().getTime
+    if (isNotEmpty){
+      trace("continuingToProcess items from %s".format(getBufferLength))
       reschedule(sendDelayTs)
     } else {
       reschedule(pollDelayTs)
     }
   }
   protected def onError(items:List[MeTLingPotItem],e:Exception) = {
+    lastSend = new Date().getTime
     trace("repeating items: %s".format(items.length))
     addItems(items,true)
     error("failed to send items",e)
@@ -70,9 +77,19 @@ class BurstingPassThroughMeTLingPotAdaptor(override val a:MeTLingPotAdaptor,val 
     e
   }
   protected def doUpload = {
-    if (buffer.length > 0){
-      val items:List[MeTLingPotItem] = buffer.take(burstSize).toList
-      buffer --= items
+    lastCheck = new Date().getTime
+    if (isNotEmpty){
+      var items:List[MeTLingPotItem] = List.empty[MeTLingPotItem]
+      try {
+        Range.inclusive(1,burstSize).foreach(_i => { // dequeueing only takes one element at a time.
+          buffer.headOption.map(ho => {
+            items = items ::: List(buffer.dequeue)
+          })
+        })
+      } catch {
+        case e:java.util.NoSuchElementException => {
+        }
+      }
       trace("processing items: %s".format(items.length))
       a.postItems(items).left.map(e => onError(items,e)).right.map(onSuccess)
     } else {
@@ -80,6 +97,9 @@ class BurstingPassThroughMeTLingPotAdaptor(override val a:MeTLingPotAdaptor,val 
     }
   }
   override def messageHandler = {
+    case items:List[MeTLingPotItem] => {
+      addItems(items)
+    }
     case RequestSend if shuttingDown => {
       //eating the requestSend, and shutting down
     }
@@ -87,9 +107,10 @@ class BurstingPassThroughMeTLingPotAdaptor(override val a:MeTLingPotAdaptor,val 
     case _ => {}
   }
   override def shutdown:Unit = {
-    while (buffer.length > 0){
-      trace("waiting for buffer to empty, to shutdown: %s".format(buffer.length))
-      Thread.sleep(100) // wait for the buffer to clear before shutting down
+    // wait for the buffer to clear before shutting down
+    while (isNotEmpty){
+      trace("waiting for buffer to empty, to shutdown: %s".format(getBufferLength))
+      Thread.sleep(100) 
     }
     shuttingDown = true
     super.shutdown
@@ -104,6 +125,7 @@ class BurstingPassThroughMeTLingPotAdaptor(override val a:MeTLingPotAdaptor,val 
       JField("type",JString("passThroughMeTLingPotAdaptor")),
       JField("bufferLength",JInt(getBufferLength)),
       JField("isShuttingDown",JBool(getIsShuttingDown)),
+      JField("lastCheckForItems",JInt(getLastCheck)),
       JField("lastSend",JInt(getLastSend)),
       JField("adaptor",JObject(a.description))
     )
