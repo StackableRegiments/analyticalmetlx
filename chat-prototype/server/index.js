@@ -1,97 +1,74 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
+const express = require("express");
+const http = require("http");
+const cors = require("cors");
+const { Server } = require("socket.io");
 
-const PORT = process.env.PORT || 4000;
-const SECRET = process.env.CHAT_SECRET || 'dev-secret';
+const userRoutes = require("./routes/userRoutes");
+const { getMessagesByChannel, createMessage, getMessageById } = require("./db/messageModel");
+const chatGateway = require("./socket/chatGateway");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// simple in-memory message store
-const messages = [];
-let nextId = 1;
+// USER ROUTES
+app.use("/users", userRoutes);
 
-function verifyToken(token) {
+// GET MESSAGES FOR A CHANNEL
+app.get("/channels/:channelId/messages", async (req, res) => {
   try {
-    return jwt.verify(token, SECRET);
-  } catch {
-    return null;
+    const messages = await getMessagesByChannel(req.params.channelId);
+    res.json(messages);
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    res.status(500).json({ error: "Failed to fetch messages" });
   }
-}
-
-app.post('/login', (req, res) => {
-  const { user } = req.body || {};
-  if (!user) return res.status(400).json({ error: 'user required' });
-  const token = jwt.sign({ user }, SECRET, { expiresIn: '8h' });
-  res.json({ token, user });
 });
 
-app.get('/messages', (req, res) => {
-  res.json(messages);
-});
+// CREATE MESSAGE FOR A CHANNEL (REST API version)
+app.post("/channels/:channelId/messages", async (req, res) => {
+  try {
+    const channelId = req.params.channelId;
+    const { userId, content, parentId } = req.body;
 
-app.post('/messages', (req, res) => {
-  const auth = req.headers.authorization || '';
-  const token = auth.replace(/^Bearer\s+/i, '');
-  const payload = verifyToken(token);
-  if (!payload) return res.status(401).json({ error: 'unauthorized' });
+    if (!userId || !content) {
+      return res.status(400).json({ error: "userId and content are required" });
+    }
 
-  const { text } = req.body || {};
-  if (!text) return res.status(400).json({ error: 'text required' });
+    // Insert message correctly
+    const inserted = await createMessage(channelId, userId, content, parentId);
 
-  const msg = {
-    id: nextId++,
-    user: payload.user,
-    text,
-    created_at: new Date().toISOString(),
-    edited: 0
-  };
-  messages.push(msg);
-  io.to('global').emit('message:new', msg);
-  res.json(msg);
+    // Fetch full message with username
+    const fullMessage = await getMessageById(inserted.id);
+
+    // Emit to socket listeners
+    io.to(channelId).emit("message_created", fullMessage);
+
+    res.status(201).json(fullMessage);
+  } catch (err) {
+    console.error("Error creating message:", err);
+    res.status(500).json({ error: "Failed to create message" });
+  }
 });
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
 
-io.use((socket, next) => {
-  const token = socket.handshake.auth?.token;
-  const payload = verifyToken(token);
-  if (!payload) return next(new Error('unauthorized'));
-  socket.user = payload.user;
-  next();
+// SOCKET.IO CONFIG
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ["websocket", "polling"],
+  allowEIO3: true,
+  path: "/socket.io"
 });
 
-io.on('connection', (socket) => {
-  const user = socket.user;
-  socket.join('global');
-  io.to('global').emit('presence', { user, status: 'online' });
+// SOCKET GATEWAY
+chatGateway(io);
 
-  socket.on('typing', (payload) => {
-    socket.to('global').emit('typing', { user, ...payload });
-  });
-
-  socket.on('message:create', (payload, ack) => {
-    const msg = {
-      id: nextId++,
-      user,
-      text: payload.text,
-      created_at: new Date().toISOString(),
-      edited: 0
-    };
-    messages.push(msg);
-    io.to('global').emit('message:new', msg);
-    if (ack) ack(msg);
-  });
-
-  socket.on('disconnect', () => {
-    io.to('global').emit('presence', { user, status: 'offline' });
-  });
-});
+const PORT = 4000;
 
 server.listen(PORT, () => {
   console.log(`Chat server listening on ${PORT}`);

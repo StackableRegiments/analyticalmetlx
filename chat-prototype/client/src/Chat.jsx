@@ -1,59 +1,216 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import MessageList from "./components/MessageList";
+import { socket } from "./socket";   // FIXED IMPORT PATH
+import { getMessages } from "./api";
 
-const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
-
-export default function Chat() {
-  const [user, setUser] = useState('');
-  const [token, setToken] = useState(null);
+export default function Chat({ token, username, channelId }) {
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState('');
-  const socketRef = useRef(null);
+  const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+  const [replyTo, setReplyTo] = useState(null);
+  const [typingUsers, setTypingUsers] = useState([]);
 
+  // USER OBJECT 
+  const user = { id: token, username };
+
+  // Load messages on mount
   useEffect(() => {
-    if (!token) return;
-    const socket = io(SERVER, { auth: { token } });
-    socketRef.current = socket;
-    socket.on('message:new', (m) => setMessages((s) => [...s, m]));
-    return () => socket.disconnect();
-  }, [token]);
+    async function load() {
+      const data = await getMessages(channelId);
+      setMessages(data);
+    }
+    load();
+  }, [channelId]);
 
+  // Socket listeners
   useEffect(() => {
-    if (!token) return;
-    axios.get(`${SERVER}/messages`).then(r => setMessages(r.data)).catch(() => {});
-  }, [token]);
+    socket.emit("join_channel", channelId);
 
-  const login = async () => {
-    if (!user) return;
-    const res = await axios.post(`${SERVER}/login`, { user });
-    setToken(res.data.token);
+    // Receive full message instantly
+    socket.on("message_created", (msg) => {
+      setMessages((prev) => [...prev, msg]);
+    });
+
+    socket.on("message_reacted", ({ messageId, emoji, user }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, reactions: [...(m.reactions || []), { emoji, user }] }
+            : m
+        )
+      );
+    });
+
+    socket.on("user_typing", ({ user }) => {
+      setTypingUsers((prev) => {
+        if (!prev.includes(user)) return [...prev, user];
+        return prev;
+      });
+
+      setTimeout(() => {
+        setTypingUsers((prev) => prev.filter((id) => id !== user));
+      }, 1500);
+    });
+
+    return () => {
+      socket.off("message_created");
+      socket.off("message_reacted");
+      socket.off("user_typing");
+    };
+  }, [channelId]);
+
+  // Auto-scroll to bottom when messages update
+  useEffect(() => {
+    const el = document.querySelector(".messages");
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
+  // Handle typing indicator
+  const handleTyping = () => {
+    socket.emit("typing", { channelId, user: user.id });
   };
 
-  const send = () => {
-    if (!text || !socketRef.current) return;
-    socketRef.current.emit('message:create', { text });
-    setText('');
+  // Send message (socket version)
+  const sendMessage = () => {
+    if (!message.trim()) return;
+
+    socket.emit("send_message", {
+      channelId,
+      authorId: user.id,
+      username: user.username,
+      content: message,
+      parentId: replyTo?.id || null
+    });
+
+    setMessage("");
+    setReplyTo(null);
   };
+
+  // Filter messages by search
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const filteredMessages = safeMessages.filter((m) =>
+    m.content?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div style={{ maxWidth: 700, margin: 24, fontFamily: 'system-ui, Arial' }}>
-      {!token ? (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input value={user} onChange={e => setUser(e.target.value)} placeholder="Your name" />
-          <button onClick={login} disabled={!user}>Login</button>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        background: "#111",
+        color: "white"
+      }}
+    >
+      {/* Search bar */}
+      <div style={{ padding: "10px", borderBottom: "1px solid #333" }}>
+        <input
+          placeholder="Search messages..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #444",
+            background: "#1e1e1e",
+            color: "white"
+          }}
+        />
+      </div>
+
+      {/* Reply banner */}
+      {replyTo && (
+        <div
+          style={{
+            background: "#333",
+            padding: "10px",
+            borderLeft: "4px solid #888",
+            margin: "10px",
+            borderRadius: "8px"
+          }}
+        >
+          Replying to: <strong>{replyTo.content}</strong>
+          <button
+            onClick={() => setReplyTo(null)}
+            style={{
+              marginLeft: "10px",
+              background: "#444",
+              color: "white",
+              border: "none",
+              padding: "4px 8px",
+              borderRadius: "6px",
+              cursor: "pointer"
+            }}
+          >
+            Cancel
+          </button>
         </div>
-      ) : (
-        <>
-          <div style={{ border: '1px solid #ddd', padding: 12, height: 360, overflow: 'auto', marginBottom: 8 }}>
-            {messages.map(m => <div key={m.id}><strong>{m.user}:</strong> {m.text}</div>)}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input style={{ flex: 1 }} value={text} onChange={e => setText(e.target.value)} placeholder="Message" />
-            <button onClick={send} disabled={!text}>Send</button>
-          </div>
-        </>
       )}
+
+      {/* Scrollable message list */}
+      <div
+        className="messages"
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "10px"
+        }}
+      >
+        <MessageList
+          messages={filteredMessages}
+          onReply={(msg) => setReplyTo(msg)}
+          channelId={channelId}
+          userId={user.id}
+        />
+      </div>
+
+      {/* Typing indicator */}
+      {typingUsers.length > 0 && (
+        <div style={{ padding: "6px 12px", opacity: 0.7 }}>
+          Someone is typing...
+        </div>
+      )}
+
+      {/* Bottom input bar */}
+      <div
+        style={{
+          display: "flex",
+          padding: "10px",
+          borderTop: "1px solid #333",
+          background: "#1e1e1e"
+        }}
+      >
+        <input
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleTyping}
+          placeholder="Type a message..."
+          style={{
+            flex: 1,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #444",
+            background: "#2a2a2a",
+            color: "white"
+          }}
+        />
+
+        <button
+          onClick={sendMessage}
+          style={{
+            marginLeft: "10px",
+            padding: "10px 18px",
+            background: "#444",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer"
+          }}
+        >
+          Send
+        </button>
+      </div>
     </div>
   );
 }
