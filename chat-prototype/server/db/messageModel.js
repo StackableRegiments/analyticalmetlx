@@ -1,7 +1,10 @@
 const db = require("./index");
 
 // CREATE MESSAGE WITH USERNAME SUPPORT
-async function createMessage({ id, channelId, authorId, username, content, parentId }) {
+const { v4: uuidv4 } = require("uuid");
+
+async function createMessage({ channelId, authorId, username, content, parentId }) {
+  const id = uuidv4();
   const result = await db.query(
     `INSERT INTO messages (
         id,
@@ -39,7 +42,27 @@ async function getMessagesByChannel(channelId) {
   return result.rows;
 }
 
+// GET SINGLE MESSAGE BY ID
+async function getMessageById(id) {
+  const result = await db.query(
+    `SELECT
+        id,
+        channel_id,
+        author_id,
+        username,
+        content,
+        parent_message_id,
+        created_at
+     FROM messages
+     WHERE id = $1`,
+    [id]
+  );
+
+  return result.rows[0];
+}
+
 module.exports = {
   createMessage,
-  getMessagesByChannel
+  getMessagesByChannel,
+  getMessageById
 };

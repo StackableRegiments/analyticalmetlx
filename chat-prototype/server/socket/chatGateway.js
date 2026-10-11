@@ -19,7 +19,13 @@ module.exports = function chatGateway(io) {
         const { channelId, authorId, content, parentId } = payload;
 
         // Insert message correctly
-        const inserted = await createMessage(channelId, authorId, content, parentId);
+        const inserted = await createMessage({
+          channelId,
+          authorId,
+          username: payload.username,
+          content,
+          parentId
+        });
 
         // Fetch full message with username
         const fullMessage = await getMessageById(inserted.id);

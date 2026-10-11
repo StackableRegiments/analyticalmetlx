@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import MessageList from "./components/MessageList";
-import { socket } from "./socket";   // FIXED IMPORT PATH
+import { socket } from "./socket";
 import { getMessages } from "./api";
 
 export default function Chat({ token, username, channelId }) {
@@ -10,21 +10,24 @@ export default function Chat({ token, username, channelId }) {
   const [replyTo, setReplyTo] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
 
-  // USER OBJECT 
   const user = { id: token, username };
 
-  // Load messages on mount
+  // Load messages once
   useEffect(() => {
     async function load() {
       const data = await getMessages(channelId);
       setMessages(data);
     }
     load();
-  }, [channelId]);
+  }, []);
 
-  // Socket listeners
+  // Socket listeners + join channel
   useEffect(() => {
-    socket.emit("join_channel", channelId);
+    // Prevent double join from React Strict Mode
+    if (!socket._joinedChannel) {
+      socket.emit("join_channel", channelId);
+      socket._joinedChannel = true;
+    }
 
     // Receive full message instantly
     socket.on("message_created", (msg) => {
@@ -59,18 +62,16 @@ export default function Chat({ token, username, channelId }) {
     };
   }, [channelId]);
 
-  // Auto-scroll to bottom when messages update
+  // Auto-scroll
   useEffect(() => {
     const el = document.querySelector(".messages");
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  // Handle typing indicator
   const handleTyping = () => {
     socket.emit("typing", { channelId, user: user.id });
   };
 
-  // Send message (socket version)
   const sendMessage = () => {
     if (!message.trim()) return;
 
@@ -86,7 +87,6 @@ export default function Chat({ token, username, channelId }) {
     setReplyTo(null);
   };
 
-  // Filter messages by search
   const safeMessages = Array.isArray(messages) ? messages : [];
   const filteredMessages = safeMessages.filter((m) =>
     m.content?.toLowerCase().includes(search.toLowerCase())
