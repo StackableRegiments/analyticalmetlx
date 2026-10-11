@@ -1,0 +1,176 @@
+/* Reply Banner (Thread Reply) */
+.reply-banner {
+  background: #f0f4ff;
+  border-left: 3px solid #4a6cff;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* Message Container + Threading */
+.message {
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.message.reply {
+  margin-left: 25px;
+  border-left: 2px solid #ccc;
+  padding-left: 10px;
+}
+
+/* Metadata (Author + Timestamp) */
+.meta {
+  font-size: 0.75rem;
+  color: #777;
+  margin-bottom: 4px;
+  display: flex;
+  gap: 6px;
+}
+
+.author {
+  font-weight: 600;
+}
+
+.time {
+  opacity: 0.7;
+}
+
+/* Mention Highlighting */
+.mention {
+  color: #4a6cff;
+  font-weight: bold;
+}
+
+/* Reply Button (Slack Style) */
+.reply-btn {
+  margin-top: 8px;
+  background: transparent;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+}
+
+.reply-btn:hover {
+  text-decoration: underline;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+  font-size: 0.8rem;
+  color: #777;
+  margin: 4px 0 8px 0;
+  font-style: italic;
+}
+
+/* Reaction Bar (Slack Style) */
+.reaction-bar {
+  margin-top: 6px;
+  display: flex;
+  gap: 10px;
+}
+
+/* Reaction buttons (emoji triggers) */
+.reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+}
+
+.reaction-btn:hover {
+  opacity: 1;
+}
+
+/* Reaction Display (Slack Chips) */
+.reaction-display {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+/* Slack-style reaction chip */
+.reaction-item {
+  background: #e8e8e8;
+  padding: 3px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #d0d0d0;
+  cursor: default;
+}
+
+.edit-btn {
+  margin-top: 4px;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.75rem;
+  margin-left: 10px;
+}
+
+.edit-btn:hover {
+  text-decoration: underline;
+}
+
+.delete-btn {
+  margin-top: 4px;
+  background: transparent;
+  border: none;
+  color: #d9534f;
+  cursor: pointer;
+  font-size: 0.75rem;
+  margin-left: 10px;
+}
+
+.delete-btn:hover {
+  text-decoration: underline;
+}
+
+/* Pinned message highlight */
+.message.pinned {
+  border-left: 4px solid gold;
+  background: #fffbe6;
+}
+
+/* Pin button */
+.pin-btn {
+  margin-top: 4px;
+  background: transparent;
+  border: none;
+  color: #b8860b; /* gold-ish */
+  cursor: pointer;
+  font-size: 0.75rem;
+  margin-left: 10px;
+}
+
+.pin-btn:hover {
+  text-decoration: underline;
+}
+
+.search-bar {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.search-bar:focus {
+  border-color: #4a6cff;
+  box-shadow: 0 0 0 2px rgba(74, 108, 255, 0.2);
+}

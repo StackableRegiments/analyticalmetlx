@@ -1,5 +1,30 @@
 # MeTL
 
+## Submission 9/27 Philips Johnson
+
+**Branch:** `test`  
+**Tag:** `v1.0-test`  
+
+**How to run**
+1. Start server:
+   cd analyticalmetlx/chat-prototype/server
+   npm install
+   npm run dev
+
+2. Start client (new terminal):
+   cd analyticalmetlx/chat-prototype/client
+   npm install
+   npm start
+
+Open http://localhost:5173 and log in with any name.
+
+**Demo evidence**
+See `demo/` for screenshots.
+
+**Notes**
+- Server: port 4000; Client: port 5173.  
+- Enter key to send is not implemented; use the Send button.
+
 ## Description
 
 This project provides the primary MeTL server, the high interaction comet-enabled javascript product (available at `/board`).  This is developed in Scala, and deploys as a WAR directly into a Java web container.  We've been using Jetty (which is embedded for development, but the WAR can be dropped into any Java servlet container).
@@ -97,3 +122,5 @@ If this is a fresh checkout then (on Mac/Linux) you'll first need to make the sh
 MeTL has a CI pipeline on CircleCI, at:
 
 [https://circleci.com/gh/StackableRegiments/analyticalmetlx]
+
+For detailed run instructions see chat-prototype/README.md
