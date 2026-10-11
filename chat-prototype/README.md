@@ -1,60 +1,120 @@
-# MeTL Chat Modernization Prototype  
-Philips Johnson  
-Saint Leo University – COM-430  
+# MeTL Chat Prototype
+**Last Updated:** October 11, 2026  
+**Author:** JBo (Philips Johnson)
 
 ## Overview
-This project is a modernization prototype of the MeTL chat system.  
-It includes a React-based client, a Node.js/Express backend, and a PostgreSQL database layer.  
-The goal is to demonstrate socket-based real‑time messaging, channel organization, and message persistence.
+The MeTL Chat Prototype is a modernized real‑time messaging system designed to replace the legacy Scala chat module in the MeTL platform. This prototype demonstrates a fully functional chat environment using Node.js, Express, Socket.IO, React, and PostgreSQL.
 
-## Features Implemented
-- Real-time messaging using Socket.IO  
-- Channel-based message loading  
-- Message reactions, edits, deletes, and typing indicators  
-- Safe frontend rendering (no crashes even with backend errors)  
-- Modular component structure (Chat, MessageList, ChannelSidebar, MessageInput)  
-- Backend message model using PostgreSQL
+This version validates all core chat features prior to integration into the MeTL whiteboard application.
 
-## Known Issues / Constraints
-- Backend `/channels/:id/messages` may return `500` if the database has no messages or invalid channel IDs.  
-- Channel IDs must match UUIDs in the database.  
-- Some UI components were temporarily disabled to stabilize the application for submission.
+---
 
-## How to Run
+## Features
 
-1. Install dependencies
-```bash
-npm install
+### Real‑Time Messaging
+- Instant message delivery using Socket.IO  
+- Multi‑client synchronization (tested with dual browser sessions)  
+- Auto‑scrolling message feed  
 
-2. Start the backend
-bash
-cd server
-npm run dev
+### Typing Indicators
+- Live “Someone is typing…” feedback  
+- Debounced user typing events  
 
-3. Start the client
-bash
-cd client
-npm run dev
+### Threaded Replies
+- Reply‑to‑message functionality  
+- Parent/child message relationships stored in the database  
 
-4. Access the app
-Open:
+### Emoji Reactions
+- Real‑time reactions appended to messages  
+- Reaction events broadcast to all connected clients  
 
-Code
-http://localhost:5173
-Project Structure
-Code
+### Search Bar
+- Client‑side message filtering  
+- Case‑insensitive search  
+
+### Database Integration
+- PostgreSQL backend  
+- pgAdmin dashboard shows live activity (TPS, tuples, block I/O)  
+- Message history loaded on channel join  
+
+---
+
+## Tech Stack
+
+### Frontend
+- React (Vite)  
+- JSX components  
+- Socket.IO client  
+
+### Backend
+- Node.js  
+- Express  
+- Socket.IO server  
+- PostgreSQL  
+- Knex migrations  
+
+### Tools
+- VS Code  
+- pgAdmin 4  
+- GitHub version control  
+
+---
+
+## Project Structure
 chat-prototype/
- ├── client/
- │   ├── src/
- │   │   ├── Chat.jsx
- │   │   ├── components/
- │   │   │   ├── MessageList.jsx
- │   │   │   ├── ChannelSidebar.jsx
- │   │   │   └── MessageInput.jsx
- ├── server/
- │   ├── routes/
- │   │   └── messages.js
- │   ├── db/
- │   │   ├── index.js
- │   │   ├── messageModel.js
- │   │   └── channelModel.js
+│
+├── client/               # React frontend
+│   └── src/
+│       ├── Chat.jsx
+│       ├── components/
+│       └── socket.js
+│
+├── server/               # Node backend
+│   ├── index.js
+│   ├── socket/
+│   │   └── chatGateway.js
+│   └── db/
+│       ├── migrations/
+│       ├── channelModel.js
+│       └── messageModel.js
+│
+└── README.md             # This file
+
+
+---
+
+## Running the Project
+
+### Start the Server
+cd chat-prototype/server
+npm install
+npm run dev
+
+### Start the Client
+cd chat-prototype/client
+npm install
+npm start
+
+The client will open automatically at:
+http://localhost:5173
+
+---
+
+## Pre‑Integration Validation
+Screenshots captured and included in the Module 5 Update Report show:
+
+- Two browser windows exchanging messages in real time  
+- Typing indicators functioning  
+- Emoji reactions updating instantly  
+- pgAdmin dashboard showing active sessions and transaction spikes  
+- Server and client terminals running concurrently  
+
+This confirms the chat system is stable and ready for MeTL integration.
+
+---
+
+## Next Steps
+- Integrate chat UI into MeTL’s main interface  
+- Connect MeTL user authentication to chat author IDs  
+- Link MeTL room/channel context to chat channels  
+- Replace legacy Scala chat module  

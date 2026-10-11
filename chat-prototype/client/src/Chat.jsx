@@ -184,17 +184,24 @@ export default function Chat({ token, username, channelId }) {
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleTyping}
-          placeholder="Type a message..."
-          style={{
-            flex: 1,
-            padding: "10px",
-            borderRadius: "8px",
-            border: "1px solid #444",
-            background: "#2a2a2a",
-            color: "white"
-          }}
-        />
+          onKeyDown={(e) => {
+          handleTyping(); // keep your typing indicator
+
+          if (e.key === "Enter") {
+            e.preventDefault();
+            sendMessage();
+          }
+       }}
+       placeholder="Type a message..."
+       style={{
+         flex: 1,
+         padding: "10px",
+         borderRadius: "8px",
+         border: "1px solid #444",
+         background: "#2a2a2a",
+         color: "white"
+       }}
+     />
 
         <button
           onClick={sendMessage}
